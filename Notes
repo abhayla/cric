@@ -1,0 +1,32 @@
+Add this condition to Passing criteria - take screenshot after each testing, analyze the screenshot to verify it matches with the expected output. Do not pass the test until this is done. Check if you have Claude Chrome access or use it?
+
+Then plan to fix the issue as per this rule & 'd:\Abhay\VibeCoding\KKB\docs\rules\Claude Code Enforced Workflow Rules.md'     
+If any issue or error found then fix it and retest it. Do this in loop until the issue is fixed and test passes. Instead of shortcuts, Focus on the roor cause of the problem
+
+
+Do not proceed until you have 100% confidence of what I want. Ask me questions until you reach that confidence. Ask one question at a time. Tell me the number of questions you are going to ask.
+For each question, always give your recommendation. Your recommendation should be based on best practices and standards.
+After each response and before asking next question, Check industry standards, check the related codebase and docs and then add your knowlegebase to proceed.                                        
+
+Create a prompt to Save the current context state and start from here in the next context from here referring the required docs. Save this prompt in 
+\docs\CONTINUE_PROMPT.md
+
+Update .gitignore, commit all files in the changes and sync
+
+Read this doc to undertand the last of last context and wait for my instructions:
+\docs\CONTINUE_PROMPT.md 
+
+Test Passing Criteria:
+Take screenshot after each test and analyze screenshot to verify if the test passed or not. If failed, Fix the issue and then retest again using the same above process. Do this in loop until all tests pass 
+
+
+****************Best Practices-Start****************
+Use the Claude app or create a “System Architect” agent in Claude Code and brainstorm deeply with it, asking the AI to draw this blueprint (HTML or SVG) and edit it until it truly reflects what you expect.
+
+If editing with AI seems too time-consuming for you, then it’s best to try doing it manually. You can use Excalidraw, a powerful and easy-to-use web app for this task.
+https://faafospecialist.substack.com/p/vb-07-claude-code-common-mistakes
+
+only implement features when they are actually needed, not when we think they might be needed in the future. The idea is to avoid over-design and keep things simple.
+
+
+****************Best Practices-End****************
