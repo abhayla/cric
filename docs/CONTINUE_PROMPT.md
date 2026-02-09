@@ -55,6 +55,20 @@ Start with **Phase 1: Foundation** as described in `docs/IMPLEMENTATION_PLAN.md`
 - Free hit tracking on no-balls
 - Byes/leg-byes don't break maidens
 
+## Completed Work
+
+### Interactive Architectural Blueprint
+- **`docs/blueprint.html`** — Comprehensive single-file HTML blueprint (1763 lines) with:
+  - All 18 screens wireframed (Splash, Login, OTP, Profile Setup, Home, Teams List, Create Team, Team Detail, Manage Roster, Match Setup, Toss, Scoring Page, Scorecard, Analytics, Player Profile, Player Stats, Match History)
+  - 5 scoring dialogs orbiting the Scoring Page (Extras Panel, Wicket Dialog, Select Next Bowler, Select New Batter, Innings Transition)
+  - Backend architecture band (API Layer, WebSocket Protocol, Database ER, Offline Sync swim-lane)
+  - Cricket domain overlays (10-step delivery pipeline, match state machine, strike rotation decision tree, extras comparison table, undo mechanism, ScoringState shape, widget-to-state mapping)
+  - Interactive pan/zoom (mouse drag + scroll wheel + touch pinch)
+  - Navigation sidebar with animated pan-to-section
+  - Minimap showing viewport position
+  - Glossary of cricket terms
+  - Hub-and-spoke layout with Scoring Page as gravitational center
+
 ## Files in Repository
 
 ```
@@ -65,11 +79,12 @@ cric/
 │   ├── IMPLEMENTATION_PLAN.md
 │   ├── DATABASE.md
 │   ├── API.md
-│   └── SCORING_RULES.md
+│   ├── SCORING_RULES.md
+│   └── blueprint.html         (interactive architectural blueprint)
 ├── Notes                      (user's working notes & best practices)
 └── README.md
 ```
 
 ## Instructions for Next Session
 
-Read this file first, then read `docs/IMPLEMENTATION_PLAN.md` Phase 1 section. Begin implementation from step 1. Refer to `docs/DATABASE.md` for schema, `docs/API.md` for endpoints, and `docs/SCORING_RULES.md` for cricket logic.
+Read this file first, then read `docs/IMPLEMENTATION_PLAN.md` Phase 1 section. Begin implementation from step 1. Refer to `docs/DATABASE.md` for schema, `docs/API.md` for endpoints, `docs/SCORING_RULES.md` for cricket logic, and `docs/blueprint.html` for visual architecture reference.

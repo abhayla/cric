@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CricApp — Architectural Blueprint</title>
+<style>
+/* === RESET & BASE === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier New', monospace; background: #f5f5f5; color: #1a1a1a; }
+
+/* === TITLE BAR === */
+#titlebar { position: fixed; top: 0; left: 0; right: 0; height: 40px; background: #1a1a1a; color: #fff; display: flex; align-items: center; padding: 0 16px; z-index: 1000; font-size: 14px; font-weight: bold; letter-spacing: 1px; }
+#titlebar .subtitle { color: #888; margin-left: 12px; font-weight: normal; font-size: 12px; }
+
+/* === SIDEBAR === */
+#sidebar { position: fixed; top: 40px; left: 0; width: 200px; bottom: 0; background: #222; color: #ccc; z-index: 999; overflow-y: auto; padding: 12px 0; }
+#sidebar h3 { color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; padding: 8px 16px 4px; }
+#sidebar a { display: block; padding: 8px 16px; color: #ccc; text-decoration: none; font-size: 12px; border-left: 3px solid transparent; transition: all 0.15s; }
+#sidebar a:hover { background: #333; color: #fff; border-left-color: #4CAF50; }
+#sidebar a.active { background: #333; color: #4CAF50; border-left-color: #4CAF50; }
+#sidebar .sep { height: 1px; background: #333; margin: 8px 16px; }
+
+/* === ZOOM CONTROLS === */
+#controls { position: fixed; bottom: 20px; left: 220px; z-index: 998; display: flex; gap: 4px; }
+#controls button { width: 36px; height: 36px; border: 1px solid #999; background: #fff; cursor: pointer; font-size: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+#controls button:hover { background: #eee; }
+#zoom-level { font-size: 11px; line-height: 36px; padding: 0 8px; color: #666; }
+
+/* === VIEWPORT === */
+#viewport { position: fixed; top: 40px; left: 200px; right: 0; bottom: 0; overflow: hidden; cursor: grab; background: #e8e8e8; background-image: radial-gradient(circle, #ccc 1px, transparent 1px); background-size: 30px 30px; }
+#viewport.dragging { cursor: grabbing; }
+
+/* === CANVAS CONTAINER === */
+#canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+
+/* === WIREFRAME SCREEN === */
+.screen { position: absolute; background: #fff; border: 2px solid #333; border-radius: 6px; padding: 0; overflow: hidden; box-shadow: 2px 2px 0 rgba(0,0,0,0.1); }
+.screen .screen-title { background: #333; color: #fff; padding: 6px 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+.screen .screen-body { padding: 12px; font-size: 11px; line-height: 1.6; }
+.screen.hero { border-width: 3px; border-color: #1a1a1a; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); }
+.screen.hero .screen-title { background: #0d47a1; font-size: 13px; }
+.screen.dialog { border-style: dashed; border-color: #666; background: #fafafa; }
+.screen.dialog .screen-title { background: #555; }
+.screen.panel { border-color: #0d47a1; background: #f0f4ff; }
+.screen.panel .screen-title { background: #0d47a1; }
+
+/* === PHONE FRAME === */
+.phone { position: absolute; width: 280px; height: 540px; background: #1a1a1a; border: 5px solid #1a1a1a; border-radius: 28px; box-shadow: 4px 4px 0 rgba(0,0,0,0.15), 0 0 0 1px #333; overflow: hidden; }
+.phone .phone-statusbar { height: 22px; background: #1a1a1a; color: #aaa; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; font-size: 9px; font-family: 'Courier New', monospace; flex-shrink: 0; }
+.phone .phone-screen { background: #fff; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.phone .screen-title { background: #333; color: #fff; padding: 5px 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
+.phone .screen-body { padding: 8px; font-size: 10px; line-height: 1.5; overflow: hidden; flex: 1; }
+.phone .phone-home { height: 16px; background: #1a1a1a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.phone .phone-home-bar { width: 80px; height: 4px; background: #555; border-radius: 2px; }
+.phone .phone-inner { display: flex; flex-direction: column; height: 100%; }
+.phone.large { width: 340px; height: 660px; }
+.phone.large .screen-title { font-size: 11px; padding: 6px 12px; }
+.phone.large .screen-body { padding: 10px; font-size: 10px; }
+.phone.large .phone-statusbar { font-size: 10px; }
+
+/* === WIREFRAME UI ELEMENTS === */
+.w-input { border: 1px solid #999; border-radius: 3px; padding: 4px 8px; margin: 3px 0; display: block; width: 100%; background: #f9f9f9; font-size: 10px; color: #666; }
+.w-btn { display: inline-block; border: 2px solid #333; border-radius: 4px; padding: 4px 12px; margin: 3px 2px; font-size: 10px; font-weight: bold; text-align: center; cursor: default; background: #fff; }
+.w-btn.primary { background: #333; color: #fff; }
+.w-btn.danger { background: #c62828; color: #fff; border-color: #c62828; }
+.w-btn.success { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+.w-btn.small { padding: 2px 8px; font-size: 9px; }
+.w-btn.run { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 6px; font-size: 16px; font-weight: bold; margin: 2px; }
+.w-divider { border-top: 1px solid #ddd; margin: 8px 0; }
+.w-label { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin: 6px 0 2px; }
+.w-card { border: 1px solid #ccc; border-radius: 4px; padding: 8px; margin: 4px 0; background: #fafafa; }
+.w-table { width: 100%; border-collapse: collapse; font-size: 10px; margin: 4px 0; }
+.w-table th, .w-table td { border: 1px solid #ccc; padding: 3px 6px; text-align: left; }
+.w-table th { background: #eee; font-weight: bold; }
+.w-tabs { display: flex; border-bottom: 2px solid #333; margin-bottom: 8px; }
+.w-tabs span { padding: 4px 12px; font-size: 10px; font-weight: bold; cursor: default; }
+.w-tabs span.active { border-bottom: 2px solid #333; margin-bottom: -2px; }
+.w-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 8px; font-weight: bold; }
+.w-badge.live { background: #c62828; color: #fff; }
+.w-badge.completed { background: #2e7d32; color: #fff; }
+.w-badge.freehit { background: #ff6f00; color: #fff; }
+.w-nav { display: flex; border-top: 2px solid #333; margin-top: 8px; }
+.w-nav span { flex: 1; text-align: center; padding: 6px; font-size: 10px; font-weight: bold; border-right: 1px solid #ddd; }
+.w-nav span:last-child { border-right: none; }
+.w-stat { display: inline-block; text-align: center; margin: 0 4px; }
+.w-stat .val { font-size: 16px; font-weight: bold; }
+.w-stat .lbl { font-size: 8px; color: #888; }
+.w-score { font-size: 24px; font-weight: bold; text-align: center; padding: 4px; }
+.w-score .sub { font-size: 11px; color: #666; font-weight: normal; }
+.w-over-ball { display: inline-flex; width: 24px; height: 24px; border-radius: 50%; border: 1px solid #333; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin: 1px; }
+.w-over-ball.dot { background: #eee; }
+.w-over-ball.wicket { background: #c62828; color: #fff; }
+.w-over-ball.four { background: #1565c0; color: #fff; }
+.w-over-ball.six { background: #6a1b9a; color: #fff; }
+.w-over-ball.wide { background: #fff; color: #333; border-style: dashed; }
+
+/* === ANNOTATION === */
+.annotation { position: absolute; font-size: 10px; color: #555; line-height: 1.5; max-width: 280px; padding: 8px 10px; border-left: 3px solid #999; background: rgba(255,255,255,0.85); }
+.annotation.green { border-left-color: #4CAF50; }
+.annotation.red { border-left-color: #c62828; }
+.annotation.blue { border-left-color: #1565c0; }
+.annotation.orange { border-left-color: #e65100; }
+.annotation strong { color: #333; }
+
+/* === ARROW (SVG) === */
+.arrow-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* === FLOWCHART / PIPELINE === */
+.pipeline { position: absolute; }
+.pipeline .pipe-step { display: flex; align-items: flex-start; margin-bottom: 2px; }
+.pipeline .pipe-num { width: 22px; height: 22px; border-radius: 50%; background: #333; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; flex-shrink: 0; }
+.pipeline .pipe-text { margin-left: 8px; font-size: 10px; line-height: 1.4; padding-top: 3px; }
+.pipeline .pipe-line { width: 2px; height: 8px; background: #333; margin-left: 10px; }
+.pipeline .pipe-text .detail { color: #888; font-size: 9px; }
+
+.flowchart { position: absolute; }
+.flow-box { border: 2px solid #333; border-radius: 4px; padding: 4px 10px; font-size: 10px; font-weight: bold; text-align: center; display: inline-block; background: #fff; margin: 2px; }
+.flow-box.active { background: #333; color: #fff; }
+.flow-box.danger { border-color: #c62828; color: #c62828; }
+.flow-box.success { border-color: #2e7d32; color: #2e7d32; }
+.flow-arrow { color: #333; font-size: 14px; display: inline-block; margin: 0 2px; }
+
+/* === MINIMAP === */
+#minimap { position: fixed; bottom: 20px; right: 20px; width: 200px; height: 130px; background: #fff; border: 2px solid #333; border-radius: 4px; z-index: 998; overflow: hidden; }
+#minimap-canvas { width: 100%; height: 100%; position: relative; }
+#minimap-viewport { position: absolute; border: 2px solid #c62828; background: rgba(198,40,40,0.1); pointer-events: none; }
+#minimap canvas { width: 100%; height: 100%; }
+
+/* === SECTION HEADERS on Canvas === */
+.section-header { position: absolute; font-size: 14px; font-weight: bold; color: #333; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #333; padding-bottom: 4px; }
+
+/* === ER Diagram === */
+.er-table { position: relative; display: inline-block; border: 2px solid #333; background: #fff; border-radius: 4px; font-size: 10px; }
+.er-table .er-title { background: #333; color: #fff; padding: 3px 8px; font-weight: bold; text-align: center; }
+.er-table .er-cols { padding: 4px 8px; }
+.er-table .er-cols div { padding: 1px 0; }
+.er-table .er-cols .pk { font-weight: bold; }
+.er-table .er-cols .fk { color: #1565c0; }
+
+/* === SWIM LANE === */
+.swim-lane { position: absolute; border: 1px solid #ccc; background: rgba(255,255,255,0.5); text-align: center; }
+.swim-lane .lane-title { background: #eee; padding: 4px; font-size: 10px; font-weight: bold; border-bottom: 1px solid #ccc; }
+.swim-step { position: absolute; border: 1px solid #333; background: #fff; padding: 4px 6px; font-size: 9px; text-align: center; border-radius: 3px; }
+.swim-step.numbered::before { content: attr(data-num); position: absolute; top: -8px; left: -8px; width: 16px; height: 16px; background: #333; color: #fff; border-radius: 50%; font-size: 8px; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div id="titlebar">
+  CricApp — Architectural Blueprint
+  <span class="subtitle">Interactive Pan/Zoom • Scroll to zoom • Drag to pan</span>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <h3>Screens</h3>
+  <a href="#" data-target="auth" class="active">Auth Flow</a>
+  <a href="#" data-target="home">Home Dashboard</a>
+  <a href="#" data-target="teams">Teams</a>
+  <a href="#" data-target="matchsetup">Match Setup</a>
+  <div class="sep"></div>
+  <h3>Core</h3>
+  <a href="#" data-target="scoring">Scoring Page</a>
+  <a href="#" data-target="dialogs">Scoring Dialogs</a>
+  <a href="#" data-target="scorecard">Scorecard</a>
+  <a href="#" data-target="analytics">Analytics</a>
+  <div class="sep"></div>
+  <h3>Players</h3>
+  <a href="#" data-target="players">Player Flow</a>
+  <div class="sep"></div>
+  <h3>Architecture</h3>
+  <a href="#" data-target="backend">Backend / API</a>
+  <a href="#" data-target="websocket">WebSocket</a>
+  <a href="#" data-target="database">Database ER</a>
+  <a href="#" data-target="sync">Offline Sync</a>
+  <div class="sep"></div>
+  <h3>Domain</h3>
+  <a href="#" data-target="pipeline">Delivery Pipeline</a>
+  <a href="#" data-target="statemachine">Match States</a>
+  <a href="#" data-target="glossary">Glossary</a>
+  <div class="sep"></div>
+  <a href="#" data-target="overview" style="color:#4CAF50;font-weight:bold;">⊞ Overview</a>
+</div>
+
+<!-- ZOOM CONTROLS -->
+<div id="controls">
+  <button id="zoom-in" title="Zoom In">+</button>
+  <button id="zoom-out" title="Zoom Out">−</button>
+  <button id="zoom-reset" title="Reset View">⊞</button>
+  <span id="zoom-level">100%</span>
+</div>
+
+<!-- MINIMAP -->
+<div id="minimap">
+  <canvas id="minimap-canvas"></canvas>
+  <div id="minimap-viewport"></div>
+</div>
+
+<!-- VIEWPORT -->
+<div id="viewport">
+<div id="canvas">
+
+<!-- ============================================================ -->
+<!-- SVG ARROW LAYER -->
+<!-- ============================================================ -->
+<svg class="arrow-layer" width="7000" height="5500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ah-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#4CAF50"/></marker>
+    <marker id="ah-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#c62828"/></marker>
+    <marker id="ah-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#1565c0"/></marker>
+    <marker id="ah-black" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#333"/></marker>
+    <marker id="ah-orange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#e65100"/></marker>
+  </defs>
+
+  <!-- Auth flow arrows (vertical: Splash→Login→OTP→Profile) -->
+  <line x1="220" y1="980" x2="220" y2="1020" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah-green)"/>
+  <line x1="220" y1="1560" x2="220" y2="1600" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah-green)"/>
+  <line x1="220" y1="2140" x2="220" y2="2180" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah-green)"/>
+
+  <!-- Auth → Home (Profile Setup → Home) -->
+  <line x1="220" y1="2720" x2="220" y2="2760" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="220" y1="2760" x2="500" y2="2760" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="500" y1="2760" x2="500" y2="1600" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah-green)"/>
+
+  <!-- Home → Teams -->
+  <line x1="640" y1="1600" x2="640" y2="2820" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah-green)"/>
+
+  <!-- Home → Match Setup -->
+  <line x1="500" y1="1500" x2="300" y2="1500" stroke="#4CAF50" stroke-width="2"/>
+  <line x1="300" y1="1500" x2="300" y2="2820" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah-green)"/>
+
+  <!-- Match Setup → Toss -->
+  <line x1="220" y1="3360" x2="220" y2="3400" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah-green)"/>
+
+  <!-- Toss → Scoring -->
+  <line x1="360" y1="3700" x2="2200" y2="3700" stroke="#4CAF50" stroke-width="2.5" marker-end="url(#ah-green)"/>
+  <text x="1200" y="3690" fill="#4CAF50" font-size="11" font-family="Courier New" font-weight="bold">Start Match →</text>
+
+  <!-- Scoring → Scorecard -->
+  <line x1="2540" y1="2800" x2="3800" y2="2800" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah-green)"/>
+  <text x="3100" y="2790" fill="#4CAF50" font-size="10" font-family="Courier New">View Scorecard</text>
+
+  <!-- Scorecard → Analytics -->
+  <line x1="3940" y1="3040" x2="3940" y2="3130" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah-green)"/>
+
+  <!-- Home → Players -->
+  <line x1="780" y1="1300" x2="5200" y2="1300" stroke="#4CAF50" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#ah-green)"/>
+  <text x="2900" y="1290" fill="#4CAF50" font-size="10" font-family="Courier New">Player Profile →</text>
+
+  <!-- Dialog arrows from Scoring Page -->
+  <line x1="2300" y1="2500" x2="1700" y2="2100" stroke="#e65100" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ah-orange)"/>
+  <text x="1900" y="2260" fill="#e65100" font-size="9" font-family="Courier New" transform="rotate(-25, 1900, 2260)">Extras tap</text>
+
+  <line x1="2370" y1="2500" x2="2370" y2="2100" stroke="#c62828" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ah-red)"/>
+  <text x="2380" y="2350" fill="#c62828" font-size="9" font-family="Courier New">WICKET</text>
+
+  <line x1="2450" y1="2500" x2="3050" y2="2100" stroke="#e65100" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ah-orange)"/>
+  <text x="2700" y="2300" fill="#e65100" font-size="9" font-family="Courier New" transform="rotate(20, 2700, 2300)">End of over</text>
+
+  <line x1="2300" y1="3200" x2="1800" y2="3600" stroke="#e65100" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ah-orange)"/>
+  <text x="1950" y="3480" fill="#e65100" font-size="9" font-family="Courier New">After wicket</text>
+
+  <line x1="2400" y1="3200" x2="2400" y2="3600" stroke="#1565c0" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ah-blue)"/>
+  <text x="2410" y="3500" fill="#1565c0" font-size="9" font-family="Courier New">Innings end</text>
+
+  <!-- Sync flow arrows (in backend band) -->
+  <line x1="4650" y1="650" x2="4650" y2="720" stroke="#1565c0" stroke-width="2" marker-end="url(#ah-blue)"/>
+  <line x1="4950" y1="650" x2="4950" y2="720" stroke="#1565c0" stroke-width="2" marker-end="url(#ah-blue)"/>
+  <line x1="5250" y1="650" x2="5250" y2="720" stroke="#1565c0" stroke-width="2" marker-end="url(#ah-blue)"/>
+  <line x1="5550" y1="650" x2="5550" y2="720" stroke="#1565c0" stroke-width="2" marker-end="url(#ah-blue)"/>
+  <line x1="5850" y1="650" x2="5850" y2="720" stroke="#1565c0" stroke-width="2" marker-end="url(#ah-blue)"/>
+  <line x1="6150" y1="650" x2="6150" y2="720" stroke="#1565c0" stroke-width="2" marker-end="url(#ah-blue)"/>
+
+</svg>
+
+<!-- ============================================================ -->
+<!-- SECTION: BACKEND ARCHITECTURE (top band) -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:100px; top:80px; width:6600px;">Backend Architecture</div>
+
+<!-- Panel A: API Layer -->
+<div class="screen panel" style="left:100px; top:120px; width:1500px;" id="sec-backend">
+  <div class="screen-title">A. API Layer — ElysiaJS on Bun</div>
+  <div class="screen-body">
+    <div style="display:flex; gap:20px; align-items:flex-start;">
+      <div style="flex:1;">
+        <div class="w-label">Request Flow</div>
+        <div style="font-size:12px; font-weight:bold; padding:8px 0;">
+          Client → <span style="color:#4CAF50;">Firebase Auth MW</span> → ElysiaJS Routes → Services → Drizzle ORM → PostgreSQL
+        </div>
+        <div class="w-divider"></div>
+        <div class="w-label">Route Groups</div>
+        <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
+          <span class="w-btn small">/auth</span>
+          <span class="w-btn small">/teams</span>
+          <span class="w-btn small">/matches</span>
+          <span class="w-btn small">/scoring</span>
+          <span class="w-btn small">/players</span>
+          <span class="w-btn small">/analytics</span>
+          <span class="w-btn small">/sync</span>
+          <span class="w-btn small">/health</span>
+        </div>
+      </div>
+      <div style="flex:1;">
+        <div class="w-label">Key Endpoints</div>
+        <table class="w-table">
+          <tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
+          <tr><td>POST</td><td>/auth/verify</td><td>Firebase token → user record</td></tr>
+          <tr><td>POST</td><td>/matches</td><td>Create match</td></tr>
+          <tr><td>POST</td><td>/matches/:id/deliveries</td><td>Record delivery (REST fallback)</td></tr>
+          <tr><td>GET</td><td>/matches/:id/scorecard</td><td>Full scorecard</td></tr>
+          <tr><td>GET</td><td>/players/:id/stats</td><td>Career stats</td></tr>
+          <tr><td>POST</td><td>/sync/push</td><td>Push offline changes</td></tr>
+        </table>
+        <div class="w-label" style="margin-top:6px;">Error Format</div>
+        <div style="background:#f5f5f5; padding:4px 8px; font-size:9px; border-radius:3px;">
+          { "error": { "code": "VALIDATION_ERROR", "message": "...", "details": {} } }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Panel B: WebSocket Protocol -->
+<div class="screen panel" style="left:1650px; top:120px; width:1500px;" id="sec-websocket">
+  <div class="screen-title">B. WebSocket Protocol — Bun Native</div>
+  <div class="screen-body">
+    <div style="display:flex; gap:20px;">
+      <div style="flex:1;">
+        <div class="w-label">Connection</div>
+        <div style="background:#f5f5f5; padding:4px 8px; font-size:10px; border-radius:3px; margin:4px 0;">
+          ws://host/ws?token=&lt;JWT&gt;
+        </div>
+        <div class="w-label">Room Model</div>
+        <div style="font-size:10px; margin:4px 0;">
+          Each match = one room: <b>match:&lt;id&gt;</b><br>
+          Scorer = <span style="color:#c62828;">publisher</span><br>
+          Viewers = <span style="color:#1565c0;">subscribers</span><br>
+          Bun: <code>server.publish(topic, msg)</code>
+        </div>
+        <div class="w-label">Client → Server</div>
+        <div style="display:flex; flex-wrap:wrap; gap:3px; margin:4px 0;">
+          <span class="w-btn small">join_match</span>
+          <span class="w-btn small">leave_match</span>
+          <span class="w-btn small primary">delivery</span>
+          <span class="w-btn small danger">undo_delivery</span>
+        </div>
+      </div>
+      <div style="flex:1;">
+        <div class="w-label">Server → Client</div>
+        <div style="display:flex; flex-wrap:wrap; gap:3px; margin:4px 0;">
+          <span class="w-btn small success">score_update</span>
+          <span class="w-btn small danger">wicket</span>
+          <span class="w-btn small">innings_complete</span>
+          <span class="w-btn small">match_complete</span>
+          <span class="w-btn small">error</span>
+        </div>
+        <div class="w-label">Broadcast Payload (score_update)</div>
+        <div style="background:#f5f5f5; padding:4px 8px; font-size:9px; border-radius:3px; line-height:1.5;">
+          totalRuns, totalWickets, overs<br>
+          currentRunRate, requiredRunRate<br>
+          lastDelivery { runs, isWide, isWicket }<br>
+          striker { name, runs, balls, SR }<br>
+          bowler { name, overs, runs, wickets }<br>
+          currentOver [ ball notations ]
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Panel C: Database ER -->
+<div class="screen panel" style="left:3200px; top:120px; width:1800px;" id="sec-database">
+  <div class="screen-title">C. Database ER — PostgreSQL (24 Tables, 5 Materialized Views)</div>
+  <div class="screen-body">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start;">
+      <div class="er-table"><div class="er-title">users</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div>firebase_uid</div><div>display_name</div><div>batting_style</div><div>bowling_style</div><div>player_role</div></div></div>
+      <div style="padding-top:30px; font-size:18px;">←→</div>
+      <div class="er-table"><div class="er-title">team_rosters</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div class="fk">team_id FK</div><div class="fk">player_id FK</div><div>jersey_number</div><div>role</div></div></div>
+      <div style="padding-top:30px; font-size:18px;">←→</div>
+      <div class="er-table"><div class="er-title">teams</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div>name</div><div>city</div><div class="fk">created_by FK</div></div></div>
+      <div style="padding-top:60px; font-size:18px; transform:rotate(90deg);">↓</div>
+      <div class="er-table"><div class="er-title">matches</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div class="fk">home_team_id FK</div><div class="fk">away_team_id FK</div><div>format, total_overs</div><div>status, scorer_id</div></div></div>
+      <div style="padding-top:30px; font-size:18px;">→</div>
+      <div class="er-table"><div class="er-title">innings</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div class="fk">match_id FK</div><div>innings_number</div><div>total_runs/wickets</div></div></div>
+      <div style="padding-top:30px; font-size:18px;">→</div>
+      <div class="er-table"><div class="er-title">overs</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div class="fk">innings_id FK</div><div class="fk">bowler_id FK</div><div>is_maiden</div></div></div>
+      <div style="padding-top:30px; font-size:18px;">→</div>
+      <div class="er-table" style="border-color:#c62828;"><div class="er-title" style="background:#c62828;">deliveries ★</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div class="fk">innings_id FK</div><div>over/ball/sequence</div><div class="fk">striker/non-striker FK</div><div class="fk">bowler_id FK</div><div>runs, extras, wicket</div><div>synced (boolean)</div></div></div>
+    </div>
+    <div class="w-divider"></div>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <div class="er-table"><div class="er-title">batting_stats</div><div class="er-cols"><div class="fk">innings_id, player_id</div><div>runs, balls, 4s, 6s, SR</div></div></div>
+      <div class="er-table"><div class="er-title">bowling_stats</div><div class="er-cols"><div class="fk">innings_id, player_id</div><div>O, M, R, W, Econ</div></div></div>
+      <div class="er-table"><div class="er-title">fielding_stats</div><div class="er-cols"><div class="fk">innings_id, player_id</div><div>catches, run_outs, stumpings</div></div></div>
+      <div style="padding-top:10px; font-size:18px;">→</div>
+      <div class="er-table" style="border-color:#4CAF50;"><div class="er-title" style="background:#4CAF50;">player_career_stats</div><div class="er-cols"><div class="fk">player_id, format</div><div>Aggregated batting/bowling/fielding</div><div><i>(materialized view)</i></div></div></div>
+    </div>
+    <div style="margin-top:8px; font-size:9px; color:#888;">★ deliveries = atomic unit • UUIDs everywhere • synced flag for offline</div>
+  </div>
+</div>
+
+<!-- Panel D: Offline Sync -->
+<div class="screen panel" style="left:5050px; top:120px; width:1650px;" id="sec-sync">
+  <div class="screen-title">D. Offline Sync Flow — Swim Lane</div>
+  <div class="screen-body">
+    <div style="display:flex; gap:2px;">
+      <div style="flex:1; border:1px solid #ddd; text-align:center;">
+        <div style="background:#eee; padding:3px; font-size:9px; font-weight:bold; border-bottom:1px solid #ddd;">Scorer UI</div>
+        <div style="padding:8px; font-size:9px;">
+          <div class="w-btn small">① Tap run</div>
+        </div>
+      </div>
+      <div style="flex:1; border:1px solid #ddd; text-align:center;">
+        <div style="background:#eee; padding:3px; font-size:9px; font-weight:bold; border-bottom:1px solid #ddd;">ScoringNotifier</div>
+        <div style="padding:8px; font-size:9px;">
+          <div class="w-btn small">② recordDelivery()</div>
+        </div>
+      </div>
+      <div style="flex:1; border:1px solid #ddd; text-align:center;">
+        <div style="background:#eee; padding:3px; font-size:9px; font-weight:bold; border-bottom:1px solid #ddd;">Drift/SQLite</div>
+        <div style="padding:8px; font-size:9px;">
+          <div class="w-btn small">③ INSERT synced=false</div>
+          <div style="margin-top:4px;">Update 4 stat tables</div>
+        </div>
+      </div>
+      <div style="flex:1; border:1px solid #ddd; text-align:center;">
+        <div style="background:#eee; padding:3px; font-size:9px; font-weight:bold; border-bottom:1px solid #ddd;">WebSocket</div>
+        <div style="padding:8px; font-size:9px;">
+          <div class="w-btn small">④ Send (fire&forget)</div>
+          <div style="margin-top:4px; color:#c62828;">OR queue if offline</div>
+        </div>
+      </div>
+      <div style="flex:1; border:1px solid #ddd; text-align:center;">
+        <div style="background:#eee; padding:3px; font-size:9px; font-weight:bold; border-bottom:1px solid #ddd;">Bun Server</div>
+        <div style="padding:8px; font-size:9px;">
+          <div class="w-btn small">⑥ Validate + persist PG</div>
+          <div class="w-btn small" style="margin-top:2px;">⑦ server.publish()</div>
+        </div>
+      </div>
+      <div style="flex:1; border:1px solid #ddd; text-align:center;">
+        <div style="background:#eee; padding:3px; font-size:9px; font-weight:bold; border-bottom:1px solid #ddd;">Viewer UI</div>
+        <div style="padding:8px; font-size:9px;">
+          <div class="w-btn small">⑧ Receive + rebuild</div>
+        </div>
+      </div>
+    </div>
+    <div class="w-divider"></div>
+    <div style="font-size:10px;">
+      <strong>⑤ UI rebuilds immediately</strong> (local-first, no server wait)<br>
+      <span style="color:#c62828; font-weight:bold;">Offline path:</span> sync_queue → reconnect → POST /sync/push → batch persist → mark synced=true
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: AUTH FLOW (far left) -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:80px; top:400px;">Auth Flow</div>
+
+<!-- Splash Screen -->
+<div class="phone" style="left:80px; top:440px;" id="sec-auth">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Splash Screen</div>
+      <div class="screen-body" style="text-align:center; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <div style="font-size:28px; font-weight:bold;">🏏</div>
+        <div style="font-size:14px; font-weight:bold; margin:8px 0;">CricApp</div>
+        <div style="color:#888; font-size:10px;">Loading...</div>
+        <div style="margin-top:12px; width:60px; height:3px; background:#ddd; border-radius:2px; display:inline-block;">
+          <div style="width:40%; height:100%; background:#333; border-radius:2px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+<div class="annotation green" style="left:380px; top:500px;">
+  Check auth state on launch.<br>
+  <strong>if (loggedIn && profileComplete)</strong> → Home<br>
+  <strong>if (loggedIn && !profileComplete)</strong> → Profile Setup<br>
+  <strong>else</strong> → Login
+</div>
+
+<!-- Login Screen -->
+<div class="phone" style="left:80px; top:1020px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Login</div>
+      <div class="screen-body">
+        <div class="w-label">Phone Number</div>
+        <div class="w-input">+91 98765 43210</div>
+        <div class="w-btn primary" style="width:100%; text-align:center; margin-top:6px;">Send OTP</div>
+        <div class="w-divider"></div>
+        <div style="text-align:center; font-size:9px; color:#888;">— or sign in with —</div>
+        <div style="display:flex; gap:4px; margin-top:6px;">
+          <div class="w-btn" style="flex:1; text-align:center;">Google</div>
+          <div class="w-btn" style="flex:1; text-align:center;">Email</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+<div class="annotation blue" style="left:380px; top:1100px;">
+  Firebase Auth providers:<br>
+  • Phone OTP (primary)<br>
+  • Google Sign-In<br>
+  • Email/Password
+</div>
+
+<!-- OTP Screen -->
+<div class="phone" style="left:80px; top:1600px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">OTP Verification</div>
+      <div class="screen-body" style="text-align:center;">
+        <div style="font-size:10px; color:#888; margin-bottom:8px;">Enter 6-digit code sent to +91 98765</div>
+        <div style="display:flex; gap:4px; justify-content:center;">
+          <div class="w-input" style="width:30px; text-align:center; font-size:16px; font-weight:bold;">3</div>
+          <div class="w-input" style="width:30px; text-align:center; font-size:16px; font-weight:bold;">7</div>
+          <div class="w-input" style="width:30px; text-align:center; font-size:16px; font-weight:bold;">8</div>
+          <div class="w-input" style="width:30px; text-align:center; font-size:16px; font-weight:bold;">2</div>
+          <div class="w-input" style="width:30px; text-align:center; font-size:16px;">_</div>
+          <div class="w-input" style="width:30px; text-align:center; font-size:16px;">_</div>
+        </div>
+        <div class="w-btn primary" style="width:100%; text-align:center; margin-top:10px;">Verify</div>
+        <div style="font-size:9px; color:#888; margin-top:8px;">Resend in 0:28</div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Profile Setup -->
+<div class="phone" style="left:80px; top:2180px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Profile Setup</div>
+      <div class="screen-body">
+        <div class="w-label">Display Name</div>
+        <div class="w-input">Rohit Sharma</div>
+        <div class="w-label">Batting Style</div>
+        <div class="w-input">▼ Right Hand</div>
+        <div class="w-label">Bowling Style</div>
+        <div class="w-input">▼ Right Arm Medium</div>
+        <div class="w-label">Player Role</div>
+        <div class="w-input">▼ Batter</div>
+        <div class="w-label">City (optional)</div>
+        <div class="w-input">Mumbai</div>
+        <div class="w-btn primary" style="width:100%; text-align:center; margin-top:8px;">Complete Profile</div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+<div class="annotation" style="left:380px; top:2250px;">
+  <strong>isNewUser</strong> flag from Firebase verify.<br>
+  New users must complete profile before<br>
+  accessing app features. Saves to<br>
+  <code>PUT /auth/profile</code>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: HOME DASHBOARD -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:500px; top:1020px;">Home Dashboard</div>
+
+<div class="phone" style="left:500px; top:1060px;" id="sec-home">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Home — Dashboard</div>
+      <div class="screen-body">
+        <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">Welcome, Rohit!</div>
+        <div class="w-label">Quick Actions</div>
+        <div style="display:flex; gap:4px; margin:4px 0;">
+          <div class="w-btn primary" style="flex:1; text-align:center; font-size:9px; padding:3px 4px;">+ Match</div>
+          <div class="w-btn" style="flex:1; text-align:center; font-size:9px; padding:3px 4px;">Teams</div>
+          <div class="w-btn" style="flex:1; text-align:center; font-size:9px; padding:3px 4px;">Stats</div>
+        </div>
+        <div class="w-divider"></div>
+        <div class="w-label">Recent Matches</div>
+        <div class="w-card" style="padding:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:bold; font-size:9px;">Mumbai W. vs Delhi D.</div>
+              <div style="font-size:8px; color:#888;">156/7 vs 142/9</div>
+            </div>
+            <span class="w-badge completed">DONE</span>
+          </div>
+        </div>
+        <div class="w-card" style="padding:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:bold; font-size:9px;">CSK XI vs RCB XI</div>
+              <div style="font-size:8px; color:#888;">87/3 (12.3)</div>
+            </div>
+            <span class="w-badge live">● LIVE</span>
+          </div>
+        </div>
+        <div class="w-card" style="padding:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:bold; font-size:9px;">Weekend XI vs Friends</div>
+              <div style="font-size:8px; color:#888;">Mar 20 • Wankhede</div>
+            </div>
+            <span class="w-badge" style="background:#eee; color:#333; font-size:7px;">SOON</span>
+          </div>
+        </div>
+      </div>
+      <div class="w-nav" style="margin-top:0;">
+        <span style="font-weight:bold; color:#333;">● Home</span>
+        <span>Teams</span>
+        <span>Profile</span>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+<div class="annotation green" style="left:800px; top:1120px;">
+  Entry point after auth.<br>
+  Tap LIVE match → <strong>Scoring Page</strong> (if scorer)<br>
+  or <strong>Scorecard</strong> (if viewer).<br>
+  Tap COMPLETED → Scorecard + Analytics.
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: TEAMS FLOW -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:500px; top:2780px;">Teams Flow</div>
+
+<div class="phone" style="left:500px; top:2820px;" id="sec-teams">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Teams List</div>
+      <div class="screen-body">
+        <div class="w-btn primary" style="width:100%; text-align:center; margin-bottom:6px;">+ Create Team</div>
+        <div class="w-card" style="padding:6px;">
+          <div style="font-weight:bold; font-size:10px;">Mumbai Warriors</div>
+          <div style="font-size:8px; color:#888;">15 players • Mumbai</div>
+        </div>
+        <div class="w-card" style="padding:6px;">
+          <div style="font-weight:bold; font-size:10px;">Weekend XI</div>
+          <div style="font-size:8px; color:#888;">11 players • Pune</div>
+        </div>
+      </div>
+      <div class="w-nav" style="margin-top:0;">
+        <span>Home</span>
+        <span style="font-weight:bold; color:#333;">● Teams</span>
+        <span>Profile</span>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<div class="phone" style="left:820px; top:2820px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Create Team</div>
+      <div class="screen-body">
+        <div class="w-label">Team Name</div>
+        <div class="w-input">Mumbai Warriors</div>
+        <div class="w-label">City</div>
+        <div class="w-input">Mumbai</div>
+        <div class="w-label">Logo</div>
+        <div class="w-btn small" style="width:100%; text-align:center;">Upload Logo</div>
+        <div class="w-btn primary" style="width:100%; text-align:center; margin-top:8px;">Create</div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<div class="phone" style="left:1140px; top:2820px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Team Detail</div>
+      <div class="screen-body">
+        <div style="font-size:12px; font-weight:bold;">Mumbai Warriors</div>
+        <div style="font-size:8px; color:#888;">Mumbai • 15 players</div>
+        <div class="w-divider"></div>
+        <div class="w-label">Roster</div>
+        <table class="w-table">
+          <tr><th>#</th><th>Name</th><th>Role</th></tr>
+          <tr><td>45</td><td>R. Sharma</td><td>Capt</td></tr>
+          <tr><td>18</td><td>V. Kohli</td><td>Player</td></tr>
+          <tr><td>7</td><td>M. Dhoni</td><td>WK</td></tr>
+        </table>
+        <div class="w-btn small" style="width:100%; text-align:center;">Manage Roster →</div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<div class="phone" style="left:1460px; top:2820px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Manage Roster</div>
+      <div class="screen-body">
+        <div class="w-input" style="margin-bottom:6px;">Search players...</div>
+        <div class="w-card" style="display:flex; justify-content:space-between; align-items:center; padding:6px;">
+          <div><b style="font-size:10px;">S. Iyer</b><div style="font-size:8px; color:#888;">Batter • RH</div></div>
+          <span class="w-btn small success">+ Add</span>
+        </div>
+        <div class="w-card" style="display:flex; justify-content:space-between; align-items:center; padding:6px;">
+          <div><b style="font-size:10px;">J. Bumrah</b><div style="font-size:8px; color:#888;">Bowler • RAF</div></div>
+          <span class="w-btn small danger">Remove</span>
+        </div>
+        <div class="w-divider"></div>
+        <div style="font-size:8px; color:#888;">Owner/Captain can manage roster</div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: MATCH SETUP (bottom-left) -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:80px; top:2780px;">Match Setup</div>
+
+<div class="phone" style="left:80px; top:2820px;" id="sec-matchsetup">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Match Setup</div>
+      <div class="screen-body">
+        <div class="w-label">Home Team</div>
+        <div class="w-input">▼ Mumbai Warriors</div>
+        <div class="w-label">Away Team</div>
+        <div class="w-input">▼ Delhi Dragons</div>
+        <div class="w-label">Format</div>
+        <div style="display:flex; gap:3px;">
+          <div class="w-btn small primary">T20</div>
+          <div class="w-btn small">ODI</div>
+          <div class="w-btn small">Custom</div>
+        </div>
+        <div class="w-label">Overs</div>
+        <div class="w-input">20</div>
+        <div class="w-label">Ball Type</div>
+        <div class="w-input">▼ Tennis Ball</div>
+        <div class="w-label">Venue</div>
+        <div class="w-input">Wankhede Stadium</div>
+        <div class="w-btn primary" style="width:100%; text-align:center; margin-top:6px;">Proceed to Toss →</div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Toss Screen -->
+<div class="phone" style="left:80px; top:3400px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Toss</div>
+      <div class="screen-body">
+        <div class="w-label">Toss Winner</div>
+        <div style="display:flex; gap:3px;">
+          <div class="w-btn small primary">Mumbai W.</div>
+          <div class="w-btn small">Delhi D.</div>
+        </div>
+        <div class="w-label">Decision</div>
+        <div style="display:flex; gap:3px;">
+          <div class="w-btn small primary">Bat First</div>
+          <div class="w-btn small">Bowl First</div>
+        </div>
+        <div class="w-divider"></div>
+        <div class="w-label">Opening Batsmen</div>
+        <div class="w-input">▼ R. Sharma (Striker)</div>
+        <div class="w-input">▼ S. Dhawan (Non-striker)</div>
+        <div class="w-label">Opening Bowler</div>
+        <div class="w-input">▼ J. Bumrah</div>
+        <div class="w-btn success" style="width:100%; text-align:center; margin-top:6px;">Start Match →</div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+<div class="annotation" style="left:380px; top:3450px;">
+  Status transitions:<br>
+  <strong>SETUP → TOSS → LIVE</strong><br>
+  Creates innings record.<br>
+  Sets batting/bowling teams.
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: SCORING PAGE — THE CENTER (2-3x size) -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:2200px; top:2460px; width:400px; font-size:18px; border-bottom-width:3px;">★ Scoring Page — Center</div>
+
+<div class="phone large" style="left:2200px; top:2510px;" id="sec-scoring">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>● LIVE &nbsp; LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title" style="background:#0d47a1;">SCORING PAGE</div>
+      <div class="screen-body" style="padding:8px;">
+
+        <!-- Score Header -->
+        <div style="background:#1a1a1a; color:#fff; padding:8px; border-radius:4px; margin-bottom:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:8px; color:#888;">Mumbai Warriors • 1st Inn</div>
+              <div style="font-size:18px; font-weight:bold;">87/3 <span style="font-size:10px; color:#888;">(12.3 ov)</span></div>
+            </div>
+            <div style="text-align:right; font-size:9px;">
+              <div>CRR: <b>6.96</b></div>
+              <div>Trg: <b>157</b></div>
+              <div>RRR: <b>9.33</b></div>
+            </div>
+          </div>
+          <div style="margin-top:2px;">
+            <span class="w-badge freehit" style="font-size:8px;">FREE HIT</span>
+          </div>
+        </div>
+
+        <!-- Batting Cards (stacked) -->
+        <div class="w-card" style="border-left:3px solid #4CAF50; padding:4px 6px; margin-bottom:4px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div style="font-weight:bold; font-size:10px;">R. Sharma *</div>
+            <div style="font-size:8px; color:#888;">STRIKER</div>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:2px;">
+            <div class="w-stat"><div class="val" style="font-size:13px;">45</div><div class="lbl">R</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">32</div><div class="lbl">B</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">5</div><div class="lbl">4s</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">2</div><div class="lbl">6s</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">140.6</div><div class="lbl">SR</div></div>
+          </div>
+        </div>
+        <div class="w-card" style="padding:4px 6px; margin-bottom:4px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div style="font-weight:bold; font-size:10px;">V. Kohli</div>
+            <div style="font-size:8px; color:#888;">NON-STRIKER</div>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:2px;">
+            <div class="w-stat"><div class="val" style="font-size:13px;">22</div><div class="lbl">R</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">18</div><div class="lbl">B</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">3</div><div class="lbl">4s</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">0</div><div class="lbl">6s</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">122.2</div><div class="lbl">SR</div></div>
+          </div>
+        </div>
+
+        <!-- Bowler Card -->
+        <div class="w-card" style="border-left:3px solid #c62828; padding:4px 6px; margin-bottom:4px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div style="font-weight:bold; font-size:10px;">J. Bumrah</div>
+            <div style="font-size:8px; color:#888;">BOWLER</div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:2px;">
+            <div class="w-stat"><div class="val" style="font-size:13px;">3.3</div><div class="lbl">Ov</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">0</div><div class="lbl">M</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">22</div><div class="lbl">R</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">1</div><div class="lbl">W</div></div>
+            <div class="w-stat"><div class="val" style="font-size:13px;">6.29</div><div class="lbl">Ec</div></div>
+          </div>
+        </div>
+
+        <!-- Current Over -->
+        <div class="w-label">Over 13</div>
+        <div style="display:flex; gap:3px; margin:3px 0 6px;">
+          <div class="w-over-ball dot" style="width:20px; height:20px; font-size:9px;">.</div>
+          <div class="w-over-ball" style="width:20px; height:20px; font-size:9px;">1</div>
+          <div class="w-over-ball four" style="width:20px; height:20px; font-size:9px;">4</div>
+          <div class="w-over-ball wicket" style="width:20px; height:20px; font-size:9px;">W</div>
+          <div class="w-over-ball dot" style="width:20px; height:20px; font-size:9px;">.</div>
+          <div class="w-over-ball wide" style="width:20px; height:20px; font-size:9px;">Wd</div>
+          <div class="w-over-ball" style="width:20px; height:20px; font-size:9px; border:1px dashed #ccc; color:#ccc;">?</div>
+        </div>
+
+        <!-- Run Buttons -->
+        <div class="w-label">Runs</div>
+        <div style="display:flex; gap:3px; margin:3px 0 6px; flex-wrap:wrap;">
+          <div class="w-btn run" style="width:32px; height:32px; font-size:14px;">0</div>
+          <div class="w-btn run primary" style="width:32px; height:32px; font-size:14px;">1</div>
+          <div class="w-btn run" style="width:32px; height:32px; font-size:14px;">2</div>
+          <div class="w-btn run" style="width:32px; height:32px; font-size:14px;">3</div>
+          <div class="w-btn run" style="width:32px; height:32px; font-size:14px; background:#1565c0; color:#fff; border-color:#1565c0;">4</div>
+          <div class="w-btn run" style="width:32px; height:32px; font-size:14px; background:#6a1b9a; color:#fff; border-color:#6a1b9a;">6</div>
+        </div>
+
+        <!-- Extras & Wicket -->
+        <div style="display:flex; gap:6px; margin-bottom:6px;">
+          <div style="flex:1;">
+            <div class="w-label">Extras</div>
+            <div style="display:flex; gap:2px; flex-wrap:wrap;">
+              <div class="w-btn small" style="font-size:8px; padding:2px 5px;">Wide</div>
+              <div class="w-btn small" style="font-size:8px; padding:2px 5px;">NB</div>
+              <div class="w-btn small" style="font-size:8px; padding:2px 5px;">Bye</div>
+              <div class="w-btn small" style="font-size:8px; padding:2px 5px;">LB</div>
+            </div>
+          </div>
+          <div>
+            <div class="w-label">Wicket</div>
+            <div class="w-btn danger" style="font-size:12px; padding:6px 14px;">W</div>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="w-divider" style="margin:4px 0;"></div>
+        <div style="display:flex; gap:4px; justify-content:space-between;">
+          <div class="w-btn small" style="font-size:8px;">Undo</div>
+          <div class="w-btn small" style="font-size:8px;">Card</div>
+          <div class="w-btn small" style="font-size:8px;">Set</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SCORING PAGE ORBITING: Match State Machine -->
+<!-- ============================================================ -->
+<div class="screen" style="left:2600px; top:2510px; width:440px;" id="sec-statemachine">
+  <div class="screen-title">Match State Machine</div>
+  <div class="screen-body" style="text-align:center;">
+    <div style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:2px;">
+      <div class="flow-box">SETUP</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">TOSS</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box active">INNINGS_1</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">INN_BREAK</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box active">INNINGS_2</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box success">COMPLETED</div>
+    </div>
+    <div style="margin-top:6px; display:flex; gap:20px; justify-content:center;">
+      <div>
+        <div class="flow-arrow">↗</div>
+        <div class="flow-box" style="font-size:9px;">SUPER_OVER<div style="font-size:8px; color:#888;">(if tied)</div></div>
+      </div>
+      <div>
+        <div class="flow-box danger">ABANDONED<div style="font-size:8px;">(any point)</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SCORING PAGE ORBITING: 10-Step Delivery Pipeline -->
+<!-- ============================================================ -->
+<div class="screen" style="left:2600px; top:2740px; width:440px;" id="sec-pipeline">
+  <div class="screen-title">10-Step Delivery Processing Pipeline</div>
+  <div class="screen-body">
+    <div class="pipeline">
+      <div class="pipe-step"><div class="pipe-num">1</div><div class="pipe-text"><b>VALIDATE</b> <span class="detail">— batter pair, bowler, match state</span></div></div>
+      <div class="pipe-line"></div>
+      <div class="pipe-step"><div class="pipe-num">2</div><div class="pipe-text"><b>CALCULATE</b> runs <span class="detail">— bat + extras = total</span></div></div>
+      <div class="pipe-line"></div>
+      <div class="pipe-step"><div class="pipe-num">3</div><div class="pipe-text"><b>HANDLE</b> extras <span class="detail">— wide/NB/bye/LB rules</span></div></div>
+      <div class="pipe-line"></div>
+      <div class="pipe-step"><div class="pipe-num" style="background:#c62828;">4</div><div class="pipe-text"><b>HANDLE</b> wicket <span class="detail">— dismissal, fielder, bowler credit</span></div></div>
+      <div class="pipe-line"></div>
+      <div class="pipe-step"><div class="pipe-num">5</div><div class="pipe-text"><b>CALCULATE</b> strike <span class="detail">— rotation logic (odd/even)</span></div></div>
+      <div class="pipe-line"></div>
+      <div class="pipe-step"><div class="pipe-num">6</div><div class="pipe-text"><b>CHECK</b> over <span class="detail">— 6 legal = complete, maiden detect</span></div></div>
+      <div class="pipe-line"></div>
+      <div class="pipe-step"><div class="pipe-num">7</div><div class="pipe-text"><b>CHECK</b> innings <span class="detail">— all out / overs done / target chased</span></div></div>
+      <div class="pipe-line"></div>
+      <div class="pipe-step"><div class="pipe-num" style="background:#1565c0;">8</div><div class="pipe-text"><b>PERSIST</b> <span class="detail">— Drift INSERT, update 5 tables</span></div></div>
+      <div class="pipe-line"></div>
+      <div class="pipe-step"><div class="pipe-num" style="background:#4CAF50;">9</div><div class="pipe-text"><b>SEND</b> <span class="detail">— WebSocket fire-and-forget</span></div></div>
+      <div class="pipe-line"></div>
+      <div class="pipe-step"><div class="pipe-num" style="background:#4CAF50;">10</div><div class="pipe-text"><b>UPDATE UI</b> <span class="detail">— Riverpod state rebuild</span></div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SCORING PAGE ORBITING: Strike Rotation -->
+<!-- ============================================================ -->
+<div class="screen" style="left:3100px; top:3210px; width:340px;">
+  <div class="screen-title">Strike Rotation Decision Tree</div>
+  <div class="screen-body">
+    <div style="text-align:center; font-size:10px; line-height:2;">
+      <div class="flow-box">Delivery bowled</div><br>
+      <div class="flow-arrow">↓</div><br>
+      <div style="display:flex; gap:20px; justify-content:center;">
+        <div>
+          <div class="flow-box">Odd runs?</div>
+          <div class="flow-arrow">↓ Yes</div>
+          <div class="flow-box active">SWAP</div>
+        </div>
+        <div>
+          <div class="flow-box">Even runs?</div>
+          <div class="flow-arrow">↓ Yes</div>
+          <div class="flow-box">NO SWAP</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <div class="flow-box">End of over?</div>
+        <div class="flow-arrow">↓ Yes</div>
+        <div class="flow-box active">SWAP again</div>
+      </div>
+      <div style="margin-top:4px; font-size:9px; color:#888;">
+        Odd + End of over = cancel out (no net swap)
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SCORING PAGE ORBITING: Extras Comparison Table -->
+<!-- ============================================================ -->
+<div class="screen" style="left:2200px; top:3310px; width:520px;">
+  <div class="screen-title">Extras Comparison Table</div>
+  <div class="screen-body">
+    <table class="w-table">
+      <tr><th>Extra</th><th>Legal Delivery?</th><th>Batter Credit?</th><th>Against Bowler?</th><th>Breaks Maiden?</th></tr>
+      <tr><td><b>Wide</b></td><td style="color:#c62828;">No</td><td style="color:#c62828;">No</td><td style="color:#4CAF50;">Yes</td><td style="color:#4CAF50;">Yes</td></tr>
+      <tr><td><b>No-Ball</b></td><td style="color:#c62828;">No</td><td>Bat runs: Yes</td><td style="color:#4CAF50;">Yes</td><td style="color:#4CAF50;">Yes</td></tr>
+      <tr><td><b>Bye</b></td><td style="color:#4CAF50;">Yes</td><td style="color:#c62828;">No</td><td style="color:#c62828;">No</td><td style="color:#c62828;">No</td></tr>
+      <tr><td><b>Leg Bye</b></td><td style="color:#4CAF50;">Yes</td><td style="color:#c62828;">No</td><td style="color:#c62828;">No</td><td style="color:#c62828;">No</td></tr>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SCORING PAGE ORBITING: Undo Mechanism -->
+<!-- ============================================================ -->
+<div class="screen" style="left:2780px; top:3310px; width:380px;">
+  <div class="screen-title">Undo Mechanism — 8 State Reversals</div>
+  <div class="screen-body" style="font-size:10px; line-height:1.6;">
+    <ol style="padding-left:16px;">
+      <li>Remove delivery record from local DB</li>
+      <li>Reverse batting stats (runs, balls, 4s, 6s)</li>
+      <li>Reverse bowling stats (runs, balls, wickets)</li>
+      <li>Reverse innings totals + extras</li>
+      <li>Reverse strike change (swap back)</li>
+      <li>Reverse wicket (restore batter, remove FoW)</li>
+      <li>Handle edge cases (first ball, over boundary)</li>
+      <li>Send undo via WebSocket to all viewers</li>
+    </ol>
+    <div class="w-divider"></div>
+    <div style="font-size:9px; color:#c62828; font-weight:bold;">
+      CONSTRAINTS: Only last delivery • Only scorer • Not after match completion
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SCORING PAGE ORBITING: ScoringState shape -->
+<!-- ============================================================ -->
+<div class="screen" style="left:3100px; top:2510px; width:340px;">
+  <div class="screen-title">ScoringState (Riverpod)</div>
+  <div class="screen-body" style="font-size:10px; font-family:monospace;">
+    <div class="w-label">Match Context</div>
+    <div style="color:#1565c0;">matchId, inningsId, format, totalOvers</div>
+    <div class="w-label">Score</div>
+    <div>totalRuns, totalWickets, currentOvers</div>
+    <div>currentRunRate, requiredRunRate, target</div>
+    <div class="w-label">Players</div>
+    <div style="color:#4CAF50;">striker, nonStriker, currentBowler</div>
+    <div class="w-label">Current Over</div>
+    <div>overNumber, legalBalls, deliveries[]</div>
+    <div class="w-label">State Flags</div>
+    <div style="color:#c62828;">isFreeHit, isInningsComplete, isMatchComplete</div>
+    <div class="w-label">Last Delivery</div>
+    <div>lastDeliveryId (for undo)</div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: SCORING DIALOGS -->
+<!-- ============================================================ -->
+
+<!-- Extras Panel -->
+<div class="screen dialog" style="left:1500px; top:1900px; width:280px;" id="sec-dialogs">
+  <div class="screen-title">Extras Panel <span style="font-size:8px; font-weight:normal; opacity:0.7;">— Bottom Sheet</span></div>
+  <div class="screen-body">
+    <div class="w-label">Wide — Additional Runs</div>
+    <div style="display:flex; gap:3px; margin:4px 0;">
+      <div class="w-btn small primary">+0</div>
+      <div class="w-btn small">+1</div>
+      <div class="w-btn small">+2</div>
+      <div class="w-btn small">+3</div>
+      <div class="w-btn small">+4</div>
+    </div>
+    <div class="w-label">No Ball — Runs from Bat</div>
+    <div style="display:flex; gap:3px; margin:4px 0;">
+      <div class="w-btn small">0</div>
+      <div class="w-btn small">1</div>
+      <div class="w-btn small">2</div>
+      <div class="w-btn small">3</div>
+      <div class="w-btn small">4</div>
+      <div class="w-btn small">6</div>
+    </div>
+    <div class="w-label">Byes / Leg Byes — Runs</div>
+    <div style="display:flex; gap:3px; margin:4px 0;">
+      <div class="w-btn small">1</div>
+      <div class="w-btn small">2</div>
+      <div class="w-btn small">3</div>
+      <div class="w-btn small">4</div>
+    </div>
+    <div class="w-btn primary" style="width:100%; text-align:center; margin-top:6px;">Confirm</div>
+  </div>
+</div>
+<div class="annotation orange" style="left:1500px; top:2210px; width:250px;">
+  Strike rotation on extras follows same<br>odd/even rule for additional runs.<br>
+  <strong>Wide with 0 extra</strong> → no swap.<br>
+  <strong>Wide with 1 extra</strong> → swap.
+</div>
+
+<!-- Wicket Dialog -->
+<div class="screen dialog" style="left:2200px; top:1800px; width:320px;">
+  <div class="screen-title" style="background:#c62828;">Wicket Dialog <span style="font-size:8px; font-weight:normal; opacity:0.7;">— Modal</span></div>
+  <div class="screen-body">
+    <div class="w-label">Step 1: Dismissal Type</div>
+    <div style="display:flex; flex-wrap:wrap; gap:3px; margin:4px 0;">
+      <div class="w-btn small primary">Bowled</div>
+      <div class="w-btn small">Caught</div>
+      <div class="w-btn small">LBW</div>
+      <div class="w-btn small">Run Out</div>
+      <div class="w-btn small">Stumped</div>
+      <div class="w-btn small">Hit Wicket</div>
+      <div class="w-btn small">C&B</div>
+      <div class="w-btn small">Retired</div>
+    </div>
+    <div class="w-label">Step 2: Fielder (if required)</div>
+    <div class="w-input">▼ Select fielder from bowling team</div>
+    <div class="w-label">Step 3: Runs before dismissal (run out)</div>
+    <div style="display:flex; gap:3px;">
+      <div class="w-btn small">0</div><div class="w-btn small">1</div><div class="w-btn small">2</div><div class="w-btn small">3</div>
+    </div>
+    <div class="w-label">Step 4: Which batter dismissed?</div>
+    <div style="display:flex; gap:4px;">
+      <div class="w-btn small primary">Striker</div>
+      <div class="w-btn small">Non-Striker</div>
+    </div>
+    <div class="w-label">Step 5: Confirm</div>
+    <div class="w-btn danger" style="width:100%; text-align:center;">Confirm Wicket</div>
+  </div>
+</div>
+<div class="annotation red" style="left:2540px; top:1820px; width:240px;">
+  <strong>Run out:</strong> must specify WHICH batter<br>
+  dismissed & runs completed before.<br>
+  <strong>On a wide:</strong> only stumped or run out.<br>
+  <strong>On free hit:</strong> only run out possible.
+</div>
+
+<!-- Select Next Bowler -->
+<div class="screen dialog" style="left:2900px; top:1800px; width:260px;">
+  <div class="screen-title">Select Next Bowler <span style="font-size:8px; font-weight:normal; opacity:0.7;">— Modal</span></div>
+  <div class="screen-body">
+    <div style="font-size:9px; color:#888; margin-bottom:6px;">Over complete. Select bowler for over 14.</div>
+    <div class="w-card" style="display:flex; justify-content:space-between;">
+      <div><b>M. Shami</b><div style="font-size:9px;">2-0-14-1</div></div>
+      <div class="w-btn small primary">Select</div>
+    </div>
+    <div class="w-card" style="display:flex; justify-content:space-between;">
+      <div><b>R. Ashwin</b><div style="font-size:9px;">3-1-18-0</div></div>
+      <div class="w-btn small">Select</div>
+    </div>
+    <div class="w-card" style="display:flex; justify-content:space-between; opacity:0.4;">
+      <div><b style="text-decoration:line-through;">J. Bumrah</b><div style="font-size:9px; color:#c62828;">Bowled last over</div></div>
+      <div class="w-btn small" style="opacity:0.4;">—</div>
+    </div>
+  </div>
+</div>
+<div class="annotation" style="left:2900px; top:2080px; width:230px;">
+  End-of-over trigger. Cannot select<br>
+  same bowler as previous over<br>
+  (consecutive over rule).
+</div>
+
+<!-- Select New Batter -->
+<div class="screen dialog" style="left:1600px; top:3620px; width:260px;">
+  <div class="screen-title">Select New Batter <span style="font-size:8px; font-weight:normal; opacity:0.7;">— Modal</span></div>
+  <div class="screen-body">
+    <div style="font-size:9px; color:#888; margin-bottom:6px;">Wicket! Select next batter.</div>
+    <div class="w-card" style="display:flex; justify-content:space-between;">
+      <div><b>S. Iyer</b><div style="font-size:9px;">Batter • #25</div></div>
+      <div class="w-btn small primary">Select</div>
+    </div>
+    <div class="w-card" style="display:flex; justify-content:space-between;">
+      <div><b>H. Pandya</b><div style="font-size:9px;">All-rounder • #33</div></div>
+      <div class="w-btn small">Select</div>
+    </div>
+    <div class="w-card" style="display:flex; justify-content:space-between; opacity:0.4;">
+      <div><b style="text-decoration:line-through;">S. Dhawan</b><div style="font-size:9px; color:#c62828;">Already batted (out)</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Innings Transition -->
+<div class="screen dialog" style="left:2200px; top:3620px; width:380px;">
+  <div class="screen-title" style="background:#1565c0;">Innings Transition <span style="font-size:8px; font-weight:normal; opacity:0.7;">— Modal</span></div>
+  <div class="screen-body">
+    <div style="text-align:center; font-size:12px; font-weight:bold; margin-bottom:8px;">
+      Mumbai Warriors — 1st Innings
+    </div>
+    <div style="text-align:center;">
+      <div class="w-score">156/7 <span class="sub">(20.0 ov)</span></div>
+    </div>
+    <div class="w-divider"></div>
+    <div style="display:flex; gap:12px;">
+      <div style="flex:1;">
+        <div class="w-label">Extras</div>
+        <div style="font-size:10px;">
+          Wd: 3 • NB: 2 • B: 1 • LB: 2 = <b>8</b>
+        </div>
+        <div class="w-label">Top Performers</div>
+        <div style="font-size:10px;">
+          R. Sharma: 65 (40)<br>
+          V. Kohli: 42 (35)
+        </div>
+      </div>
+      <div style="flex:1;">
+        <div class="w-label">Fall of Wickets</div>
+        <div style="font-size:9px;">
+          1/23 (3.4) S. Dhawan<br>
+          2/67 (8.2) R. Sharma<br>
+          3/89 (11.1) S. Iyer<br>
+          ...
+        </div>
+      </div>
+    </div>
+    <div class="w-divider"></div>
+    <div style="text-align:center; font-size:16px; font-weight:bold; color:#c62828;">
+      Target: 157
+    </div>
+    <div class="w-btn success" style="width:100%; text-align:center; margin-top:8px; font-size:12px;">Start 2nd Innings →</div>
+  </div>
+</div>
+<div class="annotation blue" style="left:2600px; top:3660px; width:240px;">
+  Creates new innings record.<br>
+  Sets target = 1st innings total + 1.<br>
+  Prompts for opening batsmen<br>
+  and opening bowler for 2nd innings.
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: SCORECARD PAGE -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:3800px; top:2460px;">Scorecard</div>
+
+<div class="phone" style="left:3800px; top:2500px;" id="sec-scorecard">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Scorecard</div>
+      <div class="screen-body" style="padding:6px;">
+        <div class="w-tabs" style="margin-bottom:4px;">
+          <span class="active" style="font-size:9px; padding:3px 8px;">1st Inn</span>
+          <span style="font-size:9px; padding:3px 8px;">2nd Inn</span>
+        </div>
+        <div class="w-label" style="font-size:8px;">Batting — Mumbai W.: 156/7 (20.0)</div>
+        <table class="w-table" style="font-size:8px;">
+          <tr><th>Batter</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr>
+          <tr><td>R. Sharma</td><td><b>65</b></td><td>40</td><td>6</td><td>3</td><td>162</td></tr>
+          <tr><td>S. Dhawan</td><td>12</td><td>15</td><td>2</td><td>0</td><td>80</td></tr>
+          <tr><td>V. Kohli</td><td><b>42</b></td><td>35</td><td>4</td><td>1</td><td>120</td></tr>
+        </table>
+        <div class="w-divider" style="margin:4px 0;"></div>
+        <div class="w-label" style="font-size:8px;">Bowling</div>
+        <table class="w-table" style="font-size:8px;">
+          <tr><th>Bowler</th><th>O</th><th>M</th><th>R</th><th>W</th><th>Ec</th></tr>
+          <tr><td>J. Bumrah</td><td>4</td><td>1</td><td>22</td><td><b>2</b></td><td>5.5</td></tr>
+          <tr><td>M. Shami</td><td>4</td><td>0</td><td>38</td><td>1</td><td>9.5</td></tr>
+        </table>
+        <div class="w-divider" style="margin:4px 0;"></div>
+        <div style="font-size:8px;">
+          <div class="w-label" style="font-size:7px;">Extras: 8 (Wd3 NB2 B1 LB2)</div>
+          <div class="w-label" style="font-size:7px;">FoW: 1/23, 2/67, 3/89, 4/102</div>
+        </div>
+        <div class="w-divider" style="margin:4px 0;"></div>
+        <div style="text-align:center; font-weight:bold; font-size:9px; padding:3px; background:#eee; border-radius:3px;">
+          Mumbai W. won by 14 runs
+        </div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: ANALYTICS PAGE -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:3800px; top:3090px;">Analytics</div>
+
+<div class="phone" style="left:3800px; top:3130px;" id="sec-analytics">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Match Analytics</div>
+      <div class="screen-body" style="padding:6px;">
+        <div class="w-tabs" style="margin-bottom:4px;">
+          <span class="active" style="font-size:8px; padding:3px 6px;">Wagon</span>
+          <span style="font-size:8px; padding:3px 6px;">Manhat</span>
+          <span style="font-size:8px; padding:3px 6px;">Worm</span>
+          <span style="font-size:8px; padding:3px 6px;">MVP</span>
+        </div>
+
+        <div style="text-align:center; margin:4px 0;">
+          <div class="w-input" style="width:160px; display:inline-block; font-size:9px;">▼ R. Sharma</div>
+        </div>
+        <div style="width:140px; height:140px; border-radius:50%; border:2px solid #333; margin:0 auto; position:relative; background:radial-gradient(circle, #eee 40%, #ddd 40%, #ddd 41%, transparent 41%);">
+          <div style="position:absolute; top:50%; left:50%; width:70px; height:1px; background:#ccc; transform:rotate(0deg); transform-origin:left;"></div>
+          <div style="position:absolute; top:50%; left:50%; width:70px; height:1px; background:#ccc; transform:rotate(60deg); transform-origin:left;"></div>
+          <div style="position:absolute; top:50%; left:50%; width:70px; height:1px; background:#ccc; transform:rotate(120deg); transform-origin:left;"></div>
+          <div style="position:absolute; top:12px; right:22px; width:6px; height:6px; background:#1565c0; border-radius:50%;" title="4"></div>
+          <div style="position:absolute; top:30px; right:16px; width:6px; height:6px; background:#1565c0; border-radius:50%;" title="4"></div>
+          <div style="position:absolute; top:20px; left:30px; width:6px; height:6px; background:#6a1b9a; border-radius:50%;" title="6"></div>
+          <div style="position:absolute; bottom:24px; left:24px; width:5px; height:5px; background:#333; border-radius:50%;" title="1"></div>
+          <div style="font-size:7px; position:absolute; top:-10px; left:50%; transform:translateX(-50%); color:#888;">Off</div>
+          <div style="font-size:7px; position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); color:#888;">Leg</div>
+        </div>
+        <div style="font-size:7px; color:#888; text-align:center; margin-top:6px;">
+          Blue=4 • Purple=6 • Black=1-3
+        </div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Manhattan mini wireframe -->
+<div class="screen" style="left:4120px; top:3130px; width:260px;">
+  <div class="screen-title">Manhattan Chart</div>
+  <div class="screen-body" style="text-align:center;">
+    <div style="display:flex; align-items:flex-end; justify-content:center; gap:3px; height:100px; border-bottom:1px solid #333; border-left:1px solid #333; padding:0 4px;">
+      <div style="width:14px; background:#333; height:40px;" title="Over 1: 8"></div>
+      <div style="width:14px; background:#333; height:60px;" title="Over 2: 12"></div>
+      <div style="width:14px; background:#333; height:25px;" title="Over 3: 5"></div>
+      <div style="width:14px; background:#c62828; height:70px;" title="Over 4: 14 (wicket)"></div>
+      <div style="width:14px; background:#333; height:50px;" title="Over 5: 10"></div>
+      <div style="width:14px; background:#333; height:45px;" title="Over 6: 9"></div>
+      <div style="width:14px; background:#c62828; height:15px;" title="Over 7: 3 (wicket)"></div>
+      <div style="width:14px; background:#333; height:80px;" title="Over 8: 16"></div>
+    </div>
+    <div style="font-size:8px; color:#888; margin-top:4px;">Overs → (runs per over, red = wicket)</div>
+  </div>
+</div>
+
+<!-- Worm mini wireframe -->
+<div class="screen" style="left:4120px; top:3400px; width:260px;">
+  <div class="screen-title">Worm Graph</div>
+  <div class="screen-body" style="text-align:center;">
+    <svg width="220" height="80" style="border-bottom:1px solid #333; border-left:1px solid #333;">
+      <polyline points="0,75 28,67 56,55 84,50 112,36 140,26 168,20 196,10" stroke="#1565c0" fill="none" stroke-width="2"/>
+      <polyline points="0,75 28,70 56,62 84,48 112,42 140,35 168,30 196,18" stroke="#c62828" fill="none" stroke-width="2" stroke-dasharray="4,2"/>
+      <text x="200" y="12" font-size="8" fill="#1565c0">Inn 1</text>
+      <text x="200" y="22" font-size="8" fill="#c62828">Inn 2</text>
+    </svg>
+    <div style="font-size:8px; color:#888; margin-top:4px;">Overs → cumulative runs (2 innings)</div>
+  </div>
+</div>
+
+<!-- MVP mini wireframe -->
+<div class="screen" style="left:4420px; top:3130px; width:260px;">
+  <div class="screen-title">MVP Rankings</div>
+  <div class="screen-body">
+    <div class="w-card" style="border-left:3px solid gold;">
+      <div style="display:flex; justify-content:space-between;">
+        <div><b>#1 R. Sharma</b></div>
+        <div style="font-weight:bold; color:#e65100;">45.5 pts</div>
+      </div>
+      <div style="font-size:9px; color:#888;">Bat: 32.0 • Bowl: 8.5 • Field: 5.0</div>
+    </div>
+    <div class="w-card">
+      <div style="display:flex; justify-content:space-between;">
+        <div><b>#2 J. Bumrah</b></div>
+        <div style="font-weight:bold;">38.2 pts</div>
+      </div>
+      <div style="font-size:9px; color:#888;">Bat: 3.0 • Bowl: 30.2 • Field: 5.0</div>
+    </div>
+    <div class="w-card">
+      <div style="display:flex; justify-content:space-between;">
+        <div><b>#3 V. Kohli</b></div>
+        <div style="font-weight:bold;">28.8 pts</div>
+      </div>
+      <div style="font-size:9px; color:#888;">Bat: 22.8 • Bowl: 0 • Field: 6.0</div>
+    </div>
+    <div class="w-divider"></div>
+    <div style="font-size:9px; color:#888;">
+      Points: 1pt/10R, 3pt/W, 1.5pt/catch<br>
+      Bonuses: 50→+2, 100→+5, 3W→+3, 5W→+5
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- SECTION: PLAYER FLOW (far right) -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:5200px; top:1700px;">Player Flow</div>
+
+<div class="phone" style="left:5200px; top:1740px;" id="sec-players">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Player Profile</div>
+      <div class="screen-body" style="text-align:center;">
+        <div style="width:40px; height:40px; border-radius:50%; background:#ddd; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-size:16px;">RS</div>
+        <div style="font-size:12px; font-weight:bold;">Rohit Sharma</div>
+        <div style="font-size:9px; color:#888;">Batter • RH • Mumbai</div>
+        <div class="w-divider"></div>
+        <div style="display:flex; gap:6px; justify-content:center;">
+          <div class="w-stat"><div class="val" style="font-size:14px;">45</div><div class="lbl">Mat</div></div>
+          <div class="w-stat"><div class="val" style="font-size:14px;">1250</div><div class="lbl">Runs</div></div>
+          <div class="w-stat"><div class="val" style="font-size:14px;">32</div><div class="lbl">Avg</div></div>
+          <div class="w-stat"><div class="val" style="font-size:14px;">38</div><div class="lbl">Wkts</div></div>
+        </div>
+      </div>
+      <div class="w-nav" style="margin-top:0;">
+        <span>Home</span>
+        <span>Teams</span>
+        <span style="font-weight:bold; color:#333;">● Profile</span>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Player Stats -->
+<div class="phone" style="left:5200px; top:2320px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Player Stats</div>
+      <div class="screen-body">
+        <div style="display:flex; gap:2px; margin-bottom:6px;">
+          <div class="w-btn small primary" style="font-size:8px;">All</div>
+          <div class="w-btn small" style="font-size:8px;">T20</div>
+          <div class="w-btn small" style="font-size:8px;">ODI</div>
+          <div class="w-btn small" style="font-size:8px;">Custom</div>
+        </div>
+        <div class="w-tabs" style="margin-bottom:4px;">
+          <span class="active" style="font-size:9px; padding:3px 8px;">Batting</span>
+          <span style="font-size:9px; padding:3px 8px;">Bowling</span>
+          <span style="font-size:9px; padding:3px 8px;">Fielding</span>
+        </div>
+        <table class="w-table" style="font-size:9px;">
+          <tr><td>Matches</td><td><b>45</b></td></tr>
+          <tr><td>Innings</td><td>42</td></tr>
+          <tr><td>Runs</td><td><b>1250</b></td></tr>
+          <tr><td>Highest</td><td>98*</td></tr>
+          <tr><td>Average</td><td>32.05</td></tr>
+          <tr><td>SR</td><td>135.87</td></tr>
+          <tr><td>50s / 100s</td><td>8 / 0</td></tr>
+          <tr><td>4s / 6s</td><td>120 / 45</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Match History -->
+<div class="phone" style="left:5200px; top:2900px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Match History</div>
+      <div class="screen-body">
+        <div class="w-card" style="padding:5px;">
+          <div style="font-weight:bold; font-size:9px;">vs Delhi Dragons</div>
+          <div style="font-size:8px; color:#888;">Mar 15 • T20</div>
+          <div style="font-size:9px; margin-top:2px;">65 (40) • 2 catches</div>
+          <div style="font-size:8px; color:#4CAF50;">Won by 14 runs</div>
+        </div>
+        <div class="w-card" style="padding:5px;">
+          <div style="font-weight:bold; font-size:9px;">vs CSK XI</div>
+          <div style="font-size:8px; color:#888;">Mar 8 • T20</div>
+          <div style="font-size:9px; margin-top:2px;">23 (18) • 1/22</div>
+          <div style="font-size:8px; color:#c62828;">Lost by 5 wkts</div>
+        </div>
+        <div class="w-card" style="padding:5px;">
+          <div style="font-weight:bold; font-size:9px;">vs Weekend XI</div>
+          <div style="font-size:8px; color:#888;">Mar 1 • ODI</div>
+          <div style="font-size:9px; margin-top:2px;">88 (65) • 3/45</div>
+          <div style="font-size:8px; color:#4CAF50;">Won by 3 wkts</div>
+        </div>
+        <div style="text-align:center; padding:4px;">
+          <span class="w-btn small" style="font-size:8px;">Load More</span>
+        </div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CRICKET DOMAIN ANNOTATIONS -->
+<!-- ============================================================ -->
+<div class="annotation red" style="left:2200px; top:3720px; width:310px;">
+  <strong>Cricket Domain Rules (Scoring Page)</strong><br>
+  • Wides/NB don't count as legal deliveries — ball_number stays, sequence_number advances<br>
+  • Free hit chain: NB → free hit → another NB → another free hit (until legal delivery)<br>
+  • All out = 10 wickets (not 11). 11th batter remains not out.<br>
+  • Target chased = match ends IMMEDIATELY mid-over
+</div>
+
+<div class="annotation orange" style="left:1800px; top:2340px; width:250px;">
+  <strong>Maiden Over Rule</strong><br>
+  0 runs from bat + 0 wides + 0 NB<br>
+  in 6 legal deliveries.<br>
+  Byes/LB do NOT break maiden.
+</div>
+
+<!-- Widget-to-State mapping -->
+<div class="screen" style="left:3500px; top:2510px; width:280px;">
+  <div class="screen-title">Widget ↔ State Mapping</div>
+  <div class="screen-body" style="font-size:9px;">
+    <table class="w-table">
+      <tr><th>Widget</th><th>State Fields</th></tr>
+      <tr><td>Score Header</td><td>totalRuns, totalWickets, overs, CRR, RRR</td></tr>
+      <tr><td>Striker Card</td><td>striker.{runs,balls,4s,6s,SR}</td></tr>
+      <tr><td>NonStriker Card</td><td>nonStriker.{runs,balls,4s,6s,SR}</td></tr>
+      <tr><td>Bowler Card</td><td>bowler.{O,M,R,W,Econ}</td></tr>
+      <tr><td>Over Display</td><td>currentOver.deliveries[]</td></tr>
+      <tr><td>Free Hit Badge</td><td>isFreeHit</td></tr>
+      <tr><td>Run Buttons</td><td>→ recordDelivery()</td></tr>
+      <tr><td>Undo Button</td><td>lastDeliveryId</td></tr>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- GLOSSARY (collapsible) -->
+<!-- ============================================================ -->
+<div class="screen" style="left:5200px; top:3500px; width:300px;" id="sec-glossary">
+  <div class="screen-title">Glossary — Cricket Terms</div>
+  <div class="screen-body" style="font-size:10px; line-height:1.8;">
+    <b>Over:</b> 6 legal deliveries by one bowler<br>
+    <b>Maiden:</b> Over with 0 runs off bowler<br>
+    <b>Strike Rate:</b> (Runs / Balls) × 100<br>
+    <b>Economy:</b> Runs conceded / Overs bowled<br>
+    <b>Extras:</b> Runs not from bat (Wide, NB, Bye, LB)<br>
+    <b>Free Hit:</b> After NB, only run out possible<br>
+    <b>Wagon Wheel:</b> Shot direction chart (12 zones)<br>
+    <b>Manhattan:</b> Runs per over bar chart<br>
+    <b>Worm:</b> Cumulative runs line chart<br>
+    <b>FoW:</b> Fall of Wickets (score at each dismissal)<br>
+    <b>All Out:</b> 10 wickets fallen<br>
+    <b>Declaration:</b> Batting team voluntarily ends innings
+  </div>
+</div>
+
+
+</div><!-- end #canvas -->
+</div><!-- end #viewport -->
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT: Pan, Zoom, Navigation, Minimap -->
+<!-- ============================================================ -->
+<script>
+(function() {
+  const viewport = document.getElementById('viewport');
+  const canvas = document.getElementById('canvas');
+  const zoomIn = document.getElementById('zoom-in');
+  const zoomOut = document.getElementById('zoom-out');
+  const zoomReset = document.getElementById('zoom-reset');
+  const zoomLevel = document.getElementById('zoom-level');
+  const minimapCanvas = document.getElementById('minimap-canvas');
+  const minimapViewport = document.getElementById('minimap-viewport');
+
+  // Canvas dimensions (total content area)
+  const CANVAS_W = 6800;
+  const CANVAS_H = 4200;
+
+  // State
+  let scale = 0.55;
+  let panX = -50;
+  let panY = -20;
+  let isDragging = false;
+  let dragStartX, dragStartY, dragPanStartX, dragPanStartY;
+  const MIN_SCALE = 0.15;
+  const MAX_SCALE = 2.0;
+
+  function updateTransform() {
+    canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    zoomLevel.textContent = Math.round(scale * 100) + '%';
+    updateMinimap();
+  }
+
+  function updateMinimap() {
+    const mmW = 200;
+    const mmH = 130;
+    const scaleX = mmW / CANVAS_W;
+    const scaleY = mmH / CANVAS_H;
+    const mmScale = Math.min(scaleX, scaleY);
+
+    const vpW = viewport.clientWidth;
+    const vpH = viewport.clientHeight;
+
+    // Viewport rect in canvas coords
+    const cx = -panX / scale;
+    const cy = -panY / scale;
+    const cw = vpW / scale;
+    const ch = vpH / scale;
+
+    minimapViewport.style.left = (cx * mmScale) + 'px';
+    minimapViewport.style.top = (cy * mmScale) + 'px';
+    minimapViewport.style.width = Math.min(cw * mmScale, mmW) + 'px';
+    minimapViewport.style.height = Math.min(ch * mmScale, mmH) + 'px';
+  }
+
+  // Draw minimap dots
+  function drawMinimapDots() {
+    const ctx = minimapCanvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    minimapCanvas.width = 200 * dpr;
+    minimapCanvas.height = 130 * dpr;
+    ctx.scale(dpr, dpr);
+
+    const mmW = 200;
+    const mmH = 130;
+    const scaleX = mmW / CANVAS_W;
+    const scaleY = mmH / CANVAS_H;
+    const mmScale = Math.min(scaleX, scaleY);
+
+    ctx.clearRect(0, 0, mmW, mmH);
+    ctx.fillStyle = '#f5f5f5';
+    ctx.fillRect(0, 0, mmW, mmH);
+
+    // Draw screen and phone positions as dots
+    const screens = canvas.querySelectorAll('.screen, .phone');
+    screens.forEach(s => {
+      const x = parseInt(s.style.left) || 0;
+      const y = parseInt(s.style.top) || 0;
+      const w = s.offsetWidth || 200;
+      const h = s.offsetHeight || 100;
+
+      if (s.classList.contains('phone') && s.classList.contains('large')) {
+        ctx.fillStyle = '#0d47a1';
+      } else if (s.classList.contains('phone')) {
+        ctx.fillStyle = '#333';
+      } else if (s.classList.contains('dialog')) {
+        ctx.fillStyle = '#999';
+      } else if (s.classList.contains('panel')) {
+        ctx.fillStyle = '#1565c0';
+      } else {
+        ctx.fillStyle = '#555';
+      }
+      ctx.fillRect(x * mmScale, y * mmScale, Math.max(w * mmScale, 3), Math.max(h * mmScale, 2));
+    });
+  }
+
+  // Pan
+  viewport.addEventListener('mousedown', (e) => {
+    if (e.target.closest('#controls') || e.target.closest('a')) return;
+    isDragging = true;
+    viewport.classList.add('dragging');
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    dragPanStartX = panX;
+    dragPanStartY = panY;
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    panX = dragPanStartX + (e.clientX - dragStartX);
+    panY = dragPanStartY + (e.clientY - dragStartY);
+    updateTransform();
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+    viewport.classList.remove('dragging');
+  });
+
+  // Zoom (scroll)
+  viewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = viewport.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const delta = e.deltaY > 0 ? -0.08 : 0.08;
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale + delta));
+
+    // Zoom toward mouse position
+    const ratio = newScale / scale;
+    panX = mouseX - ratio * (mouseX - panX);
+    panY = mouseY - ratio * (mouseY - panY);
+    scale = newScale;
+    updateTransform();
+  }, { passive: false });
+
+  // Touch support
+  let lastTouchDist = 0;
+  let lastTouchCenter = null;
+
+  viewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      isDragging = true;
+      dragStartX = e.touches[0].clientX;
+      dragStartY = e.touches[0].clientY;
+      dragPanStartX = panX;
+      dragPanStartY = panY;
+    } else if (e.touches.length === 2) {
+      isDragging = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist = Math.sqrt(dx*dx + dy*dy);
+      lastTouchCenter = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+      };
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  viewport.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && isDragging) {
+      panX = dragPanStartX + (e.touches[0].clientX - dragStartX);
+      panY = dragPanStartY + (e.touches[0].clientY - dragStartY);
+      updateTransform();
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const center = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+      };
+
+      if (lastTouchDist > 0) {
+        const rect = viewport.getBoundingClientRect();
+        const mouseX = center.x - rect.left;
+        const mouseY = center.y - rect.top;
+        const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * (dist / lastTouchDist)));
+        const ratio = newScale / scale;
+        panX = mouseX - ratio * (mouseX - panX);
+        panY = mouseY - ratio * (mouseY - panY);
+        scale = newScale;
+
+        // Also pan
+        if (lastTouchCenter) {
+          panX += center.x - lastTouchCenter.x;
+          panY += center.y - lastTouchCenter.y;
+        }
+        updateTransform();
+      }
+      lastTouchDist = dist;
+      lastTouchCenter = center;
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  viewport.addEventListener('touchend', () => {
+    isDragging = false;
+    lastTouchDist = 0;
+    lastTouchCenter = null;
+  });
+
+  // Zoom buttons
+  zoomIn.addEventListener('click', () => {
+    const vpW = viewport.clientWidth;
+    const vpH = viewport.clientHeight;
+    const newScale = Math.min(MAX_SCALE, scale + 0.15);
+    const ratio = newScale / scale;
+    panX = vpW/2 - ratio * (vpW/2 - panX);
+    panY = vpH/2 - ratio * (vpH/2 - panY);
+    scale = newScale;
+    updateTransform();
+  });
+
+  zoomOut.addEventListener('click', () => {
+    const vpW = viewport.clientWidth;
+    const vpH = viewport.clientHeight;
+    const newScale = Math.max(MIN_SCALE, scale - 0.15);
+    const ratio = newScale / scale;
+    panX = vpW/2 - ratio * (vpW/2 - panX);
+    panY = vpH/2 - ratio * (vpH/2 - panY);
+    scale = newScale;
+    updateTransform();
+  });
+
+  zoomReset.addEventListener('click', () => {
+    scale = 0.55;
+    panX = -50;
+    panY = -20;
+    updateTransform();
+  });
+
+  // Sidebar navigation
+  const navTargets = {
+    'auth':         { x: 80, y: 440, z: 0.7 },
+    'home':         { x: 500, y: 1020, z: 0.75 },
+    'teams':        { x: 500, y: 2780, z: 0.55 },
+    'matchsetup':   { x: 80, y: 2780, z: 0.6 },
+    'scoring':      { x: 2200, y: 2460, z: 0.55 },
+    'dialogs':      { x: 1500, y: 1800, z: 0.45 },
+    'scorecard':    { x: 3800, y: 2460, z: 0.7 },
+    'analytics':    { x: 3800, y: 3090, z: 0.6 },
+    'players':      { x: 5200, y: 1700, z: 0.7 },
+    'backend':      { x: 100, y: 80, z: 0.5 },
+    'websocket':    { x: 1650, y: 80, z: 0.55 },
+    'database':     { x: 3200, y: 80, z: 0.4 },
+    'sync':         { x: 5050, y: 80, z: 0.45 },
+    'pipeline':     { x: 2600, y: 2700, z: 0.6 },
+    'statemachine': { x: 2600, y: 2510, z: 0.7 },
+    'glossary':     { x: 5200, y: 3500, z: 0.8 },
+    'overview':     { x: -50, y: -20, z: 0.18 },
+  };
+
+  document.querySelectorAll('#sidebar a').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = a.dataset.target;
+      if (!navTargets[target]) return;
+
+      const t = navTargets[target];
+      const vpW = viewport.clientWidth;
+      const vpH = viewport.clientHeight;
+
+      // Animate to target
+      const targetPanX = -t.x * t.z + vpW * 0.1;
+      const targetPanY = -t.y * t.z + vpH * 0.1;
+
+      // Simple animation
+      const startPanX = panX, startPanY = panY, startScale = scale;
+      const duration = 400;
+      const startTime = performance.now();
+
+      function animate(time) {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3); // ease out cubic
+
+        panX = startPanX + (targetPanX - startPanX) * ease;
+        panY = startPanY + (targetPanY - startPanY) * ease;
+        scale = startScale + (t.z - startScale) * ease;
+        updateTransform();
+
+        if (progress < 1) requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
+
+      // Update active state
+      document.querySelectorAll('#sidebar a').forEach(l => l.classList.remove('active'));
+      a.classList.add('active');
+    });
+  });
+
+  // Initial render
+  updateTransform();
+  setTimeout(drawMinimapDots, 100);
+  window.addEventListener('resize', () => { updateTransform(); drawMinimapDots(); });
+
+})();
+</script>
+
+</body>
+</html>

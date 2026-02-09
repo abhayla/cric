@@ -35,5 +35,11 @@ apps/server/bun.lockb
 *.freezed.dart
 *.gr.dart
 
+# Screenshots / verification artifacts
+*.png
+*.jpg
+*.jpeg
+images/
+
 # Misc
 *.log
