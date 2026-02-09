@@ -45,7 +45,10 @@ cric/
 │       │   └── index.ts           # Entry point
 │       └── test/                  # Mirrors src/ structure
 │
-├── docs/                          # All design documents
+├── docs/
+│   ├── planning/               # Product & architecture docs
+│   ├── process/                # Workflow & standards docs
+│   └── CONTINUE_PROMPT.md      # Session handoff
 ├── .claude/                       # Claude Code config + rules
 └── CLAUDE.md
 ```
@@ -58,13 +61,29 @@ Planning is 100% complete. **No code has been implemented yet** — `apps/mobile
 
 ## Key Documentation
 
+### Planning Docs
+
 Read these before implementing:
+- `docs/planning/PDR.md` — Product vision, user stories, success metrics, MVP scope boundaries
+- `docs/planning/IMPLEMENTATION_PLAN.md` — Phased roadmap (7 phases), folder structure, packages
+- `docs/planning/DATABASE.md` — 24 tables, 5 materialized views, indexes, local SQLite schema
+- `docs/planning/API.md` — REST endpoints with request/response examples, WebSocket protocol
+- `docs/planning/SCORING_RULES.md` — Match state machine, delivery processing pipeline, cricket rules, MVP algorithm
+- `docs/planning/blueprint.html` — Interactive visual blueprint with all 18 screen wireframes, scoring dialogs, backend architecture diagrams, and cricket domain overlays (open in browser, supports pan/zoom)
+
+### Process Docs
+
+Follow these workflows during implementation:
+- `docs/process/DOCS_MANAGEMENT.md` — Documentation map, folder structure, maintenance rules
+- `docs/process/CODE_STANDARDS.md` — Variable naming, function naming, error handling, import ordering
+- `docs/process/IMPLEMENTATION_PRACTICES.md` — Feature implementation workflow, offline-first, state management, testing
+- `docs/process/CODE_FIXES.md` — Debugging workflow, common issue patterns, scoring engine fix protocol
+- `docs/process/GITHUB_ISSUES.md` — Issue templates, labels, milestones, commit message format
+- `docs/process/CLAUDE_CODE_CONFIG.md` — Sub-agent specifications, skill definitions
+
+### Session Management
+
 - `docs/CONTINUE_PROMPT.md` — Start here for session context and next steps
-- `docs/IMPLEMENTATION_PLAN.md` — Phased roadmap (7 phases), folder structure, packages
-- `docs/DATABASE.md` — 24 tables, 5 materialized views, indexes, local SQLite schema
-- `docs/API.md` — REST endpoints with request/response examples, WebSocket protocol
-- `docs/SCORING_RULES.md` — Match state machine, delivery processing pipeline, cricket rules, MVP algorithm
-- `docs/blueprint.html` — Interactive visual blueprint with all 18 screen wireframes, scoring dialogs, backend architecture diagrams, and cricket domain overlays (open in browser, supports pan/zoom)
 
 ## Build & Run Commands (once initialized)
 
@@ -107,7 +126,7 @@ These rules are mandatory. Before writing any code, verify your approach against
 ### YAGNI — Only Build What Is Needed Right Now
 
 - Do not create abstract base classes, generic utilities, or shared helpers until a second concrete use case exists. One usage = inline it.
-- Do not add API endpoints, database columns, Drizzle schema fields, or Drift table columns not required by the current phase in `docs/IMPLEMENTATION_PLAN.md`.
+- Do not add API endpoints, database columns, Drizzle schema fields, or Drift table columns not required by the current phase in `docs/planning/IMPLEMENTATION_PLAN.md`.
 - Do not build extensibility mechanisms (plugin systems, event buses, middleware pipelines) unless the docs explicitly call for one.
 - Do not add optional/nullable fields to Freezed models, Drizzle schemas, or API responses "for future use." Add them when the feature that needs them is being built.
 - Do not implement caching, rate limiting, pagination, or retry logic until the feature works correctly without it. Layer optimizations onto working code.
@@ -136,7 +155,7 @@ These rules are mandatory. Before writing any code, verify your approach against
 
 ## Cricket Domain Rules
 
-The scoring engine is the most critical piece. Key rules in `docs/SCORING_RULES.md`:
+The scoring engine is the most critical piece. Key rules in `docs/planning/SCORING_RULES.md`:
 
 **Match state machine:** `SETUP → TOSS → INNINGS_1 → INNINGS_BREAK → INNINGS_2 → COMPLETED` (with `SUPER_OVER` if tied, `ABANDONED` at any point).
 
@@ -155,6 +174,8 @@ The scoring engine is the most critical piece. Key rules in `docs/SCORING_RULES.
 - **Screenshot verification loop:** After tests, take a screenshot and visually verify UI matches expected output. If it fails, fix and retest in a loop until all tests pass. Do not move on until verified.
 - If requirements are ambiguous, ask one clarifying question at a time (with your recommendation based on best practices) until you reach 100% confidence — do not guess.
 - **Session handoff:** Always update `docs/CONTINUE_PROMPT.md` before ending work so the next session can resume seamlessly. Read it at the start of each session for context.
+
+**Detailed workflows:** See `docs/process/IMPLEMENTATION_PRACTICES.md` for the full feature implementation workflow, and `docs/process/CODE_FIXES.md` for the debugging and fix process.
 
 ## Feature Architecture Pattern
 
@@ -190,3 +211,5 @@ See `.claude/rules.md` for full placement rules and decision tree for where ever
 - Tables: `snake_case` plural (e.g., `deliveries`, `batting_stats`, `team_players`)
 - Columns: `snake_case` (e.g., `is_legal`, `bowler_id`, `created_at`)
 - Indexes: `idx_<table>_<columns>` (e.g., `idx_deliveries_innings_over`)
+
+**Extended conventions:** See `docs/process/CODE_STANDARDS.md` for variable naming patterns, function naming patterns, error handling patterns, and import ordering.
