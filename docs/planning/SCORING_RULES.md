@@ -221,8 +221,6 @@ on the ground, deliberate distraction, ball tampering). Rare in amateur cricket 
 - UI flow: Scorer taps "Set" button → "5-Run Penalty" →
   Select which team receives the penalty runs → Confirm
 - Recorded as a special delivery with `is_penalty = true`
-  (Note: DATABASE.md deliveries table does NOT have an is_penalty column yet —
-   add `is_penalty boolean default false` when implementing this feature)
 ```
 
 ### 3.7 Maiden Overs
@@ -338,9 +336,23 @@ UNDO removes the most recent delivery and reverses ALL state changes:
 CONSTRAINTS:
   - Only the LAST delivery can be undone
   - Only the scorer can undo
-  - Cannot undo after innings/match completion (must reopen first)
+  - Cannot undo after innings/match completion (must reopen first — see Section 4.1)
   - Maximum undo chain: implementation allows multiple consecutive undos
 ```
+
+### 4.1 Reopen After Completion
+
+If the scorer needs to undo after an innings or match has been marked completed (e.g., last ball was scored incorrectly), they must reopen first.
+
+**UI flow:** Scorer taps "Set" button → contextual menu shows:
+- **"Reopen Last Innings"** — Only shown when the current innings just completed (innings break or match just ended). Reverses the completion, returns innings to LIVE state. Scorer can then undo the last delivery.
+- **"Reopen Match"** — Only shown when match status is COMPLETED. Reverses match completion, returns to LIVE state for the last active innings. Scorer can then undo or continue scoring.
+
+**Rules:**
+- Only the scorer can reopen.
+- Reopening removes the `match_result` record (if match was completed).
+- Reopening an innings sets `is_completed = false` and clears `completed_reason`.
+- After reopening, normal undo functionality becomes available again.
 
 ---
 
@@ -442,7 +454,14 @@ The scoring page uses a fixed-scroll-fixed layout:
 | **Middle area** | Scrollable | Current batter card (striker highlighted), current bowler card, current over display, last few overs summary |
 | **Run buttons + extras** | Fixed bottom | Run buttons row (0, 1, 2, 3, 4, 6, ...) and extras row (Wide, No Ball, Bye, Leg Bye, Wicket) |
 
-No app bar on the scoring page — full-screen immersive layout. The "Set" button (for declaration, abandonment) is positioned in the score header area.
+No app bar on the scoring page — full-screen immersive layout. The "Set" button (for declaration, abandonment, penalties, reopen) is positioned in the score header area.
+
+**"Set" button menu items (5 total):**
+1. **Declare Innings** — End current innings voluntarily (see Section 3.8)
+2. **Abandon Match** — Abandon match entirely (see Section 1, Abandonment rules)
+3. **5-Run Penalty** — Award 5-run penalty to either team (see Section 3.6)
+4. **Reopen Last Innings** — *(contextual, only shown after innings completion)* Reverses innings completion (see Section 4.1)
+5. **Reopen Match** — *(contextual, only shown when match is COMPLETED)* Reverses match completion (see Section 4.1)
 
 ### 6.1 Run Buttons
 
@@ -481,8 +500,9 @@ When **WICKET** is tapped:
 2. If fielder required → select fielder from fielding team roster
 3. If run out → also ask: how many runs completed before run out?
 4. If run out → ask: which batter was run out? (striker or non-striker)
-5. Confirm wicket → record delivery + wicket
-6. If not all out → show "Select New Batter" dialog
+5. If run out → show "Direct Hit?" toggle (default off). If on, records `fielding_stats.direct_hits` for the fielder. If off, records as relay/assist run out.
+6. Confirm wicket → record delivery + wicket
+7. If not all out → show "Select New Batter" dialog
 
 ### 6.5 End of Over Flow
 

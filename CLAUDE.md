@@ -14,7 +14,7 @@ CricApp is a cricket scoring mobile app (CricHeroes competitor) for amateur cric
 | Local DB | Drift / SQLite |
 | Backend | Bun + ElysiaJS + Drizzle ORM |
 | Server DB | PostgreSQL |
-| Auth | Firebase Auth (Phone OTP, Google, Email) |
+| Auth | Firebase Auth (Phone OTP only for MVP) |
 | Real-time | Bun Native WebSockets |
 | UI Theme | Material 3 Dark |
 | Target | Android only (MVP) |

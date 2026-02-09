@@ -23,7 +23,7 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 3. Set up PostgreSQL + Drizzle schema using tables from `docs/planning/DATABASE.md`
 4. Seed master data (dismissal types, fielding positions, wagon wheel zones, ball types)
 5. Set up Firebase project + configure Flutter Firebase
-6. Implement Firebase Auth (phone OTP + Google sign-in)
+6. Implement Firebase Auth (Phone OTP only — no Google/Email for MVP)
 7. Implement auth middleware on Bun (Firebase JWT verification)
 8. Set up Material 3 dark theme
 9. Set up go_router with auth guards
@@ -66,11 +66,29 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - Scoring page: fixed header (top) + scrollable middle + fixed buttons (bottom)
 - Initials-only avatar for MVP; simple file picker for team logo (no crop)
 - Minimal settings in Profile (logout + app version)
-- Single login screen with tabs: Phone OTP | Google | Email
+- Single login screen: Phone OTP only (no tabs — single auth flow)
 - Home dashboard: recent matches, quick actions, my stats card
 - Deployment: existing VPS (Win Server 2022, PostgreSQL 16.8, Nginx, PM2, Cloudflare, GitHub Actions)
 - WebSocket delivery message matches REST fields; reconnect via REST snapshot (no replay)
 - `total_runs` computed at application level; overs decimal notation utility on both platforms
+- **[Q1]** Flutter minSdkVersion = API 23 (Android 6.0) — covers 97%+ Indian devices
+- **[Q2]** Extra dependencies: flutter_secure_storage, image_picker, logger, firebase_crashlytics
+- **[Q3]** Bun server development port = 3000 (Nginx reverse proxies to this)
+- **[Q4]** Firebase project: user provides google-services.json + service account key; we write integration code
+- **[Q5]** `is_penalty boolean default false` added to deliveries table for 5-run penalties
+- **[Q6]** Free hit tracked in ScoringState (Riverpod) only — `isFreeHitPending` in Freezed state, no DB column
+- **[Q7]** Materialized view SQL written in Phase 5 when career stats are built
+- **[Q8]** Sync retry count = 5 with exponential backoff (5s→10s→30s→60s→60s)
+- **[Q9]** local_preferences keys: `last_sync_timestamp`, `current_match_id`, `user_id`, `last_viewed_team_id`, `app_version_seen`
+- **[Q10]** Run out wicket dialog has "Direct Hit?" toggle → populates `fielding_stats.direct_hits`
+- **[Q11]** MVP tie-breaker: share the rank (joint placement), next rank skips
+- **[Q12]** "Set" menu has "Reopen Last Innings" and "Reopen Match" options (contextual)
+- **[Q13]** Auth is **Phone OTP only** — no Google, no Email for MVP
+- **[Q14]** "Set" button menu: 5 items (Declare Innings, Abandon Match, 5-Run Penalty, Reopen Last Innings, Reopen Match)
+- **[Q15]** Scoring button sizes: Run 56x56dp circular, Extras 48x40dp rect, Wicket 56x56dp red, Other 48x48dp, Action bar 40x40dp
+- **[Q16]** Connectivity dot: 8dp in score header top-right (green/yellow/red)
+- **[Q17]** Offline error handling: log + dot color change only — no dialogs/toasts/banners during scoring
+- **[Q18]** Sync retry_count persists across restarts (stored in SQLite sync_queue, never reset on relaunch)
 
 ## Completed Work
 
@@ -105,6 +123,17 @@ A second, more comprehensive gap analysis identified 62 questions across 7 categ
 **Category 6 — Deployment & Infrastructure (Q51-58):** Expanded IMPLEMENTATION_PLAN.md Phase 7 with existing VPS details (Windows Server 2022, PostgreSQL 16.8, Nginx, PM2, Cloudflare, GitHub Actions self-hosted runner), domain TBD, health monitoring integration, daily pg_dump backups.
 
 **Category 7 — Server Architecture (Q59-62):** Fixed WebSocket delivery message to match REST fields, added reconnection/catch-up strategy (REST snapshot, no replay), documented overs decimal notation utility, clarified `total_runs` as application-level computation.
+
+### Step 0d: Final 18-Question Pre-Implementation Gap Analysis
+A final focused gap analysis before implementation resolved 18 decisions across 5 categories (Infrastructure, Database, Scoring Engine, UI/UX, Cross-Document Conflicts). All 18 decisions applied to 6 docs: DATABASE.md, SCORING_RULES.md, IMPLEMENTATION_PLAN.md, IMPLEMENTATION_PRACTICES.md, CODE_STANDARDS.md, and CONTINUE_PROMPT.md.
+
+Key changes:
+- **Auth simplified:** Phone OTP only (removed Google Sign-In, Email/Password)
+- **DATABASE.md:** Added `is_penalty` boolean to deliveries table
+- **SCORING_RULES.md:** Added "Direct Hit?" toggle for run outs, Reopen Last Innings/Match functionality, 5-item "Set" menu
+- **IMPLEMENTATION_PLAN.md:** minSdkVersion=23, server port=3000, added flutter_secure_storage/image_picker/logger/firebase_crashlytics deps
+- **IMPLEMENTATION_PRACTICES.md:** Sync retry=5 (persistent across restarts), offline errors=log-only
+- **CODE_STANDARDS.md:** Scoring button size tiers, connectivity dot spec, local_preferences keys, Phone OTP only auth screen
 
 ### Interactive Architectural Blueprint
 - **`docs/planning/blueprint.html`** — Comprehensive single-file HTML blueprint (1763 lines) with:

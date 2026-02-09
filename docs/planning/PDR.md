@@ -80,7 +80,7 @@ Detailed technical specifications live in dedicated planning docs. Do not duplic
 - Career stats (batting, bowling, fielding)
 - Match analytics (wagon wheel, manhattan, worm)
 - MVP rankings per match
-- Firebase Auth (phone OTP, Google, email)
+- Firebase Auth (Phone OTP only for MVP)
 
 ### Explicitly Excluded from MVP
 - **iOS app** — Android only for initial launch

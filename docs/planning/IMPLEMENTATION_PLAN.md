@@ -55,6 +55,13 @@
 
 ## 2. Monorepo Folder Structure
 
+### Android Configuration
+
+| Setting | Value | Notes |
+|---------|-------|-------|
+| minSdkVersion | **23** (Android 6.0) | Covers 97%+ of Indian Android devices |
+| Server port | **3000** | Nginx reverse proxies to this |
+
 ### 2.1 Flutter App (`apps/mobile/`)
 
 ```text
@@ -296,10 +303,9 @@ dependencies:
   dio: ^5.4.0
   web_socket_channel: ^3.0.0
 
-  # Firebase Auth
+  # Firebase Auth (Phone OTP only — no Google/Email for MVP)
   firebase_core: ^26.0.0
   firebase_auth: ^5.0.0
-  google_sign_in: ^6.2.0
 
   # Navigation
   go_router: ^14.0.0
@@ -315,6 +321,12 @@ dependencies:
   shared_preferences: ^2.2.0
   connectivity_plus: ^6.0.0
   uuid: ^4.0.0
+  flutter_secure_storage: ^9.0.0
+  image_picker: ^1.0.0
+  logger: ^2.0.0
+
+  # Crash Reporting
+  firebase_crashlytics: ^4.0.0
 
 dev_dependencies:
   flutter_test:
@@ -360,7 +372,7 @@ dev_dependencies:
 - [ ] Set up PostgreSQL database with Drizzle schema + migrations
 - [ ] Seed master data (dismissal types, fielding positions, wagon wheel zones, ball types)
 - [ ] Set up Firebase project + configure Flutter Firebase
-- [ ] Implement Firebase Auth (phone OTP + Google sign-in)
+- [ ] Implement Firebase Auth (Phone OTP only — no Google/Email for MVP)
 - [ ] Implement auth middleware on Bun (Firebase JWT verification)
 - [ ] Set up Material 3 dark theme
 - [ ] Set up go_router with auth guards
@@ -440,7 +452,7 @@ dev_dependencies:
 - [ ] Create `.github/workflows/deploy.yml` for auto-deploy on push to main
 - [ ] Add CricApp to VPS health monitoring (`health-check.ps1` `$sites` array)
 - [ ] Configure daily `pg_dump` backup for `cricapp` database
-- [ ] Set up Firebase project (Auth providers: Phone, Google, Email)
+- [ ] Set up Firebase project (Auth provider: Phone OTP only)
 - [ ] Build release APK, sign with upload key
 - [ ] Google Play Store listing (app name, description, screenshots, privacy policy — details TBD at pre-launch)
 - [ ] Launch
@@ -451,7 +463,7 @@ dev_dependencies:
 
 | After Phase | Verification |
 |-------------|-------------|
-| Phase 1 | Login with phone OTP, see home screen, navigate between screens |
+| Phase 1 | Login with Phone OTP, see home screen, navigate between screens |
 | Phase 2 | Create team, add players, create match, complete toss |
 | Phase 3 | Score a complete T20 match ball-by-ball, verify scorecard accuracy, test undo, test offline scoring |
 | Phase 4 | View wagon wheel for a batter, manhattan for an innings, worm comparing both innings, MVP rankings |
@@ -487,7 +499,7 @@ dev_dependencies:
 ## 8. Key Screens (MVP) - 18 Total
 
 1. Splash Screen
-2. Login Page (Phone OTP / Google / Email)
+2. Login Page (Phone OTP only)
 3. OTP Verification Page
 4. Profile Setup Page
 5. Home Page (Dashboard)

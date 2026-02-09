@@ -227,6 +227,7 @@ Playing XI for each team in a specific match.
 | is_boundary_four | boolean | default false |
 | is_boundary_six | boolean | default false |
 | is_free_hit | boolean | default false |
+| is_penalty | boolean | default false (5-run penalty delivery) |
 | wagon_wheel_zone_id | integer FK → wagon_wheel_zones.id | nullable |
 | timestamp | timestamp | when this delivery was recorded |
 | synced | boolean | default false (for offline sync) |

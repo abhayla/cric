@@ -547,7 +547,24 @@ Target: smooth performance on 2GB RAM budget Android devices. See [IMPLEMENTATIO
 | `spacingM` | 16dp | Page margins, section gaps, card padding |
 | `spacingL` | 24dp | Between major sections |
 | `spacingXl` | 32dp | Page top/bottom padding |
-| Touch target | 48x48dp minimum | Per PDR NFR. Scoring buttons should be larger (56dp+). |
+| Touch target | 48x48dp minimum | Per PDR NFR. See Scoring Button Sizes below for specifics. |
+
+### Scoring Button Sizes (Tiered)
+
+| Button Type | Size | Shape | Notes |
+|-------------|------|-------|-------|
+| Run buttons (0, 1, 2, 3, 4, 6) | 56x56dp | Circular | Primary scoring actions |
+| Extras buttons (Wide, No Ball, Bye, Leg Bye) | 48x40dp | Rounded rectangle | Secondary actions |
+| Wicket button | 56x56dp | Circular | Red/error color — critical action |
+| Other/Custom run | 48x48dp | Circular or rounded rect | Opens number picker |
+| Action bar buttons (Undo, Set) | 40x40dp | Circular | Smaller utility actions |
+
+### Connectivity Status Indicator
+
+- **Position:** Score header, top-right corner
+- **Size:** 8dp diameter dot
+- **Colors:** Green = connected, Yellow = reconnecting, Red = disconnected
+- **Behavior:** Updates in real-time based on WebSocket connection state. No text label — dot only.
 
 ### Typography Scale
 
@@ -630,10 +647,9 @@ Use M3 default page transitions only. No custom animations for MVP:
 
 ### Auth Screen
 
-- Single login screen with toggle/tabs: **Phone OTP** | **Google** | **Email**.
-- Email tab: Email text field + Password text field + "Sign In" button + "Create Account" link.
-- Email auth uses Firebase Email/Password provider — same flow as phone OTP but with email+password instead of OTP code.
-- New email users go through the same profile setup (US-13) after first sign-in.
+- **Phone OTP only** for MVP. No Google Sign-In, no Email/Password.
+- Single login screen: Phone number input → "Send OTP" button → OTP verification page.
+- New users go through profile setup (US-13) after first sign-in.
 
 ### Home Dashboard
 
@@ -642,6 +658,18 @@ Use M3 default page transitions only. No custom animations for MVP:
   - **Quick actions** row: "Start Match" (primary CTA), "Create Team", "Join Team".
   - **My Stats** summary card: Total matches, runs, wickets, catches.
 - Empty state: Cricket bat icon + "No matches yet" + "Start a Match" button.
+
+### Local Preferences Keys
+
+Standard keys for the `local_preferences` SQLite table (key-value store):
+
+| Key | Value Type | Description |
+|-----|-----------|-------------|
+| `last_sync_timestamp` | ISO 8601 string | When the last successful sync completed |
+| `current_match_id` | UUID string | Active match being scored (null if none) |
+| `user_id` | UUID string | Current logged-in user's ID |
+| `last_viewed_team_id` | UUID string | Last team the user viewed (for quick resume) |
+| `app_version_seen` | Semver string | Last app version user saw (for what's-new prompts) |
 
 ---
 

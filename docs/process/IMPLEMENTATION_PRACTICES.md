@@ -256,7 +256,7 @@ Future<Delivery> recordDelivery(DeliveryInput input) async {
 
 ### Sync Failure Handling
 
-- Track retry count in `sync_queue`. Mark as `FAILED` after 3 attempts. Continue processing remaining queue items.
+- Track retry count in `sync_queue`. Mark as `FAILED` after **5 attempts** with exponential backoff (5s→10s→30s→60s→60s). Continue processing remaining queue items.
 
 ### User-Facing Error Display
 
@@ -268,6 +268,11 @@ Future<Delivery> recordDelivery(DeliveryInput input) async {
 ### Scoring Resilience
 
 Delivery recording MUST succeed locally even if the server is unreachable. Never block the scorer with a network error dialog. Queue for sync and show a subtle offline indicator instead.
+
+**Offline error handling (scoring context):**
+- **No dialogs, toasts, or banners** during offline scoring — only log the error and update the connectivity dot indicator (green→yellow→red, 8dp dot in score header top-right).
+- Scoring must never be interrupted by network state changes.
+- Log sync failures at `w` (warning) level for later debugging.
 
 ---
 
@@ -451,6 +456,7 @@ No background sync when app is killed (Android budget device battery limits).
 
 - Backoff between retry batches: 5s → 10s → 30s → 60s cap.
 - After 5 consecutive failures on a batch, mark those items as `FAILED`. Continue to next batch.
+- **Retry count persists across app restarts.** The `retry_count` is stored in the SQLite `sync_queue` table and is NOT reset on app relaunch. This prevents endless retries of permanently broken items (e.g., server schema mismatch, deleted resources).
 - Sync queue schema (local SQLite, ref [DATABASE.md](../planning/DATABASE.md) Section 10): `id`, `entity_type`, `entity_id`, `operation`, `payload`, `retry_count`, `status`, `created_at`.
 
 ```dart
