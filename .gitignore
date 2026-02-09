@@ -9,8 +9,10 @@ nul
 *.swp
 *.swo
 
-# Claude Code
-.claude/
+# Claude Code (ignore all except rules and settings)
+.claude/*
+!.claude/rules.md
+!.claude/settings.json
 
 # Flutter / Dart
 apps/mobile/.dart_tool/

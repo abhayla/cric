@@ -30,3 +30,15 @@ only implement features when they are actually needed, not when we think they mi
 
 
 ****************Best Practices-End****************
+
+This is a new mobile App development project which is still in planning phase.
+
+Read about YAGNI - KISS - DRY from internet and this URL. Learn about these principles, and then “make it hoist by its own petard”: ask it to write the necessary rules of these 3 principles into CLAUDE.md or certain Commands - 
+https://faafospecialist.substack.com/p/vb-07-claude-code-common-mistakes
+
+I want you to list and document all the best practices which must be followed in this project.
+You search internet for this, then cross check it and give your recommendation which are suitable for this project
+Suggestion should include but not limited to folder structure, docs management, Product Development Requirements (PDRs), Project Overview: description, features, tech stack etc, Codebase structure, Code standards: Naming conventions for variables, databases, functions etc, Optimize System Prompt, implemation best practices, code fixes best practices, github issues best practices, claude-code sub-agents required for this project, claude-code skills required for this project
+
+These docs will be used as single source of truth for this project implementation.
+Note - scope is only to document these processes for this project. I will then review and approve it.Start with folder structure and doc management.
