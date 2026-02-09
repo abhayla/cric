@@ -6,7 +6,8 @@ If any issue or error found then fix it and retest it. Do this in loop until the
 
 Do not proceed until you have 100% confidence of what I want. Ask me questions until you reach that confidence. Ask one question at a time. Tell me the number of questions you are going to ask.
 For each question, always give your recommendation. Your recommendation should be based on best practices and standards.
-After each response and before asking next question, Check industry standards, check the related codebase and docs and then add your knowlegebase to proceed.                                        
+After each response and before asking next question, Check industry standards, check the related codebase and docs and then add your knowlegebase to proceed.
+Run through your final plan with me for my review iteratively for each section. Create the final plan only after my  approval.                                         
 
 Create a prompt to Save the current context state and start from here in the next context from here referring the required docs. Save this prompt in 
 \docs\CONTINUE_PROMPT.md
@@ -31,14 +32,14 @@ only implement features when they are actually needed, not when we think they mi
 
 ****************Best Practices-End****************
 
-This is a new mobile App development project which is still in planning phase.
-
 Read about YAGNI - KISS - DRY from internet and this URL. Learn about these principles, and then “make it hoist by its own petard”: ask it to write the necessary rules of these 3 principles into CLAUDE.md or certain Commands - 
 https://faafospecialist.substack.com/p/vb-07-claude-code-common-mistakes
 
+This is a new mobile App development project which is still in planning phase.
+
 I want you to list and document all the best practices which must be followed in this project.
 You search internet for this, then cross check it and give your recommendation which are suitable for this project
-Suggestion should include but not limited to folder structure, docs management, Product Development Requirements (PDRs), Project Overview: description, features, tech stack etc, Codebase structure, Code standards: Naming conventions for variables, databases, functions etc, Optimize System Prompt, implemation best practices, code fixes best practices, github issues best practices, claude-code sub-agents required for this project, claude-code skills required for this project
+Suggestion should include but not limited to docs management, Product Development Requirements (PDRs), Project Overview: description, features, tech stack etc, Codebase structure, Code standards: Naming conventions for variables, databases, functions etc, Optimize System Prompt, implemation best practices, code fixes best practices, github issues best practices, claude-code sub-agents required for this project, claude-code skills required for this project
 
 These docs will be used as single source of truth for this project implementation.
 Note - scope is only to document these processes for this project. I will then review and approve it.Start with folder structure and doc management.

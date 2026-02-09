@@ -64,7 +64,7 @@ Planning is 100% complete. **No code has been implemented yet** — `apps/mobile
 ### Planning Docs
 
 Read these before implementing:
-- `docs/planning/PDR.md` — Product vision, user stories, success metrics, MVP scope boundaries
+- `docs/planning/PDR.md` — Product vision, 15 user stories, success metrics, MVP scope boundaries (Android-only, no iOS/DLS/tournaments/ads)
 - `docs/planning/IMPLEMENTATION_PLAN.md` — Phased roadmap (7 phases), folder structure, packages
 - `docs/planning/DATABASE.md` — 24 tables, 5 materialized views, indexes, local SQLite schema
 - `docs/planning/API.md` — REST endpoints with request/response examples, WebSocket protocol
@@ -175,6 +175,8 @@ The scoring engine is the most critical piece. Key rules in `docs/planning/SCORI
 - If requirements are ambiguous, ask one clarifying question at a time (with your recommendation based on best practices) until you reach 100% confidence — do not guess.
 - **Session handoff:** Always update `docs/CONTINUE_PROMPT.md` before ending work so the next session can resume seamlessly. Read it at the start of each session for context.
 
+**Implementation order:** Always build features inside-out: domain entities → data layer (datasources, repositories) → presentation (notifiers, pages, widgets). Never start with UI.
+
 **Detailed workflows:** See `docs/process/IMPLEMENTATION_PRACTICES.md` for the full feature implementation workflow, and `docs/process/CODE_FIXES.md` for the debugging and fix process.
 
 ## Feature Architecture Pattern
@@ -211,5 +213,7 @@ See `.claude/rules.md` for full placement rules and decision tree for where ever
 - Tables: `snake_case` plural (e.g., `deliveries`, `batting_stats`, `team_players`)
 - Columns: `snake_case` (e.g., `is_legal`, `bowler_id`, `created_at`)
 - Indexes: `idx_<table>_<columns>` (e.g., `idx_deliveries_innings_over`)
+
+**Git commits:** Use conventional commits — `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`. Branch format: `feature/`, `fix/`, or `task/` + issue number + description. See `docs/process/GITHUB_ISSUES.md` for full format.
 
 **Extended conventions:** See `docs/process/CODE_STANDARDS.md` for variable naming patterns, function naming patterns, error handling patterns, and import ordering.

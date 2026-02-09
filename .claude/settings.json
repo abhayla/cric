@@ -1,5 +1,12 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(cd apps/mobile && flutter test:*)",
+      "Bash(cd apps/mobile && dart run build_runner:*)",
+      "Bash(cd apps/mobile && flutter analyze:*)",
+      "Bash(cd apps/server && bun test:*)",
+      "Bash(cd apps/server && bunx drizzle-kit:*)"
+    ],
     "deny": [
       "Edit(CLAUDE.md)",
       "Edit(.claude/rules.md)"
