@@ -414,11 +414,35 @@ dev_dependencies:
 - [ ] Home Page dashboard (recent matches, quick actions)
 
 ### Phase 7: Deployment & Launch (Week 14)
-- [ ] Set up VPS (PostgreSQL + Bun server)
-- [ ] Configure SSL/HTTPS
-- [ ] Set up CI/CD pipeline
-- [ ] Build release APK
-- [ ] Google Play Store listing
+
+#### Infrastructure (existing VPS)
+
+| Component | Details |
+|-----------|---------|
+| VPS | Windows Server 2022, AMD EPYC 32-core, IP 103.118.16.189 |
+| Database | PostgreSQL 16.8, self-hosted on VPS, localhost:5432 |
+| Process manager | PM2 (Node.js/Bun apps) |
+| Reverse proxy | Nginx 1.26.2 on port 80 |
+| SSL/CDN | Cloudflare (Flexible SSL mode, DDoS protection) |
+| CI/CD | GitHub Actions with self-hosted runner on VPS |
+| Firebase | Single project for MVP (dev + prod) |
+| Domain | TBD — register domain, add Cloudflare A record → 103.118.16.189 |
+| Monitoring | Existing VPS health check script (every 5 min) — add CricApp to `$sites` array |
+| Backups | Daily `pg_dump` cron to `C:\Apps\backups\` with 7-day retention |
+
+#### Deployment tasks
+
+- [ ] Create PostgreSQL database + user for CricApp (`cricapp` / `cricapp_user`)
+- [ ] Deploy Bun server via PM2 (`ecosystem.config.js`)
+- [ ] Create Nginx site config (`C:\Apps\nginx\conf\sites\cricapp.conf`) with WebSocket proxy support
+- [ ] Register domain, configure Cloudflare DNS (A record → VPS IP, proxied)
+- [ ] Set up GitHub Actions self-hosted runner for CricApp repo
+- [ ] Create `.github/workflows/deploy.yml` for auto-deploy on push to main
+- [ ] Add CricApp to VPS health monitoring (`health-check.ps1` `$sites` array)
+- [ ] Configure daily `pg_dump` backup for `cricapp` database
+- [ ] Set up Firebase project (Auth providers: Phone, Google, Email)
+- [ ] Build release APK, sign with upload key
+- [ ] Google Play Store listing (app name, description, screenshots, privacy policy — details TBD at pre-launch)
 - [ ] Launch
 
 ---

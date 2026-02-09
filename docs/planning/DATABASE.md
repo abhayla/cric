@@ -118,6 +118,25 @@
 **Unique constraint:** (team_id, player_id)
 **Max roster size:** 25 players per team (enforced at application level)
 
+### 2.4 `match_players`
+Playing XI for each team in a specific match.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| match_id | uuid FK → matches.id | |
+| team_id | uuid FK → teams.id | |
+| player_id | uuid FK → users.id | |
+| batting_order | integer | nullable (set when player comes in to bat) |
+| is_playing | boolean | default true |
+| is_captain | boolean | default false |
+| is_keeper | boolean | default false |
+| created_at | timestamp | |
+| updated_at | timestamp | |
+
+**Unique constraint:** (match_id, team_id, player_id)
+**Max per team per match:** 11 players (enforced at application level)
+
 ---
 
 ## 3. Match Structure Tables
@@ -160,6 +179,9 @@
 | is_completed | boolean | default false |
 | completed_reason | varchar(30) | "all_out", "overs_exhausted", "target_chased", "declared" |
 | target | integer | nullable (set for 2nd innings) |
+| run_rate | decimal(5,2) | computed: total_runs / total_overs |
+| dot_ball_percentage | decimal(5,2) | computed: dot balls / total legal deliveries * 100 |
+| boundary_percentage | decimal(5,2) | computed: (fours + sixes) / total legal deliveries * 100 |
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
@@ -177,6 +199,7 @@
 | is_maiden | boolean | default false |
 | is_completed | boolean | default false |
 | created_at | timestamp | |
+| updated_at | timestamp | |
 
 ### 3.4 `deliveries` -- ATOMIC UNIT (most important table)
 | Column | Type | Notes |
@@ -208,6 +231,7 @@
 | timestamp | timestamp | when this delivery was recorded |
 | synced | boolean | default false (for offline sync) |
 | created_at | timestamp | |
+| updated_at | timestamp | |
 
 ---
 
@@ -223,6 +247,7 @@
 | fielder_id | uuid FK → users.id | nullable (needed for caught, run out, stumped) |
 | bowler_credited | boolean | is the bowler credited with this wicket? |
 | created_at | timestamp | |
+| updated_at | timestamp | |
 
 ### 4.2 `fall_of_wickets`
 | Column | Type | Notes |
@@ -235,6 +260,7 @@
 | dismissed_player_id | uuid FK → users.id | |
 | delivery_id | uuid FK → deliveries.id | |
 | created_at | timestamp | |
+| updated_at | timestamp | |
 
 ---
 
@@ -259,6 +285,7 @@
 | is_retired_hurt | boolean | default false |
 | minutes_batted | integer | nullable |
 | created_at | timestamp | |
+| updated_at | timestamp | |
 
 ### 5.2 `bowling_stats`
 | Column | Type | Notes |
@@ -277,6 +304,7 @@
 | fours_conceded | integer | default 0 |
 | sixes_conceded | integer | default 0 |
 | created_at | timestamp | |
+| updated_at | timestamp | |
 
 ### 5.3 `fielding_stats`
 | Column | Type | Notes |
@@ -289,24 +317,7 @@
 | stumpings | integer | default 0 |
 | direct_hits | integer | default 0 |
 | created_at | timestamp | |
-
-### 5.4 `innings_stats`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | |
-| innings_id | uuid FK → innings.id | |
-| total_runs | integer | |
-| total_wickets | integer | |
-| total_overs | decimal(5,1) | |
-| run_rate | decimal(5,2) | |
-| extras_total | integer | |
-| wides_total | integer | |
-| no_balls_total | integer | |
-| byes_total | integer | |
-| leg_byes_total | integer | |
-| dot_ball_percentage | decimal(5,2) | |
-| boundary_percentage | decimal(5,2) | |
-| created_at | timestamp | |
+| updated_at | timestamp | |
 
 ---
 
@@ -401,7 +412,7 @@ Aggregated stats by format across all matches.
 | Wagon wheel zones | 12-zone system (30-degree segments) | Industry standard, matches CricHeroes |
 | Offline sync | `synced` flag on deliveries + `sync_queue` table in SQLite | Track what needs pushing to server |
 | Primary keys | UUIDs | Cross-device sync friendly, no conflicts |
-| Timestamps | All tables have created_at | Audit trail, sync ordering |
+| Timestamps | All tables have created_at + updated_at | Audit trail, sync ordering, conflict resolution |
 
 ---
 
@@ -431,6 +442,11 @@ CREATE INDEX idx_matches_teams ON matches(home_team_id, away_team_id);
 -- Team rosters
 CREATE INDEX idx_rosters_team ON team_rosters(team_id);
 CREATE INDEX idx_rosters_player ON team_rosters(player_id);
+
+-- Match players (Playing XI)
+CREATE INDEX idx_match_players_match ON match_players(match_id);
+CREATE INDEX idx_match_players_team ON match_players(match_id, team_id);
+CREATE INDEX idx_match_players_player ON match_players(player_id);
 ```
 
 ---
@@ -439,7 +455,7 @@ CREATE INDEX idx_rosters_player ON team_rosters(player_id);
 
 The local SQLite database mirrors a subset of the PostgreSQL schema for offline-first capability:
 
-**Mirrored tables:** users, teams, team_rosters, matches, innings, overs, deliveries, batting_stats, bowling_stats
+**Mirrored tables:** users, teams, team_rosters, match_players, matches, innings, overs, deliveries, batting_stats, bowling_stats
 
 **Additional local-only tables:**
 

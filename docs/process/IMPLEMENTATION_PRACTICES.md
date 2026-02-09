@@ -659,7 +659,7 @@ Use the `scoring-researcher` agent for pre-review analysis of scoring changes. R
 
 ## 15. Logging & Crash Reporting
 
-> **Quick reference:** See [CODE_STANDARDS.md](CODE_STANDARDS.md) Section 11 for logging conventions, privacy rules, and the `print()` ban.
+> **Quick reference:** See [CODE_STANDARDS.md](CODE_STANDARDS.md) Section 12 for logging conventions, privacy rules, and the `print()` ban.
 
 ### Flutter Logging
 
@@ -699,7 +699,7 @@ Structured JSON logging via `logger.ts`. Every entry includes: `matchId`, `event
 
 ## 16. Code Generation Workflow
 
-> **Quick reference:** See [CODE_STANDARDS.md](CODE_STANDARDS.md) Section 14 for the code generation trigger table and version pinning rules.
+> **Quick reference:** See [CODE_STANDARDS.md](CODE_STANDARDS.md) Section 15 for the code generation trigger table and version pinning rules.
 
 ### When to Run build_runner
 
@@ -785,4 +785,4 @@ All queries in hot paths (scoring, stats reads) must use indexed columns. See [D
 
 ### Pagination
 
-Paginate all list screens (match history, team players, search results) with 20 items per page. Use cursor-based pagination with `created_at` + `id` as the cursor.
+Paginate all list screens (match history, team players, search results) with 20 items per page. Use offset-based pagination with `?page=1&limit=20` query parameters (default 20, max 50).

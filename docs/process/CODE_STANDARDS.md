@@ -138,6 +138,42 @@ Use standard cricket terminology. The codebase should read like a cricket conver
 | `dismissal` | `out_type`, `wicket_type` | "Dismissal" is the formal cricket term |
 | `declaration` | `early_end`, `voluntary_end` | "Declaration" is the cricket term for voluntary innings end |
 
+### Overs Decimal Notation
+
+Cricket overs use a special decimal notation: `12.3` means **12 overs and 3 balls** (not 12.3 mathematically). The `.N` part is always 0–5 (since 6 legal balls = 1 complete over).
+
+Provide a utility function on both platforms:
+
+```dart
+// Dart: convert (overs: int, balls: int) → double display
+double oversToDecimal(int overs, int balls) => overs + (balls / 10.0);
+// 12 overs, 3 balls → 12.3
+
+// Dart: convert decimal display → (overs, balls)
+(int overs, int balls) decimalToOvers(double value) =>
+    (value.truncate(), ((value * 10) % 10).round());
+// 12.3 → (12, 3)
+```
+
+```typescript
+// TypeScript: same utility
+function oversToDecimal(overs: number, balls: number): number {
+  return overs + balls / 10;
+}
+```
+
+**Important:** Never do arithmetic on overs-decimal values. Convert to total balls first (`overs * 6 + balls`), do the math, then convert back.
+
+### `total_runs` Computation
+
+`deliveries.total_runs` is computed **at application level** during the delivery processing pipeline (Step 2 in SCORING_RULES.md):
+
+```
+total_runs = runs_from_bat + wide_runs + no_ball_runs + bye_runs + leg_bye_runs
+```
+
+This is NOT a database trigger or generated column — it is calculated in the scoring service/notifier before persisting. The value is stored as a regular column for fast reads.
+
 ---
 
 ## 4. Database Naming Deep-Dive
@@ -194,7 +230,7 @@ Deliveries and stats are hard-deleted on undo — they are transactional, not re
 | Table Category | PK Type | Examples |
 |----------------|---------|----------|
 | Entity tables | `uuid DEFAULT gen_random_uuid()` | `users`, `teams`, `matches`, `deliveries`, `innings` |
-| Master/seed data | `serial` (auto-increment integer) | `ball_types`, `dismissal_types`, `shot_types`, `fielding_positions`, `wagon_wheel_zones` |
+| Master/seed data | `serial` (auto-increment integer) | `ball_types`, `dismissal_types`, `fielding_positions`, `wagon_wheel_zones` |
 
 UUIDs enable offline creation and cross-device sync without server round-trips.
 
@@ -490,7 +526,126 @@ Target: smooth performance on 2GB RAM budget Android devices. See [IMPLEMENTATIO
 
 ---
 
-## 10. Testing Standards
+## 10. UI Design Tokens & Patterns
+
+### Theme
+
+| Token | Value | Notes |
+|-------|-------|-------|
+| M3 seed color | `#2E7D32` (Green 800) | Cricket green. All M3 tonal surfaces derive from this. |
+| Color scheme | `ColorScheme.fromSeed(seedColor: Color(0xFF2E7D32), brightness: Brightness.dark)` | Dark theme only for MVP. |
+| Font family | Roboto | Android system font. No `google_fonts` download needed. Use M3 default `TextTheme`. |
+| Icon set | Material Symbols | Variable weight/fill. Built into Flutter via `Icons.*`. |
+| Orientation | Portrait only | Lock via `SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])` in `main()`. |
+
+### Spacing System (8dp Grid)
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `spacingXs` | 4dp | Inline element gaps, icon-to-text |
+| `spacingS` | 8dp | Between related elements in a group |
+| `spacingM` | 16dp | Page margins, section gaps, card padding |
+| `spacingL` | 24dp | Between major sections |
+| `spacingXl` | 32dp | Page top/bottom padding |
+| Touch target | 48x48dp minimum | Per PDR NFR. Scoring buttons should be larger (56dp+). |
+
+### Typography Scale
+
+Use M3 default `TextTheme` with Roboto. No custom sizes needed — M3 provides:
+
+| Style | Usage |
+|-------|-------|
+| `headlineLarge` | Match score (87/3) |
+| `headlineMedium` | Page titles |
+| `titleMedium` | Card headers (player names, team names) |
+| `bodyLarge` | Primary content text |
+| `bodyMedium` | Secondary content, descriptions |
+| `labelLarge` | Buttons, tabs |
+| `labelSmall` | Captions, stat labels ("R", "B", "4s", "6s", "SR") |
+
+### Surface Hierarchy (M3 Dark)
+
+Use M3's built-in surface tones. No custom surface colors.
+
+| Surface | Usage |
+|---------|-------|
+| `surface` | Page backgrounds |
+| `surfaceContainer` | Cards, dialogs |
+| `surfaceContainerHigh` | Elevated cards (scoring page header, player cards) |
+| `surfaceContainerHighest` | Top-level containers, bottom sheets |
+| `primaryContainer` | Active/selected states (current batter highlight) |
+
+### State Patterns
+
+| State | Pattern |
+|-------|---------|
+| **Loading** | Centered `CircularProgressIndicator` with optional text below ("Loading matches...") |
+| **Empty** | Centered icon + descriptive text + CTA button (e.g., cricket bat icon + "No matches yet" + "Start a Match" button) |
+| **Error** | Centered error icon + message + "Retry" button. Never show raw exceptions to users. |
+| **Pull-to-refresh** | `RefreshIndicator` on all list screens (match list, team list, player list). Triggers sync pull. |
+
+### Transitions & Animations
+
+Use M3 default page transitions only. No custom animations for MVP:
+- **Root navigation:** Fade through (`FadeThroughTransition`)
+- **Drill-down:** Shared axis (`SharedAxisTransition`)
+- **Dialogs/sheets:** M3 default slide-up + fade
+
+### App Bar Pattern
+
+- Standard `AppBar` for most screens (back button auto-provided by `GoRouter`).
+- Scoring page: No app bar — full-screen immersive layout. Status bar visible.
+- Use `AppBar.actions` for page-specific actions (filter, search, settings).
+
+### Snackbar/Toast Patterns
+
+| Scenario | Feedback Type |
+|----------|--------------|
+| Network error (transient) | `SnackBar` with retry action, 4 second duration |
+| Sync success | Animated cloud icon in app bar, no text (≤10 items). Progress text for >10 items. |
+| Form validation error | Inline text below field (red, `bodySmall`) |
+| Destructive action success | `SnackBar`: "Match abandoned" / "Team deleted" |
+| Critical failure | Full-screen error with retry button |
+
+### Team Logo
+
+- Upload: Simple file picker (`image_picker`), no cropping. Accept JPEG/PNG only.
+- Max size: 100KB (compress if needed).
+- Display: 48dp circle (`CircleAvatar`).
+- Fallback: First letter of team name on `primaryContainer` background.
+- Storage: Upload to server, store URL in `teams.logo_url`.
+
+### User Avatar
+
+- MVP: Initials only (first letter of display name). No photo upload.
+- Display: `CircleAvatar` with initials on `primaryContainer` background.
+- Post-MVP: Add camera/gallery picker for profile photos.
+
+### Settings Screen
+
+- No dedicated Settings page for MVP. Minimal settings live inside the Profile screen:
+  - **Logout** button
+  - **App version** display
+- Post-MVP: Add theme, notification preferences, account deletion.
+
+### Auth Screen
+
+- Single login screen with toggle/tabs: **Phone OTP** | **Google** | **Email**.
+- Email tab: Email text field + Password text field + "Sign In" button + "Create Account" link.
+- Email auth uses Firebase Email/Password provider — same flow as phone OTP but with email+password instead of OTP code.
+- New email users go through the same profile setup (US-13) after first sign-in.
+
+### Home Dashboard
+
+- Shows after login. Content:
+  - **Recent matches** list (last 5, sorted by date). Each card shows: opponent team, score summary, match status badge (Live/Completed/Abandoned), date.
+  - **Quick actions** row: "Start Match" (primary CTA), "Create Team", "Join Team".
+  - **My Stats** summary card: Total matches, runs, wickets, catches.
+- Empty state: Cricket bat icon + "No matches yet" + "Start a Match" button.
+
+---
+
+## 11. Testing Standards
 
 See [IMPLEMENTATION_PRACTICES.md](IMPLEMENTATION_PRACTICES.md) Section 13 for per-layer testing examples and the scoring engine test matrix.
 
@@ -540,7 +695,7 @@ Follow escalation tiers in [CODE_FIXES.md](CODE_FIXES.md):
 
 ---
 
-## 11. Logging Standards
+## 12. Logging Standards
 
 See [IMPLEMENTATION_PRACTICES.md](IMPLEMENTATION_PRACTICES.md) Section 15 for Crashlytics setup and scoring performance logging.
 
@@ -574,7 +729,7 @@ logger.error({ matchId, event: 'sync_failed', error: err.message });
 
 ---
 
-## 12. Import Ordering
+## 13. Import Ordering
 
 ### Dart
 
@@ -614,7 +769,7 @@ import type { DeliveryInput } from '../types/cricket';
 
 ---
 
-## 13. Code Formatting & Linting
+## 14. Code Formatting & Linting
 
 ### Formatting Rules
 
@@ -665,7 +820,7 @@ assert(striker.id != nonStriker.id, 'Striker and non-striker must be different')
 
 ---
 
-## 14. Dependencies & Tooling
+## 15. Dependencies & Tooling
 
 ### Version Pinning
 

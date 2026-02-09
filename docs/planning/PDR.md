@@ -23,7 +23,7 @@
 | US-05 | Scorer | Score a match offline | All scoring works without internet. Data persists locally and syncs when connectivity returns. | P0 | 4 |
 | US-06 | Viewer | Watch live scores | Can see ball-by-ball updates via WebSocket. Score, overs, current batters, and bowler visible. | P0 | 4 |
 | US-07 | Player | View my career stats | Can see aggregate batting average, strike rate, bowling economy, wickets, catches across all matches. | P1 | 5 |
-| US-08 | Player | View match analytics | Can see wagon wheel, manhattan chart, worm graph, and partnership details for any completed match. | P1 | 5 |
+| US-08 | Player | View match analytics | Can see wagon wheel, manhattan chart, and worm graph for any completed match. | P1 | 5 |
 | US-09 | Captain | Create and manage a team | Can create a team, add/remove players, set player roles (batter, bowler, all-rounder, keeper). | P1 | 2 |
 | US-10 | Captain | Manage team roster for a match | Can select playing XI from team roster before match starts. | P1 | 2 |
 | US-11 | Player | Sign up with phone OTP | Can register/login using Indian phone number via Firebase OTP. | P0 | 1 |
@@ -78,7 +78,7 @@ Detailed technical specifications live in dedicated planning docs. Do not duplic
 - Live WebSocket broadcasting
 - Team and player management
 - Career stats (batting, bowling, fielding)
-- Match analytics (wagon wheel, manhattan, worm, partnerships)
+- Match analytics (wagon wheel, manhattan, worm)
 - MVP rankings per match
 - Firebase Auth (phone OTP, Google, email)
 

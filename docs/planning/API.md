@@ -39,8 +39,7 @@ Verify Firebase token, create or retrieve user record.
     "bowlingStyle": "right_arm_fast",
     "playerRole": "all_rounder",
     "isNewUser": false
-  },
-  "token": "server_jwt_if_needed"
+  }
 }
 ```
 
@@ -149,6 +148,18 @@ PUT    /api/v1/teams/:id
 ```
 Update team info. Only team owner/captain.
 
+**Request:**
+```json
+{
+  "name": "Mumbai Warriors Updated",
+  "city": "Pune",
+  "logoUrl": "https://..."
+}
+```
+All fields optional — only provided fields are updated.
+
+**Response (200):** Updated team object.
+
 ---
 
 ```
@@ -188,6 +199,13 @@ DELETE /api/v1/teams/:id/players/:pid
 ```
 Remove player from roster. Only team owner/captain.
 
+**Response (200):**
+```json
+{
+  "message": "Player removed from roster"
+}
+```
+
 ---
 
 ### 1.3 Matches
@@ -220,6 +238,33 @@ GET    /api/v1/matches
 List matches the user is involved in (as scorer, player, or team member).
 
 **Query params:** `?status=live&page=1&limit=20`
+
+**Response (200):**
+```json
+{
+  "matches": [
+    {
+      "id": "uuid",
+      "homeTeam": { "id": "uuid", "name": "Mumbai Warriors" },
+      "awayTeam": { "id": "uuid", "name": "Delhi Dragons" },
+      "format": "T20",
+      "totalOvers": 20,
+      "status": "live",
+      "matchDate": "2025-03-15",
+      "venue": "Wankhede Stadium",
+      "currentInnings": {
+        "battingTeam": "Mumbai Warriors",
+        "totalRuns": 87,
+        "totalWickets": 3,
+        "overs": "12.3"
+      },
+      "result": null
+    }
+  ],
+  "total": 15,
+  "page": 1
+}
+```
 
 ---
 
@@ -257,15 +302,64 @@ Get match details including current state.
 ```
 PUT    /api/v1/matches/:id/toss
 ```
-Record toss result.
+Record toss result and select opening players. Transitions match status from `toss` to `live`.
 
 **Request:**
 ```json
 {
   "winnerId": "team_uuid",
-  "decision": "bat"
+  "decision": "bat",
+  "openingStrikerId": "uuid",
+  "openingNonStrikerId": "uuid",
+  "openingBowlerId": "uuid"
 }
 ```
+
+**Response (200):** Updated match object with status `live`, first innings created.
+
+**Errors:**
+- `400` — Opening players not in the match's playing XI.
+- `400` — Opening bowler is from the batting team.
+- `400` — Striker and non-striker are the same player.
+
+---
+
+```
+POST   /api/v1/matches/:id/playing-xi
+```
+Select the playing XI for one team in a match. Must be called for both teams before toss.
+
+**Request:**
+```json
+{
+  "teamId": "uuid",
+  "playerIds": ["uuid", "uuid", "...11 player UUIDs"],
+  "captainId": "uuid",
+  "keeperId": "uuid"
+}
+```
+
+**Response (201):**
+```json
+{
+  "matchId": "uuid",
+  "teamId": "uuid",
+  "players": [
+    {
+      "playerId": "uuid",
+      "displayName": "Rohit Sharma",
+      "isCaptain": true,
+      "isKeeper": false
+    }
+  ]
+}
+```
+
+**Errors:**
+- `400` — `playerIds` must contain exactly 11 UUIDs.
+- `400` — `captainId` / `keeperId` must be in `playerIds`.
+- `400` — One or more players not in the team roster.
+- `409` — Playing XI already submitted for this team in this match.
 
 ---
 
@@ -425,6 +519,26 @@ Search players by name. Case-insensitive partial match.
 GET    /api/v1/players/:id
 ```
 Get player profile.
+
+**Response (200):**
+```json
+{
+  "player": {
+    "id": "uuid",
+    "displayName": "Rohit Sharma",
+    "phone": "string",
+    "email": "string",
+    "battingStyle": "right_hand",
+    "bowlingStyle": "right_arm_medium",
+    "playerRole": "batter",
+    "city": "Mumbai",
+    "avatarUrl": "https://...",
+    "teams": [
+      { "id": "uuid", "name": "Mumbai Warriors", "role": "captain" }
+    ]
+  }
+}
+```
 
 ---
 
@@ -624,8 +738,83 @@ Pull changes since last sync.
 **Response (200):**
 ```json
 {
-  "deliveries": [ "..." ],
-  "matches": [ "..." ],
+  "deliveries": [
+    {
+      "id": "uuid",
+      "inningsId": "uuid",
+      "overNumber": 5,
+      "ballNumber": 3,
+      "sequenceNumber": 28,
+      "strikerId": "uuid",
+      "nonStrikerId": "uuid",
+      "bowlerId": "uuid",
+      "runsFromBat": 4,
+      "isWide": false,
+      "isNoBall": false,
+      "isBye": false,
+      "isLegBye": false,
+      "wideRuns": 0,
+      "noBallRuns": 0,
+      "byeRuns": 0,
+      "legByeRuns": 0,
+      "totalRuns": 4,
+      "isWicket": false,
+      "isLegal": true,
+      "isBoundaryFour": true,
+      "isBoundarySix": false,
+      "isFreeHit": false,
+      "wagonWheelZoneId": 3,
+      "timestamp": "2025-03-15T10:30:00Z"
+    }
+  ],
+  "matches": [
+    {
+      "id": "uuid",
+      "status": "live",
+      "tossWinnerId": "uuid",
+      "tossDecision": "bat",
+      "updatedAt": "2025-03-15T10:35:00Z"
+    }
+  ],
+  "innings": [
+    {
+      "id": "uuid",
+      "matchId": "uuid",
+      "inningsNumber": 1,
+      "battingTeamId": "uuid",
+      "bowlingTeamId": "uuid",
+      "totalRuns": 87,
+      "totalWickets": 3,
+      "totalOvers": "12.3",
+      "isCompleted": false,
+      "updatedAt": "2025-03-15T10:35:00Z"
+    }
+  ],
+  "battingStats": [
+    {
+      "id": "uuid",
+      "inningsId": "uuid",
+      "playerId": "uuid",
+      "runsScored": 45,
+      "ballsFaced": 32,
+      "fours": 5,
+      "sixes": 2,
+      "isNotOut": true,
+      "updatedAt": "2025-03-15T10:35:00Z"
+    }
+  ],
+  "bowlingStats": [
+    {
+      "id": "uuid",
+      "inningsId": "uuid",
+      "playerId": "uuid",
+      "oversBowled": "3.3",
+      "maidens": 0,
+      "runsConceded": 22,
+      "wicketsTaken": 1,
+      "updatedAt": "2025-03-15T10:35:00Z"
+    }
+  ],
   "updatedAt": "2025-03-15T10:35:00Z"
 }
 ```
@@ -658,6 +847,8 @@ GET    /api/v1/health
 
 Connection is authenticated via JWT query parameter. Server verifies the token and associates the WebSocket with the user.
 
+**Anonymous viewers:** Read-only WebSocket connections (viewers) do not require authentication. Connect without a `token` parameter to join match rooms as a subscriber. Anonymous connections can only receive `score_update`, `wicket`, `innings_complete`, and `match_complete` messages — they cannot send `delivery` or `undo_delivery` messages. Scorers still require a valid Firebase JWT.
+
 ### 2.2 Client to Server Messages
 
 **Join match room:**
@@ -684,16 +875,25 @@ Connection is authenticated via JWT query parameter. Server verifies the token a
   "data": {
     "overNumber": 5,
     "ballNumber": 3,
+    "sequenceNumber": 28,
     "strikerId": "uuid",
     "nonStrikerId": "uuid",
     "bowlerId": "uuid",
     "runsFromBat": 4,
+    "wideRuns": 0,
+    "noBallRuns": 0,
+    "byeRuns": 0,
+    "legByeRuns": 0,
     "isWide": false,
     "isNoBall": false,
     "isBye": false,
     "isLegBye": false,
     "isWicket": false,
-    "wagonWheelZone": "OF3"
+    "isBoundaryFour": true,
+    "isBoundarySix": false,
+    "isFreeHit": false,
+    "wagonWheelZoneId": 3,
+    "wicket": null
   }
 }
 ```
@@ -823,6 +1023,21 @@ Connection is authenticated via JWT query parameter. Server verifies the token a
 - **Viewers** join as subscribers (receive-only)
 - Uses Bun's native `server.publish(topic, message)` for broadcasting
 - Automatic cleanup when all connections leave a room
+
+### 2.5 Reconnection & Catch-Up
+
+When a viewer or scorer disconnects and reconnects:
+1. Client re-sends `join_match` message with `matchId`.
+2. Client fetches **latest match snapshot** via REST: `GET /matches/:id` (includes current score, batters, bowler) + `GET /matches/:id/deliveries?inningsId=<current>` for current over display.
+3. No delivery replay — the REST snapshot provides the current state. WebSocket resumes from there with new real-time updates.
+4. If scorer reconnects, the `scorer_id` lock is still in place — no re-authentication beyond the existing Firebase JWT on the WebSocket connection.
+
+### 2.6 Concurrent Scoring Prevention
+
+The `matches.scorer_id` field acts as a lock. Only the designated scorer can submit deliveries or undo actions:
+- Server validates that the authenticated user's ID matches `matches.scorer_id` on every `delivery` and `undo_delivery` message.
+- If a non-scorer sends a scoring message, the server responds with `{ "type": "error", "message": "Not authorized to score this match" }`.
+- Same validation applies to REST scoring endpoints (`POST /matches/:id/deliveries`, `DELETE /matches/:id/deliveries/:did`).
 
 ---
 
