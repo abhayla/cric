@@ -38,15 +38,39 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - JSONB for graph data in match_analytics
 - Offline-first with sync queue in local SQLite
 - Scorer = publisher, viewers = subscribers in WebSocket rooms
-- Free hit tracking on no-balls
+- Anonymous WebSocket viewers (no auth required for read-only)
+- Free hit tracking on no-balls; free hit persists through wides
 - Byes/leg-byes don't break maidens
 - No SUPER_OVER — tied match → COMPLETED with "Match Tied"
 - No DLS calculations or shot types tables (deferred / not needed for MVP)
+- Partnerships deferred to post-MVP (compute from deliveries later)
 - Teams use soft delete (`is_active` boolean)
 - WebSocket heartbeat via protocol-level ping/pong (30s interval, 5s timeout)
 - Sync ordering: match → innings → deliveries → stats
 - Server-wins conflict resolution (silent overwrite)
 - Local ID → server ID mapping table (no mass FK updates)
+- Offset-based pagination (`?page=1&limit=20`) on all endpoints
+- Every table has `created_at` + `updated_at`
+- `match_players` table for Playing XI (replaces inline approach)
+- `innings_stats` dropped — 3 computed columns moved to `innings` table
+- Firebase JWT directly (no server-issued JWT)
+- scorer_id lock for concurrent scoring prevention
+- Scorer picks crossed/not-crossed explicitly on run out
+- Wicket on last ball order: Wicket → New Batter → New Bowler
+- Bowler over limit: `ceil(totalOvers / 5)` per bowler
+- Declaration behind "Set" button; abandonment stats DO count in career
+- 5-run penalty supported with full UI flow
+- Custom run input (overthrows) + custom extras input
+- M3 dark theme: seed color #2E7D32, Roboto, Material Symbols, portrait lock
+- 8dp grid spacing system, M3 default transitions only
+- Scoring page: fixed header (top) + scrollable middle + fixed buttons (bottom)
+- Initials-only avatar for MVP; simple file picker for team logo (no crop)
+- Minimal settings in Profile (logout + app version)
+- Single login screen with tabs: Phone OTP | Google | Email
+- Home dashboard: recent matches, quick actions, my stats card
+- Deployment: existing VPS (Win Server 2022, PostgreSQL 16.8, Nginx, PM2, Cloudflare, GitHub Actions)
+- WebSocket delivery message matches REST fields; reconnect via REST snapshot (no replay)
+- `total_runs` computed at application level; overs decimal notation utility on both platforms
 
 ## Completed Work
 
@@ -64,6 +88,23 @@ A comprehensive gap analysis resolved 120 decisions across 22 rounds of Q&A. All
 - **bowling_style enum:** Replaced vague "etc." with full 9-value enum: `right_arm_fast, right_arm_medium, right_arm_off_spin, right_arm_leg_spin, left_arm_fast, left_arm_medium, left_arm_orthodox, left_arm_chinaman, none` (Gap 74)
 - **Custom overs range:** Added "Valid range: 1-50" note on `matches.total_overs` column (Gap 11)
 - **Max roster size:** Added "25 players per team (enforced at application level)" note on `team_rosters` section (Gap 53)
+
+### Step 0c: Full 62-Question Pre-Implementation Gap Analysis
+A second, more comprehensive gap analysis identified 62 questions across 7 categories. All 62 resolved and applied to docs (commit `d4013ae`). Working document at `docs/debug/gap-analysis-working.md`, full resolution log at plan file `mellow-seeking-crown.md`.
+
+**Category 1 — Document Contradictions (Q1-7):** Fixed pagination to offset-based, added `updated_at` to 8 tables, anonymous WebSocket viewers, standardized wagon wheel zone to int FK, added `match_players` table, removed stale `shot_types` reference, removed SUPER_OVER from blueprint.
+
+**Category 2 — Missing DB Infrastructure (Q8-10):** Deferred partnerships to post-MVP, dropped `innings_stats` table (moved 3 columns to `innings`), deferred materialized view SQL to Phase 5.
+
+**Category 3 — Missing API Endpoints (Q11-16):** Expanded toss endpoint with opening player selection, added Playing XI endpoint, completed 4 incomplete endpoint specs, removed server JWT from auth/verify, defined sync pull response shapes.
+
+**Category 4 — Scoring Engine Logic (Q17-31):** Specified run out crossed/not-crossed rules, retired hurt/out flow, stumped-off-wide UI, no-ball+byes interaction, wicket-on-last-ball order, new batter position by dismissal type, free hit through wides, custom run input (overthrows), custom extras input, declaration flow, abandonment rules, bowler over limit validation, concurrent scoring lock (scorer_id), 5-run penalty rules.
+
+**Category 5 — UI/Design Gaps (Q32-50):** Added complete Section 10 "UI Design Tokens & Patterns" to CODE_STANDARDS.md covering M3 seed color (#2E7D32), Roboto font, Material Symbols icons, 8dp grid spacing, typography scale, dark surface hierarchy, loading/empty/error state patterns, M3 transitions, app bar pattern, snackbar patterns, scoring page fixed-scroll-fixed layout, team logo spec, initials-only avatar, minimal settings in Profile, email auth tab on login, home dashboard content.
+
+**Category 6 — Deployment & Infrastructure (Q51-58):** Expanded IMPLEMENTATION_PLAN.md Phase 7 with existing VPS details (Windows Server 2022, PostgreSQL 16.8, Nginx, PM2, Cloudflare, GitHub Actions self-hosted runner), domain TBD, health monitoring integration, daily pg_dump backups.
+
+**Category 7 — Server Architecture (Q59-62):** Fixed WebSocket delivery message to match REST fields, added reconnection/catch-up strategy (REST snapshot, no replay), documented overs decimal notation utility, clarified `total_runs` as application-level computation.
 
 ### Interactive Architectural Blueprint
 - **`docs/planning/blueprint.html`** — Comprehensive single-file HTML blueprint (1763 lines) with:
