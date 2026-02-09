@@ -39,14 +39,11 @@ apps/server/bun.lockb
 *.freezed.dart
 *.gr.dart
 
-# Screenshots / verification artifacts
+# Screenshots / verification artifacts (track images/ for reference screenshots)
 *.png
-*.jpg
 *.jpeg
-images/
 
-# Debug logs
-docs/debug/
+# Debug logs (track docs/debug/.gitkeep to preserve folder)
 
 # Misc
 *.log
