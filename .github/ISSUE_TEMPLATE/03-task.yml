@@ -1,0 +1,65 @@
+name: Task
+description: Infrastructure, setup, or configuration work
+labels: ["type: task", "status: needs-triage"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to be done
+      placeholder: Describe the task clearly
+    validations:
+      required: true
+
+  - type: textarea
+    id: subtasks
+    attributes:
+      label: Subtasks
+      description: Break down the work into smaller pieces
+      placeholder: |
+        - [ ] Subtask 1
+        - [ ] Subtask 2
+        - [ ] Subtask 3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: implementation-phase
+    attributes:
+      label: Implementation Phase
+      description: Per IMPLEMENTATION_PLAN.md
+      options:
+        - "Phase 1: Foundation"
+        - "Phase 2: Match Setup"
+        - "Phase 3: Scoring Engine"
+        - "Phase 4: Real-time & Sync"
+        - "Phase 5: Stats & Analytics"
+        - "Phase 6: Polish"
+        - "Phase 7: Release"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: effort-estimate
+    attributes:
+      label: Effort Estimate
+      options:
+        - "S (< 2 hours)"
+        - "M (2-8 hours)"
+        - "L (1-3 days)"
+        - "XL (3+ days)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: List any issues that must be completed first
+      placeholder: e.g., Blocked by #12, #15
+
+  - type: textarea
+    id: relevant-docs
+    attributes:
+      label: Relevant Docs
+      description: Links to specific sections in planning docs

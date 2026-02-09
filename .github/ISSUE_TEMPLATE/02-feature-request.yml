@@ -1,0 +1,65 @@
+name: Feature Request
+description: Suggest a new feature or capability
+labels: ["type: feature", "status: needs-triage"]
+body:
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: Describe the feature from the user's perspective
+      placeholder: As a [role], I want to [goal] so that [benefit].
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the conditions that must be met
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: implementation-phase
+    attributes:
+      label: Implementation Phase
+      description: Per IMPLEMENTATION_PLAN.md
+      options:
+        - "Phase 1: Foundation"
+        - "Phase 2: Match Setup"
+        - "Phase 3: Scoring Engine"
+        - "Phase 4: Real-time & Sync"
+        - "Phase 5: Stats & Analytics"
+        - "Phase 6: Polish"
+        - "Phase 7: Release"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 - Must have for MVP
+        - P1 - Should have for MVP
+        - P2 - Nice to have
+        - P3 - Future consideration
+    validations:
+      required: true
+
+  - type: input
+    id: design-reference
+    attributes:
+      label: Design Reference
+      description: Link to blueprint.html section or wireframe if applicable
+      placeholder: e.g., blueprint.html#scoring-screen
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Any implementation considerations, affected tables, endpoints, etc.
