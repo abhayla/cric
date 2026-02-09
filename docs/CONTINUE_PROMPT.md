@@ -12,7 +12,7 @@ See [CLAUDE.md](../CLAUDE.md#tech-stack) for tech stack.
 
 ## Documentation
 
-See [DOCS_MANAGEMENT.md](process/DOCS_MANAGEMENT.md) for the full documentation map with all planning and process docs.
+See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full documentation map with all planning and process docs.
 
 ## What to Do Next
 

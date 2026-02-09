@@ -45,7 +45,7 @@ Planning is 100% complete. **No code has been implemented yet** — `apps/mobile
 
 Read the planning docs before implementing. Follow the process docs during implementation.
 
-For the full documentation map with purposes and update frequencies, see [DOCS_MANAGEMENT.md](docs/process/DOCS_MANAGEMENT.md).
+For the full documentation map with purposes and update frequencies, see [PROJECT_MANAGEMENT.md](docs/process/PROJECT_MANAGEMENT.md).
 
 **Session handoff:** [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) — Start here for session context and next steps.
 

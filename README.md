@@ -31,7 +31,7 @@ cric/
 │   │   ├── SCORING_RULES.md
 │   │   └── blueprint.html
 │   ├── process/         # Workflow & standards docs
-│   │   ├── DOCS_MANAGEMENT.md
+│   │   ├── PROJECT_MANAGEMENT.md
 │   │   ├── CODE_STANDARDS.md
 │   │   ├── IMPLEMENTATION_PRACTICES.md
 │   │   ├── CODE_FIXES.md
@@ -59,7 +59,7 @@ cric/
 
 ### Process
 
-- [Docs Management](docs/process/DOCS_MANAGEMENT.md) - Documentation map and maintenance rules
+- [Project Management](docs/process/PROJECT_MANAGEMENT.md) - Documentation map, maintenance rules, codebase structure enforcement
 - [Code Standards](docs/process/CODE_STANDARDS.md) - Naming conventions, error handling, import ordering
 - [Implementation Practices](docs/process/IMPLEMENTATION_PRACTICES.md) - Feature workflow, offline-first, testing
 - [Code Fixes](docs/process/CODE_FIXES.md) - Debugging workflow, common issues, fix protocol
