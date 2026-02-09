@@ -137,30 +137,98 @@ These are CricApp-specific issues that are likely to occur during implementation
 
 ## Test Failure Resolution Loop
 
+**Iteration tracking:** Start a counter at `iteration = 1`. Increment after each failed re-run.
+
+**Debug logging:** At loop start, create `docs/debug/<issue-name>.md` with the following table. After each failed iteration, append a row. In conversation, maintain a 1-2 line status summary referencing this file.
+
 ```
-Run tests
-    ↓
-Test fails
-    ↓
-Read the failure output carefully
-    ↓
+| Iter | Hypothesis | Fix Attempted | Result | Finding |
+|------|-----------|--------------|--------|---------|
+```
+
+### Flowchart
+
+```
+Run test
+    |
+Test fails -> Read failure output carefully
+    |
 Is the test expectation correct?
-├── NO → Fix the test (the test was wrong)
-└── YES → Fix the code
-            ↓
-        Re-run the failing test
-            ↓
-        Still failing?
-        ├── YES → Re-read the failure, check a different code path
-        └── NO → Run the full feature test suite
-                    ↓
-                Any other failures?
-                ├── YES → Fix (your change broke something else)
-                └── NO → If UI test, take screenshot and verify
-                            ↓
-                        Screenshot matches blueprint?
-                        ├── YES → Done
-                        └── NO → Fix UI and loop back
+|-- NO -> Fix the test
++-- YES -> Fix the code
+            |
+        Re-run the failing test (iteration++)
+            |
+        Passes?
+        |-- YES -> Run full feature test suite
+        |           |
+        |       Any other failures?
+        |       |-- YES -> Fix (your change broke something -- restart loop)
+        |       +-- NO -> If UI test, screenshot verify against blueprint -> Done
+        |
+        +-- NO -> Update DEBUG file, then check iteration tier:
+                |-- Normal (1-3): Re-read failure, try a different code path
+                |-- Tier 1 (4-5): Slow Down -- apply Tier 1 instructions
+                |-- Tier 2 (6-7): Widen -- apply Tier 2 instructions
+                |-- Tier 3 (8-9): Audit -- apply Tier 3 instructions
+                +-- Hard Cap (10): STOP -> present findings to user
+```
+
+### Escalation Tier Summary
+
+| Tier | Iterations | Reasoning Shift | Scope Expansion |
+|------|-----------|----------------|-----------------|
+| Normal | 1-3 | Read error, fix the obvious cause | Failing function and its immediate context |
+| Tier 1 | 4-5 | Slow down, challenge assumptions | Full file + imports + type definitions |
+| Tier 2 | 6-7 | Trace full path, map expected vs actual | Callers/callees + planning docs |
+| Tier 3 | 8-9 | Audit architecture, check for interacting bugs | Full feature directory + codebase grep |
+| Hard Cap | 10 | Stop fixing | Present structured findings to user |
+
+### Tier 1 — Slow Down (iterations 4-5)
+
+- **Read the DEBUG file** to review all findings from iterations 1-3. Identify what has been ruled out vs what remains uncertain.
+- **Discard your previous theory, but carry forward all findings.** Re-interpret the accumulated evidence with fresh eyes.
+- **List your assumptions explicitly:** what you believe the code does, what the test expects, what the types are. Verify each against the actual source.
+- **Read the entire file** containing the failing code (not just the failing function). Check imports, type definitions, and constructor parameters for mismatches.
+
+### Tier 2 — Widen (iterations 6-7)
+
+- **Read the DEBUG file** and identify the pattern across all 5 failed iterations — same error, shifting errors, or partial fixes?
+- **Trace the full code path** from the test's entry point to the failure point. At each layer boundary (UI → Notifier → Repository → Datasource → DB), write out the expected vs actual state.
+- **The bug may not be where it manifests.** Grep for all callers and callees of the failing function. The root cause may be upstream or downstream.
+- **Read the relevant planning doc** ([SCORING_RULES.md](../planning/SCORING_RULES.md), [DATABASE.md](../planning/DATABASE.md), or [API.md](../planning/API.md)) and compare the spec against the implementation line by line.
+
+### Tier 3 — Audit (iterations 8-9)
+
+- **Read the DEBUG file** and look for contradictions — did any two iterations produce conflicting findings? A contradiction points to interacting bugs.
+- **Challenge interface contracts between layers.** Is the repository returning what the notifier expects? Is the datasource mapping fields correctly? Could two bugs be canceling each other on other paths but compounding here?
+- **For scoring bugs:** manually walk through the 10-step delivery pipeline ([SCORING_RULES.md](../planning/SCORING_RULES.md)) with the test's exact input data, writing out the expected output of each step.
+- **Read the full feature directory.** Grep the codebase for the same function/pattern to find a working instance elsewhere — diff it against the failing code.
+
+### Hard Cap — Iteration 10
+
+Stop fixing. Present findings to the user in this format:
+
+```
+## Stuck: [Test Name]
+
+**Failure:** [One-line error summary]
+
+**Pattern:** [What is consistent across all 9 attempts — same error? shifting errors?]
+
+**Attempts:**
+1. [What was tried -> what happened]
+...
+9. [What was tried -> what happened]
+
+**Files Investigated:**
+- [file path — reason for reading]
+
+**Root Cause Hypothesis:** [Best theory for why the fix is not working]
+
+**Recommended Next Steps:**
+- [What the user should check or decide]
+- [Whether a design change or spec clarification may be needed]
 ```
 
 ---

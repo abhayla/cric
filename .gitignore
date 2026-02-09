@@ -43,5 +43,8 @@ apps/server/bun.lockb
 *.jpeg
 images/
 
+# Debug logs
+docs/debug/
+
 # Misc
 *.log
