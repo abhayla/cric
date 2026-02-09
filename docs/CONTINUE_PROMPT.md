@@ -40,8 +40,30 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - Scorer = publisher, viewers = subscribers in WebSocket rooms
 - Free hit tracking on no-balls
 - Byes/leg-byes don't break maidens
+- No SUPER_OVER — tied match → COMPLETED with "Match Tied"
+- No DLS calculations or shot types tables (deferred / not needed for MVP)
+- Teams use soft delete (`is_active` boolean)
+- WebSocket heartbeat via protocol-level ping/pong (30s interval, 5s timeout)
+- Sync ordering: match → innings → deliveries → stats
+- Server-wins conflict resolution (silent overwrite)
+- Local ID → server ID mapping table (no mass FK updates)
 
 ## Completed Work
+
+### Step 0: Planning Doc Updates (Gap Analysis)
+A comprehensive gap analysis resolved 120 decisions across 22 rounds of Q&A. All planning docs have been updated:
+- **DATABASE.md:** Dropped `dls_calculations` and `shot_types` tables. Added `is_retired_hurt` to `batting_stats`, `is_active` to `teams`. Removed `super_over` from match status enum and `match_result.result_type`. Added full `sync_queue` and `local_preferences` schemas in Local-Only Tables section.
+- **API.md:** Added `GET /api/v1/players/search` (player search by name) and `DELETE /api/v1/teams/:id` (soft delete team) endpoints.
+- **SCORING_RULES.md:** Removed SUPER_OVER state from state machine. Tied match → COMPLETED with "Match Tied".
+- **IMPLEMENTATION_PRACTICES.md:** Updated match state machine test list (6 states, no SUPER_OVER).
+- **CLAUDE.md:** Updated match state machine description to reflect tied match handling.
+
+### Step 0b: Missed Q1-Q18 Doc Fixes
+4 decisions from Q1-Q18 that were missed in the original Step 0 have now been applied to DATABASE.md:
+- **ball_types seed values:** Added "other" → now `leather, tennis, tape, other` (Gap 77)
+- **bowling_style enum:** Replaced vague "etc." with full 9-value enum: `right_arm_fast, right_arm_medium, right_arm_off_spin, right_arm_leg_spin, left_arm_fast, left_arm_medium, left_arm_orthodox, left_arm_chinaman, none` (Gap 74)
+- **Custom overs range:** Added "Valid range: 1-50" note on `matches.total_overs` column (Gap 11)
+- **Max roster size:** Added "25 players per team (enforced at application level)" note on `team_rosters` section (Gap 53)
 
 ### Interactive Architectural Blueprint
 - **`docs/planning/blueprint.html`** — Comprehensive single-file HTML blueprint (1763 lines) with:

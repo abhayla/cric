@@ -602,11 +602,11 @@ The scoring engine requires the most comprehensive tests. Cover:
 
 ### Match State Machine Tests
 
-- Test all 7 states: SETUP, TOSS, LIVE, INNINGS_BREAK, COMPLETED, SUPER_OVER, ABANDONED.
+- Test all 6 states: SETUP, TOSS, LIVE, INNINGS_BREAK, COMPLETED, ABANDONED.
 - Test all valid transitions per the state table in [SCORING_RULES.md](../planning/SCORING_RULES.md) Section 1.
 - Test invalid transitions are rejected (e.g., SETUP → LIVE without toss).
 - Test ABANDONED can be triggered from every state.
-- Test SUPER_OVER triggers when scores are tied after both innings.
+- Test tied scores after both innings → COMPLETED with result "Match Tied".
 
 ### Integration Tests — Full Match Flow
 

@@ -152,6 +152,22 @@ Update team info. Only team owner/captain.
 ---
 
 ```
+DELETE /api/v1/teams/:id
+```
+Soft delete a team. Sets `is_active=false`. Only team owner or captain.
+
+**Response (200):**
+```json
+{
+  "message": "Team deleted successfully"
+}
+```
+
+**Error (403):** Not authorized (not owner or captain).
+
+---
+
+```
 POST   /api/v1/teams/:id/players
 ```
 Add player to team roster.
@@ -380,6 +396,30 @@ Get all deliveries for a match.
 ---
 
 ### 1.5 Players
+
+```
+GET    /api/v1/players/search
+```
+Search players by name. Case-insensitive partial match.
+
+**Query params:** `?q=<name>&limit=10`
+
+**Response (200):**
+```json
+{
+  "players": [
+    {
+      "id": "uuid",
+      "displayName": "Rohit Sharma",
+      "battingStyle": "right_hand",
+      "bowlingStyle": "right_arm_medium",
+      "city": "Mumbai"
+    }
+  ]
+}
+```
+
+---
 
 ```
 GET    /api/v1/players/:id

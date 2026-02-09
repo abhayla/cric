@@ -4,12 +4,11 @@
 
 ```
   SETUP ──→ TOSS ──→ LIVE ──→ INNINGS_BREAK ──→ LIVE ──→ COMPLETED
-                                                            ↓
-                                                       SUPER_OVER
-                                                        (if tied)
 
   At any point: ──→ ABANDONED
 ```
+
+> If scores are tied after both innings, the match result is "Match Tied" (status → COMPLETED).
 
 > During `LIVE` status, the current innings is identified by `innings.innings_number` (1 or 2).
 
@@ -21,9 +20,7 @@
 | TOSS | LIVE | Toss winner/decision recorded, opening players selected |
 | LIVE | INNINGS_BREAK | All out OR overs exhausted OR declaration (1st innings) |
 | INNINGS_BREAK | LIVE | Opening players for 2nd innings selected |
-| LIVE | COMPLETED | All out OR overs exhausted OR target chased (2nd innings) |
-| LIVE | SUPER_OVER | Scores tied after both innings |
-| SUPER_OVER | COMPLETED | Super over completed |
+| LIVE | COMPLETED | All out OR overs exhausted OR target chased OR scores tied (2nd innings) |
 | Any | ABANDONED | Manual abandonment by scorer |
 
 ---

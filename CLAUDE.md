@@ -121,7 +121,7 @@ These rules are mandatory. Before writing any code, verify your approach against
 
 The scoring engine is the most critical piece. Key rules in [SCORING_RULES.md](docs/planning/SCORING_RULES.md):
 
-**Match state machine:** `SETUP → TOSS → LIVE → INNINGS_BREAK → LIVE → COMPLETED` (during `LIVE`, `innings.innings_number` distinguishes 1st vs 2nd innings; `SUPER_OVER` if tied, `ABANDONED` at any point).
+**Match state machine:** `SETUP → TOSS → LIVE → INNINGS_BREAK → LIVE → COMPLETED` (during `LIVE`, `innings.innings_number` distinguishes 1st vs 2nd innings; tied scores → COMPLETED with "Match Tied"; `ABANDONED` at any point).
 
 **Delivery rules:**
 - Odd runs swap striker/non-striker; end of over swaps too

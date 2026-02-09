@@ -4,7 +4,7 @@
 
 - **Server Database:** PostgreSQL (via Drizzle ORM)
 - **Local Database:** SQLite (via Drift in Flutter)
-- **Total Tables:** 24 core tables + 5 materialized views
+- **Total Tables:** 22 core tables + 5 materialized views
 
 ---
 
@@ -14,7 +14,7 @@
 | Column | Type | Notes |
 |--------|------|-------|
 | id | serial PK | |
-| name | varchar(50) | leather, tennis, tape |
+| name | varchar(50) | leather, tennis, tape, other |
 | created_at | timestamp | default now() |
 
 ### 1.2 `dismissal_types`
@@ -31,14 +31,7 @@
 
 **Seed values:** bowled, caught, lbw, run_out, stumped, hit_wicket, caught_and_bowled, retired_hurt, retired_out, timed_out, obstructing_field, handled_ball
 
-### 1.3 `shot_types`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | serial PK | |
-| name | varchar(50) | e.g. "straight drive", "cover drive", "pull" |
-| created_at | timestamp | |
-
-### 1.4 `fielding_positions`
+### 1.3 `fielding_positions`
 16 standard cricket fielding positions.
 
 | Column | Type | Notes |
@@ -50,7 +43,7 @@
 
 **Seed values:** wicket_keeper, first_slip, second_slip, third_slip, gully, point, cover, mid_off, mid_on, mid_wicket, square_leg, fine_leg, third_man, long_off, long_on, deep_mid_wicket
 
-### 1.5 `wagon_wheel_zones`
+### 1.4 `wagon_wheel_zones`
 12-zone system (30-degree segments, industry standard).
 
 | Column | Type | Notes |
@@ -93,7 +86,7 @@
 | display_name | varchar(100) | required |
 | avatar_url | text | nullable |
 | batting_style | varchar(20) | "right_hand", "left_hand" |
-| bowling_style | varchar(30) | "right_arm_fast", "left_arm_spin", etc. |
+| bowling_style | varchar(30) | "right_arm_fast", "right_arm_medium", "right_arm_off_spin", "right_arm_leg_spin", "left_arm_fast", "left_arm_medium", "left_arm_orthodox", "left_arm_chinaman", "none" |
 | player_role | varchar(20) | "batter", "bowler", "all_rounder", "wk_batter" |
 | city | varchar(100) | nullable |
 | created_at | timestamp | |
@@ -107,6 +100,7 @@
 | logo_url | text | nullable |
 | city | varchar(100) | nullable |
 | created_by | uuid FK → users.id | Team owner |
+| is_active | boolean | default true |
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
@@ -122,6 +116,7 @@
 | joined_at | timestamp | |
 
 **Unique constraint:** (team_id, player_id)
+**Max roster size:** 25 players per team (enforced at application level)
 
 ---
 
@@ -134,7 +129,7 @@
 | home_team_id | uuid FK → teams.id | |
 | away_team_id | uuid FK → teams.id | |
 | format | varchar(20) | "T20", "ODI", "custom" |
-| total_overs | integer | e.g. 20, 50, any custom number |
+| total_overs | integer | e.g. 20, 50, any custom number. Valid range: 1-50 |
 | ball_type_id | integer FK → ball_types.id | |
 | venue | varchar(200) | nullable |
 | toss_winner_id | uuid FK → teams.id | nullable (set after toss) |
@@ -261,6 +256,7 @@
 | dismissal_type_id | integer FK → dismissal_types.id | nullable |
 | dismissed_by_id | uuid FK → users.id | nullable (bowler) |
 | fielder_id | uuid FK → users.id | nullable |
+| is_retired_hurt | boolean | default false |
 | minutes_batted | integer | nullable |
 | created_at | timestamp | |
 
@@ -355,7 +351,7 @@
 | id | uuid PK | |
 | match_id | uuid FK → matches.id | UNIQUE |
 | winner_team_id | uuid FK → teams.id | nullable (tie/no result) |
-| result_type | varchar(20) | "runs", "wickets", "tie", "no_result", "super_over" |
+| result_type | varchar(20) | "runs", "wickets", "tie", "no_result" |
 | margin | integer | nullable (runs or wickets margin) |
 | man_of_match_id | uuid FK → users.id | nullable |
 | summary | text | e.g. "Team A won by 5 wickets" |
@@ -371,17 +367,6 @@
 | mvp_scores | jsonb | `[{"playerId":"...","score":45.5,"breakdown":{...}}, ...]` |
 | created_at | timestamp | |
 | updated_at | timestamp | |
-
-### 6.4 `dls_calculations`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | |
-| match_id | uuid FK → matches.id | |
-| interruption_over | decimal(5,1) | |
-| revised_target | integer | |
-| revised_overs | integer | |
-| notes | text | |
-| created_at | timestamp | |
 
 ---
 
@@ -457,8 +442,28 @@ The local SQLite database mirrors a subset of the PostgreSQL schema for offline-
 **Mirrored tables:** users, teams, team_rosters, matches, innings, overs, deliveries, batting_stats, bowling_stats
 
 **Additional local-only tables:**
-- `sync_queue` -- pending operations to push to server
-- `local_preferences` -- app settings, cached auth state
+
+#### `sync_queue`
+Pending operations to push to server.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | integer PK autoincrement | |
+| entity_type | text NOT NULL | match, innings, delivery, batting_stats, etc. |
+| entity_id | text NOT NULL | local UUID of the entity |
+| operation | text NOT NULL | create, update, delete |
+| payload | text NOT NULL | JSON blob of entity data |
+| retry_count | integer | default 0 |
+| status | text | default 'pending' — pending, syncing, synced, failed |
+| created_at | timestamp | default CURRENT_TIMESTAMP |
+
+#### `local_preferences`
+App settings and cached auth state.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| key | text PK | |
+| value | text NOT NULL | |
 
 **Sync strategy:**
 1. All writes go to local SQLite first
