@@ -8,52 +8,34 @@ CricApp is a cricket scoring mobile app (CricHeroes competitor) for amateur cric
 
 ## Tech Stack
 
-- **Frontend:** Flutter (Dart) + Riverpod 3.0, Drift/SQLite (local DB), Material 3 Dark Theme
-- **Backend:** Bun + ElysiaJS + Drizzle ORM, PostgreSQL
-- **Auth:** Firebase Auth (Phone OTP, Google, Email)
-- **Real-time:** Bun Native WebSockets
-- **Target:** Android only (MVP)
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Flutter (Dart) + Riverpod 3.0 |
+| Local DB | Drift / SQLite |
+| Backend | Bun + ElysiaJS + Drizzle ORM |
+| Server DB | PostgreSQL |
+| Auth | Firebase Auth (Phone OTP, Google, Email) |
+| Real-time | Bun Native WebSockets |
+| UI Theme | Material 3 Dark |
+| Target | Android only (MVP) |
 
 ## Monorepo Layout
 
-**[MANDATORY] Read `.claude/rules.md` before creating any file or folder. All new code must follow this structure exactly.**
+**[MANDATORY] Read [.claude/rules.md](.claude/rules.md) before creating any file or folder. All new code must follow this structure exactly.**
 
-```
+```text
 cric/
 ├── apps/
-│   ├── mobile/                    # Flutter app
-│   │   ├── lib/
-│   │   │   ├── src/
-│   │   │   │   ├── app/           # Root widget, router, global providers
-│   │   │   │   ├── core/          # Constants, theme, utils, errors, extensions
-│   │   │   │   ├── features/      # Feature modules (auth, scoring, teams, etc.)
-│   │   │   │   │   └── <feature>/ # data/ + domain/ + presentation/ + providers.dart
-│   │   │   │   └── shared/        # Cross-feature: database, sync, providers, widgets
-│   │   │   └── main.dart
-│   │   └── test/                  # Mirrors src/ structure
-│   │
-│   └── server/                    # Bun backend
-│       ├── src/
-│       │   ├── config/            # Env validation, DB connection
-│       │   ├── db/                # Drizzle schema, migrations, seed
-│       │   ├── routes/v1/         # ElysiaJS route handlers
-│       │   ├── services/          # Business logic
-│       │   ├── websocket/         # WebSocket handler, rooms, types
-│       │   ├── middleware/        # Auth, error handling, CORS
-│       │   ├── types/             # Shared TypeScript types
-│       │   ├── utils/             # Helpers (cricket-rules, mvp-calculator, logger)
-│       │   └── index.ts           # Entry point
-│       └── test/                  # Mirrors src/ structure
-│
+│   ├── mobile/        # Flutter app
+│   └── server/        # Bun backend
 ├── docs/
-│   ├── planning/               # Product & architecture docs
-│   ├── process/                # Workflow & standards docs
-│   └── CONTINUE_PROMPT.md      # Session handoff
-├── .claude/                       # Claude Code config + rules
+│   ├── planning/      # Product & architecture specs
+│   └── process/       # Workflow & standards
+├── .claude/           # Claude Code config + rules
 └── CLAUDE.md
 ```
 
-Every new file **must** be placed according to the placement rules in `.claude/rules.md`. No exceptions.
+Every new file **must** be placed according to the placement rules in [.claude/rules.md](.claude/rules.md). No exceptions.
 
 ## Current Status
 
@@ -61,29 +43,11 @@ Planning is 100% complete. **No code has been implemented yet** — `apps/mobile
 
 ## Key Documentation
 
-### Planning Docs
+Read the planning docs before implementing. Follow the process docs during implementation.
 
-Read these before implementing:
-- `docs/planning/PDR.md` — Product vision, 15 user stories, success metrics, MVP scope boundaries (Android-only, no iOS/DLS/tournaments/ads)
-- `docs/planning/IMPLEMENTATION_PLAN.md` — Phased roadmap (7 phases), folder structure, packages
-- `docs/planning/DATABASE.md` — 24 tables, 5 materialized views, indexes, local SQLite schema
-- `docs/planning/API.md` — REST endpoints with request/response examples, WebSocket protocol
-- `docs/planning/SCORING_RULES.md` — Match state machine, delivery processing pipeline, cricket rules, MVP algorithm
-- `docs/planning/blueprint.html` — Interactive visual blueprint with all 18 screen wireframes, scoring dialogs, backend architecture diagrams, and cricket domain overlays (open in browser, supports pan/zoom)
+For the full documentation map with purposes and update frequencies, see [DOCS_MANAGEMENT.md](docs/process/DOCS_MANAGEMENT.md).
 
-### Process Docs
-
-Follow these workflows during implementation:
-- `docs/process/DOCS_MANAGEMENT.md` — Documentation map, folder structure, maintenance rules
-- `docs/process/CODE_STANDARDS.md` — Variable naming, function naming, error handling, import ordering
-- `docs/process/IMPLEMENTATION_PRACTICES.md` — Feature implementation workflow, offline-first, state management, testing
-- `docs/process/CODE_FIXES.md` — Debugging workflow, common issue patterns, scoring engine fix protocol
-- `docs/process/GITHUB_ISSUES.md` — Issue templates, labels, milestones, commit message format
-- `docs/process/CLAUDE_CODE_CONFIG.md` — Sub-agent specifications, skill definitions
-
-### Session Management
-
-- `docs/CONTINUE_PROMPT.md` — Start here for session context and next steps
+**Session handoff:** [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) — Start here for session context and next steps.
 
 ## Build & Run Commands (once initialized)
 
@@ -126,7 +90,7 @@ These rules are mandatory. Before writing any code, verify your approach against
 ### YAGNI — Only Build What Is Needed Right Now
 
 - Do not create abstract base classes, generic utilities, or shared helpers until a second concrete use case exists. One usage = inline it.
-- Do not add API endpoints, database columns, Drizzle schema fields, or Drift table columns not required by the current phase in `docs/planning/IMPLEMENTATION_PLAN.md`.
+- Do not add API endpoints, database columns, Drizzle schema fields, or Drift table columns not required by the current phase in [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md).
 - Do not build extensibility mechanisms (plugin systems, event buses, middleware pipelines) unless the docs explicitly call for one.
 - Do not add optional/nullable fields to Freezed models, Drizzle schemas, or API responses "for future use." Add them when the feature that needs them is being built.
 - Do not implement caching, rate limiting, pagination, or retry logic until the feature works correctly without it. Layer optimizations onto working code.
@@ -155,9 +119,9 @@ These rules are mandatory. Before writing any code, verify your approach against
 
 ## Cricket Domain Rules
 
-The scoring engine is the most critical piece. Key rules in `docs/planning/SCORING_RULES.md`:
+The scoring engine is the most critical piece. Key rules in [SCORING_RULES.md](docs/planning/SCORING_RULES.md):
 
-**Match state machine:** `SETUP → TOSS → INNINGS_1 → INNINGS_BREAK → INNINGS_2 → COMPLETED` (with `SUPER_OVER` if tied, `ABANDONED` at any point).
+**Match state machine:** `SETUP → TOSS → LIVE → INNINGS_BREAK → LIVE → COMPLETED` (during `LIVE`, `innings.innings_number` distinguishes 1st vs 2nd innings; `SUPER_OVER` if tied, `ABANDONED` at any point).
 
 **Delivery rules:**
 - Odd runs swap striker/non-striker; end of over swaps too
@@ -173,11 +137,11 @@ The scoring engine is the most critical piece. Key rules in `docs/planning/SCORI
 - Fix root causes, not symptoms — loop on test failures until the underlying issue is resolved.
 - **Screenshot verification loop:** After tests, take a screenshot and visually verify UI matches expected output. If it fails, fix and retest in a loop until all tests pass. Do not move on until verified.
 - If requirements are ambiguous, ask one clarifying question at a time (with your recommendation based on best practices) until you reach 100% confidence — do not guess.
-- **Session handoff:** Always update `docs/CONTINUE_PROMPT.md` before ending work so the next session can resume seamlessly. Read it at the start of each session for context.
+- **Session handoff:** Always update [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) before ending work so the next session can resume seamlessly. Read it at the start of each session for context.
 
 **Implementation order:** Always build features inside-out: domain entities → data layer (datasources, repositories) → presentation (notifiers, pages, widgets). Never start with UI.
 
-**Detailed workflows:** See `docs/process/IMPLEMENTATION_PRACTICES.md` for the full feature implementation workflow, and `docs/process/CODE_FIXES.md` for the debugging and fix process.
+**Detailed workflows:** See [IMPLEMENTATION_PRACTICES.md](docs/process/IMPLEMENTATION_PRACTICES.md) for the full feature implementation workflow, and [CODE_FIXES.md](docs/process/CODE_FIXES.md) for the debugging and fix process.
 
 ## Feature Architecture Pattern
 
@@ -193,7 +157,7 @@ Each feature in `apps/mobile/lib/src/features/<feature>/` follows clean architec
 - `presentation/widgets/` — Feature-specific reusable widgets
 - `providers.dart` — All Riverpod provider declarations for this feature
 
-See `.claude/rules.md` for full placement rules and decision tree for where every type of file belongs.
+See [.claude/rules.md](.claude/rules.md) for full placement rules and decision tree for where every type of file belongs.
 
 ## Naming Conventions
 
@@ -210,10 +174,10 @@ See `.claude/rules.md` for full placement rules and decision tree for where ever
 - Drizzle schema tables: `snake_case` SQL names (e.g., `batting_stats`, `player_career_stats`)
 
 **Database (PostgreSQL + SQLite):**
-- Tables: `snake_case` plural (e.g., `deliveries`, `batting_stats`, `team_players`)
+- Tables: `snake_case` plural (e.g., `deliveries`, `batting_stats`, `team_rosters`)
 - Columns: `snake_case` (e.g., `is_legal`, `bowler_id`, `created_at`)
 - Indexes: `idx_<table>_<columns>` (e.g., `idx_deliveries_innings_over`)
 
-**Git commits:** Use conventional commits — `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`. Branch format: `feature/`, `fix/`, or `task/` + issue number + description. See `docs/process/GITHUB_ISSUES.md` for full format.
+**Git commits:** Use conventional commits — `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`. Branch format: `feature/`, `fix/`, or `task/` + issue number + description. See [GITHUB_ISSUES.md](docs/process/GITHUB_ISSUES.md) for full format.
 
-**Extended conventions:** See `docs/process/CODE_STANDARDS.md` for variable naming patterns, function naming patterns, error handling patterns, and import ordering.
+**Extended conventions:** See [CODE_STANDARDS.md](docs/process/CODE_STANDARDS.md) for variable naming patterns, function naming patterns, error handling patterns, and import ordering.

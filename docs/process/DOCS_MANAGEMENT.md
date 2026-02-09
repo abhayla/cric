@@ -5,6 +5,7 @@
 | File Path | Purpose | Update Frequency |
 |-----------|---------|-----------------|
 | `CLAUDE.md` | Claude Code project instructions, code principles, architecture | Rarely (protected) |
+| `README.md` | Project overview, tech stack, doc links for external visitors | Per phase completion |
 | `.claude/rules.md` | File placement rules, folder structure, naming conventions | Rarely (protected) |
 | `docs/CONTINUE_PROMPT.md` | Session handoff context and next steps | Every session |
 | `docs/planning/PDR.md` | Product requirements, user stories, success metrics | Per phase completion |
@@ -14,7 +15,7 @@
 | `docs/planning/SCORING_RULES.md` | Match state machine, delivery pipeline, cricket rules | When rules change |
 | `docs/planning/blueprint.html` | Interactive wireframes, architecture diagrams | Per phase completion |
 | `docs/process/DOCS_MANAGEMENT.md` | This file — doc map and maintenance rules | When docs added/moved |
-| `docs/process/CODE_STANDARDS.md` | Variable naming, function naming, error handling, imports | When conventions change |
+| `docs/process/CODE_STANDARDS.md` | Single reference for all coding conventions: naming, API design, state management, error handling, testing, performance, logging, linting, tooling | When conventions change |
 | `docs/process/IMPLEMENTATION_PRACTICES.md` | Feature workflow, offline-first, state management, testing | When practices evolve |
 | `docs/process/CODE_FIXES.md` | Debugging workflow, common issues, fix protocol | When patterns discovered |
 | `docs/process/GITHUB_ISSUES.md` | Issue templates, labels, milestones, workflow | When process changes |

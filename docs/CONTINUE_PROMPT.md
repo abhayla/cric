@@ -8,45 +8,11 @@
 
 ## Tech Stack
 
-- **Frontend:** Flutter (Dart) + Riverpod 3.0
-- **Backend:** Bun + ElysiaJS + Drizzle ORM
-- **Database:** PostgreSQL (server) + Drift/SQLite (local)
-- **Auth:** Firebase Auth (Phone OTP, Google, Email)
-- **Real-time:** Bun Native WebSockets
-- **Target:** Android only (MVP)
-- **UI:** Material 3 Dark Theme
+See [CLAUDE.md](../CLAUDE.md#tech-stack) for tech stack.
 
 ## Documentation
 
-### Planning Docs (`docs/planning/`)
-
-| Document | Contents |
-|----------|----------|
-| `docs/planning/PDR.md` | Product vision, user stories (15), success metrics, non-functional requirements, MVP scope boundaries |
-| `docs/planning/IMPLEMENTATION_PLAN.md` | Architecture, folder structure, packages, phased roadmap (7 phases, 14 weeks), verification plan, testing strategy |
-| `docs/planning/DATABASE.md` | Full schema for 24 tables + 5 materialized views, indexes, SQLite local schema, sync strategy |
-| `docs/planning/API.md` | All REST endpoints (auth, teams, matches, scoring, players, analytics, sync, health) + full WebSocket protocol |
-| `docs/planning/SCORING_RULES.md` | Match state machine, delivery processing pipeline (10 steps), all cricket rules (strike rotation, wides, no-balls, byes, leg-byes, maidens, innings completion, dismissal types), undo logic, MVP algorithm, UI interactions |
-| `docs/planning/blueprint.html` | Interactive visual blueprint — 18 screen wireframes, 5 scoring dialogs, backend architecture, cricket domain overlays |
-
-### Process Docs (`docs/process/`)
-
-| Document | Contents |
-|----------|----------|
-| `docs/process/DOCS_MANAGEMENT.md` | Documentation map, folder structure rules, maintenance guidelines |
-| `docs/process/CODE_STANDARDS.md` | Variable naming, function naming, cricket-domain naming, error handling, import ordering |
-| `docs/process/IMPLEMENTATION_PRACTICES.md` | Feature implementation workflow (7 steps), offline-first pattern, Riverpod state management, testing approach, WebSocket pattern, code generation, performance |
-| `docs/process/CODE_FIXES.md` | Root cause analysis (8 steps), common issue patterns, debugging tools, scoring engine fix protocol |
-| `docs/process/GITHUB_ISSUES.md` | Issue templates, label system, milestones, issue workflow, commit message format |
-| `docs/process/CLAUDE_CODE_CONFIG.md` | Sub-agent specs (4 agents), skill definitions (6 skills) |
-
-### Other
-
-| Document | Contents |
-|----------|----------|
-| `CLAUDE.md` | Claude Code project instructions, code principles (YAGNI/KISS/DRY), architecture decisions |
-| `.claude/rules.md` | File placement rules, folder structure, naming conventions, anti-patterns |
-| `README.md` | Project overview with links to all docs |
+See [DOCS_MANAGEMENT.md](process/DOCS_MANAGEMENT.md) for the full documentation map with all planning and process docs.
 
 ## What to Do Next
 
@@ -94,33 +60,9 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - Created Product Development Requirements (`docs/planning/PDR.md`)
 - Created 6 process docs covering code standards, implementation workflow, debugging, issue management, and Claude Code config
 
-## Files in Repository
+## Repository Structure
 
-```
-cric/
-├── .git/
-├── .claude/
-│   └── rules.md                  (file placement rules)
-├── docs/
-│   ├── planning/
-│   │   ├── PDR.md                (product requirements)
-│   │   ├── IMPLEMENTATION_PLAN.md
-│   │   ├── DATABASE.md
-│   │   ├── API.md
-│   │   ├── SCORING_RULES.md
-│   │   └── blueprint.html        (interactive architectural blueprint)
-│   ├── process/
-│   │   ├── DOCS_MANAGEMENT.md    (documentation map & rules)
-│   │   ├── CODE_STANDARDS.md     (naming & formatting)
-│   │   ├── IMPLEMENTATION_PRACTICES.md  (feature workflow)
-│   │   ├── CODE_FIXES.md         (debugging workflow)
-│   │   ├── GITHUB_ISSUES.md      (issue management)
-│   │   └── CLAUDE_CODE_CONFIG.md (agent & skill specs)
-│   └── CONTINUE_PROMPT.md        (this file)
-├── Notes                          (user's working notes)
-├── CLAUDE.md                      (Claude Code instructions)
-└── README.md
-```
+See [CLAUDE.md](../CLAUDE.md#monorepo-layout) for the folder structure and [.claude/rules.md](../.claude/rules.md) for file placement rules.
 
 ## Instructions for Next Session
 

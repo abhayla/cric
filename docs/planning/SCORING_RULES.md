@@ -3,24 +3,26 @@
 ## 1. Match State Machine
 
 ```
-  SETUP ──→ TOSS ──→ INNINGS_1 ──→ INNINGS_BREAK ──→ INNINGS_2 ──→ COMPLETED
-                                                                      ↓
-                                                                 SUPER_OVER
-                                                                  (if tied)
+  SETUP ──→ TOSS ──→ LIVE ──→ INNINGS_BREAK ──→ LIVE ──→ COMPLETED
+                                                            ↓
+                                                       SUPER_OVER
+                                                        (if tied)
 
   At any point: ──→ ABANDONED
 ```
+
+> During `LIVE` status, the current innings is identified by `innings.innings_number` (1 or 2).
 
 ### State Transitions
 
 | From | To | Trigger |
 |------|----|---------|
 | SETUP | TOSS | Both teams selected, match params set |
-| TOSS | INNINGS_1 | Toss winner/decision recorded, opening players selected |
-| INNINGS_1 | INNINGS_BREAK | All out OR overs exhausted OR declaration |
-| INNINGS_BREAK | INNINGS_2 | Opening players for 2nd innings selected |
-| INNINGS_2 | COMPLETED | All out OR overs exhausted OR target chased |
-| INNINGS_2 | SUPER_OVER | Scores tied after both innings |
+| TOSS | LIVE | Toss winner/decision recorded, opening players selected |
+| LIVE | INNINGS_BREAK | All out OR overs exhausted OR declaration (1st innings) |
+| INNINGS_BREAK | LIVE | Opening players for 2nd innings selected |
+| LIVE | COMPLETED | All out OR overs exhausted OR target chased (2nd innings) |
+| LIVE | SUPER_OVER | Scores tied after both innings |
 | SUPER_OVER | COMPLETED | Super over completed |
 | Any | ABANDONED | Manual abandonment by scorer |
 

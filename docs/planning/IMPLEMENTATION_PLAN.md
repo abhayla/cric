@@ -2,7 +2,7 @@
 
 ## 1. Architecture Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │                 FLUTTER APP                      │
 │  ┌───────────┐  ┌──────────┐  ┌──────────────┐ │
@@ -57,25 +57,29 @@
 
 ### 2.1 Flutter App (`apps/mobile/`)
 
-```
+```text
 apps/mobile/
 ├── android/
 ├── lib/
-│   ├── core/
-│   │   ├── constants/
-│   │   │   ├── app_constants.dart
-│   │   │   └── cricket_constants.dart       # Overs, dismissals, etc.
-│   │   ├── errors/
-│   │   │   └── exceptions.dart
-│   │   ├── extensions/
-│   │   ├── theme/
-│   │   │   ├── app_theme.dart               # M3 dark theme
-│   │   │   └── app_colors.dart
-│   │   └── utils/
-│   │       ├── cricket_utils.dart           # Strike rotation, over calc
-│   │       └── validators.dart
-│   │
 │   ├── src/
+│   │   ├── app/
+│   │   │   ├── app.dart                             # Root widget
+│   │   │   ├── router.dart                          # go_router config
+│   │   │   └── providers.dart                       # App-wide providers
+│   │   ├── core/
+│   │   │   ├── constants/
+│   │   │   │   ├── app_constants.dart
+│   │   │   │   └── cricket_constants.dart       # Overs, dismissals, etc.
+│   │   │   ├── errors/
+│   │   │   │   └── exceptions.dart
+│   │   │   ├── extensions/
+│   │   │   ├── theme/
+│   │   │   │   ├── app_theme.dart               # M3 dark theme
+│   │   │   │   └── app_colors.dart
+│   │   │   └── utils/
+│   │   │       ├── cricket_utils.dart           # Strike rotation, over calc
+│   │   │       └── validators.dart
+│   │   │
 │   │   ├── features/
 │   │   │   ├── auth/
 │   │   │   │   ├── data/
@@ -198,9 +202,6 @@ apps/mobile/
 │   │   │       ├── app_scaffold.dart
 │   │   │       └── loading_widget.dart
 │   │   │
-│   │   └── routing/
-│   │       └── app_router.dart                            # go_router config
-│   │
 │   └── main.dart
 │
 ├── test/
@@ -210,7 +211,7 @@ apps/mobile/
 
 ### 2.2 Bun Server (`apps/server/`)
 
-```
+```text
 apps/server/
 ├── src/
 │   ├── db/
