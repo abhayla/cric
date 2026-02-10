@@ -94,6 +94,12 @@
 
       <!-- Matches Panel -->
       <div class="tab-panel" data-panel="matches">
+        <!-- Empty State (G24) — toggle: document.getElementById('emptyMatches').style.display = '' -->
+        <div id="emptyMatches" class="empty-state" style="display: none;">
+          <div class="empty-icon">&#x1F4CB;</div>
+          <div class="empty-title">No Matches Played</div>
+          <div class="empty-text">Matches involving this team will appear here.</div>
+        </div>
         <div style="padding: var(--page-margin);">
           <div class="match-card" onclick="navigateTo('15-scorecard.html')">
             <div class="match-header">
@@ -143,6 +149,13 @@
 
       <!-- Players Panel -->
       <div class="tab-panel" data-panel="players">
+        <!-- Empty State (G24) — toggle: document.getElementById('emptyPlayers').style.display = '' -->
+        <div id="emptyPlayers" class="empty-state" style="display: none;">
+          <div class="empty-icon">&#x1F464;</div>
+          <div class="empty-title">No Players Added</div>
+          <div class="empty-text">Add players to build your team roster.</div>
+          <button class="empty-cta" onclick="navigateTo('09-manage-roster.html')">Add Player</button>
+        </div>
         <div style="padding: var(--page-margin);">
           <div class="flex justify-between items-center mb-16">
             <span class="text-secondary text-sm">11 players</span>

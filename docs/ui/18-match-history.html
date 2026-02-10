@@ -167,6 +167,14 @@
       </div>
     </div>
 
+    <!-- Empty State (G24) — toggle: document.getElementById('emptyState').style.display = '' -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-icon">&#x1F4CB;</div>
+      <div class="empty-title">No Match History</div>
+      <div class="empty-text">Your past matches will appear here once you play.</div>
+      <button class="empty-cta" onclick="navigateTo('10-match-setup.html')">Start a Match</button>
+    </div>
+
     <!-- Bottom Nav -->
     <nav class="bottom-nav" id="bottomNav"></nav>
   </div>

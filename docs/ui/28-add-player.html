@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Add Player</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .phone-frame { display: flex; flex-direction: column; }
+    .search-result-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-md); margin-top: 12px;
+      cursor: pointer; transition: all var(--duration) var(--ease);
+    }
+    .search-result-card:hover { border-color: var(--primary); }
+    .search-result-card.selected { border-color: var(--primary); background: var(--primary-light); }
+    .no-result {
+      text-align: center; padding: 24px 0;
+      font-size: var(--body-sm); color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('09-manage-roster.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Add Player</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="search">Search by Phone</div>
+      <div class="tab" data-tab="create">Create New</div>
+    </div>
+
+    <div class="page-content no-bottom-nav" style="padding-bottom: 16px;">
+      <!-- Tab 1: Search by Phone -->
+      <div class="tab-panel active" data-panel="search">
+        <div class="input-group">
+          <label class="input-label">Phone Number</label>
+          <div class="input-row">
+            <span class="input-prefix">+91</span>
+            <input type="tel" class="input-field" placeholder="98765 43210" maxlength="10" id="searchPhone">
+          </div>
+        </div>
+        <div style="margin-top: 12px;">
+          <button class="btn btn-primary" onclick="demoSearch()">Search</button>
+        </div>
+
+        <!-- Search Result Area -->
+        <div id="searchResults" style="display: none;">
+          <div class="search-result-card selected" id="foundPlayer">
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">VP</div>
+            <div class="player-info" style="flex: 1;">
+              <div class="player-name">Vikas Patel</div>
+              <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">All-rounder &bull; RHB &bull; Right Medium</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="noResults" style="display: none;">
+          <div class="no-result">
+            <p>No player found with this number.</p>
+            <p style="margin-top: 4px;"><a href="#" onclick="document.querySelector('[data-tab=create]').click(); return false;" style="font-weight: var(--fw-semibold);">Create New Player</a></p>
+          </div>
+        </div>
+
+        <div id="searchAddBtn" style="display: none; margin-top: 16px;">
+          <button class="btn btn-primary" onclick="alert('Player added to team!')">Add to Team</button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Create New -->
+      <div class="tab-panel" data-panel="create">
+        <div class="input-group">
+          <label class="input-label">Player Name *</label>
+          <input type="text" class="input-field" placeholder="Enter full name">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Phone Number (optional)</label>
+          <div class="input-row">
+            <span class="input-prefix">+91</span>
+            <input type="tel" class="input-field" placeholder="98765 43210" maxlength="10">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Role</label>
+          <div class="chip-group">
+            <span class="chip active" data-value="batsman">Batsman</span>
+            <span class="chip" data-value="bowler">Bowler</span>
+            <span class="chip" data-value="allrounder">All-rounder</span>
+            <span class="chip" data-value="wicketkeeper">Wicketkeeper</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Batting Style</label>
+          <div class="chip-group">
+            <span class="chip active" data-value="rhb">Right Hand</span>
+            <span class="chip" data-value="lhb">Left Hand</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Bowling Style</label>
+          <div class="chip-group">
+            <span class="chip active" data-value="rm">Right Medium</span>
+            <span class="chip" data-value="rf">Right Fast</span>
+            <span class="chip" data-value="ob">Off Break</span>
+            <span class="chip" data-value="ls">Left Spin</span>
+            <span class="chip" data-value="lm">Left Medium</span>
+            <span class="chip" data-value="none">None</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+          <button class="btn btn-primary" onclick="alert('Player created and added to team!')">Add to Team</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    initTabs();
+    initChipGroups();
+
+    function demoSearch() {
+      const phone = document.getElementById('searchPhone').value.replace(/\s/g, '');
+      if (phone.length >= 10) {
+        // Demo: show found player
+        document.getElementById('searchResults').style.display = '';
+        document.getElementById('noResults').style.display = 'none';
+        document.getElementById('searchAddBtn').style.display = '';
+      } else if (phone.length > 0) {
+        // Demo: no result
+        document.getElementById('searchResults').style.display = 'none';
+        document.getElementById('noResults').style.display = '';
+        document.getElementById('searchAddBtn').style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

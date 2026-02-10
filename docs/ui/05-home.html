@@ -188,6 +188,14 @@
 
     </div>
 
+    <!-- Empty State (G24) — toggle: document.getElementById('emptyState').style.display = '' -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-icon">&#x1F3CF;</div>
+      <div class="empty-title">No Matches Yet</div>
+      <div class="empty-text">Start your first match and your scores will appear here.</div>
+      <button class="empty-cta" onclick="navigateTo('10-match-setup.html')">Start a Match</button>
+    </div>
+
     <!-- Bottom Navigation -->
     <nav class="bottom-nav" id="bottomNav"></nav>
   </div>

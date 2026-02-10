@@ -114,6 +114,14 @@
         </div>
       </div>
 
+      <!-- Empty State (G24) — toggle: document.getElementById('emptyState').style.display = '' -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-icon">&#x1F4C5;</div>
+        <div class="empty-title">No Teams Available</div>
+        <div class="empty-text">Create a team first to set up a match.</div>
+        <button class="empty-cta" onclick="navigateTo('07-create-team.html')">Create Team</button>
+      </div>
+
       <!-- Spacer -->
       <div style="flex: 1;"></div>
 

@@ -186,6 +186,36 @@
         </div>
       </div>
 
+      <!-- Match Schedule (T13) -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Match Schedule (optional)</h3>
+
+        <div class="input-group" style="margin-top: 0;">
+          <label class="input-label">Default Start Time</label>
+          <input type="time" class="input-field" value="10:00">
+        </div>
+
+        <div class="stepper-row">
+          <span class="stepper-label">Match Duration</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="stepMinutes('matchDuration', -15)">−</button>
+            <span class="stepper-value" id="matchDuration">30</span>
+            <span style="font-size: var(--body-sm); color: var(--text-secondary);">min</span>
+            <button class="stepper-btn" onclick="stepMinutes('matchDuration', 15)">+</button>
+          </div>
+        </div>
+
+        <div class="stepper-row">
+          <span class="stepper-label">Gap Between Matches</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="stepMinutes('matchGap', -5)">−</button>
+            <span class="stepper-value" id="matchGap">5</span>
+            <span style="font-size: var(--body-sm); color: var(--text-secondary);">min</span>
+            <button class="stepper-btn" onclick="stepMinutes('matchGap', 5)">+</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Spacer -->
       <div style="flex: 1; min-height: 24px;"></div>
 
@@ -209,6 +239,14 @@
       let val = parseInt(el.textContent) + delta;
       if (id === 'numGroups') val = Math.max(1, Math.min(val, 8));
       if (id === 'qualifyN') val = Math.max(1, Math.min(val, 4));
+      el.textContent = val;
+    }
+
+    function stepMinutes(id, delta) {
+      const el = document.getElementById(id);
+      let val = parseInt(el.textContent) + delta;
+      if (id === 'matchDuration') val = Math.max(0, Math.min(val, 300));
+      if (id === 'matchGap') val = Math.max(0, Math.min(val, 120));
       el.textContent = val;
     }
 

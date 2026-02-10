@@ -60,6 +60,12 @@
     </div>
     <div class="result-banner">Mumbai Warriors won by 15 runs</div>
 
+    <!-- Super Over trigger (A3) — hidden by default, visible for tied knockout matches -->
+    <!-- Toggle: document.getElementById('superOverSection').style.display = '' -->
+    <div id="superOverSection" style="display: none; padding: 8px 16px; text-align: center; background: var(--surface);">
+      <button class="btn btn-outline btn-sm" onclick="navigateTo('27-super-over-setup.html')">Start Super Over</button>
+    </div>
+
     <!-- Tabs -->
     <div class="tabs">
       <div class="tab active" data-tab="scorecard">Scorecard</div>
@@ -118,11 +124,11 @@
 
         <div class="scorecard-extras">
           <span>Extras</span>
-          <span>10 (Wd 4, NB 2, B 2, LB 2)</span>
+          <span>12 (Wd 4, NB 2, B 2, LB 2, P 2)</span>
         </div>
         <div class="scorecard-total">
           <span>Total (6 wkts, 20.0 ov)</span>
-          <span>187</span>
+          <span>189</span>
         </div>
 
         <!-- Yet to Bat -->
@@ -208,13 +214,19 @@
             </tr>
           </tbody>
         </table>
-        <div class="scorecard-extras"><span>Extras</span><span>8 (Wd 3, NB 1, B 2, LB 2)</span></div>
+        <div class="scorecard-extras"><span>Extras</span><span>8 (Wd 3, NB 1, B 2, LB 2, P 0)</span></div>
         <div class="scorecard-total"><span>Total (9 wkts, 20.0 ov)</span><span>172</span></div>
       </div>
     </div>
 
     <!-- Commentary Panel -->
     <div class="tab-panel" data-panel="commentary" style="padding: 0 16px; padding-bottom: 80px;">
+      <!-- Empty State (G24) — toggle: document.getElementById('emptyCommentary').style.display = '' -->
+      <div id="emptyCommentary" class="empty-state" style="display: none;">
+        <div class="empty-icon">&#x1F4AC;</div>
+        <div class="empty-title">No Commentary</div>
+        <div class="empty-text">Ball-by-ball commentary will appear here during the match.</div>
+      </div>
       <div class="commentary-item">
         <div class="ball-num">20.0</div>
         <div class="commentary-text">Ravi to Rajesh Kumar, <span class="highlight-runs">1 run</span>, tucked to mid-on for a single. Mumbai Warriors finish at 187/6.</div>

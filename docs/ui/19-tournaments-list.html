@@ -128,6 +128,14 @@
 
     </div>
 
+    <!-- Empty State (G24) — toggle: document.getElementById('emptyState').style.display = '' -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-icon">&#x1F3C6;</div>
+      <div class="empty-title">No Tournaments</div>
+      <div class="empty-text">Create a tournament to organize matches between teams.</div>
+      <button class="empty-cta" onclick="navigateTo('20-create-tournament.html')">Create Tournament</button>
+    </div>
+
     <!-- FAB -->
     <button class="fab" onclick="navigateTo('20-create-tournament.html')" title="Create Tournament">
       <span data-icon="plus" style="width: 24px; height: 24px;"></span>
@@ -138,6 +146,6 @@
   </div>
 
   <script src="app.js"></script>
-  <script>initBottomNav('home');</script>
+  <script>initBottomNav('tournaments');</script>
 </body>
 </html>

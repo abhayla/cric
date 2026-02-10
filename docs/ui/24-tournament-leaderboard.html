@@ -269,13 +269,20 @@
 
     </div>
 
+    <!-- Empty State (G24) — toggle: document.getElementById('emptyState').style.display = '' -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-icon">&#x1F3C5;</div>
+      <div class="empty-title">No Data Yet</div>
+      <div class="empty-text">Leaderboard data will appear once matches are completed.</div>
+    </div>
+
     <!-- Bottom Nav -->
     <nav class="bottom-nav" id="bottomNav"></nav>
   </div>
 
   <script src="app.js"></script>
   <script>
-    initBottomNav('home');
+    initBottomNav('tournaments');
     initTabs();
   </script>
 </body>

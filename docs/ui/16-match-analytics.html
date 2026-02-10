@@ -91,7 +91,16 @@
       <!-- Wagon Wheel -->
       <div class="tab-panel" data-panel="wagon">
         <div class="chart-container">
-          <h4 style="font-size: var(--body-sm); font-weight: var(--fw-bold); margin-bottom: 12px;">Wagon Wheel — Arjun Mehta (54)</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="font-size: var(--body-sm); font-weight: var(--fw-bold);" id="wagonTitle">Wagon Wheel — Arjun Mehta (54)</h4>
+            <select class="input-field" style="height: 32px; width: auto; padding: 0 28px 0 8px; font-size: var(--caption); border-radius: var(--radius-sm);" onchange="updateWagonTitle(this)">
+              <option value="Arjun Mehta|54" selected>A. Mehta (54)</option>
+              <option value="Vikram Sharma|32">V. Sharma (32)</option>
+              <option value="Karan Singh|48">K. Singh (48*)</option>
+              <option value="Aditya Joshi|18">A. Joshi (18)</option>
+              <option value="Rohan Patel|12">R. Patel (12)</option>
+            </select>
+          </div>
           <div class="wagon-wheel" style="position: relative;">
             <!-- Field zones drawn via SVG -->
             <svg width="100%" height="100%" viewBox="0 0 280 280">
@@ -230,6 +239,11 @@
         labels.appendChild(label);
       }
     });
+
+    function updateWagonTitle(select) {
+      const [name, runs] = select.value.split('|');
+      document.getElementById('wagonTitle').textContent = `Wagon Wheel — ${name} (${runs})`;
+    }
   </script>
 </body>
 </html>

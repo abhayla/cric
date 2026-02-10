@@ -48,8 +48,14 @@
 </head>
 <body>
   <div class="phone-frame">
+    <!-- Viewer Mode Indicator (Q20) — hidden by default, toggle via: document.getElementById('viewerIndicator').style.display = '' -->
+    <div class="viewer-indicator" id="viewerIndicator" style="display: none;">Viewing as spectator</div>
+
     <!-- Score Header -->
     <div class="score-header" id="scoreHeader">
+      <button class="back-btn" onclick="openModal('exitConfirmModal')" style="margin-right: 4px;">
+        <span data-icon="back" style="width:20px;height:20px;"></span>
+      </button>
       <div>
         <div style="font-size: var(--caption); color: rgba(255,255,255,0.7); margin-bottom: 2px;">
           <span id="battingTeam">Mumbai Warriors</span> — 1st Innings
@@ -84,6 +90,13 @@
           <div class="stat-mini"><div class="stat-mini-value" id="striker6s">2</div><div class="stat-mini-label">6s</div></div>
           <div class="stat-mini"><div class="stat-mini-value" id="strikerSR">154.5</div><div class="stat-mini-label">SR</div></div>
         </div>
+      </div>
+
+      <!-- Strike Swap Button (Q19) -->
+      <div style="display: flex; justify-content: center; padding: 4px 0;">
+        <button class="strike-swap-btn" title="Swap Strike" onclick="state.rotateStrike(); updateUI();">
+          <span data-icon="swap"></span>
+        </button>
       </div>
 
       <!-- Non-Striker -->
@@ -143,6 +156,10 @@
         <button class="run-btn" onclick="scoreRuns(3)">3</button>
         <button class="run-btn four-btn" onclick="scoreRuns(4)">4</button>
         <button class="run-btn six-btn" onclick="scoreRuns(6)">6</button>
+        <div style="position: relative;">
+          <button class="more-btn" onclick="toggleOverthrowPicker()">...</button>
+          <div class="overthrow-picker" id="overthrowPicker"></div>
+        </div>
       </div>
 
       <!-- Extras + Wicket Row -->
@@ -168,6 +185,9 @@
         <div class="settings-menu" id="settingsMenu">
           <button class="settings-menu-item" onclick="openModal('inningsModal')">Declare Innings</button>
           <button class="settings-menu-item" onclick="openModal('penaltyModal')">5-Run Penalty</button>
+          <button class="settings-menu-item" onclick="openModal('bowlerInjuredModal')">Bowler Injured</button>
+          <button class="settings-menu-item" onclick="alert('Reopen last completed innings')">Reopen Last Innings</button>
+          <button class="settings-menu-item" onclick="alert('Reopen completed match')">Reopen Match</button>
           <button class="settings-menu-item danger" onclick="openModal('abandonModal')">Abandon Match</button>
         </div>
       </div>
@@ -179,10 +199,12 @@
     <div class="modal-overlay" id="bowlerModal">
       <div class="modal">
         <div class="modal-header">
-          <span class="modal-title">Select Bowler</span>
+          <span class="modal-title">Over 13</span>
         </div>
         <div class="modal-body" style="max-height: 50vh; overflow-y: auto;">
           <p class="text-secondary text-sm mb-16">Over completed. Select the next bowler.</p>
+          <!-- Auto-select note: shown when only 1 eligible bowler remains -->
+          <!-- <p style="font-size: var(--caption); color: var(--primary); margin-bottom: 12px;">Only 1 eligible bowler — auto-selected.</p> -->
 
           <div class="player-select-row" onclick="selectNewBowler(this, 'Harsh Mishra')">
             <div class="player-select-check"></div>
@@ -238,7 +260,8 @@
           <span class="modal-title">Select New Batter</span>
         </div>
         <div class="modal-body" style="max-height: 50vh; overflow-y: auto;">
-          <p class="text-secondary text-sm mb-16">Select the next batter to come in.</p>
+          <p class="text-secondary text-sm" style="margin-bottom: 4px;">Select the next batter to come in.</p>
+          <p style="font-size: var(--caption); color: var(--wicket); margin-bottom: 16px;">Replacing: <strong>Rohan Patel</strong> (lbw b Sachin)</p>
 
           <div class="player-select-row" onclick="selectNewBatter(this, 'Nikhil Verma')">
             <div class="player-select-check"></div>
@@ -247,6 +270,7 @@
               <div class="player-name">Nikhil Verma</div>
               <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Wicketkeeper &bull; #6</div>
             </div>
+            <span class="chip" style="height: 22px; padding: 0 8px; font-size: 10px; pointer-events: none;">RHB</span>
           </div>
           <div class="player-select-row" onclick="selectNewBatter(this, 'Rajesh Kumar')">
             <div class="player-select-check"></div>
@@ -255,6 +279,7 @@
               <div class="player-name">Rajesh Kumar</div>
               <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &bull; #7</div>
             </div>
+            <span class="chip" style="height: 22px; padding: 0 8px; font-size: 10px; pointer-events: none;">RHB</span>
           </div>
           <div class="player-select-row" onclick="selectNewBatter(this, 'Sanjay Rao')">
             <div class="player-select-check"></div>
@@ -263,6 +288,7 @@
               <div class="player-name">Sanjay Rao</div>
               <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &bull; #8</div>
             </div>
+            <span class="chip" style="height: 22px; padding: 0 8px; font-size: 10px; pointer-events: none;">RHB</span>
           </div>
           <div class="player-select-row" onclick="selectNewBatter(this, 'Deepak Nair')">
             <div class="player-select-check"></div>
@@ -271,6 +297,7 @@
               <div class="player-name">Deepak Nair</div>
               <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &bull; #9</div>
             </div>
+            <span class="chip" style="height: 22px; padding: 0 8px; font-size: 10px; pointer-events: none;">LHB</span>
           </div>
         </div>
         <div class="modal-footer">
@@ -318,8 +345,9 @@
             <div style="font-size: var(--caption); color: var(--text-secondary);">in 20 overs (RRR: 9.40)</div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" onclick="closeModal('inningsModal')">Start 2nd Innings</button>
+        <div class="modal-footer" style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('inningsModal')">Close</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="navigateTo('25-innings-transition.html')">Continue</button>
         </div>
       </div>
     </div>
@@ -357,11 +385,73 @@
           <p class="text-secondary text-sm mb-16">Which team receives the 5-run penalty?</p>
           <div class="toggle-group">
             <div class="toggle-option active" data-value="batting">Batting Team</div>
-            <div class="toggle-option" data-value="bowling">Bowling Team</div>
+            <div class="toggle-option" data-value="fielding">Fielding Team</div>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-primary" onclick="closeModal('penaltyModal')">Apply Penalty</button>
+        </div>
+      </div>
+    </div>
+    <!-- Bowler Injured Modal (A4) -->
+    <div class="modal-overlay" id="bowlerInjuredModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Bowler Injured</span>
+          <button class="modal-close" onclick="closeModal('bowlerInjuredModal')">
+            <span data-icon="close" style="width:20px;height:20px;"></span>
+          </button>
+        </div>
+        <div class="modal-body" style="max-height: 50vh; overflow-y: auto;">
+          <p class="text-secondary text-sm mb-16">Select a replacement bowler to complete this over.</p>
+
+          <div class="player-select-row" onclick="selectNewBowler(this, 'Harsh Mishra')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">HM</div>
+            <div class="player-info">
+              <div class="player-name">Harsh Mishra</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">2-0-24-1 &bull; Ec 12.00</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectNewBowler(this, 'Naveen Yadav')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">NY</div>
+            <div class="player-info">
+              <div class="player-name">Naveen Yadav</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">3-0-28-0 &bull; Ec 9.33</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectNewBowler(this, 'Ravi Malhotra')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">RM</div>
+            <div class="player-info">
+              <div class="player-name">Ravi Malhotra</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">2-0-22-1 &bull; Ec 11.00</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="closeModal('bowlerInjuredModal')">Confirm Replacement</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exit Confirmation Modal (E1) -->
+    <div class="modal-overlay" id="exitConfirmModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Exit Scoring</span>
+          <button class="modal-close" onclick="closeModal('exitConfirmModal')">
+            <span data-icon="close" style="width:20px;height:20px;"></span>
+          </button>
+        </div>
+        <div class="modal-body text-center">
+          <p style="margin-bottom: 8px;">Match in progress. Exit scoring?</p>
+          <p class="text-secondary text-sm">Your progress is saved locally.</p>
+        </div>
+        <div class="modal-footer" style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('exitConfirmModal')">Stay</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="navigateTo('05-home.html')">Exit</button>
         </div>
       </div>
     </div>
@@ -489,6 +579,35 @@
       });
       updateUI();
     }
+
+    // Overthrow picker (Q18)
+    (function initOverthrowPicker() {
+      const picker = document.getElementById('overthrowPicker');
+      for (let i = 0; i <= 12; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.onclick = function() {
+          scoreRuns(i);
+          picker.classList.remove('active');
+        };
+        picker.appendChild(btn);
+      }
+    })();
+
+    function toggleOverthrowPicker() {
+      document.getElementById('overthrowPicker').classList.toggle('active');
+    }
+
+    // Close overthrow picker when clicking elsewhere
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.more-btn') && !e.target.closest('.overthrow-picker')) {
+        document.getElementById('overthrowPicker').classList.remove('active');
+      }
+    });
+
+    // Viewer mode toggle (Q20) — uncomment to demo:
+    // document.getElementById('viewerIndicator').style.display = '';
+    // document.querySelector('.scoring-controls').style.display = 'none';
   </script>
 </body>
 </html>

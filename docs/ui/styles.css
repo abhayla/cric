@@ -1170,6 +1170,7 @@ select.input-field {
 
 .extras-btn {
   height: 40px;
+  min-width: 48px;
   padding: 0 16px;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--border);
@@ -1245,6 +1246,126 @@ select.input-field {
 
 .action-btn:hover {
   border-color: var(--text-secondary);
+}
+
+/* Strike Swap Button (Q19) */
+.strike-swap-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+  flex-shrink: 0;
+}
+
+.strike-swap-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.strike-swap-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* More / Overthrow Button (Q18) */
+.more-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--text-secondary);
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: var(--heading);
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+  position: relative;
+}
+
+.more-btn:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+/* Overthrow Picker Popover (Q18) */
+.overthrow-picker {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  padding: 8px;
+  display: none;
+  grid-template-columns: repeat(4, 40px);
+  gap: 4px;
+  z-index: 60;
+}
+
+.overthrow-picker.active {
+  display: grid;
+}
+
+.overthrow-picker button {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: var(--body-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
+
+.overthrow-picker button:hover {
+  background: var(--primary);
+  color: var(--text-on-primary);
+  border-color: var(--primary);
+}
+
+/* Viewer Mode Indicator (Q20) */
+.viewer-indicator {
+  background: var(--warning);
+  color: var(--text-on-dark);
+  text-align: center;
+  padding: 6px 16px;
+  font-size: var(--caption);
+  font-weight: var(--fw-semibold);
+}
+
+/* Empty State CTA Button */
+.empty-state .empty-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 20px;
+  margin-top: 16px;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--text-on-primary);
+  font-size: var(--body-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
+
+.empty-state .empty-cta:hover {
+  background: var(--primary-dark);
 }
 
 /* ----- Scorecard Table ----- */
