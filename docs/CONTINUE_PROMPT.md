@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION_PLAN.md`:
+Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION_PLAN.md`. Note: Phase 2.5 (Tournament Management) exists between Phase 2 (Teams) and Phase 3 (Scoring Engine).
 
 1. Initialize Flutter project (`apps/mobile/`) with the folder structure from Section 2.1
 2. Initialize Bun server (`apps/server/`) with the folder structure from Section 2.2
@@ -89,8 +89,43 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - **[Q16]** Connectivity dot: 8dp in score header top-right (green/yellow/red)
 - **[Q17]** Offline error handling: log + dot color change only — no dialogs/toasts/banners during scoring
 - **[Q18]** Sync retry_count persists across restarts (stored in SQLite sync_queue, never reset on relaunch)
+- **[T1]** Tournament formats: Round-Robin, Knockout, Group Stage + Knockout (all three supported)
+- **[T2]** Points system: Configurable per tournament (default ICC: W=2, T=1, NR=1, L=0)
+- **[T3]** Fixture scheduling: Auto-generate + manual edit
+- **[T4]** Qualification: Configurable top-N per group, auto-seeded knockout brackets (A1 vs B2, B1 vs A2)
+- **[T5]** Tiebreaker order: Points → NRR → Head-to-head → Joint rank (fixed, not configurable)
+- **[T6]** Roles: Creator = organizer (no additional roles for MVP)
+- **[T7]** Stats: Tournament-scoped leaderboards (top scorers, wicket takers, batting avg, economy)
+- **[T8]** Timeline: New Phase 2.5 after Teams (Phase 2), before Scoring Engine (Phase 3)
 
 ## Completed Work
+
+### Tournament/League Management Addition
+Added full tournament/league management as Phase 2.5 in the MVP. Changes span 15 files across planning docs, UI prototypes, and blueprint:
+
+**Planning docs updated:**
+- **DATABASE.md:** Table count 22→27. Added `tournament_id` FK to `matches`. Added 5 new tables: `tournaments`, `tournament_teams`, `tournament_groups`, `tournament_fixtures`, `tournament_standings`. Added 10 tournament indexes. Added to SQLite mirrored tables.
+- **SCORING_RULES.md:** Added Section 8: Tournament Rules — tournament state machine (DRAFT→REGISTRATION→LIVE→COMPLETED), 3 formats (round-robin, knockout, group+knockout), NRR calculation formula with worked example, tiebreaker order (Points→NRR→H2H→Joint rank), qualification rules, match integration hooks.
+- **API.md:** Added Section 1.9: Tournaments with 12 REST endpoints (CRUD, status transitions, team management, fixture generation, standings, leaderboard). Added rate limiting row (30 req/min).
+- **PDR.md:** Moved tournaments from "Excluded" to "Included in MVP". Added 7 user stories (US-16 to US-22). Updated table/screen counts.
+- **IMPLEMENTATION_PLAN.md:** Inserted Phase 2.5: Tournament Management (Week 4-5) with 13 task checkboxes. Shifted Phases 3-7 by +1 week. Added verification plan row. Updated screen count to 24. Added `tournaments/` feature folder structure for both Flutter and server.
+
+**UI prototypes created (docs/ui/):**
+- 6 new screens: Tournaments List (19), Create Tournament (20), Tournament Detail (21), Standings (22), Knockout Bracket (23), Leaderboard (24)
+- Updated `index.html`: screen count 18→24, added D2 Tournament Flow group
+- Updated `05-home.html`: added Tournaments section with summary card, added "Tournament" quick action
+- Updated `10-match-setup.html`: added optional tournament selector with modal
+
+**Blueprint updated (docs/planning/blueprint.html):**
+- Added 6 phone wireframes in new "Tournament Flow" cluster
+- Added Tournament State Machine panel and NRR Calculation panel
+- Added tournament sidebar navigation entry
+- Added `/tournaments` to API route groups
+- Updated DB ER panel: 24→27 tables, added tournament ER tables
+- Added SVG navigation arrows for tournament flow
+- Expanded canvas to accommodate new section
+
+**Blocked:** `.claude/rules.md` edits denied by permission settings. Needed changes: add `tournaments/` to Flutter placement table, add tournament routes/service/NRR/schema to server placement table, update folder trees. Apply these when the protected file can be edited.
 
 ### Step 0: Planning Doc Updates (Gap Analysis)
 A comprehensive gap analysis resolved 120 decisions across 22 rounds of Q&A. All planning docs have been updated:
@@ -136,11 +171,11 @@ Key changes:
 - **CODE_STANDARDS.md:** Scoring button size tiers, connectivity dot spec, local_preferences keys, Phone OTP only auth screen
 
 ### Interactive Architectural Blueprint
-- **`docs/planning/blueprint.html`** — Comprehensive single-file HTML blueprint (1763 lines) with:
-  - All 18 screens wireframed (Splash, Login, OTP, Profile Setup, Home, Teams List, Create Team, Team Detail, Manage Roster, Match Setup, Toss, Scoring Page, Scorecard, Analytics, Player Profile, Player Stats, Match History)
+- **`docs/planning/blueprint.html`** — Comprehensive single-file HTML blueprint with:
+  - All 24 screens wireframed (original 18 + 6 tournament screens: Tournaments List, Create Tournament, Tournament Detail, Standings, Knockout Bracket, Leaderboard)
   - 5 scoring dialogs orbiting the Scoring Page (Extras Panel, Wicket Dialog, Select Next Bowler, Select New Batter, Innings Transition)
   - Backend architecture band (API Layer, WebSocket Protocol, Database ER, Offline Sync swim-lane)
-  - Cricket domain overlays (10-step delivery pipeline, match state machine, strike rotation decision tree, extras comparison table, undo mechanism, ScoringState shape, widget-to-state mapping)
+  - Cricket domain overlays (10-step delivery pipeline, match state machine, strike rotation decision tree, extras comparison table, undo mechanism, ScoringState shape, widget-to-state mapping, tournament state machine, NRR calculation panel)
   - Interactive pan/zoom (mouse drag + scroll wheel + touch pinch)
   - Navigation sidebar with animated pan-to-section
   - Minimap showing viewport position

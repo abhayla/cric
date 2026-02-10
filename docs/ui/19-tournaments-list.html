@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Tournaments</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .tournament-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--card-padding);
+      cursor: pointer;
+      transition: box-shadow var(--duration) var(--ease);
+    }
+    .tournament-card:hover { box-shadow: var(--shadow-card); }
+    .tournament-card + .tournament-card { margin-top: var(--element-gap); }
+    .tournament-card .t-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+    }
+    .tournament-card .t-name {
+      font-size: var(--body); font-weight: var(--fw-semibold);
+    }
+    .tournament-card .t-meta {
+      display: flex; gap: 8px; align-items: center; margin-top: 6px;
+    }
+    .tournament-card .t-meta-item {
+      font-size: var(--caption); color: var(--text-secondary);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .badge-draft {
+      background: var(--surface); color: var(--text-secondary);
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: var(--radius-full);
+      font-size: var(--caption-sm); font-weight: var(--fw-semibold);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .format-badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: var(--radius-full);
+      font-size: var(--caption-sm); font-weight: var(--fw-semibold);
+      background: var(--primary-light); color: var(--primary-dark);
+    }
+    .t-date {
+      font-size: var(--caption); color: var(--text-secondary); margin-top: 8px;
+    }
+    .t-progress {
+      margin-top: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .t-progress-bar {
+      flex: 1; height: 4px; background: var(--surface); border-radius: 2px; overflow: hidden;
+    }
+    .t-progress-fill {
+      height: 100%; background: var(--primary); border-radius: 2px;
+    }
+    .t-progress-text {
+      font-size: var(--caption); color: var(--text-secondary); white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <span class="header-title">My Tournaments</span>
+      <div class="header-actions">
+        <button class="header-action" data-icon="search"></button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="page-content">
+
+      <!-- Tournament 1: LIVE -->
+      <div class="tournament-card" onclick="navigateTo('21-tournament-detail.html')">
+        <div class="t-header">
+          <span class="t-name">Weekend Warriors Cup</span>
+          <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="t-meta">
+          <span class="format-badge">Group + KO</span>
+          <span class="t-meta-item">20 overs</span>
+          <span class="t-meta-item">8 teams</span>
+        </div>
+        <div class="t-date">1 Mar — 15 Mar 2026</div>
+        <div class="t-progress">
+          <div class="t-progress-bar">
+            <div class="t-progress-fill" style="width: 60%;"></div>
+          </div>
+          <span class="t-progress-text">7/12 matches</span>
+        </div>
+      </div>
+
+      <!-- Tournament 2: DRAFT -->
+      <div class="tournament-card" onclick="navigateTo('21-tournament-detail.html')">
+        <div class="t-header">
+          <span class="t-name">Corporate Premier League</span>
+          <span class="badge-draft">DRAFT</span>
+        </div>
+        <div class="t-meta">
+          <span class="format-badge">Round Robin</span>
+          <span class="t-meta-item">10 overs</span>
+          <span class="t-meta-item">6 teams</span>
+        </div>
+        <div class="t-date">20 Mar — 5 Apr 2026</div>
+      </div>
+
+      <!-- Tournament 3: COMPLETED -->
+      <div class="tournament-card" onclick="navigateTo('21-tournament-detail.html')">
+        <div class="t-header">
+          <span class="t-name">Monsoon Knockout</span>
+          <span class="badge badge-completed">Completed</span>
+        </div>
+        <div class="t-meta">
+          <span class="format-badge">Knockout</span>
+          <span class="t-meta-item">20 overs</span>
+          <span class="t-meta-item">8 teams</span>
+        </div>
+        <div class="t-date">10 Jan — 25 Jan 2026</div>
+        <div class="t-progress">
+          <div class="t-progress-bar">
+            <div class="t-progress-fill" style="width: 100%;"></div>
+          </div>
+          <span class="t-progress-text">7/7 matches</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" onclick="navigateTo('20-create-tournament.html')" title="Create Tournament">
+      <span data-icon="plus" style="width: 24px; height: 24px;"></span>
+    </button>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>initBottomNav('home');</script>
+</body>
+</html>

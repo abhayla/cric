@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Create Tournament</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .overs-input-row {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .overs-input-row .overs-field {
+      width: 80px; text-align: center;
+      height: var(--input-height); border: 1.5px solid var(--border);
+      border-radius: var(--radius-md); font-size: var(--title); font-weight: var(--fw-bold);
+    }
+    .overs-input-row .overs-field:focus { border-color: var(--primary); }
+    .overs-preset { display: flex; gap: 8px; }
+    .overs-preset .chip { min-width: 48px; justify-content: center; }
+    .points-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    }
+    .points-cell {
+      text-align: center;
+    }
+    .points-cell label {
+      font-size: var(--caption); color: var(--text-secondary); display: block; margin-bottom: 4px;
+    }
+    .points-cell input {
+      width: 100%; height: 44px; text-align: center;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: var(--heading); font-weight: var(--fw-bold);
+      color: var(--text-primary); background: var(--bg);
+    }
+    .points-cell input:focus { border-color: var(--primary); }
+    .stepper-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0;
+    }
+    .stepper-row .stepper-label {
+      font-size: var(--body); font-weight: var(--fw-medium);
+    }
+    .stepper-row .stepper-controls {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .stepper-btn {
+      width: 36px; height: 36px; border-radius: var(--radius-full);
+      border: 1.5px solid var(--border); color: var(--text-secondary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: var(--heading); font-weight: var(--fw-bold);
+      transition: all var(--duration) var(--ease);
+    }
+    .stepper-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .stepper-value {
+      font-size: var(--heading); font-weight: var(--fw-bold); min-width: 28px; text-align: center;
+    }
+    .conditional-section {
+      margin-top: var(--section-gap);
+      padding: var(--card-padding);
+      background: var(--surface);
+      border-radius: var(--radius-md);
+    }
+    .conditional-section .section-label {
+      font-size: var(--body-sm); font-weight: var(--fw-semibold);
+      color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .date-row {
+      display: flex; gap: 12px;
+    }
+    .date-row .input-group { flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('19-tournaments-list.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Create Tournament</span>
+    </div>
+
+    <div class="page-content no-bottom-nav" style="display: flex; flex-direction: column;">
+
+      <!-- Tournament Name -->
+      <div class="section">
+        <div class="input-group" style="margin-top: 0;">
+          <label class="input-label">Tournament Name</label>
+          <input type="text" class="input-field" placeholder="e.g. Weekend Warriors Cup" id="tournamentName">
+        </div>
+      </div>
+
+      <!-- Format -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Format</h3>
+        <div class="chip-group" id="formatChips">
+          <span class="chip" data-value="round_robin">Round Robin</span>
+          <span class="chip" data-value="knockout">Knockout</span>
+          <span class="chip active" data-value="group_knockout">Group + KO</span>
+        </div>
+      </div>
+
+      <!-- Overs -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Overs Per Match</h3>
+        <div class="overs-input-row">
+          <input type="number" class="overs-field" id="oversInput" value="20" min="1" max="50">
+          <span style="font-size: var(--body); color: var(--text-secondary);">overs per side</span>
+        </div>
+        <div class="overs-preset" style="margin-top: 12px;">
+          <span class="chip" data-value="5" onclick="setOvers(5, this)">5</span>
+          <span class="chip" data-value="10" onclick="setOvers(10, this)">10</span>
+          <span class="chip active" data-value="20" onclick="setOvers(20, this)">20</span>
+          <span class="chip" data-value="50" onclick="setOvers(50, this)">50</span>
+        </div>
+      </div>
+
+      <!-- Ball Type -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Ball Type</h3>
+        <div class="chip-group" id="ballTypeChips">
+          <span class="chip active" data-value="Leather">Leather</span>
+          <span class="chip" data-value="Tennis">Tennis</span>
+          <span class="chip" data-value="Tape">Tape</span>
+          <span class="chip" data-value="Other">Other</span>
+        </div>
+      </div>
+
+      <!-- Points System -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Points System</h3>
+        <div class="points-grid">
+          <div class="points-cell">
+            <label>Win</label>
+            <input type="number" value="2" min="0" max="10">
+          </div>
+          <div class="points-cell">
+            <label>Tie</label>
+            <input type="number" value="1" min="0" max="10">
+          </div>
+          <div class="points-cell">
+            <label>NR</label>
+            <input type="number" value="1" min="0" max="10">
+          </div>
+          <div class="points-cell">
+            <label>Loss</label>
+            <input type="number" value="0" min="0" max="10">
+          </div>
+        </div>
+      </div>
+
+      <!-- Group Settings (conditional for Group+KO) -->
+      <div class="conditional-section" id="groupSettings">
+        <div class="section-label">Group Stage Settings</div>
+        <div class="stepper-row">
+          <span class="stepper-label">Number of Groups</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="stepValue('numGroups', -1)">−</button>
+            <span class="stepper-value" id="numGroups">2</span>
+            <button class="stepper-btn" onclick="stepValue('numGroups', 1)">+</button>
+          </div>
+        </div>
+        <div class="stepper-row" style="border-top: 1px solid var(--border); padding-top: 12px;">
+          <span class="stepper-label">Top N Qualify</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="stepValue('qualifyN', -1)">−</button>
+            <span class="stepper-value" id="qualifyN">2</span>
+            <button class="stepper-btn" onclick="stepValue('qualifyN', 1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date Range -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Dates (optional)</h3>
+        <div class="date-row">
+          <div class="input-group" style="margin-top: 0;">
+            <label class="input-label">Start Date</label>
+            <input type="date" class="input-field" value="2026-03-01">
+          </div>
+          <div class="input-group" style="margin-top: 0;">
+            <label class="input-label">End Date</label>
+            <input type="date" class="input-field" value="2026-03-15">
+          </div>
+        </div>
+      </div>
+
+      <!-- Spacer -->
+      <div style="flex: 1; min-height: 24px;"></div>
+
+      <!-- CTA -->
+      <div style="padding-bottom: 24px;">
+        <button class="btn btn-primary" onclick="navigateTo('21-tournament-detail.html')">Create Tournament</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function setOvers(val, chipEl) {
+      document.getElementById('oversInput').value = val;
+      document.querySelectorAll('.overs-preset .chip').forEach(c => c.classList.remove('active'));
+      if (chipEl) chipEl.classList.add('active');
+    }
+
+    function stepValue(id, delta) {
+      const el = document.getElementById(id);
+      let val = parseInt(el.textContent) + delta;
+      if (id === 'numGroups') val = Math.max(1, Math.min(val, 8));
+      if (id === 'qualifyN') val = Math.max(1, Math.min(val, 4));
+      el.textContent = val;
+    }
+
+    // Show/hide group settings based on format
+    document.getElementById('formatChips').addEventListener('chip-change', (e) => {
+      const groupSection = document.getElementById('groupSettings');
+      groupSection.style.display = e.detail.value === 'group_knockout' ? 'block' : 'none';
+    });
+  </script>
+</body>
+</html>

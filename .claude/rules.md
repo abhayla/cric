@@ -129,6 +129,41 @@ apps/mobile/
 │   │   │   │   │   └── widgets/
 │   │   │   │   └── providers.dart
 │   │   │   │
+│   │   │   ├── tournaments/
+│   │   │   │   ├── data/
+│   │   │   │   │   ├── datasources/
+│   │   │   │   │   │   ├── tournament_local_datasource.dart
+│   │   │   │   │   │   └── tournament_remote_datasource.dart
+│   │   │   │   │   ├── models/
+│   │   │   │   │   │   ├── tournament_model.dart
+│   │   │   │   │   │   ├── fixture_model.dart
+│   │   │   │   │   │   └── standing_model.dart
+│   │   │   │   │   └── repositories/
+│   │   │   │   │       └── tournament_repository_impl.dart
+│   │   │   │   ├── domain/
+│   │   │   │   │   ├── entities/
+│   │   │   │   │   │   ├── tournament.dart
+│   │   │   │   │   │   ├── fixture.dart
+│   │   │   │   │   │   └── standing.dart
+│   │   │   │   │   └── repositories/
+│   │   │   │   │       └── tournament_repository.dart
+│   │   │   │   ├── presentation/
+│   │   │   │   │   ├── notifiers/
+│   │   │   │   │   │   ├── tournament_notifier.dart
+│   │   │   │   │   │   └── standings_notifier.dart
+│   │   │   │   │   ├── pages/
+│   │   │   │   │   │   ├── tournaments_list_page.dart
+│   │   │   │   │   │   ├── create_tournament_page.dart
+│   │   │   │   │   │   ├── tournament_detail_page.dart
+│   │   │   │   │   │   ├── standings_page.dart
+│   │   │   │   │   │   ├── knockout_bracket_page.dart
+│   │   │   │   │   │   └── tournament_leaderboard_page.dart
+│   │   │   │   │   └── widgets/
+│   │   │   │   │       ├── standings_table.dart
+│   │   │   │   │       ├── bracket_widget.dart
+│   │   │   │   │       └── fixture_card.dart
+│   │   │   │   └── providers.dart
+│   │   │   │
 │   │   │   └── home/
 │   │   │       └── presentation/
 │   │   │           └── pages/
@@ -184,6 +219,7 @@ apps/server/
 │   │   │   ├── innings.ts
 │   │   │   ├── deliveries.ts
 │   │   │   ├── stats.ts
+│   │   │   ├── tournaments.ts
 │   │   │   └── index.ts                           # Re-export all schemas
 │   │   ├── migrations/                            # Drizzle-kit generated
 │   │   ├── seed/
@@ -196,6 +232,7 @@ apps/server/
 │   │   ├── scoring.ts
 │   │   ├── players.ts
 │   │   ├── teams.ts
+│   │   ├── tournaments.ts
 │   │   ├── analytics.ts
 │   │   └── health.ts
 │   │
@@ -205,7 +242,9 @@ apps/server/
 │   │   ├── player.service.ts
 │   │   ├── team.service.ts
 │   │   ├── analytics.service.ts                   # MVP calculation, graph data
-│   │   └── sync.service.ts                        # Offline sync handling
+│   │   ├── sync.service.ts                        # Offline sync handling
+│   │   ├── tournament.service.ts                  # Tournament CRUD, fixture generation
+│   │   └── nrr.service.ts                         # Net Run Rate calculation
 │   │
 │   ├── websocket/
 │   │   ├── handler.ts                             # Bun WebSocket handler setup
@@ -268,6 +307,7 @@ apps/server/
 | A utility function | `src/core/utils/` | App-wide helpers |
 | A custom exception class | `src/core/errors/` | App-wide error types |
 | The sync engine | `src/shared/data/sync/` | Shared offline-first infrastructure |
+| Tournament feature files | `src/features/tournaments/` with `data/`, `domain/`, `presentation/`, `providers.dart` | Feature-first clean architecture |
 | A test file | `test/src/features/<feature>/` or `test/src/shared/` | Mirror the src/ structure |
 | A test helper/mock | `test/helpers/` | Shared test utilities |
 
@@ -286,6 +326,10 @@ apps/server/
 | A utility function | `src/utils/` | Shared helpers |
 | Environment config | `src/config/env.ts` | Validated env vars |
 | DB connection setup | `src/config/database.ts` | Connection singleton |
+| Tournament routes | `src/routes/v1/tournaments.ts` | Versioned API routes |
+| Tournament service | `src/services/tournament.service.ts` | Service layer |
+| NRR service | `src/services/nrr.service.ts` | Service layer |
+| Tournament schema | `src/db/schema/tournaments.ts` | All schemas in one place |
 | A test file | `test/services/` or `test/routes/` | Mirror src/ structure |
 
 ## 4. Anti-Patterns — Never Do These

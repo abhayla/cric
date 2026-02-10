@@ -187,6 +187,41 @@ apps/mobile/
 │   │   │   │   │   └── widgets/
 │   │   │   │   └── providers.dart
 │   │   │   │
+│   │   │   ├── tournaments/
+│   │   │   │   ├── data/
+│   │   │   │   │   ├── datasources/
+│   │   │   │   │   │   ├── tournament_local_datasource.dart
+│   │   │   │   │   │   └── tournament_remote_datasource.dart
+│   │   │   │   │   ├── models/
+│   │   │   │   │   │   ├── tournament_model.dart
+│   │   │   │   │   │   ├── fixture_model.dart
+│   │   │   │   │   │   └── standing_model.dart
+│   │   │   │   │   └── repositories/
+│   │   │   │   │       └── tournament_repository_impl.dart
+│   │   │   │   ├── domain/
+│   │   │   │   │   ├── entities/
+│   │   │   │   │   │   ├── tournament.dart
+│   │   │   │   │   │   ├── fixture.dart
+│   │   │   │   │   │   └── standing.dart
+│   │   │   │   │   └── repositories/
+│   │   │   │   │       └── tournament_repository.dart
+│   │   │   │   ├── presentation/
+│   │   │   │   │   ├── notifiers/
+│   │   │   │   │   │   ├── tournament_notifier.dart
+│   │   │   │   │   │   └── standings_notifier.dart
+│   │   │   │   │   ├── pages/
+│   │   │   │   │   │   ├── tournaments_list_page.dart
+│   │   │   │   │   │   ├── create_tournament_page.dart
+│   │   │   │   │   │   ├── tournament_detail_page.dart
+│   │   │   │   │   │   ├── standings_page.dart
+│   │   │   │   │   │   ├── knockout_bracket_page.dart
+│   │   │   │   │   │   └── tournament_leaderboard_page.dart
+│   │   │   │   │   └── widgets/
+│   │   │   │   │       ├── standings_table.dart
+│   │   │   │   │       ├── bracket_widget.dart
+│   │   │   │   │       └── fixture_card.dart
+│   │   │   │   └── providers.dart
+│   │   │   │
 │   │   │   └── home/
 │   │   │       └── presentation/
 │   │   │           └── pages/
@@ -229,6 +264,7 @@ apps/server/
 │   │   │   ├── innings.ts
 │   │   │   ├── deliveries.ts
 │   │   │   ├── stats.ts
+│   │   │   ├── tournaments.ts
 │   │   │   └── index.ts                    # Re-export all schemas
 │   │   ├── migrations/
 │   │   ├── seed/
@@ -242,6 +278,7 @@ apps/server/
 │   │   ├── players.ts
 │   │   ├── teams.ts
 │   │   ├── analytics.ts
+│   │   ├── tournaments.ts
 │   │   └── health.ts
 │   │
 │   ├── services/
@@ -250,6 +287,8 @@ apps/server/
 │   │   ├── player.service.ts
 │   │   ├── team.service.ts
 │   │   ├── analytics.service.ts            # MVP calc, graph data
+│   │   ├── tournament.service.ts           # Tournament CRUD, fixtures, standings
+│   │   ├── nrr.service.ts                  # Net Run Rate calculation
 │   │   └── sync.service.ts                 # Offline sync handling
 │   │
 │   ├── websocket/
@@ -386,7 +425,22 @@ dev_dependencies:
 - [ ] Set up Drift local database (mirror PostgreSQL schema)
 - [ ] Implement basic offline data caching
 
-### Phase 3: Scoring Engine (Week 5-7) -- THE CRITICAL PHASE
+### Phase 2.5: Tournament Management (Week 4-5)
+- [ ] Implement Tournament CRUD (API + Flutter)
+- [ ] Build: Tournaments List, Create Tournament screens
+- [ ] Implement team registration for tournaments
+- [ ] Implement fixture auto-generation algorithms (round-robin, knockout, group+knockout)
+- [ ] Build: Tournament Detail screen (status, teams, fixtures tabs)
+- [ ] Build: Standings/Points Table screen (sortable, group tabs)
+- [ ] Build: Knockout Bracket visualization
+- [ ] Implement NRR calculation engine (server-side)
+- [ ] Implement standings recalculation on match completion
+- [ ] Build: Tournament Leaderboard screen (runs, wickets, avg, economy tabs)
+- [ ] Add tournament_id FK to match creation flow
+- [ ] Update Match Setup screen with optional tournament context
+- [ ] Update Home screen with "My Tournaments" section
+
+### Phase 3: Scoring Engine (Week 6-8) -- THE CRITICAL PHASE
 - [ ] Implement delivery recording logic (server-side)
 - [ ] Implement scoring state machine (Flutter - Riverpod notifier)
 - [ ] Build Scoring Page UI (run buttons, extras, wicket dialog)
@@ -400,7 +454,7 @@ dev_dependencies:
 - [ ] Implement match completion flow
 - [ ] Full offline scoring with sync queue
 
-### Phase 4: Analytics & Visualizations (Week 8-9)
+### Phase 4: Analytics & Visualizations (Week 9-10)
 - [ ] Build Wagon Wheel widget (CustomPainter - cricket field + shot zones)
 - [ ] Build Manhattan Chart (fl_chart BarChart - runs per over)
 - [ ] Build Worm Graph (fl_chart LineChart - cumulative runs comparison)
@@ -408,14 +462,14 @@ dev_dependencies:
 - [ ] Build MVP Card widget
 - [ ] Build Match Analytics Page (tabbed: wagon wheel, manhattan, worm, MVP)
 
-### Phase 5: Player Profiles & Stats (Week 10-11)
+### Phase 5: Player Profiles & Stats (Week 11-12)
 - [ ] Implement career stats aggregation (server-side, materialized views)
 - [ ] Build Player Profile Page
 - [ ] Build Stats Page (batting, bowling, fielding tabs)
 - [ ] Build Match History Page
 - [ ] Implement stats refresh after each match completion
 
-### Phase 6: Polish & Testing (Week 12-13)
+### Phase 6: Polish & Testing (Week 13-14)
 - [ ] Unit tests for scoring engine (critical path)
 - [ ] Unit tests for cricket rules (strike rotation, extras, overs)
 - [ ] Widget tests for Scoring Page
@@ -425,7 +479,7 @@ dev_dependencies:
 - [ ] Bug fixes and UI polish
 - [ ] Home Page dashboard (recent matches, quick actions)
 
-### Phase 7: Deployment & Launch (Week 14)
+### Phase 7: Deployment & Launch (Week 15)
 
 #### Infrastructure (existing VPS)
 
@@ -465,6 +519,7 @@ dev_dependencies:
 |-------------|-------------|
 | Phase 1 | Login with Phone OTP, see home screen, navigate between screens |
 | Phase 2 | Create team, add players, create match, complete toss |
+| Phase 2.5 | Create tournament (all 3 formats), add 4+ teams, generate fixtures, complete one match, verify standings update with correct NRR and points, verify knockout bracket auto-populates |
 | Phase 3 | Score a complete T20 match ball-by-ball, verify scorecard accuracy, test undo, test offline scoring |
 | Phase 4 | View wagon wheel for a batter, manhattan for an innings, worm comparing both innings, MVP rankings |
 | Phase 5 | View player career stats, verify they match aggregate of individual match performances |
@@ -496,7 +551,7 @@ dev_dependencies:
 
 ---
 
-## 8. Key Screens (MVP) - 18 Total
+## 8. Key Screens (MVP) - 24 Total
 
 1. Splash Screen
 2. Login Page (Phone OTP only)
@@ -516,3 +571,9 @@ dev_dependencies:
 16. Match Analytics Page
 17. Player Profile Page
 18. Match History Page
+19. Tournaments List Page
+20. Create Tournament Page
+21. Tournament Detail Page
+22. Standings / Points Table Page
+23. Knockout Bracket Page
+24. Tournament Leaderboard Page

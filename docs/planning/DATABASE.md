@@ -4,7 +4,7 @@
 
 - **Server Database:** PostgreSQL (via Drizzle ORM)
 - **Local Database:** SQLite (via Drift in Flutter)
-- **Total Tables:** 22 core tables + 5 materialized views
+- **Total Tables:** 27 core tables + 5 materialized views
 
 ---
 
@@ -147,6 +147,7 @@ Playing XI for each team in a specific match.
 | id | uuid PK | |
 | home_team_id | uuid FK → teams.id | |
 | away_team_id | uuid FK → teams.id | |
+| tournament_id | uuid FK → tournaments.id | nullable (null for standalone matches) |
 | format | varchar(20) | "T20", "ODI", "custom" |
 | total_overs | integer | e.g. 20, 50, any custom number. Valid range: 1-50 |
 | ball_type_id | integer FK → ball_types.id | |
@@ -382,28 +383,133 @@ Playing XI for each team in a specific match.
 
 ---
 
-## 7. Materialized Views
+## 7. Tournament Tables
 
-### 7.1 `player_match_summary`
+### 7.1 `tournaments`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | default gen_random_uuid() |
+| name | varchar(100) | required |
+| format | varchar(20) | "round_robin", "knockout", "group_knockout" |
+| overs_per_match | integer | Valid range: 1-50 |
+| ball_type_id | integer FK → ball_types.id | |
+| status | varchar(20) | "draft", "registration", "live", "completed" |
+| points_win | integer | default 2 |
+| points_tie | integer | default 1 |
+| points_no_result | integer | default 1 |
+| points_loss | integer | default 0 |
+| num_groups | integer | default 1 (group_knockout format only) |
+| qualify_per_group | integer | default 2 (top-N per group) |
+| has_third_place_match | boolean | default false (knockout/group_knockout only) |
+| created_by | uuid FK → users.id | organizer |
+| start_date | date | nullable |
+| end_date | date | nullable |
+| created_at | timestamp | |
+| updated_at | timestamp | |
+
+**Status state machine:** `DRAFT → REGISTRATION → LIVE → COMPLETED`
+
+| From | To | Trigger |
+|------|----|---------|
+| DRAFT | REGISTRATION | Organizer opens registration |
+| REGISTRATION | LIVE | Teams finalized, fixtures generated |
+| LIVE | COMPLETED | All fixtures completed or manual completion |
+
+### 7.2 `tournament_teams`
+Junction table linking teams to tournaments.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| tournament_id | uuid FK → tournaments.id | |
+| team_id | uuid FK → teams.id | |
+| group_name | varchar(10) | nullable ("A", "B", etc. — null for round_robin/knockout) |
+| seed_number | integer | nullable, seeding for knockout |
+| joined_at | timestamp | |
+
+**Unique constraint:** (tournament_id, team_id)
+
+### 7.3 `tournament_groups`
+Group definitions for group_knockout format.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| tournament_id | uuid FK → tournaments.id | |
+| name | varchar(10) | "A", "B", "C", "D" |
+| created_at | timestamp | |
+
+**Unique constraint:** (tournament_id, name)
+
+### 7.4 `tournament_fixtures`
+Maps tournament rounds to actual matches.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| tournament_id | uuid FK → tournaments.id | |
+| match_id | uuid FK → matches.id | nullable (null before match is created) |
+| round_number | integer | 1-based |
+| round_type | varchar(20) | "group", "quarter_final", "semi_final", "final", "third_place" |
+| fixture_order | integer | order within the round |
+| group_name | varchar(10) | nullable (group stage fixtures only) |
+| home_team_id | uuid FK → teams.id | |
+| away_team_id | uuid FK → teams.id | |
+| scheduled_date | date | nullable |
+| venue | varchar(200) | nullable |
+| created_at | timestamp | |
+| updated_at | timestamp | |
+
+### 7.5 `tournament_standings`
+Pre-computed standings per team per tournament (or per group).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| tournament_id | uuid FK → tournaments.id | |
+| team_id | uuid FK → teams.id | |
+| group_name | varchar(10) | nullable |
+| played | integer | default 0 |
+| won | integer | default 0 |
+| lost | integer | default 0 |
+| tied | integer | default 0 |
+| no_result | integer | default 0 |
+| points | integer | default 0 |
+| nrr | decimal(6,3) | default 0.000 |
+| total_runs_scored | integer | default 0 |
+| total_overs_faced | decimal(6,1) | default 0.0 |
+| total_runs_conceded | integer | default 0 |
+| total_overs_bowled | decimal(6,1) | default 0.0 |
+| position | integer | nullable (rank within group) |
+| updated_at | timestamp | |
+
+**Unique constraint:** (tournament_id, team_id)
+**Update trigger:** Recalculate after every tournament match reaches "completed" status.
+
+---
+
+## 8. Materialized Views
+
+### 8.1 `player_match_summary`
 Quick player performance per match. Joins deliveries + batting_stats + bowling_stats.
 
-### 7.2 `innings_scoreboard`
+### 8.2 `innings_scoreboard`
 Scorecard view. Joins innings + batting_stats + bowling_stats + dismissal info.
 
-### 7.3 `batting_innings_summary`
+### 8.3 `batting_innings_summary`
 Batting card with dismissal description (e.g. "c Smith b Jones 45 (32)").
 
-### 7.4 `bowling_innings_summary`
+### 8.4 `bowling_innings_summary`
 Bowling analysis card (e.g. "J Bumrah 4-0-22-2").
 
-### 7.5 `player_season_stats`
+### 8.5 `player_season_stats`
 Aggregated stats by format across all matches.
 
 **Refresh trigger:** Auto-refresh after match status changes to "completed".
 
 ---
 
-## 8. Key Design Decisions
+## 9. Key Design Decisions
 
 | Decision | Choice | Why |
 |----------|--------|-----|
@@ -414,10 +520,11 @@ Aggregated stats by format across all matches.
 | Offline sync | `synced` flag on deliveries + `sync_queue` table in SQLite | Track what needs pushing to server |
 | Primary keys | UUIDs | Cross-device sync friendly, no conflicts |
 | Timestamps | All tables have created_at + updated_at | Audit trail, sync ordering, conflict resolution |
+| Tournament standings | Pre-computed table with NRR columns | Fast reads for points table; NRR requires cumulative overs data stored for recalc |
 
 ---
 
-## 9. Indexes (Performance)
+## 10. Indexes (Performance)
 
 ```sql
 -- Deliveries (most queried table)
@@ -448,15 +555,26 @@ CREATE INDEX idx_rosters_player ON team_rosters(player_id);
 CREATE INDEX idx_match_players_match ON match_players(match_id);
 CREATE INDEX idx_match_players_team ON match_players(match_id, team_id);
 CREATE INDEX idx_match_players_player ON match_players(player_id);
+
+-- Tournaments
+CREATE INDEX idx_tournaments_status ON tournaments(status);
+CREATE INDEX idx_tournaments_creator ON tournaments(created_by);
+CREATE INDEX idx_tournament_teams_tournament ON tournament_teams(tournament_id);
+CREATE INDEX idx_tournament_teams_team ON tournament_teams(team_id);
+CREATE INDEX idx_tournament_fixtures_tournament ON tournament_fixtures(tournament_id);
+CREATE INDEX idx_tournament_fixtures_match ON tournament_fixtures(match_id);
+CREATE INDEX idx_tournament_standings_tournament ON tournament_standings(tournament_id);
+CREATE INDEX idx_tournament_standings_group ON tournament_standings(tournament_id, group_name);
+CREATE INDEX idx_matches_tournament ON matches(tournament_id) WHERE tournament_id IS NOT NULL;
 ```
 
 ---
 
-## 10. SQLite Local Schema (Drift)
+## 11. SQLite Local Schema (Drift)
 
 The local SQLite database mirrors a subset of the PostgreSQL schema for offline-first capability:
 
-**Mirrored tables:** users, teams, team_rosters, match_players, matches, innings, overs, deliveries, batting_stats, bowling_stats
+**Mirrored tables:** users, teams, team_rosters, match_players, matches, innings, overs, deliveries, batting_stats, bowling_stats, tournaments, tournament_teams, tournament_fixtures, tournament_standings
 
 **Additional local-only tables:**
 

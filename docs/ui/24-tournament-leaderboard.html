@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Tournament Leaderboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .tournament-bar {
+      background: var(--surface); padding: 10px var(--page-margin);
+      font-size: var(--body-sm); font-weight: var(--fw-semibold); color: var(--text-secondary);
+    }
+    .leaderboard-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md);
+    }
+    .leaderboard-card + .leaderboard-card { margin-top: var(--element-gap); }
+    .lb-rank {
+      width: 28px; height: 28px; border-radius: var(--radius-full);
+      font-size: var(--body-sm); font-weight: var(--fw-bold);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .lb-rank.gold { background: #FFF3E0; color: #E65100; }
+    .lb-rank.silver { background: #F5F5F5; color: #616161; }
+    .lb-rank.bronze { background: #FBE9E7; color: #BF360C; }
+    .lb-rank.default { background: var(--surface); color: var(--text-secondary); }
+    .lb-info { flex: 1; min-width: 0; }
+    .lb-name { font-size: var(--body); font-weight: var(--fw-semibold); }
+    .lb-team { font-size: var(--caption); color: var(--text-secondary); }
+    .lb-value {
+      font-size: var(--title); font-weight: var(--fw-bold); color: var(--primary-dark);
+      text-align: right; min-width: 50px;
+    }
+    .lb-detail {
+      font-size: var(--caption); color: var(--text-secondary); text-align: right;
+    }
+    .lb-stats { text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('21-tournament-detail.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Leaderboard</span>
+    </div>
+
+    <!-- Tournament Name -->
+    <div class="tournament-bar">Weekend Warriors Cup</div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="runs">Runs</div>
+      <div class="tab" data-tab="wickets">Wickets</div>
+      <div class="tab" data-tab="avg">Batting Avg</div>
+      <div class="tab" data-tab="economy">Economy</div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Runs Tab -->
+      <div class="tab-panel active" data-panel="runs">
+        <div class="leaderboard-card">
+          <div class="lb-rank gold">1</div>
+          <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">AM</div>
+          <div class="lb-info">
+            <div class="lb-name">Arjun Mehta</div>
+            <div class="lb-team">Mumbai Warriors</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">245</div>
+            <div class="lb-detail">3 inn, SR 142.4</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank silver">2</div>
+          <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">RK</div>
+          <div class="lb-info">
+            <div class="lb-name">Rahul Kapoor</div>
+            <div class="lb-team">Bangalore Royals</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">198</div>
+            <div class="lb-detail">3 inn, SR 135.6</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank bronze">3</div>
+          <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">VS</div>
+          <div class="lb-info">
+            <div class="lb-name">Vikram Sharma</div>
+            <div class="lb-team">Chennai Kings</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">176</div>
+            <div class="lb-detail">3 inn, SR 128.5</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank default">4</div>
+          <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">KS</div>
+          <div class="lb-info">
+            <div class="lb-name">Karan Singh</div>
+            <div class="lb-team">Delhi Strikers</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">152</div>
+            <div class="lb-detail">3 inn, SR 145.7</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank default">5</div>
+          <div class="avatar sm" style="background: #FFFDE7; color: #F57F17;">SR</div>
+          <div class="lb-info">
+            <div class="lb-name">Suresh Reddy</div>
+            <div class="lb-team">Hyderabad Panthers</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">134</div>
+            <div class="lb-detail">3 inn, SR 119.6</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wickets Tab -->
+      <div class="tab-panel" data-panel="wickets">
+        <div class="leaderboard-card">
+          <div class="lb-rank gold">1</div>
+          <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">HM</div>
+          <div class="lb-info">
+            <div class="lb-name">Harsh Mishra</div>
+            <div class="lb-team">Delhi Strikers</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">8</div>
+            <div class="lb-detail">3 inn, Eco 6.50</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank silver">2</div>
+          <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">RK</div>
+          <div class="lb-info">
+            <div class="lb-name">Rajesh Kumar</div>
+            <div class="lb-team">Mumbai Warriors</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">7</div>
+            <div class="lb-detail">3 inn, Eco 7.25</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank bronze">3</div>
+          <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">AP</div>
+          <div class="lb-info">
+            <div class="lb-name">Ankit Pandey</div>
+            <div class="lb-team">Bangalore Royals</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">6</div>
+            <div class="lb-detail">3 inn, Eco 5.80</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank default">4</div>
+          <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">DN</div>
+          <div class="lb-info">
+            <div class="lb-name">Deepak Nair</div>
+            <div class="lb-team">Chennai Kings</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">5</div>
+            <div class="lb-detail">3 inn, Eco 8.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Batting Avg Tab -->
+      <div class="tab-panel" data-panel="avg">
+        <div class="leaderboard-card">
+          <div class="lb-rank gold">1</div>
+          <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">AM</div>
+          <div class="lb-info">
+            <div class="lb-name">Arjun Mehta</div>
+            <div class="lb-team">Mumbai Warriors</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">81.67</div>
+            <div class="lb-detail">245 runs, 3 inn</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank silver">2</div>
+          <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">RK</div>
+          <div class="lb-info">
+            <div class="lb-name">Rahul Kapoor</div>
+            <div class="lb-team">Bangalore Royals</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">66.00</div>
+            <div class="lb-detail">198 runs, 3 inn</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank bronze">3</div>
+          <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">VS</div>
+          <div class="lb-info">
+            <div class="lb-name">Vikram Sharma</div>
+            <div class="lb-team">Chennai Kings</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">58.67</div>
+            <div class="lb-detail">176 runs, 3 inn</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Economy Tab -->
+      <div class="tab-panel" data-panel="economy">
+        <div class="leaderboard-card">
+          <div class="lb-rank gold">1</div>
+          <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">AP</div>
+          <div class="lb-info">
+            <div class="lb-name">Ankit Pandey</div>
+            <div class="lb-team">Bangalore Royals</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">5.80</div>
+            <div class="lb-detail">6 wkts, 12 ov</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank silver">2</div>
+          <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">HM</div>
+          <div class="lb-info">
+            <div class="lb-name">Harsh Mishra</div>
+            <div class="lb-team">Delhi Strikers</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">6.50</div>
+            <div class="lb-detail">8 wkts, 12 ov</div>
+          </div>
+        </div>
+
+        <div class="leaderboard-card">
+          <div class="lb-rank bronze">3</div>
+          <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">RK</div>
+          <div class="lb-info">
+            <div class="lb-name">Rajesh Kumar</div>
+            <div class="lb-team">Mumbai Warriors</div>
+          </div>
+          <div class="lb-stats">
+            <div class="lb-value">7.25</div>
+            <div class="lb-detail">7 wkts, 12 ov</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    initBottomNav('home');
+    initTabs();
+  </script>
+</body>
+</html>

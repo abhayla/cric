@@ -47,8 +47,20 @@
     </div>
 
     <div class="page-content no-bottom-nav" style="display: flex; flex-direction: column;">
-      <!-- Teams Selection -->
+      <!-- Tournament (Optional) -->
       <div class="section">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Tournament <span style="font-weight: var(--fw-regular); color: var(--text-secondary); font-size: var(--caption);">(optional)</span></h3>
+        <div class="team-selector" id="tournamentSelector" onclick="openModal('tournamentSelectModal')">
+          <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span data-icon="trophy" style="width: 18px; height: 18px; color: var(--text-secondary);"></span>
+          </div>
+          <span class="team-selector-name" style="color: var(--text-secondary);">None — Standalone Match</span>
+          <span class="team-selector-arrow" data-icon="chevronRight"></span>
+        </div>
+      </div>
+
+      <!-- Teams Selection -->
+      <div class="section" style="margin-top: var(--section-gap);">
         <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Teams</h3>
 
         <!-- Team A -->
@@ -108,6 +120,47 @@
       <!-- CTA -->
       <div style="padding-bottom: 24px;">
         <button class="btn btn-primary" id="proceedBtn" onclick="handleProceed()">Proceed to Toss</button>
+      </div>
+    </div>
+
+    <!-- Tournament Select Modal -->
+    <div class="modal-overlay" id="tournamentSelectModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Select Tournament</span>
+          <button class="modal-close" onclick="closeModal('tournamentSelectModal')">
+            <span data-icon="close" style="width:20px;height:20px;"></span>
+          </button>
+        </div>
+        <div class="modal-body" style="padding-top: 8px;">
+          <div class="player-row" style="cursor:pointer;" onclick="selectTournament(null)">
+            <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span data-icon="close" style="width: 16px; height: 16px; color: var(--text-secondary);"></span>
+            </div>
+            <div class="player-info">
+              <div class="player-name">None — Standalone Match</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="player-row" style="cursor:pointer;" onclick="selectTournament('Weekend Warriors Cup')">
+            <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--primary-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span data-icon="trophy" style="width: 16px; height: 16px; color: var(--primary-dark);"></span>
+            </div>
+            <div class="player-info">
+              <div class="player-name">Weekend Warriors Cup</div>
+              <div class="player-role">Group + KO &bull; 20 Overs &bull; LIVE</div>
+            </div>
+          </div>
+          <div class="player-row" style="cursor:pointer;" onclick="selectTournament('Corporate Premier League')">
+            <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--primary-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <span data-icon="trophy" style="width: 16px; height: 16px; color: var(--primary-dark);"></span>
+            </div>
+            <div class="player-info">
+              <div class="player-name">Corporate Premier League</div>
+              <div class="player-role">Round Robin &bull; 10 Overs &bull; LIVE</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -185,6 +238,20 @@
       selector.querySelector('.team-selector-name').style.color = '';
       teamBSelected = true;
       closeModal('teamSelectModal');
+    }
+
+    function selectTournament(name) {
+      const selector = document.getElementById('tournamentSelector');
+      if (name) {
+        selector.classList.add('selected');
+        selector.querySelector('.team-selector-name').textContent = name;
+        selector.querySelector('.team-selector-name').style.color = '';
+      } else {
+        selector.classList.remove('selected');
+        selector.querySelector('.team-selector-name').textContent = 'None \u2014 Standalone Match';
+        selector.querySelector('.team-selector-name').style.color = 'var(--text-secondary)';
+      }
+      closeModal('tournamentSelectModal');
     }
 
     function handleProceed() {

@@ -27,6 +27,7 @@
             Start Match
           </button>
           <button class="quick-action-btn btn-outline" onclick="navigateTo('07-create-team.html')">Create Team</button>
+          <button class="quick-action-btn btn-outline" onclick="navigateTo('20-create-tournament.html')">Tournament</button>
         </div>
       </div>
 
@@ -53,6 +54,28 @@
               <span class="team-name">Bangalore Royals</span>
               <span class="team-score" style="color: var(--text-secondary);">—</span>
               <span class="team-overs"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tournaments -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <div class="section-header">
+          <h2 class="section-title">Tournaments</h2>
+          <a href="19-tournaments-list.html" class="section-link" onclick="event.preventDefault(); navigateTo('19-tournaments-list.html');">View All</a>
+        </div>
+
+        <div class="match-card" onclick="navigateTo('21-tournament-detail.html')">
+          <div class="match-header">
+            <span class="match-meta">Group + KO &bull; 20 Overs</span>
+            <span class="badge badge-live">LIVE</span>
+          </div>
+          <div style="padding: 0 12px 12px;">
+            <div style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 4px;">Weekend Warriors Cup</div>
+            <div style="font-size: var(--caption); color: var(--text-secondary);">8 teams &bull; 7/12 matches completed</div>
+            <div style="margin-top: 8px; height: 4px; background: var(--surface); border-radius: 2px; overflow: hidden;">
+              <div style="width: 58%; height: 100%; background: var(--primary); border-radius: 2px;"></div>
             </div>
           </div>
         </div>

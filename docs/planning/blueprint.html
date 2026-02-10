@@ -167,6 +167,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier 
   <a href="#" data-target="scorecard">Scorecard</a>
   <a href="#" data-target="analytics">Analytics</a>
   <div class="sep"></div>
+  <h3>Tournaments</h3>
+  <a href="#" data-target="tournaments">Tournament Flow</a>
+  <div class="sep"></div>
   <h3>Players</h3>
   <a href="#" data-target="players">Player Flow</a>
   <div class="sep"></div>
@@ -205,7 +208,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier 
 <!-- ============================================================ -->
 <!-- SVG ARROW LAYER -->
 <!-- ============================================================ -->
-<svg class="arrow-layer" width="7000" height="5500" xmlns="http://www.w3.org/2000/svg">
+<svg class="arrow-layer" width="7000" height="6000" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <marker id="ah-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#4CAF50"/></marker>
     <marker id="ah-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#c62828"/></marker>
@@ -265,6 +268,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier 
   <line x1="2400" y1="3200" x2="2400" y2="3600" stroke="#1565c0" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ah-blue)"/>
   <text x="2410" y="3500" fill="#1565c0" font-size="9" font-family="Courier New">Innings end</text>
 
+  <!-- Home → Tournaments (from Home down to Tournaments List) -->
+  <line x1="580" y1="1600" x2="580" y2="3740" stroke="#e65100" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#ah-orange)"/>
+  <text x="590" y="2800" fill="#e65100" font-size="10" font-family="Courier New" transform="rotate(90, 590, 2800)">Tournaments →</text>
+
+  <!-- Tournament Detail → Standings -->
+  <line x1="1280" y1="4280" x2="640" y2="4340" stroke="#e65100" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ah-orange)"/>
+
+  <!-- Tournament Detail → Bracket -->
+  <line x1="1280" y1="4280" x2="960" y2="4340" stroke="#e65100" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ah-orange)"/>
+
+  <!-- Tournament Detail → Leaderboard -->
+  <line x1="1280" y1="4280" x2="1280" y2="4340" stroke="#e65100" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ah-orange)"/>
+
   <!-- Sync flow arrows (in backend band) -->
   <line x1="4650" y1="650" x2="4650" y2="720" stroke="#1565c0" stroke-width="2" marker-end="url(#ah-blue)"/>
   <line x1="4950" y1="650" x2="4950" y2="720" stroke="#1565c0" stroke-width="2" marker-end="url(#ah-blue)"/>
@@ -297,6 +313,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier 
           <span class="w-btn small">/teams</span>
           <span class="w-btn small">/matches</span>
           <span class="w-btn small">/scoring</span>
+          <span class="w-btn small">/tournaments</span>
           <span class="w-btn small">/players</span>
           <span class="w-btn small">/analytics</span>
           <span class="w-btn small">/sync</span>
@@ -373,7 +390,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier 
 
 <!-- Panel C: Database ER -->
 <div class="screen panel" style="left:3200px; top:120px; width:1800px;" id="sec-database">
-  <div class="screen-title">C. Database ER — PostgreSQL (24 Tables, 5 Materialized Views)</div>
+  <div class="screen-title">C. Database ER — PostgreSQL (27 Tables, 5 Materialized Views)</div>
   <div class="screen-body">
     <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start;">
       <div class="er-table"><div class="er-title">users</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div>firebase_uid</div><div>display_name</div><div>batting_style</div><div>bowling_style</div><div>player_role</div></div></div>
@@ -398,7 +415,17 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier 
       <div style="padding-top:10px; font-size:18px;">→</div>
       <div class="er-table" style="border-color:#4CAF50;"><div class="er-title" style="background:#4CAF50;">player_career_stats</div><div class="er-cols"><div class="fk">player_id, format</div><div>Aggregated batting/bowling/fielding</div><div><i>(materialized view)</i></div></div></div>
     </div>
-    <div style="margin-top:8px; font-size:9px; color:#888;">★ deliveries = atomic unit • UUIDs everywhere • synced flag for offline</div>
+    <div class="w-divider"></div>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start;">
+      <div class="er-table" style="border-color:#e65100;"><div class="er-title" style="background:#e65100;">tournaments</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div>name, format, status</div><div>overs_per_match</div><div>points_win/tie/nr/loss</div><div>num_groups, qualify_per_group</div><div class="fk">created_by FK</div></div></div>
+      <div style="padding-top:30px; font-size:18px;">←→</div>
+      <div class="er-table"><div class="er-title">tournament_teams</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div class="fk">tournament_id FK</div><div class="fk">team_id FK</div><div>group_name, seed_number</div></div></div>
+      <div style="padding-top:30px; font-size:18px;">→</div>
+      <div class="er-table"><div class="er-title">tournament_fixtures</div><div class="er-cols"><div class="pk">id (uuid PK)</div><div class="fk">tournament_id FK</div><div class="fk">match_id FK</div><div>round_number, round_type</div><div class="fk">home/away_team_id FK</div></div></div>
+      <div style="padding-top:30px; font-size:18px;">→</div>
+      <div class="er-table" style="border-color:#e65100;"><div class="er-title" style="background:#e65100;">tournament_standings</div><div class="er-cols"><div class="fk">tournament_id, team_id</div><div>P, W, L, T, NR, Pts</div><div>NRR, position</div><div><i>(recalculated on match completion)</i></div></div></div>
+    </div>
+    <div style="margin-top:8px; font-size:9px; color:#888;">★ deliveries = atomic unit • UUIDs everywhere • synced flag for offline • matches.tournament_id FK for tournament context</div>
   </div>
 </div>
 
@@ -1509,6 +1536,282 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier 
 
 
 <!-- ============================================================ -->
+<!-- SECTION: TOURNAMENT FLOW -->
+<!-- ============================================================ -->
+<div class="section-header" style="left:500px; top:3700px; width:1400px;">Tournament Flow</div>
+
+<!-- Tournaments List -->
+<div class="phone" style="left:500px; top:3740px;" id="sec-tournaments">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Tournaments List</div>
+      <div class="screen-body">
+        <div class="w-btn primary" style="width:100%; text-align:center; margin-bottom:6px;">+ Create Tournament</div>
+        <div class="w-card" style="padding:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:bold; font-size:10px;">Weekend Warriors Cup</div>
+            <span class="w-badge live">● LIVE</span>
+          </div>
+          <div style="font-size:8px; color:#888;">Group + KO • 20 ov • 8 teams</div>
+        </div>
+        <div class="w-card" style="padding:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:bold; font-size:10px;">Corporate Premier League</div>
+            <span class="w-badge" style="background:#eee; color:#333;">DRAFT</span>
+          </div>
+          <div style="font-size:8px; color:#888;">Round Robin • 10 ov • 6 teams</div>
+        </div>
+        <div class="w-card" style="padding:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:bold; font-size:10px;">Sunday League S2</div>
+            <span class="w-badge completed">DONE</span>
+          </div>
+          <div style="font-size:8px; color:#888;">Knockout • 20 ov • 8 teams</div>
+        </div>
+      </div>
+      <div class="w-nav" style="margin-top:0;">
+        <span>Home</span>
+        <span>Teams</span>
+        <span>Profile</span>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+<div class="annotation green" style="left:800px; top:3800px;">
+  Home → Tournaments List → Create or<br>
+  tap existing → Tournament Detail.<br>
+  Organizer (creator) manages all settings.
+</div>
+
+<!-- Create Tournament -->
+<div class="phone" style="left:820px; top:3740px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Create Tournament</div>
+      <div class="screen-body">
+        <div class="w-label">Name</div>
+        <div class="w-input">Weekend Warriors Cup</div>
+        <div class="w-label">Format</div>
+        <div style="display:flex; gap:3px;">
+          <div class="w-btn small">RR</div>
+          <div class="w-btn small">KO</div>
+          <div class="w-btn small primary">Group+KO</div>
+        </div>
+        <div class="w-label">Overs Per Match</div>
+        <div class="w-input">20</div>
+        <div class="w-label">Points: W/T/NR/L</div>
+        <div style="display:flex; gap:3px;">
+          <div class="w-input" style="width:30px; text-align:center;">2</div>
+          <div class="w-input" style="width:30px; text-align:center;">1</div>
+          <div class="w-input" style="width:30px; text-align:center;">1</div>
+          <div class="w-input" style="width:30px; text-align:center;">0</div>
+        </div>
+        <div class="w-label">Groups / Qualify</div>
+        <div style="font-size:10px;">2 groups • Top 2 qualify</div>
+        <div class="w-btn primary" style="width:100%; text-align:center; margin-top:6px;">Create</div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Tournament Detail -->
+<div class="phone" style="left:1140px; top:3740px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title" style="background:#0d47a1;">Tournament Detail</div>
+      <div class="screen-body" style="padding:6px;">
+        <div style="font-size:11px; font-weight:bold;">Weekend Warriors Cup</div>
+        <div style="font-size:8px; color:#888;">Group + KO • 20 ov • 8 teams <span class="w-badge live" style="font-size:7px;">LIVE</span></div>
+        <div class="w-divider" style="margin:4px 0;"></div>
+        <div class="w-tabs" style="margin-bottom:4px;">
+          <span class="active" style="font-size:8px; padding:2px 6px;">Overview</span>
+          <span style="font-size:8px; padding:2px 6px;">Fixtures</span>
+          <span style="font-size:8px; padding:2px 6px;">Teams</span>
+        </div>
+        <div class="w-label" style="font-size:8px;">Next Match</div>
+        <div class="w-card" style="padding:4px;">
+          <div style="font-size:9px; font-weight:bold;">MW vs CK</div>
+          <div style="font-size:8px; color:#888;">Group A R3 • 12 Mar</div>
+        </div>
+        <div class="w-label" style="font-size:8px;">Standings (Top 3)</div>
+        <table class="w-table" style="font-size:8px;">
+          <tr><th>Team</th><th>P</th><th>W</th><th>Pts</th><th>NRR</th></tr>
+          <tr><td>Mumbai W.</td><td>3</td><td>2</td><td>4</td><td>+1.25</td></tr>
+          <tr><td>Chennai K.</td><td>3</td><td>2</td><td>4</td><td>+0.89</td></tr>
+          <tr><td>Delhi S.</td><td>3</td><td>1</td><td>2</td><td>-0.34</td></tr>
+        </table>
+        <div style="display:flex; gap:3px; margin-top:4px;">
+          <div class="w-btn small" style="flex:1; text-align:center; font-size:8px;">Bracket</div>
+          <div class="w-btn small" style="flex:1; text-align:center; font-size:8px;">Leaders</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Standings -->
+<div class="phone" style="left:500px; top:4340px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Standings</div>
+      <div class="screen-body" style="padding:6px;">
+        <div class="w-tabs" style="margin-bottom:4px;">
+          <span class="active" style="font-size:9px; padding:3px 8px;">Group A</span>
+          <span style="font-size:9px; padding:3px 8px;">Group B</span>
+        </div>
+        <table class="w-table" style="font-size:8px;">
+          <tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>L</th><th>Pts</th><th>NRR</th></tr>
+          <tr style="border-left:2px solid #4CAF50;"><td>1</td><td><b>Mumbai W.</b></td><td>3</td><td>2</td><td>1</td><td><b>4</b></td><td style="color:#4CAF50;">+1.25</td></tr>
+          <tr style="border-left:2px solid #4CAF50;"><td>2</td><td><b>Chennai K.</b></td><td>3</td><td>2</td><td>1</td><td><b>4</b></td><td style="color:#4CAF50;">+0.89</td></tr>
+          <tr><td colspan="7" style="height:2px; background:#4CAF50; padding:0;"></td></tr>
+          <tr><td>3</td><td>Delhi S.</td><td>3</td><td>1</td><td>2</td><td>2</td><td style="color:#c62828;">-0.34</td></tr>
+          <tr><td>4</td><td>Kolkata T.</td><td>3</td><td>1</td><td>2</td><td>2</td><td style="color:#c62828;">-1.80</td></tr>
+        </table>
+        <div style="font-size:8px; color:#888; margin-top:4px;">Green border = qualified for knockout</div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Knockout Bracket -->
+<div class="phone" style="left:820px; top:4340px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Knockout Bracket</div>
+      <div class="screen-body" style="padding:6px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div style="flex:1;">
+            <div style="font-size:7px; color:#888; text-align:center; margin-bottom:2px;">SEMI-FINALS</div>
+            <div class="w-card" style="padding:3px; margin-bottom:6px;">
+              <div style="font-size:8px; font-weight:bold; color:#4CAF50;">MW 187/6 ✓</div>
+              <div style="font-size:8px;">HP 172/9</div>
+            </div>
+            <div class="w-card" style="padding:3px;">
+              <div style="font-size:8px;">BR —</div>
+              <div style="font-size:8px;">CK —</div>
+            </div>
+          </div>
+          <div style="font-size:14px; color:#888;">→</div>
+          <div style="flex:1;">
+            <div style="font-size:7px; color:#888; text-align:center; margin-bottom:2px;">FINAL</div>
+            <div class="w-card" style="padding:3px;">
+              <div style="font-size:8px;">MW —</div>
+              <div style="font-size:8px; color:#888; font-style:italic;">TBD</div>
+            </div>
+            <div style="text-align:center; margin-top:6px; font-size:14px;">🏆</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Tournament Leaderboard -->
+<div class="phone" style="left:1140px; top:4340px;">
+  <div class="phone-inner">
+    <div class="phone-statusbar"><span>9:41</span><span>LTE ▂▄▆ 🔋</span></div>
+    <div class="phone-screen">
+      <div class="screen-title">Leaderboard</div>
+      <div class="screen-body" style="padding:6px;">
+        <div style="font-size:9px; color:#888; margin-bottom:4px;">Weekend Warriors Cup</div>
+        <div class="w-tabs" style="margin-bottom:4px;">
+          <span class="active" style="font-size:8px; padding:2px 6px;">Runs</span>
+          <span style="font-size:8px; padding:2px 6px;">Wkts</span>
+          <span style="font-size:8px; padding:2px 6px;">Avg</span>
+          <span style="font-size:8px; padding:2px 6px;">Econ</span>
+        </div>
+        <div class="w-card" style="border-left:3px solid gold; padding:4px 6px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div><b style="font-size:9px;">#1 A. Mehta</b><div style="font-size:8px; color:#888;">Mumbai W.</div></div>
+            <div style="font-weight:bold; font-size:12px;">245</div>
+          </div>
+        </div>
+        <div class="w-card" style="border-left:3px solid silver; padding:4px 6px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div><b style="font-size:9px;">#2 R. Kapoor</b><div style="font-size:8px; color:#888;">Bangalore R.</div></div>
+            <div style="font-weight:bold; font-size:12px;">198</div>
+          </div>
+        </div>
+        <div class="w-card" style="border-left:3px solid #cd7f32; padding:4px 6px;">
+          <div style="display:flex; justify-content:space-between;">
+            <div><b style="font-size:9px;">#3 V. Sharma</b><div style="font-size:8px; color:#888;">Chennai K.</div></div>
+            <div style="font-weight:bold; font-size:12px;">176</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-home"><div class="phone-home-bar"></div></div>
+  </div>
+</div>
+
+<!-- Tournament State Machine Panel -->
+<div class="screen" style="left:1460px; top:3740px; width:380px;">
+  <div class="screen-title">Tournament State Machine</div>
+  <div class="screen-body" style="text-align:center;">
+    <div style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:2px;">
+      <div class="flow-box">DRAFT</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">REGISTRATION</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box active">LIVE</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box success">COMPLETED</div>
+    </div>
+    <div style="margin-top:8px; font-size:9px; color:#888; text-align:left;">
+      <b>DRAFT:</b> Organizer configures settings<br>
+      <b>REGISTRATION:</b> Teams can join<br>
+      <b>LIVE:</b> Fixtures generated, matches played<br>
+      <b>COMPLETED:</b> All fixtures done
+    </div>
+  </div>
+</div>
+
+<!-- NRR Calculation Panel -->
+<div class="screen panel" style="left:1460px; top:4050px; width:380px;">
+  <div class="screen-title">NRR Calculation</div>
+  <div class="screen-body" style="font-size:10px; line-height:1.6;">
+    <div style="text-align:center; font-weight:bold; font-size:11px; margin-bottom:4px;">
+      NRR = (Runs Scored / Overs Faced) − (Runs Conceded / Overs Bowled)
+    </div>
+    <div class="w-divider"></div>
+    <div class="w-label">Rules</div>
+    <div style="font-size:9px;">
+      • Cumulative across ALL tournament matches<br>
+      • If ALL OUT → use full overs quota<br>
+      • If NOT all out → use actual overs<br>
+      • No-result matches excluded<br>
+      • Overs: 18.4 = 18 + 4/6 = 18.667<br>
+      • Display: ±X.XXX (3 decimals)
+    </div>
+    <div class="w-divider"></div>
+    <div class="w-label">Tiebreaker Order</div>
+    <div style="font-size:9px;">
+      1. Points → 2. NRR → 3. Head-to-head → 4. Joint rank
+    </div>
+  </div>
+</div>
+
+<!-- Tournament annotation -->
+<div class="annotation orange" style="left:1460px; top:4400px; width:280px;">
+  <strong>Tournament Formats:</strong><br>
+  • <b>Round-Robin:</b> N*(N-1)/2 fixtures<br>
+  • <b>Knockout:</b> Single elimination, seeded<br>
+  • <b>Group+KO:</b> Groups → top-N → bracket<br>
+  Seeding: A1 vs B2, B1 vs A2, etc.
+</div>
+
+
+<!-- ============================================================ -->
 <!-- CRICKET DOMAIN ANNOTATIONS -->
 <!-- ============================================================ -->
 <div class="annotation red" style="left:2200px; top:3720px; width:310px;">
@@ -1586,7 +1889,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier 
 
   // Canvas dimensions (total content area)
   const CANVAS_W = 6800;
-  const CANVAS_H = 4200;
+  const CANVAS_H = 5200;
 
   // State
   let scale = 0.55;
@@ -1822,6 +2125,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Courier 
     'sync':         { x: 5050, y: 80, z: 0.45 },
     'pipeline':     { x: 2600, y: 2700, z: 0.6 },
     'statemachine': { x: 2600, y: 2510, z: 0.7 },
+    'tournaments':  { x: 500, y: 3700, z: 0.45 },
     'glossary':     { x: 5200, y: 3500, z: 0.8 },
     'overview':     { x: -50, y: -20, z: 0.18 },
   };

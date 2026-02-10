@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Knockout Bracket</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .bracket-container {
+      padding: 16px; overflow-x: auto; overflow-y: auto;
+      min-height: calc(var(--phone-height) - var(--header-height) - var(--bottom-nav-h) - 40px);
+    }
+    .bracket {
+      display: flex; align-items: center; gap: 0;
+      min-width: 600px; min-height: 400px; position: relative;
+    }
+    .round {
+      display: flex; flex-direction: column; justify-content: center; gap: 40px;
+      min-width: 160px; position: relative;
+    }
+    .round-label {
+      text-align: center; font-size: var(--caption); font-weight: var(--fw-bold);
+      color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .bracket-match {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); overflow: hidden; min-width: 150px;
+    }
+    .bracket-team {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 10px; font-size: var(--body-sm);
+      border-bottom: 1px solid var(--divider);
+    }
+    .bracket-team:last-child { border-bottom: none; }
+    .bracket-team .bt-avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: var(--fw-bold); flex-shrink: 0;
+    }
+    .bracket-team .bt-name {
+      flex: 1; font-weight: var(--fw-medium); font-size: var(--caption);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .bracket-team .bt-score {
+      font-size: var(--caption); font-weight: var(--fw-bold); color: var(--text-secondary);
+    }
+    .bracket-team.winner {
+      background: var(--primary-light);
+    }
+    .bracket-team.winner .bt-name { color: var(--primary-dark); font-weight: var(--fw-bold); }
+    .bracket-team.winner .bt-score { color: var(--primary-dark); }
+    .bracket-team.tbd {
+      color: var(--text-secondary);
+    }
+    .bracket-team.tbd .bt-name { font-style: italic; }
+    .connector {
+      width: 32px; display: flex; flex-direction: column; justify-content: center;
+      align-items: center; position: relative;
+    }
+    .connector-line {
+      position: absolute; border: 1.5px solid var(--border); border-left: none;
+    }
+    /* Semi to Final connectors */
+    .connector .top-line {
+      top: 25%; right: 0; width: 50%; height: 50%;
+      border-bottom: none; border-radius: 0 var(--radius-sm) 0 0;
+    }
+    .connector .bottom-line {
+      bottom: 25%; right: 0; width: 50%; height: 50%;
+      border-top: none; border-radius: 0 0 var(--radius-sm) 0;
+    }
+    .connector .mid-line {
+      left: 50%; top: 25%; height: 50%; width: 0;
+      border: none; border-right: 1.5px solid var(--border);
+    }
+    .connector .horizontal {
+      top: 50%; left: 0; width: 100%; height: 0;
+      border: none; border-top: 1.5px solid var(--border);
+    }
+    .trophy-icon {
+      display: flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #FFF3E0; color: #E65100; font-size: 20px; margin: 0 auto 8px;
+    }
+    .winner-label {
+      text-align: center; font-size: var(--caption); font-weight: var(--fw-bold);
+      color: var(--primary-dark); margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('21-tournament-detail.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Knockout Bracket</span>
+    </div>
+
+    <!-- Bracket -->
+    <div class="bracket-container">
+      <div class="bracket">
+
+        <!-- Semi-Finals -->
+        <div class="round">
+          <div class="round-label">Semi-Finals</div>
+
+          <!-- SF 1 -->
+          <div class="bracket-match">
+            <div class="bracket-team winner">
+              <div class="bt-avatar" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="bt-name">Mumbai Warriors</span>
+              <span class="bt-score">187/6</span>
+            </div>
+            <div class="bracket-team">
+              <div class="bt-avatar" style="background: #FFFDE7; color: #F57F17;">HP</div>
+              <span class="bt-name">Hyderabad Panthers</span>
+              <span class="bt-score">172/9</span>
+            </div>
+          </div>
+
+          <!-- SF 2 -->
+          <div class="bracket-match">
+            <div class="bracket-team">
+              <div class="bt-avatar" style="background: #FFF3E0; color: #E65100;">BR</div>
+              <span class="bt-name">Bangalore Royals</span>
+              <span class="bt-score">—</span>
+            </div>
+            <div class="bracket-team">
+              <div class="bt-avatar" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+              <span class="bt-name">Chennai Kings</span>
+              <span class="bt-score">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connector lines -->
+        <div class="connector">
+          <div class="connector-line top-line"></div>
+          <div class="connector-line bottom-line"></div>
+          <div class="connector-line mid-line"></div>
+          <div class="connector-line horizontal"></div>
+        </div>
+
+        <!-- Final -->
+        <div class="round">
+          <div class="round-label">Final</div>
+
+          <div class="bracket-match">
+            <div class="bracket-team">
+              <div class="bt-avatar" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="bt-name">Mumbai Warriors</span>
+              <span class="bt-score">—</span>
+            </div>
+            <div class="bracket-team tbd">
+              <div class="bt-avatar" style="background: var(--surface); color: var(--text-secondary);">?</div>
+              <span class="bt-name">TBD</span>
+              <span class="bt-score">—</span>
+            </div>
+          </div>
+
+          <div class="winner-label" style="margin-top: 16px;">
+            <div class="trophy-icon">🏆</div>
+            Winner TBD
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>initBottomNav('home');</script>
+</body>
+</html>

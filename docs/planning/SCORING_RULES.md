@@ -551,3 +551,111 @@ Each ball in the current over is displayed with standard cricket notation:
 | `1Nb` | No-ball + 1 run from bat |
 
 Example over: `. 1 4 W . Wd 2 6` (6 legal balls + 1 wide)
+
+---
+
+## 8. Tournament Rules
+
+### 8.1 Tournament State Machine
+
+```
+  DRAFT ──→ REGISTRATION ──→ LIVE ──→ COMPLETED
+```
+
+| From | To | Trigger |
+|------|----|---------|
+| DRAFT | REGISTRATION | Organizer opens registration |
+| REGISTRATION | LIVE | Teams finalized, fixtures generated |
+| LIVE | COMPLETED | All fixtures completed or manual completion |
+
+- Only the tournament organizer (`tournaments.created_by`) can trigger transitions.
+- Moving to LIVE requires at least 2 teams and generated fixtures.
+- Moving to COMPLETED is automatic when all fixtures are completed, or manual by the organizer.
+
+### 8.2 Tournament Formats
+
+**Round-Robin:**
+- Every team plays every other team once.
+- Total fixtures = N × (N-1) / 2 where N = number of teams.
+- All fixtures are in `round_type = 'group'`.
+- Winner determined by points table (Section 8.4 tiebreakers).
+
+**Knockout:**
+- Single-elimination bracket.
+- If odd number of teams, the highest seed gets a bye in the first round.
+- Standard bracket rounds: Quarter-Final (8 teams), Semi-Final (4 teams), Final (2 teams).
+- Optional third-place match (`has_third_place_match` flag).
+- Seeding: based on `tournament_teams.seed_number` (set by organizer).
+
+**Group Stage + Knockout:**
+- Teams divided into `num_groups` groups.
+- Group stage: round-robin within each group (fixtures with `round_type = 'group'`).
+- Top `qualify_per_group` teams from each group advance to knockout.
+- Knockout bracket auto-seeded: A1 vs B2, B1 vs A2, C1 vs D2, D1 vs C2 (cross-group seeding).
+- Same-position tiebreak between groups by NRR.
+
+### 8.3 Net Run Rate (NRR) Calculation
+
+```
+NRR = (Total Runs Scored / Total Overs Faced) - (Total Runs Conceded / Total Overs Bowled)
+```
+
+**Rules:**
+1. Cumulative across ALL tournament matches for a team.
+2. If a team is ALL OUT, use the full quota of overs (not actual overs faced).
+3. If NOT all out, use actual overs faced (decimal: 18.4 overs = 18 + 4/6 = 18.667).
+4. Overs decimal conversion: X.Y overs = X + (Y / 6).
+5. No-result matches are EXCLUDED from NRR calculation.
+6. Display format: 3 decimal places, with +/- sign prefix (e.g., +1.234, -0.567).
+
+**Worked Example:**
+
+Team A plays 2 matches in a tournament (20 overs per match):
+
+| Match | Batting | Bowling |
+|-------|---------|---------|
+| Match 1 | Scored 180/4 in 20.0 overs | Conceded 150/10 (all out in 18.2 overs → use 20.0) |
+| Match 2 | Scored 160/10 (all out in 19.1 → use 20.0) | Conceded 140/6 in 20.0 overs |
+
+```
+Total Runs Scored   = 180 + 160 = 340
+Total Overs Faced   = 20.0 + 20.0 = 40.0 (both use full quota — Match 1 batted full, Match 2 all out)
+Total Runs Conceded = 150 + 140 = 290
+Total Overs Bowled  = 20.0 + 20.0 = 40.0 (Match 1 opponent all out → full quota, Match 2 bowled full)
+
+NRR = (340 / 40.0) - (290 / 40.0) = 8.500 - 7.250 = +1.250
+```
+
+### 8.4 Tiebreaker Order (Fixed)
+
+When two or more teams have equal points, resolve in this order:
+
+1. **Points** — Higher wins.
+2. **Net Run Rate** — Higher wins.
+3. **Head-to-head result** — Winner of the direct match between the tied teams.
+4. **If still tied** — Joint rank (position shared, next rank skips).
+
+This order is fixed and not configurable per tournament.
+
+### 8.5 Qualification Rules
+
+- Configurable top-N per group (`qualify_per_group`, default 2).
+- Knockout bracket seeding from group stage:
+  - 2 groups: A1 vs B2, B1 vs A2
+  - 4 groups: A1 vs B2, C1 vs D2, B1 vs A2, D1 vs C2
+- Same-position tiebreak across groups: resolved by NRR.
+- If `qualify_per_group` exceeds teams in a group, all teams in that group qualify.
+
+### 8.6 Tournament Match Integration
+
+When a match has `tournament_id` set (i.e., it is a tournament match):
+
+- The same scoring engine pipeline (Section 2) applies — no changes to delivery processing.
+- **On match completion** (status → COMPLETED), the following post-completion hooks fire:
+  1. Determine match result (winner, tie, no result) from `match_result`.
+  2. Award points to both teams per the tournament's point configuration (`points_win`, `points_tie`, `points_no_result`, `points_loss`).
+  3. Recalculate NRR for both teams using cumulative data from `tournament_standings`.
+  4. Recalculate `position` for all teams in the relevant group (or entire tournament for round-robin/knockout).
+  5. Update `tournament_standings` rows for both teams.
+  6. If all group stage fixtures are complete and tournament format is `group_knockout`, auto-populate knockout bracket fixtures with qualified teams.
+- These hooks run server-side only. The Flutter app fetches updated standings via the API.

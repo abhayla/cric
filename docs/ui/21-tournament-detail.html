@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Tournament Detail</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .hero-section {
+      background: var(--header); color: var(--text-on-dark);
+      padding: 16px var(--page-margin) 0;
+    }
+    .hero-name { font-size: var(--title); font-weight: var(--fw-bold); margin-bottom: 8px; }
+    .hero-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .hero-badge {
+      padding: 2px 10px; border-radius: var(--radius-full);
+      font-size: var(--caption-sm); font-weight: var(--fw-semibold);
+      background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9);
+    }
+    .hero-date { font-size: var(--caption); color: rgba(255,255,255,0.7); margin-bottom: 12px; }
+    .fixture-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 12px; margin-top: 8px;
+    }
+    .fixture-card .fixture-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .fixture-card .fixture-round {
+      font-size: var(--caption); color: var(--text-secondary); font-weight: var(--fw-medium);
+    }
+    .fixture-card .fixture-teams {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .fixture-team {
+      display: flex; align-items: center; gap: 8px; flex: 1;
+    }
+    .fixture-team.away { justify-content: flex-end; text-align: right; }
+    .fixture-vs {
+      font-size: var(--caption); color: var(--text-secondary); font-weight: var(--fw-bold);
+      padding: 0 8px;
+    }
+    .fixture-team-name { font-size: var(--body-sm); font-weight: var(--fw-medium); }
+    .fixture-card .fixture-result {
+      margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider);
+      font-size: var(--caption); color: var(--primary-dark); font-weight: var(--fw-medium);
+    }
+    .fixture-card .fixture-date {
+      font-size: var(--caption); color: var(--text-secondary);
+    }
+    .standings-mini { width: 100%; }
+    .standings-mini th {
+      font-size: var(--caption); color: var(--text-secondary); font-weight: var(--fw-semibold);
+      text-align: center; padding: 6px 4px; border-bottom: 1px solid var(--border);
+    }
+    .standings-mini th:first-child { text-align: left; }
+    .standings-mini td {
+      font-size: var(--body-sm); text-align: center; padding: 8px 4px;
+      border-bottom: 1px solid var(--divider);
+    }
+    .standings-mini td:first-child { text-align: left; font-weight: var(--fw-medium); }
+    .group-header {
+      font-size: var(--caption); font-weight: var(--fw-bold); text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-secondary); margin: 16px 0 8px; padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .team-row-simple {
+      display: flex; align-items: center; gap: 10px; padding: 10px 0;
+      border-bottom: 1px solid var(--divider);
+    }
+    .team-row-simple:last-child { border-bottom: none; }
+    .team-row-simple .team-info { flex: 1; }
+    .team-row-simple .team-name-sm { font-size: var(--body-sm); font-weight: var(--fw-medium); }
+    .team-row-simple .team-seed { font-size: var(--caption); color: var(--text-secondary); }
+    .upcoming-label {
+      font-size: var(--caption); font-weight: var(--fw-semibold); color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('19-tournaments-list.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Tournament</span>
+      <div class="header-actions">
+        <button class="header-action" data-icon="settings"></button>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero-section">
+      <div class="hero-name">Weekend Warriors Cup</div>
+      <div class="hero-badges">
+        <span class="hero-badge">Group + KO</span>
+        <span class="hero-badge">20 Overs</span>
+        <span class="badge badge-live" style="font-size: var(--caption-sm);">LIVE</span>
+      </div>
+      <div class="hero-date">1 Mar — 15 Mar 2026</div>
+
+      <!-- Stats Row -->
+      <div class="stat-grid cols-3" style="padding-bottom: 12px;">
+        <div class="stat-item" style="padding: 8px 4px;">
+          <div class="stat-value" style="color: var(--text-on-dark);">8</div>
+          <div class="stat-label" style="color: rgba(255,255,255,0.7);">Teams</div>
+        </div>
+        <div class="stat-item" style="padding: 8px 4px;">
+          <div class="stat-value" style="color: var(--text-on-dark);">12</div>
+          <div class="stat-label" style="color: rgba(255,255,255,0.7);">Matches</div>
+        </div>
+        <div class="stat-item" style="padding: 8px 4px;">
+          <div class="stat-value" style="color: var(--text-on-dark);">7</div>
+          <div class="stat-label" style="color: rgba(255,255,255,0.7);">Completed</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="overview">Overview</div>
+      <div class="tab" data-tab="fixtures">Fixtures</div>
+      <div class="tab" data-tab="teams">Teams</div>
+    </div>
+
+    <div class="page-content">
+      <!-- Overview Tab -->
+      <div class="tab-panel active" data-panel="overview">
+
+        <!-- Next Match -->
+        <div class="upcoming-label">Next Match</div>
+        <div class="fixture-card">
+          <div class="fixture-header">
+            <span class="fixture-round">Group A — Round 3</span>
+            <span class="fixture-date">12 Mar 2026</span>
+          </div>
+          <div class="fixture-teams">
+            <div class="fixture-team">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="fixture-team-name">Mumbai Warriors</span>
+            </div>
+            <span class="fixture-vs">VS</span>
+            <div class="fixture-team away">
+              <span class="fixture-team-name">Chennai Kings</span>
+              <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Standings Preview -->
+        <div style="margin-top: var(--section-gap);">
+          <div class="section-header">
+            <h2 class="section-title" style="font-size: var(--body); font-weight: var(--fw-semibold);">Standings</h2>
+            <a href="22-standings.html" class="section-link" onclick="event.preventDefault(); navigateTo('22-standings.html');">View Full</a>
+          </div>
+          <table class="standings-mini" style="border-collapse: collapse;">
+            <thead>
+              <tr><th>Team</th><th>P</th><th>W</th><th>Pts</th><th>NRR</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Mumbai Warriors</td><td>3</td><td>2</td><td>4</td><td>+1.25</td></tr>
+              <tr><td>Chennai Kings</td><td>3</td><td>2</td><td>4</td><td>+0.89</td></tr>
+              <tr><td>Delhi Strikers</td><td>3</td><td>1</td><td>2</td><td>-0.34</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Quick Links -->
+        <div style="margin-top: var(--section-gap); display: flex; gap: 8px;">
+          <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="navigateTo('23-knockout-bracket.html')">Bracket</button>
+          <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="navigateTo('24-tournament-leaderboard.html')">Leaderboard</button>
+        </div>
+      </div>
+
+      <!-- Fixtures Tab -->
+      <div class="tab-panel" data-panel="fixtures">
+        <div class="group-header">Group A — Round 1</div>
+        <div class="fixture-card">
+          <div class="fixture-teams">
+            <div class="fixture-team">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="fixture-team-name">Mumbai Warriors</span>
+            </div>
+            <span class="fixture-vs">VS</span>
+            <div class="fixture-team away">
+              <span class="fixture-team-name">Delhi Strikers</span>
+              <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">DS</div>
+            </div>
+          </div>
+          <div class="fixture-result">Mumbai Warriors won by 15 runs</div>
+        </div>
+
+        <div class="fixture-card">
+          <div class="fixture-teams">
+            <div class="fixture-team">
+              <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+              <span class="fixture-team-name">Chennai Kings</span>
+            </div>
+            <span class="fixture-vs">VS</span>
+            <div class="fixture-team away">
+              <span class="fixture-team-name">Kolkata Thunder</span>
+              <div class="avatar sm" style="background: #F3E5F5; color: #6A1B9A;">KT</div>
+            </div>
+          </div>
+          <div class="fixture-result">Chennai Kings won by 6 wickets</div>
+        </div>
+
+        <div class="group-header">Group A — Round 2</div>
+        <div class="fixture-card">
+          <div class="fixture-teams">
+            <div class="fixture-team">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="fixture-team-name">Mumbai Warriors</span>
+            </div>
+            <span class="fixture-vs">VS</span>
+            <div class="fixture-team away">
+              <span class="fixture-team-name">Kolkata Thunder</span>
+              <div class="avatar sm" style="background: #F3E5F5; color: #6A1B9A;">KT</div>
+            </div>
+          </div>
+          <div class="fixture-result">Mumbai Warriors won by 7 wickets</div>
+        </div>
+
+        <div class="fixture-card">
+          <div class="fixture-header">
+            <span class="fixture-round"></span>
+            <span class="badge badge-upcoming">Upcoming</span>
+          </div>
+          <div class="fixture-teams">
+            <div class="fixture-team">
+              <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+              <span class="fixture-team-name">Chennai Kings</span>
+            </div>
+            <span class="fixture-vs">VS</span>
+            <div class="fixture-team away">
+              <span class="fixture-team-name">Delhi Strikers</span>
+              <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">DS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teams Tab -->
+      <div class="tab-panel" data-panel="teams">
+        <div class="group-header">Group A</div>
+        <div class="team-row-simple">
+          <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+          <div class="team-info">
+            <div class="team-name-sm">Mumbai Warriors</div>
+            <div class="team-seed">Seed #1</div>
+          </div>
+        </div>
+        <div class="team-row-simple">
+          <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">DS</div>
+          <div class="team-info">
+            <div class="team-name-sm">Delhi Strikers</div>
+            <div class="team-seed">Seed #2</div>
+          </div>
+        </div>
+        <div class="team-row-simple">
+          <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+          <div class="team-info">
+            <div class="team-name-sm">Chennai Kings</div>
+            <div class="team-seed">Seed #3</div>
+          </div>
+        </div>
+        <div class="team-row-simple">
+          <div class="avatar sm" style="background: #F3E5F5; color: #6A1B9A;">KT</div>
+          <div class="team-info">
+            <div class="team-name-sm">Kolkata Thunder</div>
+            <div class="team-seed">Seed #4</div>
+          </div>
+        </div>
+
+        <div class="group-header">Group B</div>
+        <div class="team-row-simple">
+          <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">BR</div>
+          <div class="team-info">
+            <div class="team-name-sm">Bangalore Royals</div>
+            <div class="team-seed">Seed #1</div>
+          </div>
+        </div>
+        <div class="team-row-simple">
+          <div class="avatar sm" style="background: #FFFDE7; color: #F57F17;">HP</div>
+          <div class="team-info">
+            <div class="team-name-sm">Hyderabad Panthers</div>
+            <div class="team-seed">Seed #2</div>
+          </div>
+        </div>
+        <div class="team-row-simple">
+          <div class="avatar sm" style="background: #E0F7FA; color: #00695C;">PW</div>
+          <div class="team-info">
+            <div class="team-name-sm">Pune Warriors</div>
+            <div class="team-seed">Seed #3</div>
+          </div>
+        </div>
+        <div class="team-row-simple">
+          <div class="avatar sm" style="background: #FBE9E7; color: #BF360C;">JJ</div>
+          <div class="team-info">
+            <div class="team-name-sm">Jaipur Jaguars</div>
+            <div class="team-seed">Seed #4</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    initBottomNav('home');
+    initTabs();
+  </script>
+</body>
+</html>

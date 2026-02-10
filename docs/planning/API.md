@@ -839,6 +839,391 @@ GET    /api/v1/health
 
 ---
 
+### 1.9 Tournaments
+
+```
+POST   /api/v1/tournaments
+```
+Create a new tournament. Authenticated user becomes the organizer.
+
+**Request:**
+```json
+{
+  "name": "Weekend Warriors Cup",
+  "format": "group_knockout",
+  "oversPerMatch": 20,
+  "ballTypeId": 1,
+  "pointsWin": 2,
+  "pointsTie": 1,
+  "pointsNoResult": 1,
+  "pointsLoss": 0,
+  "numGroups": 2,
+  "qualifyPerGroup": 2,
+  "hasThirdPlaceMatch": false,
+  "startDate": "2026-03-01",
+  "endDate": "2026-03-15"
+}
+```
+
+**Response (201):**
+```json
+{
+  "tournament": {
+    "id": "uuid",
+    "name": "Weekend Warriors Cup",
+    "format": "group_knockout",
+    "oversPerMatch": 20,
+    "ballTypeId": 1,
+    "status": "draft",
+    "pointsWin": 2,
+    "pointsTie": 1,
+    "pointsNoResult": 1,
+    "pointsLoss": 0,
+    "numGroups": 2,
+    "qualifyPerGroup": 2,
+    "hasThirdPlaceMatch": false,
+    "createdBy": "uuid",
+    "startDate": "2026-03-01",
+    "endDate": "2026-03-15",
+    "createdAt": "2026-02-10T10:00:00Z"
+  }
+}
+```
+
+**Errors:**
+- `400` — Invalid format (must be "round_robin", "knockout", or "group_knockout").
+- `400` — `oversPerMatch` outside 1-50 range.
+- `400` — `numGroups` required when format is "group_knockout".
+
+---
+
+```
+GET    /api/v1/tournaments
+```
+List tournaments the authenticated user created or has teams participating in.
+
+**Query params:** `?status=live&page=1&limit=20`
+
+**Response (200):**
+```json
+{
+  "tournaments": [
+    {
+      "id": "uuid",
+      "name": "Weekend Warriors Cup",
+      "format": "group_knockout",
+      "oversPerMatch": 20,
+      "status": "live",
+      "teamCount": 8,
+      "startDate": "2026-03-01",
+      "endDate": "2026-03-15"
+    }
+  ],
+  "total": 5,
+  "page": 1
+}
+```
+
+---
+
+```
+GET    /api/v1/tournaments/:id
+```
+Get tournament details including teams, groups, and configuration.
+
+**Response (200):**
+```json
+{
+  "tournament": {
+    "id": "uuid",
+    "name": "Weekend Warriors Cup",
+    "format": "group_knockout",
+    "oversPerMatch": 20,
+    "ballTypeId": 1,
+    "status": "live",
+    "pointsWin": 2,
+    "pointsTie": 1,
+    "pointsNoResult": 1,
+    "pointsLoss": 0,
+    "numGroups": 2,
+    "qualifyPerGroup": 2,
+    "hasThirdPlaceMatch": false,
+    "createdBy": "uuid",
+    "startDate": "2026-03-01",
+    "endDate": "2026-03-15",
+    "teams": [
+      {
+        "teamId": "uuid",
+        "teamName": "Mumbai Warriors",
+        "groupName": "A",
+        "seedNumber": 1
+      }
+    ],
+    "groups": [
+      { "name": "A", "teamCount": 4 },
+      { "name": "B", "teamCount": 4 }
+    ]
+  }
+}
+```
+
+---
+
+```
+PUT    /api/v1/tournaments/:id
+```
+Update tournament settings. Only the organizer. Only allowed when status is "draft" or "registration".
+
+**Request:**
+```json
+{
+  "name": "Updated Cup Name",
+  "oversPerMatch": 10,
+  "pointsWin": 3,
+  "startDate": "2026-03-05"
+}
+```
+All fields optional — only provided fields are updated.
+
+**Response (200):** Updated tournament object.
+
+**Errors:**
+- `403` — Not the tournament organizer.
+- `409` — Cannot update settings after tournament is "live" or "completed".
+
+---
+
+```
+PUT    /api/v1/tournaments/:id/status
+```
+Transition tournament status.
+
+**Request:**
+```json
+{
+  "status": "live"
+}
+```
+
+Valid transitions: `draft → registration → live → completed`
+
+**Errors:**
+- `400` — Invalid transition (e.g., draft → live).
+- `400` — Cannot move to "live" without at least 2 teams and generated fixtures.
+- `403` — Not the tournament organizer.
+
+**Response (200):** Updated tournament object with new status.
+
+---
+
+```
+POST   /api/v1/tournaments/:id/teams
+```
+Add a team to the tournament. Only the organizer. Only allowed when status is "draft" or "registration".
+
+**Request:**
+```json
+{
+  "teamId": "uuid",
+  "groupName": "A",
+  "seedNumber": 1
+}
+```
+
+**Response (201):**
+```json
+{
+  "tournamentId": "uuid",
+  "teamId": "uuid",
+  "teamName": "Mumbai Warriors",
+  "groupName": "A",
+  "seedNumber": 1,
+  "joinedAt": "2026-02-10T12:00:00Z"
+}
+```
+
+**Errors:**
+- `400` — Team already in tournament.
+- `403` — Not the tournament organizer.
+- `409` — Cannot add teams after tournament is "live".
+
+---
+
+```
+DELETE /api/v1/tournaments/:id/teams/:teamId
+```
+Remove a team from the tournament. Only the organizer. Only allowed when status is "draft" or "registration".
+
+**Response (200):**
+```json
+{
+  "message": "Team removed from tournament"
+}
+```
+
+**Errors:**
+- `403` — Not the tournament organizer.
+- `409` — Cannot remove teams after tournament is "live".
+
+---
+
+```
+POST   /api/v1/tournaments/:id/fixtures/generate
+```
+Auto-generate fixtures based on tournament format and registered teams. Only the organizer.
+
+**Request:** (no body required — generates based on current teams and format)
+
+**Response (201):**
+```json
+{
+  "fixtures": [
+    {
+      "id": "uuid",
+      "roundNumber": 1,
+      "roundType": "group",
+      "fixtureOrder": 1,
+      "groupName": "A",
+      "homeTeamId": "uuid",
+      "homeTeamName": "Mumbai Warriors",
+      "awayTeamId": "uuid",
+      "awayTeamName": "Delhi Strikers",
+      "scheduledDate": null,
+      "venue": null
+    }
+  ],
+  "totalFixtures": 12
+}
+```
+
+**Errors:**
+- `400` — Not enough teams to generate fixtures (minimum 2).
+- `403` — Not the tournament organizer.
+- `409` — Fixtures already generated (delete existing fixtures first or use edit).
+
+---
+
+```
+GET    /api/v1/tournaments/:id/fixtures
+```
+List all fixtures for a tournament.
+
+**Query params:** `?roundType=group&groupName=A`
+
+**Response (200):**
+```json
+{
+  "fixtures": [
+    {
+      "id": "uuid",
+      "roundNumber": 1,
+      "roundType": "group",
+      "fixtureOrder": 1,
+      "groupName": "A",
+      "homeTeam": { "id": "uuid", "name": "Mumbai Warriors" },
+      "awayTeam": { "id": "uuid", "name": "Delhi Strikers" },
+      "matchId": "uuid",
+      "scheduledDate": "2026-03-01",
+      "venue": "Shivaji Park",
+      "result": {
+        "winner": "Mumbai Warriors",
+        "summary": "Mumbai Warriors won by 5 wickets"
+      }
+    }
+  ],
+  "total": 12
+}
+```
+
+---
+
+```
+PUT    /api/v1/tournaments/:id/fixtures/:fixtureId
+```
+Edit a fixture (schedule date, venue, swap teams). Only the organizer.
+
+**Request:**
+```json
+{
+  "scheduledDate": "2026-03-05",
+  "venue": "Wankhede Stadium",
+  "homeTeamId": "uuid",
+  "awayTeamId": "uuid"
+}
+```
+All fields optional.
+
+**Response (200):** Updated fixture object.
+
+**Errors:**
+- `403` — Not the tournament organizer.
+- `409` — Cannot edit a fixture whose match is already completed.
+
+---
+
+```
+GET    /api/v1/tournaments/:id/standings
+```
+Get the points table / standings for the tournament.
+
+**Query params:** `?groupName=A` (optional, filter by group)
+
+**Response (200):**
+```json
+{
+  "standings": [
+    {
+      "position": 1,
+      "teamId": "uuid",
+      "teamName": "Mumbai Warriors",
+      "groupName": "A",
+      "played": 3,
+      "won": 2,
+      "lost": 1,
+      "tied": 0,
+      "noResult": 0,
+      "points": 4,
+      "nrr": "+1.250"
+    }
+  ],
+  "groups": ["A", "B"]
+}
+```
+
+---
+
+```
+GET    /api/v1/tournaments/:id/leaderboard
+```
+Tournament-scoped player leaderboard.
+
+**Query params:** `?category=runs&limit=10` (categories: "runs", "wickets", "batting_avg", "economy")
+
+**Response (200):**
+```json
+{
+  "category": "runs",
+  "leaderboard": [
+    {
+      "rank": 1,
+      "playerId": "uuid",
+      "playerName": "Arjun Mehta",
+      "teamName": "Mumbai Warriors",
+      "value": 245,
+      "matches": 3,
+      "details": {
+        "innings": 3,
+        "highestScore": 98,
+        "average": 81.67,
+        "strikeRate": 142.44
+      }
+    }
+  ]
+}
+```
+
+---
+
 ## 2. WebSocket Protocol
 
 ### 2.1 Connection
@@ -1076,4 +1461,5 @@ All errors follow a consistent format:
 | Scoring endpoints | 120 req/min (2 per second) |
 | Read endpoints | 60 req/min |
 | Sync endpoints | 10 req/min |
+| Tournament endpoints | 30 req/min |
 | WebSocket messages | 5 msg/sec per connection |
