@@ -401,6 +401,87 @@ Valid transitions: `setup → toss → live → innings_break → live → compl
 ---
 
 ```
+POST   /api/v1/matches/:id/abandon
+```
+Abandon a match. Sets status to ABANDONED. Only the scorer.
+
+**Response (200):** Updated match object with status `abandoned` and `match_result` with `result_type = 'no_result'`.
+
+**Errors:**
+- `403` — Not the match scorer.
+- `409` — Match already completed or abandoned.
+
+---
+
+```
+POST   /api/v1/matches/:id/declare
+```
+Declare the current innings (voluntary end). Only the scorer.
+
+**Response (200):** Updated match object. Current innings marked completed with `completed_reason = 'declared'`.
+
+**Errors:**
+- `403` — Not the match scorer.
+- `400` — Match not in LIVE state.
+
+---
+
+```
+POST   /api/v1/matches/:id/reopen
+```
+Reopen a completed innings or match. Only the scorer.
+
+**Request:**
+```json
+{
+  "target": "innings"
+}
+```
+
+`target` values: `"innings"` (reopen last completed innings) or `"match"` (reopen completed match, removes `match_result`).
+
+**Response (200):** Updated match object with reopened state.
+
+**Errors:**
+- `403` — Not the match scorer.
+- `400` — Invalid target or nothing to reopen.
+
+---
+
+```
+POST   /api/v1/matches/:id/super-over
+```
+Create a super over innings pair for a tied knockout match. Only the scorer.
+
+**Response (201):** Two new innings records with `is_super_over = true`, `super_over_number` auto-incremented.
+
+**Errors:**
+- `403` — Not the match scorer.
+- `400` — Match is not tied or not a knockout fixture.
+
+---
+
+```
+PUT    /api/v1/matches/:id/scorer
+```
+Transfer scorer role to another user. Only the current scorer.
+
+**Request:**
+```json
+{
+  "scorerId": "uuid"
+}
+```
+
+**Response (200):** Updated match object with new `scorerId`.
+
+**Errors:**
+- `403` — Not the current scorer.
+- `400` — New scorer not found or not a valid user.
+
+---
+
+```
 GET    /api/v1/matches/:id/scorecard
 ```
 Full scorecard with batting and bowling cards for all innings.
@@ -504,9 +585,24 @@ Undo last delivery. Only allowed for the most recent delivery.
 ```
 GET    /api/v1/matches/:id/deliveries
 ```
-Get all deliveries for a match.
+Get deliveries for a match with required innings filter and offset pagination.
 
-**Query params:** `?inningsId=uuid`
+**Query params:** `?inningsId=uuid&page=1&limit=50`
+
+- `inningsId` — **Required.** UUID of the innings to fetch deliveries for.
+- `page` — Page number, default 1.
+- `limit` — Items per page, default 50, max 100.
+
+**Response (200):**
+```json
+{
+  "deliveries": [ { "...delivery fields..." } ],
+  "total": 120,
+  "page": 1
+}
+```
+
+**Usage:** Commentary tab uses infinite scroll loading older pages. Scoring page "current over" is derived from local ScoringState (no API call).
 
 ---
 
@@ -860,7 +956,36 @@ GET    /api/v1/health
 
 ---
 
-### 1.9 Tournaments
+### 1.9 Uploads
+
+```
+POST   /api/v1/uploads/image
+```
+Upload an image (team logos). Auth required. Multipart/form-data.
+
+**Constraints:**
+- Max file size: 2MB
+- Accepted types: JPEG, PNG only
+- Server-side processing: compress to max 200x200px, < 100KB
+
+**Storage:** VPS filesystem at `C:\Apps\uploads\teams\{uuid}.jpg`, served via Nginx static file config.
+
+**Request:** `multipart/form-data` with `image` field.
+
+**Response (201):**
+```json
+{
+  "url": "https://domain.com/uploads/teams/{uuid}.jpg"
+}
+```
+
+**Errors:**
+- `400` — File exceeds 2MB or unsupported format.
+- `401` — Not authenticated.
+
+---
+
+### 1.10 Tournaments
 
 ```
 POST   /api/v1/tournaments
@@ -1575,6 +1700,41 @@ Connection is authenticated via JWT query parameter. Server verifies the token a
 }
 ```
 
+**Delivery undone (broadcast to all match subscribers):**
+```json
+{
+  "type": "delivery_undone",
+  "matchId": "uuid",
+  "data": {
+    "inningsId": "uuid",
+    "removedDeliveryId": "uuid",
+    "updatedScore": {
+      "runs": 85,
+      "wickets": 3,
+      "overs": "12.3"
+    },
+    "updatedBatterStats": {
+      "strikerId": "uuid",
+      "strikerRuns": 45,
+      "strikerBalls": 30,
+      "strikerFours": 5,
+      "strikerSixes": 2
+    },
+    "updatedBowlerStats": {
+      "bowlerId": "uuid",
+      "bowlerOvers": "4.3",
+      "bowlerRuns": 28,
+      "bowlerWickets": 1,
+      "bowlerMaidens": 0
+    },
+    "currentOver": [
+      { "runs": 0, "display": "." },
+      { "runs": 1, "display": "1" }
+    ]
+  }
+}
+```
+
 **Error:**
 ```json
 {
@@ -1645,3 +1805,32 @@ All errors follow a consistent format:
 | Sync endpoints | 10 req/min |
 | Tournament endpoints | 30 req/min |
 | WebSocket messages | 5 msg/sec per connection |
+
+---
+
+## 5. CORS Policy
+
+`CORS_ORIGIN=*` for MVP. Mobile Dio client does not send `Origin` headers, so CORS is irrelevant for the app. Wildcard allows a future web dashboard without reconfiguration. Lock down to specific domains post-MVP.
+
+---
+
+## 6. Request Validation Rules
+
+All validation enforced via Elysia TypeBox schemas on request bodies and query parameters.
+
+| Field | Rule |
+|-------|------|
+| Phone number | `^[6-9]\d{9}$` (10 digits, Indian mobile starting with 6-9) |
+| Display name | 2-50 chars, trimmed |
+| Team name | 2-30 chars |
+| Tournament name | 2-50 chars |
+| Total overs | integer 1-50 |
+| Venue | optional, 0-100 chars |
+| Players per side | integer 2-15 |
+| Points values (win/tie/NR/loss) | integer 0-10 |
+| Groups count | integer 1-8 |
+| Top N qualify | integer 1-4 |
+| Scheduled date | ISO 8601 date string |
+| UUID fields | valid UUID v4 format |
+| Page number | integer ≥ 1 |
+| Limit | integer 1-100 (default varies by endpoint) |

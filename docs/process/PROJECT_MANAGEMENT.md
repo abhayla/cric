@@ -14,7 +14,7 @@
 | `docs/CONTINUE_PROMPT.md` | Session handoff context and next steps | Every session |
 | `docs/planning/PDR.md` | Product requirements, user stories, success metrics | Per phase completion |
 | `docs/planning/IMPLEMENTATION_PLAN.md` | Phased roadmap, architecture, packages | Per phase completion |
-| `docs/planning/DATABASE.md` | 24 tables, 5 views, indexes, local SQLite schema | When schema changes |
+| `docs/planning/DATABASE.md` | 28 tables, 5 views, indexes, local SQLite schema | When schema changes |
 | `docs/planning/API.md` | REST endpoints, WebSocket protocol | When API changes |
 | `docs/planning/SCORING_RULES.md` | Match state machine, delivery pipeline, cricket rules | When rules change |
 | `docs/planning/blueprint.html` | Interactive wireframes, architecture diagrams | Per phase completion |

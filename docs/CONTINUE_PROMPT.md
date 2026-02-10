@@ -106,7 +106,50 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - **[T15]** Super over stats excluded from career stats and tournament leaderboard; count only toward match result.
 - **[T16]** Leaderboard stays at 4 categories: runs, wickets, batting_avg, economy (no change from T7).
 
+- **[G1]** FK cascades: RESTRICT (users/teams/matches), CASCADE (parent→children), SET NULL (optional FKs)
+- **[G2]** updated_at: application-level on both platforms (Drizzle .$onUpdate, Drift DAO methods)
+- **[G3]** Overs table: populated live at over completion (Step 6 of delivery pipeline)
+- **[G4]** Super over players: application-level enforcement using match_players, no new tables
+- **[G5]** match_analytics JSONB: formal typed interfaces (manhattan_data, worm_data, mvp_scores)
+- **[G6]** File upload: VPS filesystem + Nginx static serving, POST /api/v1/uploads/image
+- **[G7]** 5 new match endpoints: abandon, declare, reopen, super-over, scorer transfer
+- **[G8]** Undo broadcast: delivery_undone WS message with full score/batter/bowler state
+- **[G9]** Deliveries pagination: offset-based, inningsId required, default 50, max 100
+- **[G10]** CORS: allow * for MVP (irrelevant for mobile, enables future web dashboard)
+- **[G11]** Validation: TypeBox schemas with defined rules (phone ^[6-9]\d{9}$, name 2-50 chars, etc.)
+- **[G12]** Powerplay: display-only PP badge for MVP, no fielding enforcement
+- **[G13]** Overthrows: all runs to batter (bowler concedes); bye/legbye + overthrow stays extras
+- **[G14]** 5-run penalty: separate penalty delivery, batting vs fielding team, innings.penalty_runs column
+- **[G15]** Run out on wide: total_runs = 1 (wide base) + completed_runs, all as wide_runs
+- **[G16]** Declaration: enabled for all formats (amateur cricket flexibility)
+- **[G17]** Abandonment in tournaments: No Result, NR points, excluded from NRR, partial stats count
+- **[G18]** Match complete: modal dialog (not screen), View Scorecard + Back to Home buttons
+- **[G19]** Playing XI: embedded in toss flow as Step 2.5 (checkbox list, players_per_side validation)
+- **[G20]** 2nd innings openers: in Innings Transition modal (2 batsmen + 1 bowler selection)
+- **[G21]** Commentary: template-based, on-the-fly from delivery data (no new DB column)
+- **[G22]** Missing screens: edit profile/team reuse forms, settings inline, search/filters deferred
+- **[G23]** Semantic colors: specific hex values (four=0xFF1565C0, six=0xFF6A1B9A, wicket=0xFFC62828, etc.)
+- **[G24]** Empty states: per-screen icon + message + CTA (10 screens defined)
+- **[G25]** Wagon wheel selector: dropdown above chart, default top scorer, filter by striker_id + innings_id
+
 ## Completed Work
+
+### Step 0e: Pre-Implementation Gap Analysis Resolution (32 Gaps)
+
+A final comprehensive gap analysis identified 32 gaps across 6 categories. All 32 resolved and applied to planning/process docs.
+
+**Plan A (G1-G11) — Database, API, WebSocket:**
+- **DATABASE.md:** Added Section 9.1 (FK cascade rules: RESTRICT/CASCADE/SET NULL), Section 9.2 (updated_at: application-level both platforms), Section 9.3 (overs table: populated live at over completion), Section 9.4 (super over: application-level enforcement), Section 9.5 (formal JSONB schemas for match_analytics). Added `penalty_runs` column to `innings` table.
+- **API.md:** Added Section 1.9 (POST /uploads/image: VPS filesystem + Nginx). Added 5 match action endpoints (abandon, declare, reopen, super-over, scorer). Updated deliveries GET with pagination (required inningsId, limit=50, max=100). Added `delivery_undone` WebSocket message with full state. Added Section 5 (CORS: allow * for MVP). Added Section 6 (validation rules table).
+
+**Plan B (G12-G25) — Scoring Engine, UI/UX:**
+- **SCORING_RULES.md:** Added Section 3.8 (powerplay: display-only PP badge), Section 3.9 (overthrows: all runs to batter/bowler). Updated Section 3.6 (5-run penalty: separate delivery, batting vs fielding team, innings.penalty_runs). Updated Section 3.2 (run out on wide: 1 + completed runs as wide_runs). Updated Section 3.10 (declaration: enabled all formats). Added Section 8.8 (abandonment: No Result, NR points, excluded from NRR).
+- **CODE_STANDARDS.md:** Added scoring semantic colors table (9 elements with hex values). Added empty state content table (10 screens). Added match complete modal spec, playing XI selection flow (toss Step 2.5), 2nd innings opener selection, commentary auto-generation templates, missing screens scope, wagon wheel player selector dropdown. Updated WS message types to include `delivery_undone`.
+
+**Infrastructure & Cross-Doc (G26-G32):**
+- **PDR.md:** Marked US-12 (Google Sign-In) as deferred to post-MVP.
+- **GITHUB_ISSUES.md:** Added Phase 2.5 Tournaments milestone, merged WebSocket into Phase 3.
+- **PROJECT_MANAGEMENT.md:** Updated table count 24→28.
 
 ### Tournament/League Management Addition
 Added full tournament/league management as Phase 2.5 in the MVP. Changes span 15 files across planning docs, UI prototypes, and blueprint:

@@ -182,6 +182,7 @@ Playing XI for each team in a specific match.
 | is_completed | boolean | default false |
 | completed_reason | varchar(30) | "all_out", "overs_exhausted", "target_chased", "declared" |
 | target | integer | nullable (set for 2nd innings) |
+| penalty_runs | integer | default 0. 5-run penalties awarded to the fielding team's innings (see SCORING_RULES.md Section 3.6) |
 | run_rate | decimal(5,2) | computed: total_runs / total_overs |
 | dot_ball_percentage | decimal(5,2) | computed: dot balls / total legal deliveries * 100 |
 | boundary_percentage | decimal(5,2) | computed: (fours + sixes) / total legal deliveries * 100 |
@@ -377,9 +378,9 @@ Playing XI for each team in a specific match.
 |--------|------|-------|
 | id | uuid PK | |
 | match_id | uuid FK → matches.id | |
-| manhattan_data | jsonb | `[{"over":1,"runs":8}, ...]` per innings |
-| worm_data | jsonb | `[{"over":1,"cumulative":8}, ...]` per innings |
-| mvp_scores | jsonb | `[{"playerId":"...","score":45.5,"breakdown":{...}}, ...]` |
+| manhattan_data | jsonb | Formal schema: see Section 9.5 |
+| worm_data | jsonb | Formal schema: see Section 9.5 |
+| mvp_scores | jsonb | Formal schema: see Section 9.5 |
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
@@ -549,6 +550,106 @@ Aggregated stats by format across all matches.
 | Super overs | `is_super_over` + `super_over_number` on innings | Reuses same delivery pipeline; stats excluded from career/leaderboard |
 | Tournament as template | 5 match rule fields on tournaments | Matches inherit locked rules from tournament; standalone matches use defaults |
 | Team registration | Separate `tournament_requests` table | Pending/approved/rejected workflow; organizer direct-add also supported |
+
+### 9.1 Foreign Key Cascade Rules
+
+Three-tier cascade strategy:
+
+| Tier | Action | Tables | Rationale |
+|------|--------|--------|-----------|
+| **RESTRICT** | Block deletion | `users`, `teams`, `matches` | Core entities with widespread references — must not be deleted while referenced |
+| **CASCADE** | Auto-delete children | See below | Parent deletion should remove dependent records |
+| **SET NULL** | Preserve child, null the FK | `matches.tournament_id`, optional FKs | Child record is meaningful without the parent |
+
+**CASCADE relationships:**
+- `matches` → `innings`, `match_result`, `match_analytics`
+- `innings` → `deliveries`, `batting_stats`, `bowling_stats`, `fielding_stats`, `overs`, `fall_of_wickets`
+- `deliveries` → `wickets_by_delivery`
+- `tournaments` → `tournament_teams`, `tournament_groups`, `tournament_fixtures`, `tournament_standings`, `tournament_requests`
+
+### 9.2 `updated_at` Management
+
+Application-level on both platforms — no database triggers:
+
+| Platform | Mechanism |
+|----------|-----------|
+| **PostgreSQL (Drizzle)** | `.$onUpdate(() => new Date())` on every `updated_at` column definition |
+| **SQLite (Drift)** | Set `updated_at = DateTime.now()` in DAO methods before every write |
+
+### 9.3 `overs` Table Population
+
+The `overs` table is populated **live during scoring** at the end of each over (Step 6 of the delivery pipeline in [SCORING_RULES.md](SCORING_RULES.md)):
+
+1. When the 6th legal delivery completes an over, create an `overs` record immediately
+2. Fields populated: `over_number`, `bowler_id`, `runs_conceded`, `wickets_taken`, `wides`, `no_balls`, `is_maiden`
+3. **Maiden calculation:** `is_maiden = true` if no delivery in the over had `runs_from_bat > 0` AND `wide_runs = 0` AND `no_ball_runs = 0` (byes/leg-byes do NOT break maidens)
+
+### 9.4 Super Over Player Selection
+
+Application-level enforcement using existing tables — no new DB tables:
+
+- All Playing XI players (from `match_players`) are eligible for super over selection
+- Super over innings use `is_super_over = true` + `super_over_number` in the `innings` table
+- When super over starts: scorer selects 3 batters + 1 bowler per team via a selection dialog
+- 2 openers bat first; 3rd batter enters on wicket fall
+- After 2 wickets OR 1 over completed → super over innings ends
+- Sudden death: repeat with different bowlers if still tied
+
+### 9.5 `match_analytics` JSONB Schemas
+
+Formal typed structures for the JSONB columns in `match_analytics`:
+
+**`manhattan_data`:**
+```json
+{
+  "innings": [
+    {
+      "innings_number": 1,
+      "team_name": "Mumbai Warriors",
+      "overs": [
+        { "over_number": 1, "runs": 8, "wickets": 0 },
+        { "over_number": 2, "runs": 12, "wickets": 1 }
+      ]
+    }
+  ]
+}
+```
+
+**`worm_data`:**
+```json
+{
+  "innings": [
+    {
+      "innings_number": 1,
+      "team_name": "Mumbai Warriors",
+      "data_points": [
+        { "over_number": 1, "cumulative_runs": 8 },
+        { "over_number": 2, "cumulative_runs": 20 }
+      ]
+    }
+  ]
+}
+```
+
+**`mvp_scores`:**
+```json
+{
+  "players": [
+    {
+      "player_id": "uuid",
+      "player_name": "R. Sharma",
+      "team_name": "Mumbai Warriors",
+      "batting_points": 10.2,
+      "bowling_points": 0.0,
+      "fielding_points": 3.0,
+      "total_points": 13.2,
+      "performance_summary": "65(40) 6x4 3x6"
+    }
+  ]
+}
+```
+
+These structures will be implemented as TypeScript interfaces in `apps/server/src/types/analytics.ts` and Freezed models in `apps/mobile/src/features/analytics/data/models/analytics_model.dart`.
 
 ---
 

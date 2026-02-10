@@ -28,6 +28,7 @@
 - **Stats impact:** Partial match stats DO count in career stats (whatever was played counts).
 - **Match result:** A `match_result` record is created with `result_type = 'no_result'`, `winner_team_id = null`, `margin = null`.
 - **MVP:** No MVP is calculated for abandoned matches.
+- **Tournament impact:** See Section 8.8 for abandoned tournament match rules.
 
 ---
 
@@ -160,7 +161,12 @@ End of Over Special:
 - Strike: Additional odd runs → swap; even/zero → no swap
 - Wicket on wide: Only stumped or run out possible
   - If stumped off wide: wide + stumping recorded
-  - If run out off wide: wide + run out recorded; all completed runs count as wide_runs (extras)
+  - If run out off wide: wide + run out recorded
+    - total_runs = 1 (wide base) + completed runs before run out
+    - ALL runs count as wide_runs (extras) — batter gets 0 bat_runs
+    - Bowler concedes all wide_runs
+    - Example: Wide + batters complete 1 run + run out = wide_runs: 2, bat_runs: 0, wicket: run out
+    - Bowler: wide_runs: 2 conceded, no wicket credit (run out on wide)
   - **UI flow:** Scorer taps Wide → extras panel opens → Wicket button appears in panel.
     Only Stumped and Run Out dismissal types are available. Confirm records the combined delivery.
 ```
@@ -212,15 +218,27 @@ End of Over Special:
 ```
 A 5-run penalty is awarded for specific rule violations (e.g., ball hitting a fielder's helmet
 on the ground, deliberate distraction, ball tampering). Rare in amateur cricket but supported.
+Matches ICC Standard Match Conditions (Law 41.17).
 
-- Runs: +5 penalty runs added to the batting team's total (extras)
-- Does NOT count as a delivery (no ball counted)
+Recording method: Create a separate penalty delivery in the relevant innings.
+  - Delivery record: is_penalty = true, total_runs = 5, bat_runs = 0, is_legal = false
+  - No bowler/batter attribution on penalty delivery
+
+If penalty awarded to BATTING team:
+  - penalty_runs = 5 added to batting team's current innings total
+  - Create penalty delivery in current innings
+
+If penalty awarded to FIELDING team:
+  - penalty_runs = 5 added to fielding team's innings total
+  - Uses `innings.penalty_runs` column on the fielding team's innings
+  - If fielding team hasn't batted yet, stored for their upcoming innings
+
+- Does NOT count as a delivery (no ball counted, is_legal = false)
 - Batter: 0 runs credited, 0 balls faced
 - Bowler: 0 runs against bowler
 - Strike: No change
 - UI flow: Scorer taps "Set" button → "5-Run Penalty" →
   Select which team receives the penalty runs → Confirm
-- Recorded as a special delivery with `is_penalty = true`
 ```
 
 ### 3.7 Maiden Overs
@@ -242,7 +260,38 @@ Maiden = false if:
   - Any no-balls
 ```
 
-### 3.8 Innings Completion
+### 3.8 Powerplay Rules (MVP)
+
+```
+MVP SCOPE: Display-only — no fielding restriction enforcement.
+
+- Show "PP" badge on over numbers during powerplay overs (1 to powerplay_overs)
+- powerplay_overs is configured per tournament (or null for no powerplay)
+- Standalone matches: no powerplay (null by default)
+- No fielding position tracking per delivery in MVP
+- Full fielding restriction enforcement deferred to post-MVP
+  when field placement feature is added
+```
+
+### 3.9 Overthrow Attribution
+
+```
+All runs from overthrows are attributed to the batter on strike and conceded by the bowler:
+
+Case 1 — Batter hits the ball + overthrow:
+  - bat_runs = initial shot runs + overthrow runs (all credited to batter)
+  - bowler concedes all bat_runs
+  - Example: Batter hits 1, overthrow adds 3 → bat_runs: 4, bowler_runs: 4
+
+Case 2 — Bye/Leg-bye + overthrow (no bat contact):
+  - All runs are extras of the same type (bye_runs or leg_bye_runs)
+  - Bowler concedes 0 runs (byes/leg-byes are not against bowler)
+  - Example: Leg-bye 1 + overthrow 3 → leg_bye_runs: 4, bowler_runs: 0
+
+UI: Scorer uses the "..." (Other) button to enter the total runs including overthrows.
+```
+
+### 3.10 Innings Completion
 
 ```
 An innings ends when ANY of:
@@ -261,10 +310,13 @@ An innings ends when ANY of:
    - Match ends immediately (mid-over possible)
 
 4. DECLARATION (manual):
-   - Batting team declares (typically Test cricket, but allowed)
+   - Batting team declares voluntarily
+   - Enabled for ALL formats (T20, ODI, custom) — amateur cricket uses custom rules;
+     T20 declarations are rare but valid
+   - No format-based restriction
    - **UI flow:** Scorer taps "Set" button in action bar → menu shows "Declare Innings" option
-     → Confirmation dialog: "Declare innings at {score}/{wickets} ({overs})?" → Yes/No
-     → On confirm: innings marked completed with `completed_reason = 'declared'`
+     → Confirmation dialog: "Declare innings at {score}/{wickets} ({overs})? This cannot be undone."
+     → Yes/No → On confirm: innings marked completed with `completed_reason = 'declared'`
 ```
 
 ### 3.9 Dismissal Types
@@ -672,7 +724,7 @@ When a scorer starts a match from a tournament fixture, the match inherits these
 | `max_overs_per_bowler` | Bowler over limit | Locked — overrides default ceil(totalOvers/5) formula |
 | `wide_runs` | Wide penalty runs | Locked — scoring engine uses this instead of default 1 |
 | `no_ball_runs` | No-ball penalty runs | Locked — scoring engine uses this instead of default 1 |
-| `powerplay_overs` | Powerplay overs | Locked — field placement restrictions apply for these overs |
+| `powerplay_overs` | Powerplay overs | Locked — display-only "PP" badge for MVP (see Section 3.8) |
 
 **Match creation from fixture flow:**
 1. Scorer navigates to fixture in tournament detail
@@ -692,6 +744,16 @@ When a scorer starts a match from a tournament fixture, the match inherits these
 - Bowler over limit = ceil(totalOvers/5)
 - Wide runs = 1, No-ball runs = 1
 - No powerplay
+
+### 8.8 Abandonment Impact on Tournaments
+
+When a tournament match is abandoned:
+
+- **Result:** "No Result" (NR) — `match_result.result_type = 'no_result'`
+- **Points:** Each team receives NR points (default 1, per `tournaments.points_no_result`)
+- **NRR:** Abandoned match is **excluded** from NRR calculation (per Section 8.3, rule 5)
+- **Career stats:** Partial stats from the abandoned match **DO count** in career stats (per Section 1 abandonment rules)
+- **Standings:** `tournament_standings.no_result` column incremented for both teams
 
 ---
 

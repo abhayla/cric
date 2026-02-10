@@ -153,8 +153,9 @@ Map milestones to the 7 implementation phases from [IMPLEMENTATION_PLAN.md](../p
 |-----------|-------|-------------|
 | `Phase 1: Foundation` | 1 | Project setup, auth, theme, navigation |
 | `Phase 2: Match Setup` | 2 | Teams, match creation, toss, player selection |
-| `Phase 3: Scoring Engine` | 3 | Ball-by-ball scoring, all delivery types, undo |
-| `Phase 4: Real-time & Sync` | 4 | WebSocket broadcasting, offline sync |
+| `Phase 2.5: Tournaments` | 2.5 | Tournament/league CRUD, fixtures, standings, super overs |
+| `Phase 3: Scoring Engine` | 3 | Ball-by-ball scoring, all delivery types, undo, WebSocket broadcasting |
+| `Phase 4: Offline Sync` | 4 | Offline-first sync, sync queue, conflict resolution |
 | `Phase 5: Stats & Analytics` | 5 | Career stats, match analytics, MVP |
 | `Phase 6: Polish` | 6 | Performance, edge cases, UX refinement |
 | `Phase 7: Release` | 7 | Testing, Play Store submission, launch |

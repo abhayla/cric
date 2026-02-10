@@ -27,7 +27,7 @@
 | US-09 | Captain | Create and manage a team | Can create a team, add/remove players, set player roles (batter, bowler, all-rounder, keeper). | P1 | 2 |
 | US-10 | Captain | Manage team roster for a match | Can select playing XI from team roster before match starts. | P1 | 2 |
 | US-11 | Player | Sign up with phone OTP | Can register/login using Indian phone number via Firebase OTP. | P0 | 1 |
-| US-12 | Player | Sign up with Google | Can register/login using Google account via Firebase Auth. | P0 | 1 |
+| US-12 | Player | ~~Sign up with Google~~ | ~~Can register/login using Google account via Firebase Auth.~~ **Deferred to post-MVP** (Q13: Phone OTP only for MVP). | — | — |
 | US-13 | Player | Set up my profile | Can set display name, batting style, bowling style, and player role after first login. | P0 | 1 |
 | US-14 | Player | View match history | Can see list of all matches I've participated in with results and my performance summary. | P1 | 5 |
 | US-15 | Player | View MVP rankings | Can see MVP rankings per match based on weighted batting + bowling + fielding contributions. | P2 | 5 |

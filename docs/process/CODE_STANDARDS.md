@@ -375,7 +375,7 @@ All messages follow a consistent structure:
 | Direction | Message Types |
 |-----------|--------------|
 | Client → Server | `join_match`, `leave_match`, `delivery`, `undo_delivery` |
-| Server → Client | `score_update`, `wicket`, `innings_complete`, `match_complete`, `error` |
+| Server → Client | `score_update`, `wicket`, `innings_complete`, `match_complete`, `delivery_undone`, `error` |
 
 ---
 
@@ -538,6 +538,22 @@ Target: smooth performance on 2GB RAM budget Android devices. See [IMPLEMENTATIO
 | Icon set | Material Symbols | Variable weight/fill. Built into Flutter via `Icons.*`. |
 | Orientation | Portrait only | Lock via `SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])` in `main()`. |
 
+### Scoring Semantic Colors (M3 Dark)
+
+| Element | Color | Implementation |
+|---------|-------|----------------|
+| Dot ball (0) | Gray | `colorScheme.surfaceVariant` |
+| Runs (1-3) | Default surface | `colorScheme.surface` with `colorScheme.outline` border |
+| Four | Blue 800 | `Color(0xFF1565C0)` |
+| Six | Purple 800 | `Color(0xFF6A1B9A)` |
+| Wicket | Red 800 | `Color(0xFFC62828)` |
+| Wide / No-ball | Orange 800 | `Color(0xFFE65100)` |
+| Bye / Leg-bye | Gray dashed | `colorScheme.surfaceVariant` with dashed border |
+| Free hit badge | Orange pill | `Color(0xFFE65100)` background, white text |
+| Live badge | Red | `Color(0xFFEF4444)` with pulse animation |
+
+These colors provide good contrast on dark backgrounds. Use them consistently across the scoring page, current over display, and commentary tab.
+
 ### Spacing System (8dp Grid)
 
 | Token | Value | Usage |
@@ -597,7 +613,7 @@ Use M3's built-in surface tones. No custom surface colors.
 | State | Pattern |
 |-------|---------|
 | **Loading** | Centered `CircularProgressIndicator` with optional text below ("Loading matches...") |
-| **Empty** | Centered icon + descriptive text + CTA button (e.g., cricket bat icon + "No matches yet" + "Start a Match" button) |
+| **Empty** | Centered icon + descriptive text + CTA button (see Empty State Content table below) |
 | **Error** | Centered error icon + message + "Retry" button. Never show raw exceptions to users. |
 | **Pull-to-refresh** | `RefreshIndicator` on all list screens (match list, team list, player list). Triggers sync pull. |
 
@@ -607,6 +623,86 @@ Use M3 default page transitions only. No custom animations for MVP:
 - **Root navigation:** Fade through (`FadeThroughTransition`)
 - **Drill-down:** Shared axis (`SharedAxisTransition`)
 - **Dialogs/sheets:** M3 default slide-up + fade
+
+### Empty State Content (Per Screen)
+
+| Screen | Icon | Message | CTA Button |
+|--------|------|---------|------------|
+| Home (no matches) | `Icons.sports_cricket` | "No matches yet" | "Start a Match" |
+| Home (no tournaments) | `Icons.emoji_events` | "No tournaments" | "Create Tournament" |
+| Teams List | `Icons.groups` | "No teams yet" | "Create a Team" |
+| Match History | `Icons.scoreboard` | "No matches found" | "Start a Match" |
+| Team Detail (Matches) | `Icons.scoreboard` | "No matches played yet" | — |
+| Team Detail (Players) | `Icons.person_add` | "No players yet" | "Add Player" |
+| Tournaments List | `Icons.emoji_events` | "No tournaments yet" | "Create Tournament" |
+| Tournament Fixtures | `Icons.calendar_today` | "No fixtures generated" | "Generate Fixtures" |
+| Scorecard Commentary | `Icons.chat_bubble_outline` | "No commentary available" | — |
+| Leaderboard | `Icons.leaderboard` | "No stats yet" | — |
+
+### Match Complete Modal (G18)
+
+Triggered when match result is determined (2nd innings complete, target chased, or all out):
+
+- **Type:** Modal dialog (not a separate screen)
+- **Content:** "Match Complete!" header, result text (e.g., "Mumbai Warriors won by 15 runs"), final scores of both teams
+- **Buttons:** "View Scorecard" (primary), "Back to Home" (secondary)
+- **Tied knockout:** Show "Match Tied! Super Over Required" with "Start Super Over" button instead
+- **Layout:** Reuse the Innings Transition modal layout with different content
+
+### Playing XI Selection (G19)
+
+Embedded in toss flow as Step 2.5 (after toss decision, before opener selection):
+
+1. **Step 2.5a:** "Select Playing XI for {Team A}" — show roster, checkbox list (player name + role)
+2. **Step 2.5b:** "Select Playing XI for {Team B}" — same flow
+3. Pre-select all if roster size equals `players_per_side`
+4. Validate: exactly `players_per_side` selected before proceeding
+5. Creates `match_players` records for both teams
+
+### Second Innings Opener Selection (G20)
+
+Added to the Innings Transition modal after first innings summary + target display:
+
+1. "Select Opening Batsmen" — 2 from now-batting team's Playing XI
+2. "Select Opening Bowler" — 1 from now-bowling team's Playing XI
+3. Same UI pattern as toss Step 3 (player list with checkboxes/radio)
+4. On "Start 2nd Innings" → creates batting order and proceeds
+
+### Commentary Auto-Generation (G21)
+
+Template-based, generated on-the-fly from delivery data (no new DB column — YAGNI):
+
+| Outcome | Template |
+|---------|----------|
+| Dot ball | `"{bowler} to {batter}, no run"` |
+| Runs | `"{bowler} to {batter}, {runs} run(s)"` |
+| Four | `"FOUR! {bowler} to {batter}, boundary"` |
+| Six | `"SIX! {bowler} to {batter}, maximum!"` |
+| Wide | `"{bowler} to {batter}, wide, {runs} run(s)"` |
+| No-ball | `"{bowler} to {batter}, no-ball, {runs} run(s)"` |
+| Wicket | `"OUT! {batter} {dismissal_type} {fielder_text} b {bowler}"` |
+
+Generated at display time from delivery record fields. No `commentary_text` column needed.
+
+### Missing Screens Scope (G22)
+
+| Screen | Approach | Phase |
+|--------|----------|-------|
+| Edit Profile | Reuse Profile Setup form (screen 04), pre-filled with current data | MVP |
+| Edit Team | Reuse Create Team form (screen 07), pre-filled | MVP |
+| Settings | Inline section at bottom of Player Profile (screen 17) — logout + app version | MVP |
+| Search Results | Deferred — use simple local filtering on list screens | Post-MVP |
+| Advanced Filters | Deferred — use chip-based filtering in Match History prototype | Post-MVP |
+| Edit Tournament | Deferred | Post-MVP |
+
+### Wagon Wheel Player Selector (G25)
+
+- **Position:** Dropdown above the wagon wheel chart
+- **Default:** Top run-scorer in the selected innings
+- **Options:** All batters who batted in the innings, sorted by batting order
+- **Format:** Player name + runs scored (e.g., "R. Sharma — 65")
+- **On change:** Re-render wagon wheel with selected player's shot data
+- **Query:** Filter `deliveries` by `striker_id` + `innings_id` where `runs_from_bat > 0`
 
 ### App Bar Pattern
 
