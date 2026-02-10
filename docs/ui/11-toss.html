@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Toss</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .toss-step { display: none; }
+    .toss-step.active { display: block; }
+    .team-toss-card {
+      border: 2px solid var(--border); border-radius: var(--radius-md);
+      padding: 24px 16px; text-align: center; cursor: pointer;
+      transition: all var(--duration) var(--ease);
+      flex: 1;
+    }
+    .team-toss-card:hover { border-color: var(--primary); }
+    .team-toss-card.selected { border-color: var(--primary); background: var(--primary-light); }
+    .team-toss-card .toss-team-avatar {
+      width: 56px; height: 56px; border-radius: 50%;
+      margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 18px;
+    }
+    .player-select-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-md); margin-bottom: 8px;
+      cursor: pointer; transition: all var(--duration) var(--ease);
+    }
+    .player-select-row:hover { border-color: var(--primary); }
+    .player-select-row.selected { border-color: var(--primary); background: var(--primary-light); }
+    .player-select-check {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border); display: flex;
+      align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .player-select-row.selected .player-select-check {
+      background: var(--primary); border-color: var(--primary); color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('10-match-setup.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Toss</span>
+    </div>
+
+    <div class="page-content no-bottom-nav" style="display: flex; flex-direction: column;">
+      <!-- Stepper -->
+      <div class="stepper" id="tossSteps" style="margin-top: 8px;">
+        <div class="step active" data-step="1">
+          <div class="step-number">1</div>
+          <span class="step-label">Toss</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" data-step="2">
+          <div class="step-number">2</div>
+          <span class="step-label">Choice</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" data-step="3">
+          <div class="step-number">3</div>
+          <span class="step-label">Openers</span>
+        </div>
+      </div>
+
+      <!-- Step 1: Who won the toss? -->
+      <div class="toss-step active" data-toss-step="1">
+        <h3 style="font-size: var(--heading); font-weight: var(--fw-bold); text-align: center; margin-bottom: 24px;">
+          Who won the toss?
+        </h3>
+        <div class="flex gap-12">
+          <div class="team-toss-card" onclick="selectTossWinner(this, 'MW')">
+            <div class="toss-team-avatar" style="background: #E3F2FD; color: #1565C0;">MW</div>
+            <div style="font-weight: var(--fw-semibold);">Mumbai Warriors</div>
+          </div>
+          <div class="team-toss-card" onclick="selectTossWinner(this, 'DS')">
+            <div class="toss-team-avatar" style="background: #FCE4EC; color: #C62828;">DS</div>
+            <div style="font-weight: var(--fw-semibold);">Delhi Strikers</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Chose to bat/bowl -->
+      <div class="toss-step" data-toss-step="2">
+        <h3 style="font-size: var(--heading); font-weight: var(--fw-bold); text-align: center; margin-bottom: 8px;">
+          <span id="tossWinnerName">—</span> chose to
+        </h3>
+        <p class="text-secondary text-center text-sm mb-16">Select batting or bowling</p>
+
+        <div class="toggle-group" id="batBowlToggle" style="max-width: 280px; margin: 0 auto;">
+          <div class="toggle-option" data-value="bat" onclick="selectChoice('bat')">
+            <div style="font-size: 28px; margin-bottom: 4px;">🏏</div>
+            Bat
+          </div>
+          <div class="toggle-option" data-value="bowl" onclick="selectChoice('bowl')">
+            <div style="font-size: 28px; margin-bottom: 4px;">⚾</div>
+            Bowl
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Select Openers -->
+      <div class="toss-step" data-toss-step="3">
+        <h3 style="font-size: var(--heading); font-weight: var(--fw-bold); margin-bottom: 4px;">
+          Select Opening Batsmen
+        </h3>
+        <p class="text-secondary text-sm mb-16">Choose 2 from <span id="battingTeamName">Mumbai Warriors</span></p>
+
+        <div id="openersList">
+          <div class="player-select-row" onclick="toggleOpener(this)">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">AM</div>
+            <div class="player-info">
+              <div class="player-name">Arjun Mehta</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batsman</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="toggleOpener(this)">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">VS</div>
+            <div class="player-info">
+              <div class="player-name">Vikram Sharma</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batsman</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="toggleOpener(this)">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">RP</div>
+            <div class="player-info">
+              <div class="player-name">Rohan Patel</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batsman</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="toggleOpener(this)">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">KS</div>
+            <div class="player-info">
+              <div class="player-name">Karan Singh</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">All-rounder</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="toggleOpener(this)">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">NV</div>
+            <div class="player-info">
+              <div class="player-name">Nikhil Verma</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Wicketkeeper</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider" style="margin: 16px 0;"></div>
+
+        <h3 style="font-size: var(--heading); font-weight: var(--fw-bold); margin-bottom: 4px;">
+          Select Opening Bowler
+        </h3>
+        <p class="text-secondary text-sm mb-16">Choose 1 from <span id="bowlingTeamName">Delhi Strikers</span></p>
+
+        <div id="bowlersList">
+          <div class="player-select-row" onclick="selectBowler(this)">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">HM</div>
+            <div class="player-info">
+              <div class="player-name">Harsh Mishra</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Fast</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectBowler(this)">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">NY</div>
+            <div class="player-info">
+              <div class="player-name">Naveen Yadav</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Fast</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectBowler(this)">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">AP</div>
+            <div class="player-info">
+              <div class="player-name">Ankit Pandey</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Medium</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spacer -->
+      <div style="flex: 1;"></div>
+
+      <!-- CTA -->
+      <div style="padding-bottom: 24px;">
+        <button class="btn btn-primary" id="tossNextBtn" onclick="nextTossStep()">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let currentStep = 1;
+    let tossWinner = null;
+    let tossChoice = null;
+    let selectedOpeners = 0;
+    let bowlerSelected = false;
+
+    function updateSteps() {
+      document.querySelectorAll('.toss-step').forEach(s => s.classList.remove('active'));
+      document.querySelector(`[data-toss-step="${currentStep}"]`).classList.add('active');
+
+      document.querySelectorAll('#tossSteps .step').forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i + 1 === currentStep) s.classList.add('active');
+        if (i + 1 < currentStep) s.classList.add('completed');
+      });
+
+      document.querySelectorAll('.step-connector').forEach((c, i) => {
+        c.classList.toggle('completed', i + 1 < currentStep);
+      });
+
+      // Update button text
+      const btn = document.getElementById('tossNextBtn');
+      btn.textContent = currentStep === 3 ? 'Start Match' : 'Next';
+    }
+
+    function selectTossWinner(card, team) {
+      document.querySelectorAll('.team-toss-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      tossWinner = team;
+      const name = card.querySelector('div:last-child').textContent;
+      document.getElementById('tossWinnerName').textContent = name;
+    }
+
+    function selectChoice(choice) {
+      tossChoice = choice;
+      document.querySelectorAll('#batBowlToggle .toggle-option').forEach(o => o.classList.remove('active'));
+      document.querySelector(`[data-value="${choice}"]`).classList.add('active');
+    }
+
+    function toggleOpener(row) {
+      if (row.classList.contains('selected')) {
+        row.classList.remove('selected');
+        row.querySelector('.player-select-check').innerHTML = '';
+        selectedOpeners--;
+      } else if (selectedOpeners < 2) {
+        row.classList.add('selected');
+        row.querySelector('.player-select-check').innerHTML = ICONS.check;
+        selectedOpeners++;
+      }
+    }
+
+    function selectBowler(row) {
+      document.querySelectorAll('#bowlersList .player-select-row').forEach(r => {
+        r.classList.remove('selected');
+        r.querySelector('.player-select-check').innerHTML = '';
+      });
+      row.classList.add('selected');
+      row.querySelector('.player-select-check').innerHTML = ICONS.check;
+      bowlerSelected = true;
+    }
+
+    function nextTossStep() {
+      if (currentStep === 1) {
+        if (!tossWinner) return;
+        currentStep = 2;
+        updateSteps();
+      } else if (currentStep === 2) {
+        if (!tossChoice) return;
+        currentStep = 3;
+        updateSteps();
+      } else if (currentStep === 3) {
+        if (selectedOpeners < 2 || !bowlerSelected) return;
+        navigateTo('12-scoring-page.html');
+      }
+    }
+
+    updateSteps();
+  </script>
+</body>
+</html>

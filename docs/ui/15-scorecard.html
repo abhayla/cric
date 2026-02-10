@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Scorecard</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .score-comparison {
+      background: var(--header); color: white; padding: 20px 16px; text-align: center;
+    }
+    .score-comparison .teams-row {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .score-comparison .team-block { text-align: center; flex: 1; }
+    .score-comparison .team-block .team-avatar-lg {
+      width: 48px; height: 48px; border-radius: 50%;
+      margin: 0 auto 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 16px;
+    }
+    .score-comparison .team-block .team-short { font-size: var(--body-sm); color: rgba(255,255,255,0.7); }
+    .score-comparison .team-block .team-total { font-size: var(--score-md); font-weight: 700; margin-top: 4px; }
+    .score-comparison .team-block .team-overs-label { font-size: var(--caption); color: rgba(255,255,255,0.5); }
+    .score-comparison .vs { font-size: var(--body-sm); font-weight: 600; color: rgba(255,255,255,0.5); }
+    .result-banner {
+      background: var(--primary-light); color: var(--primary-dark);
+      text-align: center; padding: 10px 16px;
+      font-size: var(--body-sm); font-weight: var(--fw-semibold);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('05-home.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Match Details</span>
+    </div>
+
+    <!-- Score Comparison -->
+    <div class="score-comparison">
+      <div class="teams-row">
+        <div class="team-block">
+          <div class="team-avatar-lg" style="background: #E3F2FD; color: #1565C0;">MW</div>
+          <div class="team-short">Mumbai Warriors</div>
+          <div class="team-total">187/6</div>
+          <div class="team-overs-label">(20.0 ov)</div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team-block">
+          <div class="team-avatar-lg" style="background: #FCE4EC; color: #C62828;">DS</div>
+          <div class="team-short">Delhi Strikers</div>
+          <div class="team-total">172/9</div>
+          <div class="team-overs-label">(20.0 ov)</div>
+        </div>
+      </div>
+    </div>
+    <div class="result-banner">Mumbai Warriors won by 15 runs</div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="scorecard">Scorecard</div>
+      <div class="tab" data-tab="commentary">Commentary</div>
+      <div class="tab" data-tab="analytics">Analytics</div>
+    </div>
+
+    <!-- Scorecard Panel -->
+    <div class="tab-panel active" data-panel="scorecard" style="padding-bottom: 80px;">
+      <!-- Innings Tabs -->
+      <div style="padding: 8px 16px 0;">
+        <div class="chip-group">
+          <span class="chip active" data-value="inn1" onclick="showInnings(1, this)">MW — 1st Inn</span>
+          <span class="chip" data-value="inn2" onclick="showInnings(2, this)">DS — 2nd Inn</span>
+        </div>
+      </div>
+
+      <!-- 1st Innings Batting -->
+      <div style="padding: 12px 16px;" id="innings1">
+        <h4 style="font-size: var(--body-sm); font-weight: var(--fw-bold); margin-bottom: 8px;">Batting</h4>
+        <table class="scorecard-table">
+          <thead>
+            <tr><th>Batter</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="batter-name">Arjun Mehta</span><span class="dismissal">c Rahul b Harsh</span></td>
+              <td class="highlight">54</td><td>38</td><td>6</td><td>2</td><td>142.1</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Vikram Sharma</span><span class="dismissal">b Naveen</span></td>
+              <td>32</td><td>28</td><td>3</td><td>1</td><td>114.2</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Rohan Patel</span><span class="dismissal">lbw b Sachin</span></td>
+              <td>12</td><td>15</td><td>1</td><td>0</td><td>80.0</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Karan Singh</span><span class="dismissal">not out</span></td>
+              <td class="highlight">48</td><td>30</td><td>4</td><td>3</td><td>160.0</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Aditya Joshi</span><span class="dismissal">run out (Vivek)</span></td>
+              <td>18</td><td>12</td><td>2</td><td>0</td><td>150.0</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Nikhil Verma</span><span class="dismissal">c Gaurav b Ravi</span></td>
+              <td>8</td><td>6</td><td>1</td><td>0</td><td>133.3</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Rajesh Kumar</span><span class="dismissal">not out</span></td>
+              <td>5</td><td>3</td><td>0</td><td>1</td><td>166.6</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="scorecard-extras">
+          <span>Extras</span>
+          <span>10 (Wd 4, NB 2, B 2, LB 2)</span>
+        </div>
+        <div class="scorecard-total">
+          <span>Total (6 wkts, 20.0 ov)</span>
+          <span>187</span>
+        </div>
+
+        <!-- Yet to Bat -->
+        <div style="margin-top: 12px;">
+          <span style="font-size: var(--caption); color: var(--text-secondary);">Yet to Bat: </span>
+          <span style="font-size: var(--caption);">Sanjay Rao, Deepak Nair, Amit Tiwari, Prashant Gupta</span>
+        </div>
+
+        <!-- FoW -->
+        <div style="margin-top: 16px;">
+          <h4 style="font-size: var(--caption); font-weight: var(--fw-bold); color: var(--text-secondary); margin-bottom: 6px;">Fall of Wickets</h4>
+          <div class="fow-list">
+            <span class="fow-item">1-45 (Sharma, 5.2)</span>
+            <span class="fow-item">2-68 (Patel, 8.4)</span>
+            <span class="fow-item">3-98 (Mehta, 12.1)</span>
+            <span class="fow-item">4-140 (Joshi, 15.3)</span>
+            <span class="fow-item">5-160 (Verma, 17.5)</span>
+            <span class="fow-item">6-178 (Rao, 19.2)</span>
+          </div>
+        </div>
+
+        <div class="divider" style="margin: 16px 0;"></div>
+
+        <!-- Bowling -->
+        <h4 style="font-size: var(--body-sm); font-weight: var(--fw-bold); margin-bottom: 8px;">Bowling</h4>
+        <table class="scorecard-table">
+          <thead>
+            <tr><th>Bowler</th><th>O</th><th>M</th><th>R</th><th>W</th><th>Ec</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="batter-name">Harsh Mishra</td><td>4.0</td><td>0</td><td>38</td><td>1</td><td>9.50</td></tr>
+            <tr><td class="batter-name">Naveen Yadav</td><td>4.0</td><td>0</td><td>42</td><td>1</td><td>10.50</td></tr>
+            <tr><td class="batter-name">Ankit Pandey</td><td>4.0</td><td>0</td><td>35</td><td>0</td><td>8.75</td></tr>
+            <tr><td class="batter-name">Sachin Kulkarni</td><td>4.0</td><td>1</td><td>28</td><td class="highlight">1</td><td>7.00</td></tr>
+            <tr><td class="batter-name">Ravi Malhotra</td><td>4.0</td><td>0</td><td>44</td><td>1</td><td>11.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 2nd Innings (hidden) -->
+      <div style="padding: 12px 16px; display: none;" id="innings2">
+        <h4 style="font-size: var(--body-sm); font-weight: var(--fw-bold); margin-bottom: 8px;">Batting</h4>
+        <table class="scorecard-table">
+          <thead>
+            <tr><th>Batter</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="batter-name">Rahul Kapoor</span><span class="dismissal">c Nikhil b Rajesh</span></td>
+              <td class="highlight">62</td><td>44</td><td>7</td><td>2</td><td>140.9</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Suresh Reddy</span><span class="dismissal">b Prashant</span></td>
+              <td>8</td><td>10</td><td>1</td><td>0</td><td>80.0</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Mahesh Desai</span><span class="dismissal">lbw b Deepak</span></td>
+              <td>25</td><td>20</td><td>3</td><td>0</td><td>125.0</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Ankit Pandey</span><span class="dismissal">c Arjun b Amit</span></td>
+              <td>31</td><td>24</td><td>2</td><td>1</td><td>129.1</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Vivek Chauhan</span><span class="dismissal">run out (Karan)</span></td>
+              <td>22</td><td>18</td><td>1</td><td>1</td><td>122.2</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Gaurav Saxena</span><span class="dismissal">c Karan b Rajesh</span></td>
+              <td>5</td><td>6</td><td>0</td><td>0</td><td>83.3</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Harsh Mishra</span><span class="dismissal">b Deepak</span></td>
+              <td>4</td><td>5</td><td>0</td><td>0</td><td>80.0</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Naveen Yadav</span><span class="dismissal">not out</span></td>
+              <td>8</td><td>4</td><td>1</td><td>0</td><td>200.0</td>
+            </tr>
+            <tr>
+              <td><span class="batter-name">Sachin Kulkarni</span><span class="dismissal">c Vikram b Prashant</span></td>
+              <td>3</td><td>6</td><td>0</td><td>0</td><td>50.0</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="scorecard-extras"><span>Extras</span><span>8 (Wd 3, NB 1, B 2, LB 2)</span></div>
+        <div class="scorecard-total"><span>Total (9 wkts, 20.0 ov)</span><span>172</span></div>
+      </div>
+    </div>
+
+    <!-- Commentary Panel -->
+    <div class="tab-panel" data-panel="commentary" style="padding: 0 16px; padding-bottom: 80px;">
+      <div class="commentary-item">
+        <div class="ball-num">20.0</div>
+        <div class="commentary-text">Ravi to Rajesh Kumar, <span class="highlight-runs">1 run</span>, tucked to mid-on for a single. Mumbai Warriors finish at 187/6.</div>
+      </div>
+      <div class="commentary-item">
+        <div class="ball-num">19.5</div>
+        <div class="commentary-text">Ravi to Karan Singh, <span class="highlight-six">SIX!</span> Massive! Launched over long-on, disappears into the crowd.</div>
+      </div>
+      <div class="commentary-item">
+        <div class="ball-num">19.4</div>
+        <div class="commentary-text">Ravi to Karan Singh, <span class="highlight-four">FOUR!</span> Cuts hard through point, races to the boundary.</div>
+      </div>
+      <div class="commentary-item">
+        <div class="ball-num">19.3</div>
+        <div class="commentary-text">Ravi to Karan Singh, <span class="highlight-runs">1 run</span>, driven to long-off.</div>
+      </div>
+      <div class="commentary-item">
+        <div class="ball-num">19.2</div>
+        <div class="commentary-text">Ravi to Sanjay Rao, <span class="highlight-wicket">OUT! Caught</span> by Gaurav Saxena. Attempted a wild slog, gets a top edge.</div>
+      </div>
+      <div class="commentary-item">
+        <div class="ball-num">19.1</div>
+        <div class="commentary-text">Ravi to Sanjay Rao, dot ball, defended back to the bowler.</div>
+      </div>
+      <div class="commentary-item">
+        <div class="ball-num">18.6</div>
+        <div class="commentary-text">Sachin to Karan Singh, <span class="highlight-four">FOUR!</span> Driven beautifully through covers.</div>
+      </div>
+      <div class="commentary-item">
+        <div class="ball-num">18.5</div>
+        <div class="commentary-text">Sachin to Karan Singh, dot ball, turning away outside off.</div>
+      </div>
+      <div class="commentary-item">
+        <div class="ball-num">18.4</div>
+        <div class="commentary-text">Sachin to Karan Singh, <span class="highlight-runs">2 runs</span>, worked to deep mid-wicket.</div>
+      </div>
+    </div>
+
+    <!-- Analytics Panel -->
+    <div class="tab-panel" data-panel="analytics" style="padding: 16px; padding-bottom: 80px;">
+      <p class="text-secondary text-sm text-center" style="padding: 24px;">
+        <a href="16-match-analytics.html" style="color: var(--primary); font-weight: 600;">View Full Analytics</a>
+      </p>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    initBottomNav('matches');
+
+    function showInnings(num, chip) {
+      document.querySelectorAll('.chip-group .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      document.getElementById('innings1').style.display = num === 1 ? '' : 'none';
+      document.getElementById('innings2').style.display = num === 2 ? '' : 'none';
+    }
+  </script>
+</body>
+</html>

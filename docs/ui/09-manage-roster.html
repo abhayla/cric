@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Manage Roster</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .roster-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--divider);
+    }
+    .roster-row:last-child { border-bottom: none; }
+    .roster-row .player-info { flex: 1; }
+    .remove-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--danger); transition: background var(--duration) var(--ease);
+    }
+    .remove-btn:hover { background: #FFEBEE; }
+    .roster-count { font-size: var(--body-sm); color: var(--text-secondary); }
+    .roster-count strong { color: var(--text-primary); }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('08-team-detail.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Manage Roster</span>
+    </div>
+
+    <div class="page-content no-bottom-nav">
+      <!-- Count & Add -->
+      <div class="flex justify-between items-center mb-16">
+        <span class="roster-count"><strong>11</strong> / 25 players</span>
+        <button class="btn btn-sm btn-primary" style="width: auto;" onclick="openModal('addPlayerModal')">
+          <span data-icon="plus" style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:4px;"></span>
+          Add Player
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="search-bar mb-16">
+        <span class="search-icon" data-icon="search" style="width:20px;height:20px;"></span>
+        <input type="text" placeholder="Search players..." id="rosterSearch">
+      </div>
+
+      <!-- Player List -->
+      <div id="rosterList">
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">AM</div>
+          <div class="player-info">
+            <div class="player-name">Arjun Mehta</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">Batsman &bull; Right Hand</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">VS</div>
+          <div class="player-info">
+            <div class="player-name">Vikram Sharma</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">Batsman &bull; Right Hand</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">RP</div>
+          <div class="player-info">
+            <div class="player-name">Rohan Patel</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">Batsman &bull; Left Hand</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">KS</div>
+          <div class="player-info">
+            <div class="player-name">Karan Singh</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">All-rounder &bull; Right Fast</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">AJ</div>
+          <div class="player-info">
+            <div class="player-name">Aditya Joshi</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">All-rounder &bull; Left Spin</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">NV</div>
+          <div class="player-info">
+            <div class="player-name">Nikhil Verma</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">Wicketkeeper &bull; Right Hand</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">RK</div>
+          <div class="player-info">
+            <div class="player-name">Rajesh Kumar</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">Bowler &bull; Right Fast</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">SR</div>
+          <div class="player-info">
+            <div class="player-name">Sanjay Rao</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">Bowler &bull; Right Medium</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">DN</div>
+          <div class="player-info">
+            <div class="player-name">Deepak Nair</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">Bowler &bull; Left Spin</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">AT</div>
+          <div class="player-info">
+            <div class="player-name">Amit Tiwari</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">Bowler &bull; Off Break</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+
+        <div class="roster-row">
+          <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">PG</div>
+          <div class="player-info">
+            <div class="player-name">Prashant Gupta</div>
+            <div class="player-role" style="font-size: var(--caption); color: var(--text-secondary);">Bowler &bull; Right Fast</div>
+          </div>
+          <button class="remove-btn" title="Remove" onclick="this.closest('.roster-row').style.display='none'">
+            <span data-icon="trash" style="width:16px;height:16px;"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Player Modal -->
+    <div class="modal-overlay" id="addPlayerModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Add Player</span>
+          <button class="modal-close" onclick="closeModal('addPlayerModal')">
+            <span data-icon="close" style="width:20px;height:20px;"></span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group" style="margin-top: 0;">
+            <label class="input-label">Player Name</label>
+            <input type="text" class="input-field" placeholder="Enter player name">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Role</label>
+            <select class="input-field">
+              <option value="Batsman">Batsman</option>
+              <option value="Bowler">Bowler</option>
+              <option value="All-rounder">All-rounder</option>
+              <option value="Wicketkeeper">Wicketkeeper</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Batting Style</label>
+            <div class="toggle-group">
+              <div class="toggle-option active" data-value="Right">Right Hand</div>
+              <div class="toggle-option" data-value="Left">Left Hand</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="closeModal('addPlayerModal')">Add Player</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Search filter
+    document.getElementById('rosterSearch').addEventListener('input', function() {
+      const query = this.value.toLowerCase();
+      document.querySelectorAll('.roster-row').forEach(row => {
+        const name = row.querySelector('.player-name').textContent.toLowerCase();
+        row.style.display = name.includes(query) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

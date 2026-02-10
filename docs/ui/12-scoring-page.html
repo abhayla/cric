@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Scoring</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .phone-frame { display: flex; flex-direction: column; }
+    .scoring-middle { flex: 1; overflow-y: auto; }
+    .non-striker-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px var(--page-margin);
+      border-left: 3px solid var(--border);
+      opacity: 0.7;
+    }
+    .non-striker-card .player-card-stats { display: flex; gap: 12px; }
+    .non-striker-card .stat-mini { text-align: center; }
+    .innings-badge {
+      display: inline-block; padding: 2px 8px; border-radius: var(--radius-full);
+      font-size: var(--caption-sm); font-weight: var(--fw-bold);
+      background: var(--primary-light); color: var(--primary-dark);
+    }
+    .over-separator {
+      width: 1px; height: 20px; background: var(--border); margin: 0 2px;
+    }
+    .score-header-row2 {
+      display: flex; gap: 16px; align-items: center;
+      padding: 4px var(--page-margin) 8px;
+      background: var(--header); color: rgba(255,255,255,0.7);
+      font-size: var(--caption);
+    }
+    .settings-menu {
+      position: absolute; top: 100%; right: 8px;
+      background: var(--card); border-radius: var(--radius-md);
+      box-shadow: var(--shadow-modal); min-width: 180px;
+      z-index: 60; display: none; overflow: hidden;
+    }
+    .settings-menu.active { display: block; }
+    .settings-menu-item {
+      display: block; width: 100%; text-align: left;
+      padding: 12px 16px; font-size: var(--body-sm);
+      transition: background var(--duration) var(--ease);
+    }
+    .settings-menu-item:hover { background: var(--surface); }
+    .settings-menu-item.danger { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Score Header -->
+    <div class="score-header" id="scoreHeader">
+      <div>
+        <div style="font-size: var(--caption); color: rgba(255,255,255,0.7); margin-bottom: 2px;">
+          <span id="battingTeam">Mumbai Warriors</span> — 1st Innings
+        </div>
+        <div class="team-score-main">
+          <span class="score-big" id="totalScore">87/3</span>
+          <span class="overs-text">(<span id="oversDisplay">12.4</span>)</span>
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div class="connectivity-dot" title="Online" style="margin-left: auto;"></div>
+      </div>
+    </div>
+
+    <!-- Second row: CRR, RRR, Target -->
+    <div class="score-header-row2">
+      <span>CRR: <strong style="color: white;" id="crr">6.98</strong></span>
+      <span id="rrrSection" style="display: none;">RRR: <strong style="color: white;" id="rrr">—</strong></span>
+      <span id="targetSection" style="display: none;">Target: <strong style="color: var(--warning);" id="target">—</strong></span>
+    </div>
+
+    <!-- Scoring Middle (Scrollable) -->
+    <div class="scoring-middle">
+      <!-- Striker -->
+      <div class="player-card striker" id="strikerCard">
+        <div style="font-size: 10px; color: var(--primary-dark); font-weight: 700; margin-right: 4px;">*</div>
+        <div class="player-card-name" id="strikerName">Karan Singh</div>
+        <div class="player-card-stats">
+          <div class="stat-mini"><div class="stat-mini-value" id="strikerR">34</div><div class="stat-mini-label">R</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="strikerB">22</div><div class="stat-mini-label">B</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="striker4s">3</div><div class="stat-mini-label">4s</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="striker6s">2</div><div class="stat-mini-label">6s</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="strikerSR">154.5</div><div class="stat-mini-label">SR</div></div>
+        </div>
+      </div>
+
+      <!-- Non-Striker -->
+      <div class="non-striker-card" id="nonStrikerCard">
+        <div class="player-card-name" id="nonStrikerName">Aditya Joshi</div>
+        <div class="player-card-stats">
+          <div class="stat-mini"><div class="stat-mini-value" id="nsR">12</div><div class="stat-mini-label">R</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="nsB">8</div><div class="stat-mini-label">B</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="ns4s">1</div><div class="stat-mini-label">4s</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="ns6s">0</div><div class="stat-mini-label">6s</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="nsSR">150.0</div><div class="stat-mini-label">SR</div></div>
+        </div>
+      </div>
+
+      <div class="divider-thick"></div>
+
+      <!-- Bowler -->
+      <div class="player-card bowler" id="bowlerCard">
+        <div class="player-card-name" id="bowlerName">Sachin Kulkarni</div>
+        <div class="player-card-stats">
+          <div class="stat-mini"><div class="stat-mini-value" id="bowlerO">2.4</div><div class="stat-mini-label">O</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="bowlerM">1</div><div class="stat-mini-label">M</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="bowlerR">14</div><div class="stat-mini-label">R</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="bowlerW">1</div><div class="stat-mini-label">W</div></div>
+          <div class="stat-mini"><div class="stat-mini-value" id="bowlerEc">5.25</div><div class="stat-mini-label">Ec</div></div>
+        </div>
+      </div>
+
+      <!-- Current Over -->
+      <div class="over-display" id="overDisplay">
+        <span class="over-label">This Over</span>
+        <div class="ball-indicator dot" id="ball-0">0</div>
+        <div class="ball-indicator runs" id="ball-1">1</div>
+        <div class="ball-indicator four" id="ball-2">4</div>
+        <div class="ball-indicator dot" id="ball-3">0</div>
+      </div>
+
+      <!-- Free Hit Badge (hidden by default) -->
+      <div style="text-align: center; padding: 4px 0; display: none;" id="freeHitSection">
+        <span class="free-hit-badge">Free Hit</span>
+      </div>
+
+      <!-- Partnership & Last Wicket Info -->
+      <div style="padding: 8px var(--page-margin); display: flex; justify-content: space-between;">
+        <span style="font-size: var(--caption); color: var(--text-secondary);">Partnership: <strong style="color: var(--text-primary);">46(30)</strong></span>
+        <span style="font-size: var(--caption); color: var(--text-secondary);">Last Wkt: <strong style="color: var(--text-primary);">R. Patel 12(15)</strong></span>
+      </div>
+    </div>
+
+    <!-- Scoring Controls (Fixed Bottom) -->
+    <div class="scoring-controls">
+      <!-- Run Buttons -->
+      <div class="run-buttons">
+        <button class="run-btn" onclick="scoreRuns(0)">0</button>
+        <button class="run-btn" onclick="scoreRuns(1)">1</button>
+        <button class="run-btn" onclick="scoreRuns(2)">2</button>
+        <button class="run-btn" onclick="scoreRuns(3)">3</button>
+        <button class="run-btn four-btn" onclick="scoreRuns(4)">4</button>
+        <button class="run-btn six-btn" onclick="scoreRuns(6)">6</button>
+      </div>
+
+      <!-- Extras + Wicket Row -->
+      <div class="extras-row">
+        <button class="extras-btn" onclick="navigateTo('14-extras-panel.html?type=wide')">Wide</button>
+        <button class="extras-btn" onclick="navigateTo('14-extras-panel.html?type=noball')">NB</button>
+        <button class="extras-btn" onclick="navigateTo('14-extras-panel.html?type=bye')">Bye</button>
+        <button class="extras-btn" onclick="navigateTo('14-extras-panel.html?type=legbye')">LB</button>
+        <button class="wicket-btn" onclick="navigateTo('13-wicket-dialog.html')">W</button>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="scoring-actions" style="position: relative;">
+        <button class="action-btn" title="Undo" onclick="undoDelivery()">
+          <span data-icon="undo" style="width:18px;height:18px;"></span>
+        </button>
+        <div style="flex:1;"></div>
+        <button class="action-btn" title="Settings" onclick="toggleSettingsMenu()">
+          <span data-icon="menu" style="width:18px;height:18px;"></span>
+        </button>
+
+        <!-- Settings Menu -->
+        <div class="settings-menu" id="settingsMenu">
+          <button class="settings-menu-item" onclick="openModal('inningsModal')">Declare Innings</button>
+          <button class="settings-menu-item" onclick="openModal('penaltyModal')">5-Run Penalty</button>
+          <button class="settings-menu-item danger" onclick="openModal('abandonModal')">Abandon Match</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Select New Bowler Modal (after over completion) -->
+    <div class="modal-overlay" id="bowlerModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Select Bowler</span>
+        </div>
+        <div class="modal-body" style="max-height: 50vh; overflow-y: auto;">
+          <p class="text-secondary text-sm mb-16">Over completed. Select the next bowler.</p>
+
+          <div class="player-select-row" onclick="selectNewBowler(this, 'Harsh Mishra')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">HM</div>
+            <div class="player-info">
+              <div class="player-name">Harsh Mishra</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">2-0-24-1 &bull; Ec 12.00</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectNewBowler(this, 'Naveen Yadav')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">NY</div>
+            <div class="player-info">
+              <div class="player-name">Naveen Yadav</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">3-0-28-0 &bull; Ec 9.33</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectNewBowler(this, 'Ankit Pandey')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">AP</div>
+            <div class="player-info">
+              <div class="player-name">Ankit Pandey</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">2-0-18-0 &bull; Ec 9.00</div>
+            </div>
+          </div>
+          <div class="player-select-row disabled" style="opacity: 0.4; pointer-events: none;">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #F5F5F5; color: #9E9E9E;">SK</div>
+            <div class="player-info">
+              <div class="player-name">Sachin Kulkarni</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowled last over</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectNewBowler(this, 'Ravi Malhotra')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">RM</div>
+            <div class="player-info">
+              <div class="player-name">Ravi Malhotra</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">2-0-22-1 &bull; Ec 11.00</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="confirmBowler()">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Select New Batter Modal (after wicket) -->
+    <div class="modal-overlay" id="batterModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Select New Batter</span>
+        </div>
+        <div class="modal-body" style="max-height: 50vh; overflow-y: auto;">
+          <p class="text-secondary text-sm mb-16">Select the next batter to come in.</p>
+
+          <div class="player-select-row" onclick="selectNewBatter(this, 'Nikhil Verma')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">NV</div>
+            <div class="player-info">
+              <div class="player-name">Nikhil Verma</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Wicketkeeper &bull; #6</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectNewBatter(this, 'Rajesh Kumar')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">RK</div>
+            <div class="player-info">
+              <div class="player-name">Rajesh Kumar</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &bull; #7</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectNewBatter(this, 'Sanjay Rao')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">SR</div>
+            <div class="player-info">
+              <div class="player-name">Sanjay Rao</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &bull; #8</div>
+            </div>
+          </div>
+          <div class="player-select-row" onclick="selectNewBatter(this, 'Deepak Nair')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">DN</div>
+            <div class="player-info">
+              <div class="player-name">Deepak Nair</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &bull; #9</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="confirmBatter()">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Innings Transition Modal -->
+    <div class="modal-overlay" id="inningsModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Innings Complete</span>
+        </div>
+        <div class="modal-body">
+          <div style="text-align: center; margin-bottom: 16px;">
+            <div style="font-size: var(--score-lg); font-weight: var(--fw-bold);">187/6</div>
+            <div style="font-size: var(--body-sm); color: var(--text-secondary);">Mumbai Warriors &bull; 20.0 overs</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="font-size: var(--body-sm);">
+            <div class="flex justify-between" style="padding: 4px 0;"><span class="text-secondary">Extras</span><span>12 (Wd 5, NB 3, B 2, LB 2)</span></div>
+            <div class="flex justify-between" style="padding: 4px 0;"><span class="text-secondary">Run Rate</span><span>9.35</span></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="font-size: var(--caption); color: var(--text-secondary); margin-bottom: 8px;">Fall of Wickets</div>
+          <div class="fow-list">
+            <span class="fow-item">1-23 (V. Sharma, 3.4)</span>
+            <span class="fow-item">2-45 (R. Patel, 6.2)</span>
+            <span class="fow-item">3-68 (A. Mehta, 9.1)</span>
+            <span class="fow-item">4-120 (A. Joshi, 14.3)</span>
+            <span class="fow-item">5-156 (N. Verma, 17.5)</span>
+            <span class="fow-item">6-178 (S. Rao, 19.2)</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="text-align: center; padding: 8px 0;">
+            <div style="font-size: var(--body-sm); color: var(--text-secondary);">Target for Delhi Strikers</div>
+            <div style="font-size: var(--score-md); font-weight: var(--fw-bold); color: var(--primary-dark);">188</div>
+            <div style="font-size: var(--caption); color: var(--text-secondary);">in 20 overs (RRR: 9.40)</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="closeModal('inningsModal')">Start 2nd Innings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Abandon Modal -->
+    <div class="modal-overlay" id="abandonModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Abandon Match</span>
+          <button class="modal-close" onclick="closeModal('abandonModal')">
+            <span data-icon="close" style="width:20px;height:20px;"></span>
+          </button>
+        </div>
+        <div class="modal-body text-center">
+          <p style="margin-bottom: 8px;">Are you sure you want to abandon this match?</p>
+          <p class="text-secondary text-sm">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer" style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('abandonModal')">Cancel</button>
+          <button class="btn btn-danger" style="flex:1;" onclick="navigateTo('05-home.html')">Abandon</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5-Run Penalty Modal -->
+    <div class="modal-overlay" id="penaltyModal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">5-Run Penalty</span>
+          <button class="modal-close" onclick="closeModal('penaltyModal')">
+            <span data-icon="close" style="width:20px;height:20px;"></span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="text-secondary text-sm mb-16">Which team receives the 5-run penalty?</p>
+          <div class="toggle-group">
+            <div class="toggle-option active" data-value="batting">Batting Team</div>
+            <div class="toggle-option" data-value="bowling">Bowling Team</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="closeModal('penaltyModal')">Apply Penalty</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Initialize scoring state
+    const state = new ScoringState();
+
+    function updateUI() {
+      document.getElementById('totalScore').textContent = `${state.runs}/${state.wickets}`;
+      document.getElementById('oversDisplay').textContent = state.oversDisplay;
+      document.getElementById('crr').textContent = state.currentRunRate;
+
+      // Striker
+      document.getElementById('strikerName').textContent = state.striker.name;
+      document.getElementById('strikerR').textContent = state.striker.R;
+      document.getElementById('strikerB').textContent = state.striker.B;
+      document.getElementById('striker4s').textContent = state.striker.fours;
+      document.getElementById('striker6s').textContent = state.striker.sixes;
+      document.getElementById('strikerSR').textContent = state.strikerSR;
+
+      // Non-striker
+      document.getElementById('nonStrikerName').textContent = state.nonStriker.name;
+      document.getElementById('nsR').textContent = state.nonStriker.R;
+      document.getElementById('nsB').textContent = state.nonStriker.B;
+      document.getElementById('ns4s').textContent = state.nonStriker.fours;
+      document.getElementById('ns6s').textContent = state.nonStriker.sixes;
+      document.getElementById('nsSR').textContent = state.nonStrikerSR;
+
+      // Bowler
+      document.getElementById('bowlerName').textContent = state.bowler.name;
+      document.getElementById('bowlerO').textContent = state.bowler.O;
+      document.getElementById('bowlerM').textContent = state.bowler.M;
+      document.getElementById('bowlerR').textContent = state.bowler.R;
+      document.getElementById('bowlerW').textContent = state.bowler.W;
+      document.getElementById('bowlerEc').textContent = state.bowlerEconomy;
+
+      // Current over balls
+      const overDisplay = document.getElementById('overDisplay');
+      overDisplay.innerHTML = '<span class="over-label">This Over</span>';
+      state.currentOverBalls.forEach(ball => {
+        const div = document.createElement('div');
+        div.className = `ball-indicator ${ball.type}`;
+        div.textContent = ball.display;
+        overDisplay.appendChild(div);
+      });
+
+      // Free hit
+      document.getElementById('freeHitSection').style.display = state.isFreeHit ? '' : 'none';
+
+      // Check if over completed (balls reset to 0 and we have an empty currentOverBalls)
+      if (state.balls === 0 && state.currentOverBalls.length === 0 && state.overs > 0) {
+        openModal('bowlerModal');
+      }
+    }
+
+    state.subscribe(updateUI);
+
+    function scoreRuns(runs) {
+      state.addRuns(runs);
+    }
+
+    function undoDelivery() {
+      state.undo();
+    }
+
+    function toggleSettingsMenu() {
+      document.getElementById('settingsMenu').classList.toggle('active');
+    }
+
+    // Close settings menu when clicking elsewhere
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.scoring-actions')) {
+        document.getElementById('settingsMenu').classList.remove('active');
+      }
+    });
+
+    // Bowler selection
+    let selectedBowlerName = null;
+    function selectNewBowler(row, name) {
+      document.querySelectorAll('#bowlerModal .player-select-row').forEach(r => {
+        r.classList.remove('selected');
+        r.querySelector('.player-select-check').innerHTML = '';
+      });
+      row.classList.add('selected');
+      row.querySelector('.player-select-check').innerHTML = ICONS.check;
+      selectedBowlerName = name;
+    }
+
+    function confirmBowler() {
+      if (!selectedBowlerName) return;
+      state.bowler = { name: selectedBowlerName, O: 0, M: 0, R: 0, W: 0 };
+      closeModal('bowlerModal');
+      selectedBowlerName = null;
+      // Reset selection states
+      document.querySelectorAll('#bowlerModal .player-select-row').forEach(r => {
+        r.classList.remove('selected');
+        r.querySelector('.player-select-check').innerHTML = '';
+      });
+      updateUI();
+    }
+
+    // Batter selection
+    let selectedBatterName = null;
+    function selectNewBatter(row, name) {
+      document.querySelectorAll('#batterModal .player-select-row').forEach(r => {
+        r.classList.remove('selected');
+        r.querySelector('.player-select-check').innerHTML = '';
+      });
+      row.classList.add('selected');
+      row.querySelector('.player-select-check').innerHTML = ICONS.check;
+      selectedBatterName = name;
+    }
+
+    function confirmBatter() {
+      if (!selectedBatterName) return;
+      state.striker = { name: selectedBatterName, R: 0, B: 0, fours: 0, sixes: 0 };
+      closeModal('batterModal');
+      selectedBatterName = null;
+      document.querySelectorAll('#batterModal .player-select-row').forEach(r => {
+        r.classList.remove('selected');
+        r.querySelector('.player-select-check').innerHTML = '';
+      });
+      updateUI();
+    }
+  </script>
+</body>
+</html>

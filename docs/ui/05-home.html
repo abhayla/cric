@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Home</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Dark Header -->
+    <div class="header-bar">
+      <span class="app-logo-sm">Cric<span>App</span></span>
+      <div class="header-actions">
+        <button class="header-action" data-icon="search"></button>
+      </div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- Quick Actions -->
+      <div class="section">
+        <div class="quick-actions">
+          <button class="quick-action-btn btn-primary" onclick="navigateTo('10-match-setup.html')" style="flex: 2;">
+            <span data-icon="plus" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px;"></span>
+            Start Match
+          </button>
+          <button class="quick-action-btn btn-outline" onclick="navigateTo('07-create-team.html')">Create Team</button>
+        </div>
+      </div>
+
+      <!-- Live Match -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <div class="section-header">
+          <h2 class="section-title">Live</h2>
+        </div>
+
+        <div class="match-card" onclick="navigateTo('12-scoring-page.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; Marina Ground</span>
+            <span class="badge badge-live">LIVE</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+              <span class="team-name">Chennai Kings</span>
+              <span class="team-score">156/4</span>
+              <span class="team-overs">(18.2)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">BR</div>
+              <span class="team-name">Bangalore Royals</span>
+              <span class="team-score" style="color: var(--text-secondary);">—</span>
+              <span class="team-overs"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Matches -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <div class="section-header">
+          <h2 class="section-title">Recent Matches</h2>
+          <a href="18-match-history.html" class="section-link" onclick="event.preventDefault(); navigateTo('18-match-history.html');">View All</a>
+        </div>
+
+        <!-- Match 1 -->
+        <div class="match-card" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 8 Feb 2026</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="team-name">Mumbai Warriors</span>
+              <span class="team-score">187/6</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">DS</div>
+              <span class="team-name">Delhi Strikers</span>
+              <span class="team-score">172/9</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+          </div>
+          <div class="match-result">Mumbai Warriors won by 15 runs</div>
+        </div>
+
+        <!-- Match 2 -->
+        <div class="match-card" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 5 Feb 2026</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #F3E5F5; color: #6A1B9A;">KT</div>
+              <span class="team-name">Kolkata Thunder</span>
+              <span class="team-score">142/10</span>
+              <span class="team-overs">(19.3)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="team-name">Mumbai Warriors</span>
+              <span class="team-score">145/3</span>
+              <span class="team-overs">(17.1)</span>
+            </div>
+          </div>
+          <div class="match-result">Mumbai Warriors won by 7 wickets</div>
+        </div>
+
+        <!-- Match 3 -->
+        <div class="match-card" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 2 Feb 2026</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">DS</div>
+              <span class="team-name">Delhi Strikers</span>
+              <span class="team-score">198/5</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+              <span class="team-name">Chennai Kings</span>
+              <span class="team-score">199/4</span>
+              <span class="team-overs">(19.4)</span>
+            </div>
+          </div>
+          <div class="match-result">Chennai Kings won by 6 wickets</div>
+        </div>
+      </div>
+
+      <!-- My Stats -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <div class="section-header">
+          <h2 class="section-title">My Stats</h2>
+          <a href="17-player-profile.html" class="section-link" onclick="event.preventDefault(); navigateTo('17-player-profile.html');">View All</a>
+        </div>
+        <div class="card">
+          <div class="stat-grid">
+            <div class="stat-item">
+              <div class="stat-value">28</div>
+              <div class="stat-label">Matches</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">892</div>
+              <div class="stat-label">Runs</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">12</div>
+              <div class="stat-label">Wickets</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">14</div>
+              <div class="stat-label">Catches</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    initBottomNav('home');
+  </script>
+</body>
+</html>

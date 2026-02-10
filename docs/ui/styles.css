@@ -1,0 +1,1811 @@
+/* =====================================================
+   CricApp Design System — styles.css
+   Light theme, adapted from Cricket Live Score UI Kit
+   ===================================================== */
+
+/* ----- Design Tokens ----- */
+:root {
+  /* Colors — Core */
+  --bg:              #FFFFFF;
+  --surface:         #F5F5F5;
+  --card:            #FFFFFF;
+  --header:          #1976D2;
+  --primary:         #1976D2;
+  --primary-dark:    #1565C0;
+  --primary-light:   #E3F2FD;
+  --text-primary:    #1A1A2E;
+  --text-secondary:  #6B7280;
+  --text-on-dark:    #FFFFFF;
+  --text-on-primary: #FFFFFF;
+  --border:          #E5E7EB;
+  --divider:         #F0F0F0;
+  --overlay:         rgba(0, 0, 0, 0.5);
+
+  /* Colors — Scoring */
+  --four:            #1565C0;
+  --six:             #6A1B9A;
+  --wicket:          #C62828;
+  --danger:          #EF4444;
+  --warning:         #E65100;
+  --success:         #4CAF50;
+  --dot-ball:        #9E9E9E;
+  --live-badge:      #EF4444;
+
+  /* Typography */
+  --font:            'Roboto', system-ui, -apple-system, sans-serif;
+  --score-lg:        32px;
+  --score-md:        24px;
+  --title:           20px;
+  --heading:         18px;
+  --body:            15px;
+  --body-sm:         14px;
+  --caption:         12px;
+  --caption-sm:      11px;
+
+  /* Font Weights */
+  --fw-regular:      400;
+  --fw-medium:       500;
+  --fw-semibold:     600;
+  --fw-bold:         700;
+
+  /* Spacing */
+  --page-margin:     16px;
+  --section-gap:     24px;
+  --card-padding:    16px;
+  --element-gap:     8px;
+  --inline-gap:      4px;
+
+  /* Radii */
+  --radius-sm:       8px;
+  --radius-md:       12px;
+  --radius-lg:       16px;
+  --radius-full:     9999px;
+
+  /* Shadows */
+  --shadow-card:     0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-modal:    0 -4px 24px rgba(0, 0, 0, 0.15);
+  --shadow-fab:      0 4px 12px rgba(0, 0, 0, 0.15);
+
+  /* Layout */
+  --phone-width:     390px;
+  --phone-height:    844px;
+  --header-height:   56px;
+  --bottom-nav-h:    64px;
+  --btn-height:      52px;
+  --input-height:    52px;
+  --avatar-sm:       32px;
+  --avatar-md:       40px;
+  --avatar-lg:       56px;
+  --avatar-xl:       80px;
+
+  /* Transitions */
+  --ease:            cubic-bezier(0.4, 0, 0.2, 1);
+  --duration:        200ms;
+}
+
+/* ----- Reset & Base ----- */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font);
+  font-size: var(--body);
+  color: var(--text-primary);
+  background: #E8E8E8;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--primary-dark);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ----- Phone Frame ----- */
+.phone-frame {
+  width: var(--phone-width);
+  height: var(--phone-height);
+  background: var(--bg);
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ----- Header Bar ----- */
+.header-bar {
+  background: var(--header);
+  color: var(--text-on-dark);
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--page-margin);
+  gap: var(--element-gap);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-bar .back-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-on-dark);
+  border-radius: var(--radius-full);
+  transition: background var(--duration) var(--ease);
+}
+
+.header-bar .back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.header-bar .header-title {
+  font-size: var(--heading);
+  font-weight: var(--fw-semibold);
+  flex: 1;
+}
+
+.header-bar .header-actions {
+  display: flex;
+  gap: var(--element-gap);
+  align-items: center;
+}
+
+.header-bar .header-action {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-on-dark);
+  border-radius: var(--radius-full);
+  transition: background var(--duration) var(--ease);
+}
+
+.header-bar .header-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ----- Page Content ----- */
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--page-margin);
+  padding-bottom: calc(var(--bottom-nav-h) + var(--page-margin));
+}
+
+.page-content.no-padding {
+  padding: 0;
+  padding-bottom: var(--bottom-nav-h);
+}
+
+.page-content.no-bottom-nav {
+  padding-bottom: var(--page-margin);
+}
+
+.page-content.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ----- Bottom Navigation ----- */
+.bottom-nav {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  height: var(--bottom-nav-h);
+  display: flex;
+  align-items: center;
+  position: fixed;
+  bottom: 0;
+  width: var(--phone-width);
+  z-index: 100;
+}
+
+.bottom-nav .nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-secondary);
+  font-size: var(--caption-sm);
+  font-weight: var(--fw-medium);
+  padding: 8px 0;
+  transition: color var(--duration) var(--ease);
+  text-decoration: none;
+}
+
+.bottom-nav .nav-item.active {
+  color: var(--primary);
+}
+
+.bottom-nav .nav-item .nav-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav .nav-item .nav-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ----- Cards ----- */
+.card {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--card-padding);
+}
+
+.card-outlined {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: var(--card-padding);
+}
+
+.card + .card,
+.card-outlined + .card-outlined,
+.card + .card-outlined {
+  margin-top: var(--element-gap);
+}
+
+/* ----- Buttons ----- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--element-gap);
+  height: var(--btn-height);
+  padding: 0 24px;
+  border-radius: var(--radius-md);
+  font-size: var(--body);
+  font-weight: var(--fw-semibold);
+  transition: all var(--duration) var(--ease);
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--text-on-primary);
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background: #BBDEFB;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+}
+
+.btn-outline:hover {
+  background: var(--primary-light);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+}
+
+.btn-danger {
+  background: var(--wicket);
+  color: var(--text-on-dark);
+}
+
+.btn-danger:hover {
+  background: #B71C1C;
+}
+
+.btn-sm {
+  height: 36px;
+  padding: 0 16px;
+  font-size: var(--body-sm);
+  border-radius: var(--radius-sm);
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fab {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-h) + 16px);
+  right: calc(50% - var(--phone-width) / 2 + 16px);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-fab);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.fab:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+/* ----- Form Inputs ----- */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-group + .input-group {
+  margin-top: var(--page-margin);
+}
+
+.input-label {
+  font-size: var(--body-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-primary);
+}
+
+.input-field {
+  height: var(--input-height);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0 16px;
+  font-size: var(--body);
+  color: var(--text-primary);
+  background: var(--bg);
+  transition: border-color var(--duration) var(--ease);
+  width: 100%;
+}
+
+.input-field:focus {
+  border-color: var(--primary);
+}
+
+.input-field::placeholder {
+  color: #B0B0B0;
+}
+
+.input-field.error {
+  border-color: var(--danger);
+}
+
+.input-error {
+  font-size: var(--caption);
+  color: var(--danger);
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  height: var(--input-height);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg);
+  transition: border-color var(--duration) var(--ease);
+}
+
+.input-row:focus-within {
+  border-color: var(--primary);
+}
+
+.input-row .input-prefix {
+  padding: 0 12px;
+  font-size: var(--body);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+}
+
+.input-row .input-field {
+  border: none;
+  height: 100%;
+  border-radius: 0;
+}
+
+select.input-field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236B7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+
+/* ----- Tabs ----- */
+.tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  flex: 1;
+  min-width: max-content;
+  padding: 12px 16px;
+  font-size: var(--body-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-secondary);
+  text-align: center;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all var(--duration) var(--ease);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.tab:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* Header Tabs (tabs on blue header background) */
+.header-tabs {
+  background: var(--header);
+  display: flex;
+  padding: 0 16px;
+}
+
+.header-tabs .tab {
+  flex: 1;
+  min-width: max-content;
+  padding: 12px 16px;
+  font-size: var(--body-sm);
+  font-weight: var(--fw-semibold);
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  border-bottom: 2px solid transparent;
+  transition: all var(--duration) var(--ease);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.header-tabs .tab.active {
+  color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+
+.header-tabs .tab:hover:not(.active) {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ----- Chips ----- */
+.chip-group {
+  display: flex;
+  gap: var(--element-gap);
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--inline-gap);
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-full);
+  font-size: var(--body-sm);
+  font-weight: var(--fw-medium);
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  transition: all var(--duration) var(--ease);
+  cursor: pointer;
+}
+
+.chip.active {
+  background: var(--primary);
+  color: var(--text-on-primary);
+  border-color: var(--primary);
+}
+
+.chip:hover:not(.active) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ----- Badges ----- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--caption-sm);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-live {
+  background: var(--live-badge);
+  color: var(--text-on-dark);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.badge-completed {
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.badge-upcoming {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ----- Avatar ----- */
+.avatar {
+  width: var(--avatar-md);
+  height: var(--avatar-md);
+  border-radius: var(--radius-full);
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--fw-bold);
+  font-size: var(--body-sm);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar.sm { width: var(--avatar-sm); height: var(--avatar-sm); font-size: var(--caption); }
+.avatar.lg { width: var(--avatar-lg); height: var(--avatar-lg); font-size: var(--title); }
+.avatar.xl { width: var(--avatar-xl); height: var(--avatar-xl); font-size: var(--score-md); }
+
+/* ----- Match Card ----- */
+.match-card {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: var(--card-padding);
+  cursor: pointer;
+  transition: box-shadow var(--duration) var(--ease);
+}
+
+.match-card:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.match-card + .match-card {
+  margin-top: var(--element-gap);
+}
+
+.match-card .match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.match-card .match-meta {
+  font-size: var(--caption);
+  color: var(--text-secondary);
+}
+
+.match-card .match-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.match-card .team-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.match-card .team-name {
+  flex: 1;
+  font-size: var(--body);
+  font-weight: var(--fw-medium);
+}
+
+.match-card .team-score {
+  font-size: var(--heading);
+  font-weight: var(--fw-bold);
+}
+
+.match-card .team-overs {
+  font-size: var(--caption);
+  color: var(--text-secondary);
+  min-width: 50px;
+  text-align: right;
+}
+
+.match-card .match-result {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider);
+  font-size: var(--body-sm);
+  color: var(--primary-dark);
+  font-weight: var(--fw-medium);
+}
+
+/* ----- Player Row ----- */
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.player-row:last-child {
+  border-bottom: none;
+}
+
+.player-row .player-info {
+  flex: 1;
+}
+
+.player-row .player-name {
+  font-size: var(--body);
+  font-weight: var(--fw-medium);
+}
+
+.player-row .player-role {
+  font-size: var(--caption);
+  color: var(--text-secondary);
+}
+
+.player-row .player-stats {
+  display: flex;
+  gap: 12px;
+  font-size: var(--body-sm);
+  color: var(--text-secondary);
+}
+
+/* ----- Stat Grid ----- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--element-gap);
+}
+
+.stat-grid.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.stat-grid.cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.stat-item {
+  text-align: center;
+  padding: 12px 4px;
+}
+
+.stat-value {
+  font-size: var(--title);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.stat-label {
+  font-size: var(--caption);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ----- Section Headers ----- */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: var(--heading);
+  font-weight: var(--fw-bold);
+}
+
+.section-link {
+  font-size: var(--body-sm);
+  font-weight: var(--fw-medium);
+  color: var(--primary);
+}
+
+.section + .section {
+  margin-top: var(--section-gap);
+}
+
+/* ----- Modal & Bottom Sheet ----- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  /* Scope to phone frame */
+  width: var(--phone-width);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal {
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  width: calc(var(--phone-width) - 32px);
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-modal);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--card-padding);
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-size: var(--heading);
+  font-weight: var(--fw-bold);
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border-radius: var(--radius-full);
+}
+
+.modal-close:hover {
+  background: var(--surface);
+}
+
+.modal-body {
+  padding: var(--card-padding);
+}
+
+.modal-footer {
+  padding: var(--card-padding);
+  border-top: 1px solid var(--border);
+}
+
+/* Bottom Sheet */
+.bottom-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  width: var(--phone-width);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.bottom-sheet-overlay.active {
+  display: flex;
+}
+
+.bottom-sheet {
+  background: var(--bg);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  width: var(--phone-width);
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-modal);
+}
+
+.bottom-sheet .sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  margin: 8px auto 4px;
+}
+
+.bottom-sheet .sheet-header {
+  padding: 12px var(--card-padding);
+  border-bottom: 1px solid var(--border);
+}
+
+.bottom-sheet .sheet-title {
+  font-size: var(--heading);
+  font-weight: var(--fw-bold);
+}
+
+.bottom-sheet .sheet-body {
+  padding: var(--card-padding);
+}
+
+.bottom-sheet .sheet-footer {
+  padding: var(--card-padding);
+  border-top: 1px solid var(--border);
+}
+
+/* ----- Scoring-Specific ----- */
+
+/* Score Header */
+.score-header {
+  background: var(--header);
+  color: var(--text-on-dark);
+  padding: 12px var(--page-margin);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.score-header .team-score-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.score-header .score-big {
+  font-size: var(--score-lg);
+  font-weight: var(--fw-bold);
+}
+
+.score-header .overs-text {
+  font-size: var(--body-sm);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.score-header .score-details {
+  display: flex;
+  gap: 16px;
+  font-size: var(--caption);
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 2px;
+}
+
+.score-header .target-info {
+  font-size: var(--body-sm);
+  color: var(--warning);
+  font-weight: var(--fw-medium);
+}
+
+.connectivity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+}
+
+.connectivity-dot.warning { background: var(--warning); }
+.connectivity-dot.danger { background: var(--danger); }
+
+/* Player Cards (Scoring Page) */
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px var(--page-margin);
+  border-left: 3px solid transparent;
+}
+
+.player-card.striker {
+  border-left-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.player-card.bowler {
+  border-left-color: var(--wicket);
+  background: #FFEBEE;
+}
+
+.player-card .player-card-name {
+  flex: 1;
+  font-size: var(--body);
+  font-weight: var(--fw-semibold);
+}
+
+.player-card .player-card-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.player-card-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.player-card .stat-mini {
+  text-align: center;
+}
+
+.player-card .stat-mini .stat-mini-value {
+  font-size: var(--body);
+  font-weight: var(--fw-bold);
+}
+
+.player-card .stat-mini .stat-mini-label {
+  font-size: var(--caption-sm);
+  color: var(--text-secondary);
+}
+
+/* Over Indicators */
+.over-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px var(--page-margin);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.over-display::-webkit-scrollbar {
+  display: none;
+}
+
+.over-label {
+  font-size: var(--caption);
+  font-weight: var(--fw-semibold);
+  color: var(--text-secondary);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.ball-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--caption);
+  font-weight: var(--fw-bold);
+  flex-shrink: 0;
+}
+
+.ball-indicator.dot {
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.ball-indicator.runs {
+  background: var(--bg);
+  color: var(--text-primary);
+  border: 1.5px solid var(--text-primary);
+}
+
+.ball-indicator.four {
+  background: var(--four);
+  color: var(--text-on-dark);
+}
+
+.ball-indicator.six {
+  background: var(--six);
+  color: var(--text-on-dark);
+}
+
+.ball-indicator.wicket {
+  background: var(--wicket);
+  color: var(--text-on-dark);
+}
+
+.ball-indicator.wide,
+.ball-indicator.noball {
+  background: var(--bg);
+  color: var(--text-secondary);
+  border: 1.5px dashed var(--text-secondary);
+}
+
+/* Free Hit Badge */
+.free-hit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: var(--warning);
+  color: var(--text-on-dark);
+  border-radius: var(--radius-full);
+  font-size: var(--caption);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Run Buttons */
+.run-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px var(--page-margin);
+}
+
+.run-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--text-primary);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: var(--title);
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration) var(--ease);
+}
+
+.run-btn:hover {
+  background: var(--text-primary);
+  color: var(--text-on-dark);
+}
+
+.run-btn:active {
+  transform: scale(0.92);
+}
+
+.run-btn.four-btn {
+  border-color: var(--four);
+  color: var(--four);
+}
+
+.run-btn.four-btn:hover {
+  background: var(--four);
+  color: var(--text-on-dark);
+}
+
+.run-btn.six-btn {
+  border-color: var(--six);
+  color: var(--six);
+}
+
+.run-btn.six-btn:hover {
+  background: var(--six);
+  color: var(--text-on-dark);
+}
+
+/* Extras Buttons */
+.extras-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 var(--page-margin) 8px;
+}
+
+.extras-btn {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  font-size: var(--body-sm);
+  font-weight: var(--fw-semibold);
+  transition: all var(--duration) var(--ease);
+}
+
+.extras-btn:hover {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.extras-btn:active {
+  transform: scale(0.95);
+}
+
+/* Wicket Button */
+.wicket-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--wicket);
+  color: var(--text-on-dark);
+  font-size: var(--heading);
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration) var(--ease);
+}
+
+.wicket-btn:hover {
+  background: #B71C1C;
+}
+
+.wicket-btn:active {
+  transform: scale(0.92);
+}
+
+/* Scoring Controls Fixed Bottom */
+.scoring-controls {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+}
+
+.scoring-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 8px var(--page-margin) 12px;
+}
+
+.action-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--caption);
+  font-weight: var(--fw-semibold);
+  transition: all var(--duration) var(--ease);
+}
+
+.action-btn:hover {
+  border-color: var(--text-secondary);
+}
+
+/* ----- Scorecard Table ----- */
+.scorecard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--body-sm);
+}
+
+.scorecard-table thead th {
+  font-size: var(--caption);
+  color: var(--text-secondary);
+  font-weight: var(--fw-semibold);
+  text-align: center;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.scorecard-table thead th:first-child {
+  text-align: left;
+  padding-left: 0;
+}
+
+.scorecard-table tbody td {
+  text-align: center;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.scorecard-table tbody td:first-child {
+  text-align: left;
+  padding-left: 0;
+}
+
+.scorecard-table .batter-name {
+  font-weight: var(--fw-medium);
+}
+
+.scorecard-table .dismissal {
+  font-size: var(--caption);
+  color: var(--text-secondary);
+  display: block;
+}
+
+.scorecard-table .highlight {
+  font-weight: var(--fw-bold);
+  color: var(--primary-dark);
+}
+
+/* Extras & Total Row */
+.scorecard-extras,
+.scorecard-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--body-sm);
+}
+
+.scorecard-total {
+  font-weight: var(--fw-bold);
+  border-bottom: 2px solid var(--text-primary);
+}
+
+/* Fall of Wickets */
+.fow-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--element-gap);
+  font-size: var(--caption);
+  color: var(--text-secondary);
+}
+
+.fow-item {
+  padding: 4px 8px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+}
+
+/* ----- Quick Actions Row ----- */
+.quick-actions {
+  display: flex;
+  gap: var(--element-gap);
+}
+
+.quick-action-btn {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: var(--body-sm);
+  font-weight: var(--fw-semibold);
+  transition: all var(--duration) var(--ease);
+}
+
+/* ----- Dismissal Type Grid ----- */
+.dismissal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--element-gap);
+}
+
+.dismissal-option {
+  padding: 16px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: var(--body-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
+
+.dismissal-option:hover {
+  border-color: var(--wicket);
+  color: var(--wicket);
+}
+
+.dismissal-option.selected {
+  background: var(--wicket);
+  color: var(--text-on-dark);
+  border-color: var(--wicket);
+}
+
+/* ----- Toggle / Selector ----- */
+.toggle-group {
+  display: flex;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.toggle-option {
+  flex: 1;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: var(--body);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.toggle-option.active {
+  background: var(--primary);
+  color: var(--text-on-primary);
+}
+
+/* ----- Utility Classes ----- */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-secondary { color: var(--text-secondary); }
+.text-primary-color { color: var(--primary); }
+.text-danger { color: var(--danger); }
+.text-bold { font-weight: var(--fw-bold); }
+.text-semibold { font-weight: var(--fw-semibold); }
+.text-sm { font-size: var(--body-sm); }
+.text-xs { font-size: var(--caption); }
+
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-4 { gap: 4px; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.flex-1 { flex: 1; }
+.w-full { width: 100%; }
+
+.hidden { display: none !important; }
+
+.divider {
+  height: 1px;
+  background: var(--divider);
+  margin: 12px 0;
+}
+
+.divider-thick {
+  height: 8px;
+  background: var(--surface);
+}
+
+/* ----- Selection Card ----- */
+.selection-card {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--card-padding);
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+  text-align: center;
+}
+
+.selection-card:hover {
+  border-color: var(--primary);
+}
+
+.selection-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* ----- Stepper ----- */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: var(--section-gap);
+  padding: 0 var(--page-margin);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-number {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  color: var(--text-secondary);
+  font-size: var(--caption);
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step.active .step-number {
+  background: var(--primary);
+  color: var(--text-on-primary);
+}
+
+.step.completed .step-number {
+  background: var(--primary);
+  color: var(--text-on-primary);
+}
+
+.step-label {
+  font-size: var(--caption);
+  color: var(--text-secondary);
+}
+
+.step.active .step-label {
+  color: var(--text-primary);
+  font-weight: var(--fw-semibold);
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  margin: 0 8px;
+  min-width: 20px;
+}
+
+.step-connector.completed {
+  background: var(--primary);
+}
+
+/* ----- Loading States ----- */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, #E8E8E8 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ----- Empty State ----- */
+.empty-state {
+  text-align: center;
+  padding: 48px var(--page-margin);
+}
+
+.empty-state .empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--page-margin);
+  opacity: 0.5;
+}
+
+.empty-state .empty-title {
+  font-size: var(--heading);
+  font-weight: var(--fw-semibold);
+  margin-bottom: var(--element-gap);
+}
+
+.empty-state .empty-text {
+  font-size: var(--body-sm);
+  color: var(--text-secondary);
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+/* ----- Commentary Feed ----- */
+.commentary-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.commentary-item .ball-num {
+  width: 40px;
+  font-size: var(--caption);
+  font-weight: var(--fw-bold);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.commentary-item .commentary-text {
+  flex: 1;
+  font-size: var(--body-sm);
+  line-height: 1.5;
+}
+
+.commentary-item .commentary-text .highlight-runs {
+  font-weight: var(--fw-bold);
+  color: var(--primary-dark);
+}
+
+.commentary-item .commentary-text .highlight-four {
+  font-weight: var(--fw-bold);
+  color: var(--four);
+}
+
+.commentary-item .commentary-text .highlight-six {
+  font-weight: var(--fw-bold);
+  color: var(--six);
+}
+
+.commentary-item .commentary-text .highlight-wicket {
+  font-weight: var(--fw-bold);
+  color: var(--wicket);
+}
+
+/* ----- Chart Containers ----- */
+.chart-container {
+  padding: var(--card-padding);
+}
+
+.wagon-wheel {
+  width: 280px;
+  height: 280px;
+  border-radius: var(--radius-full);
+  background: #E3F2FD;
+  margin: 0 auto;
+  position: relative;
+  border: 2px solid #BBDEFB;
+}
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 160px;
+  padding-top: 16px;
+}
+
+.bar-chart .bar {
+  flex: 1;
+  background: var(--primary);
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+  position: relative;
+  transition: all var(--duration) var(--ease);
+}
+
+.bar-chart .bar.wicket-over {
+  background: var(--wicket);
+}
+
+.bar-chart .bar:hover {
+  opacity: 0.8;
+}
+
+/* MVP Card */
+.mvp-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.mvp-card + .mvp-card {
+  margin-top: var(--element-gap);
+}
+
+.mvp-rank {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: var(--body-sm);
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mvp-rank.gold { background: #FFF3E0; color: #E65100; }
+.mvp-rank.silver { background: #F5F5F5; color: #616161; }
+.mvp-rank.bronze { background: #FBE9E7; color: #BF360C; }
+
+/* ----- Search Bar ----- */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--element-gap);
+  height: var(--input-height);
+  padding: 0 16px;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1.5px solid transparent;
+  transition: border-color var(--duration) var(--ease);
+}
+
+.search-bar:focus-within {
+  border-color: var(--primary);
+  background: var(--bg);
+}
+
+.search-bar .search-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.search-bar input {
+  flex: 1;
+  height: 100%;
+  font-size: var(--body);
+  color: var(--text-primary);
+}
+
+.search-bar input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ----- Logo / Branding ----- */
+.app-logo {
+  font-size: 36px;
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  letter-spacing: -1px;
+}
+
+.app-logo span {
+  color: var(--primary);
+}
+
+.app-logo-sm {
+  font-size: var(--title);
+  font-weight: var(--fw-bold);
+  color: var(--text-on-dark);
+}
+
+.app-logo-sm span {
+  color: #BBDEFB;
+}
+
+/* ----- OTP Input ----- */
+.otp-group {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.otp-input {
+  width: 48px;
+  height: 56px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: var(--score-md);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  transition: border-color var(--duration) var(--ease);
+}
+
+.otp-input:focus {
+  border-color: var(--primary);
+}
+
+/* ----- Countdown Timer ----- */
+.countdown {
+  font-size: var(--body-sm);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.countdown .timer {
+  font-weight: var(--fw-bold);
+  color: var(--primary);
+}
+
+/* ----- Upload Area ----- */
+.upload-area {
+  width: 100px;
+  height: 100px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-full);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  margin: 0 auto;
+  transition: border-color var(--duration) var(--ease);
+}
+
+.upload-area:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.upload-area .upload-icon {
+  font-size: 24px;
+}
+
+.upload-area .upload-text {
+  font-size: var(--caption);
+}
+
+/* ----- Responsive (Desktop preview) ----- */
+@media (min-width: 600px) {
+  body {
+    padding: 20px 0;
+  }
+
+  .phone-frame {
+    min-height: unset;
+    max-height: var(--phone-height);
+    overflow-y: auto;
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+    border: 1px solid #D0D0D0;
+  }
+
+  .bottom-nav {
+    border-radius: 0 0 20px 20px;
+  }
+}

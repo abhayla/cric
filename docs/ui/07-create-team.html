@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Create Team</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('06-teams-list.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Create Team</span>
+    </div>
+
+    <div class="page-content no-bottom-nav" style="display: flex; flex-direction: column;">
+      <!-- Logo Upload -->
+      <div style="text-align: center; padding-top: 24px; margin-bottom: 32px;">
+        <div class="upload-area" onclick="this.style.borderColor='var(--primary)'; this.style.color='var(--primary)';">
+          <span class="upload-icon" data-icon="camera"></span>
+          <span class="upload-text">Logo</span>
+        </div>
+        <p style="font-size: var(--caption); color: var(--text-secondary); margin-top: 8px;">Team logo (optional)</p>
+      </div>
+
+      <!-- Form -->
+      <div style="padding: 0 8px;">
+        <div class="input-group">
+          <label class="input-label">Team Name *</label>
+          <input type="text" class="input-field" id="teamNameInput" placeholder="Enter team name" maxlength="30">
+          <span class="input-error" id="teamNameError"></span>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Ball Type *</label>
+          <div class="chip-group" id="ballTypeGroup">
+            <span class="chip active" data-value="Leather">Leather</span>
+            <span class="chip" data-value="Tennis">Tennis</span>
+            <span class="chip" data-value="Tape">Tape</span>
+            <span class="chip" data-value="Other">Other</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spacer -->
+      <div style="flex: 1;"></div>
+
+      <!-- CTA -->
+      <div style="padding: 0 8px 32px;">
+        <button class="btn btn-primary" onclick="handleCreateTeam()">Create Team</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function handleCreateTeam() {
+      const nameInput = document.getElementById('teamNameInput');
+      if (!validateRequired(nameInput.value)) {
+        showInputError(nameInput, 'Team name is required');
+        return;
+      }
+      navigateTo('08-team-detail.html');
+    }
+
+    document.getElementById('teamNameInput').addEventListener('input', function() {
+      clearInputError(this);
+    });
+  </script>
+</body>
+</html>

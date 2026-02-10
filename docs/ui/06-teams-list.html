@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Teams</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .team-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .team-grid-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px 8px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--duration) var(--ease);
+    }
+    .team-grid-card:hover { box-shadow: var(--shadow-card); border-color: var(--primary); }
+    .team-grid-card .team-avatar {
+      width: 56px; height: 56px; border-radius: 50%;
+      margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 18px;
+    }
+    .team-grid-card .team-grid-name {
+      font-size: var(--body-sm); font-weight: var(--fw-medium);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .team-grid-card .team-grid-meta {
+      font-size: var(--caption-sm); color: var(--text-secondary); margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <span class="header-title">My Teams</span>
+      <div class="header-actions">
+        <button class="header-action" data-icon="search"></button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="page-content">
+      <div class="team-grid">
+        <!-- Team 1 -->
+        <div class="team-grid-card" onclick="navigateTo('08-team-detail.html')">
+          <div class="team-avatar" style="background: #E3F2FD; color: #1565C0;">MW</div>
+          <div class="team-grid-name">Mumbai Warriors</div>
+          <div class="team-grid-meta">11 players</div>
+        </div>
+
+        <!-- Team 2 -->
+        <div class="team-grid-card" onclick="navigateTo('08-team-detail.html')">
+          <div class="team-avatar" style="background: #FCE4EC; color: #C62828;">DS</div>
+          <div class="team-grid-name">Delhi Strikers</div>
+          <div class="team-grid-meta">11 players</div>
+        </div>
+
+        <!-- Team 3 -->
+        <div class="team-grid-card" onclick="navigateTo('08-team-detail.html')">
+          <div class="team-avatar" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+          <div class="team-grid-name">Chennai Kings</div>
+          <div class="team-grid-meta">9 players</div>
+        </div>
+
+        <!-- Team 4 -->
+        <div class="team-grid-card" onclick="navigateTo('08-team-detail.html')">
+          <div class="team-avatar" style="background: #FFF3E0; color: #E65100;">BR</div>
+          <div class="team-grid-name">Bangalore Royals</div>
+          <div class="team-grid-meta">11 players</div>
+        </div>
+
+        <!-- Team 5 -->
+        <div class="team-grid-card" onclick="navigateTo('08-team-detail.html')">
+          <div class="team-avatar" style="background: #F3E5F5; color: #6A1B9A;">KT</div>
+          <div class="team-grid-name">Kolkata Thunder</div>
+          <div class="team-grid-meta">10 players</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="fab" onclick="navigateTo('07-create-team.html')" title="Create Team">
+      <span data-icon="plus" style="width: 24px; height: 24px;"></span>
+    </button>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>initBottomNav('teams');</script>
+</body>
+</html>

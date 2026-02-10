@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Profile Setup</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('03-otp.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Set Up Profile</span>
+    </div>
+
+    <div class="page-content no-bottom-nav" style="display: flex; flex-direction: column;">
+      <!-- Avatar Upload -->
+      <div style="text-align: center; padding-top: 24px; margin-bottom: 32px;">
+        <div class="upload-area" onclick="this.style.borderColor='var(--primary)'">
+          <span class="upload-icon" data-icon="camera"></span>
+          <span class="upload-text">Photo</span>
+        </div>
+        <p style="font-size: var(--caption); color: var(--text-secondary); margin-top: 8px;">Optional</p>
+      </div>
+
+      <!-- Form Fields -->
+      <div style="padding: 0 8px;">
+        <div class="input-group">
+          <label class="input-label">Display Name *</label>
+          <input type="text" class="input-field" id="nameInput" placeholder="Enter your name" autocomplete="name">
+          <span class="input-error" id="nameError"></span>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Playing Role *</label>
+          <select class="input-field" id="roleSelect">
+            <option value="" disabled selected>Select your role</option>
+            <option value="Batsman">Batsman</option>
+            <option value="Bowler">Bowler</option>
+            <option value="All-rounder">All-rounder</option>
+            <option value="Wicketkeeper">Wicketkeeper</option>
+          </select>
+          <span class="input-error" id="roleError"></span>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Batting Style *</label>
+          <div class="toggle-group" id="batStyleToggle">
+            <div class="toggle-option active" data-value="Right Hand">Right Hand</div>
+            <div class="toggle-option" data-value="Left Hand">Left Hand</div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Bowling Style</label>
+          <select class="input-field" id="bowlSelect">
+            <option value="" disabled selected>Select bowling style</option>
+            <option value="Right Fast">Right Arm Fast</option>
+            <option value="Right Medium">Right Arm Medium</option>
+            <option value="Off Break">Off Break</option>
+            <option value="Leg Break">Leg Break</option>
+            <option value="Left Fast">Left Arm Fast</option>
+            <option value="Left Medium">Left Arm Medium</option>
+            <option value="Left Spin">Left Arm Spin</option>
+            <option value="None">I don't bowl</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Spacer -->
+      <div style="flex: 1;"></div>
+
+      <!-- CTA -->
+      <div style="padding: 0 8px 32px;">
+        <button class="btn btn-primary" onclick="handleSaveProfile()">Save & Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    function handleSaveProfile() {
+      let valid = true;
+
+      const nameInput = document.getElementById('nameInput');
+      const roleSelect = document.getElementById('roleSelect');
+
+      if (!validateRequired(nameInput.value)) {
+        showInputError(nameInput, 'Name is required');
+        valid = false;
+      } else {
+        clearInputError(nameInput);
+      }
+
+      if (!roleSelect.value) {
+        showInputError(roleSelect, 'Please select a role');
+        valid = false;
+      } else {
+        clearInputError(roleSelect);
+      }
+
+      if (valid) {
+        navigateTo('05-home.html');
+      }
+    }
+
+    // Clear errors on input
+    document.getElementById('nameInput').addEventListener('input', function() {
+      clearInputError(this);
+    });
+    document.getElementById('roleSelect').addEventListener('change', function() {
+      clearInputError(this);
+    });
+  </script>
+</body>
+</html>

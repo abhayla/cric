@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Player Profile</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .profile-hero {
+      text-align: center; padding: 24px 16px;
+      background: linear-gradient(180deg, var(--header) 60%, var(--bg) 60%);
+    }
+    .stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid var(--divider);
+      font-size: var(--body-sm);
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row .stat-row-label { color: var(--text-secondary); }
+    .stat-row .stat-row-value { font-weight: var(--fw-semibold); }
+    .stat-row .stat-row-value.highlight { color: var(--primary-dark); font-weight: var(--fw-bold); }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('05-home.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Player Profile</span>
+      <div class="header-actions">
+        <button class="header-action" data-icon="edit"></button>
+      </div>
+    </div>
+
+    <!-- Profile Hero -->
+    <div class="profile-hero">
+      <div class="avatar xl" style="margin: 0 auto 12px; background: #E3F2FD; color: #1565C0; border: 3px solid white;">AM</div>
+      <h2 style="font-size: var(--title); font-weight: var(--fw-bold); color: white;">Arjun Mehta</h2>
+      <p style="font-size: var(--body-sm); color: rgba(255,255,255,0.7); margin-bottom: 12px;">Batsman &bull; Right Hand Bat</p>
+      <div class="card" style="display: inline-flex; gap: 4px; padding: 6px 16px; margin-top: 8px;">
+        <div class="avatar sm" style="width: 20px; height: 20px; font-size: 9px; background: #E3F2FD; color: #1565C0;">MW</div>
+        <span style="font-size: var(--body-sm); font-weight: var(--fw-medium);">Mumbai Warriors</span>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div style="padding: 0 16px; margin-top: -8px;">
+      <div class="card">
+        <div class="stat-grid">
+          <div class="stat-item">
+            <div class="stat-value">28</div>
+            <div class="stat-label">Matches</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">892</div>
+            <div class="stat-label">Runs</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">2</div>
+            <div class="stat-label">Wickets</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">14</div>
+            <div class="stat-label">Catches</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Career Stats Tabs -->
+    <div style="margin-top: 16px;">
+      <div class="tabs">
+        <div class="tab active" data-tab="batting">Batting</div>
+        <div class="tab" data-tab="bowling">Bowling</div>
+        <div class="tab" data-tab="fielding">Fielding</div>
+      </div>
+
+      <!-- Batting Stats -->
+      <div class="tab-panel active" data-panel="batting" style="padding: 16px; padding-bottom: 80px;">
+        <div class="card-outlined">
+          <div class="stat-row">
+            <span class="stat-row-label">Matches</span>
+            <span class="stat-row-value">28</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Innings</span>
+            <span class="stat-row-value">27</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Runs</span>
+            <span class="stat-row-value highlight">892</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Highest Score</span>
+            <span class="stat-row-value highlight">98*</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Average</span>
+            <span class="stat-row-value">36.16</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Strike Rate</span>
+            <span class="stat-row-value">134.53</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">50s / 100s</span>
+            <span class="stat-row-value">7 / 0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Fours</span>
+            <span class="stat-row-value">96</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Sixes</span>
+            <span class="stat-row-value">32</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Not Outs</span>
+            <span class="stat-row-value">3</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Ducks</span>
+            <span class="stat-row-value">1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bowling Stats -->
+      <div class="tab-panel" data-panel="bowling" style="padding: 16px; padding-bottom: 80px;">
+        <div class="card-outlined">
+          <div class="stat-row">
+            <span class="stat-row-label">Innings</span>
+            <span class="stat-row-value">5</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Overs</span>
+            <span class="stat-row-value">12</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Wickets</span>
+            <span class="stat-row-value">2</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Best Bowling</span>
+            <span class="stat-row-value highlight">1/18</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Average</span>
+            <span class="stat-row-value">42.00</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Economy</span>
+            <span class="stat-row-value">7.00</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">5 Wickets</span>
+            <span class="stat-row-value">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fielding Stats -->
+      <div class="tab-panel" data-panel="fielding" style="padding: 16px; padding-bottom: 80px;">
+        <div class="card-outlined">
+          <div class="stat-row">
+            <span class="stat-row-label">Catches</span>
+            <span class="stat-row-value highlight">14</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Stumpings</span>
+            <span class="stat-row-value">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Run Outs</span>
+            <span class="stat-row-value">3</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-row-label">Direct Hits</span>
+            <span class="stat-row-value">1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>initBottomNav('profile');</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Login</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <div class="page-content no-bottom-nav" style="display: flex; flex-direction: column;">
+
+      <!-- Top section with branding -->
+      <div style="text-align: center; padding-top: 60px; margin-bottom: 48px;">
+        <!-- Cricket ball icon -->
+        <div style="margin-bottom: 20px;">
+          <svg width="56" height="56" viewBox="0 0 72 72" fill="none" style="display: inline-block;">
+            <circle cx="36" cy="36" r="34" fill="#C62828" stroke="#A01A1A" stroke-width="2"/>
+            <path d="M20 18C26 28 26 44 20 54" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M52 18C46 28 46 44 52 54" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <line x1="18" y1="22" x2="22" y2="24" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="17" y1="28" x2="21" y2="29" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="17" y1="34" x2="21" y2="34" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="17" y1="40" x2="21" y2="40" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="18" y1="46" x2="22" y2="45" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="54" y1="22" x2="50" y2="24" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="55" y1="28" x2="51" y2="29" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="55" y1="34" x2="51" y2="34" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="55" y1="40" x2="51" y2="40" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="54" y1="46" x2="50" y2="45" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="app-logo" style="margin-bottom: 8px;">Cric<span>App</span></div>
+        <p style="color: var(--text-secondary); font-size: var(--body);">Enter your phone number to continue</p>
+      </div>
+
+      <!-- Phone Input -->
+      <div style="padding: 0 8px;">
+        <div class="input-group">
+          <label class="input-label">Phone Number</label>
+          <div class="input-row">
+            <span class="input-prefix">+91</span>
+            <input type="tel" class="input-field" id="phoneInput" placeholder="98765 43210" maxlength="12" autocomplete="tel">
+          </div>
+          <span class="input-error" id="phoneError"></span>
+        </div>
+      </div>
+
+      <!-- Spacer -->
+      <div style="flex: 1;"></div>
+
+      <!-- CTA Button -->
+      <div style="padding: 0 8px 32px;">
+        <button class="btn btn-primary" id="sendOtpBtn" onclick="handleSendOtp()">Send OTP</button>
+        <p style="text-align: center; margin-top: 16px; font-size: var(--caption); color: var(--text-secondary);">
+          By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const phoneInput = document.getElementById('phoneInput');
+    const phoneError = document.getElementById('phoneError');
+
+    // Format phone number as user types
+    phoneInput.addEventListener('input', () => {
+      clearInputError(phoneInput);
+      // Strip non-digits
+      let val = phoneInput.value.replace(/\D/g, '');
+      if (val.length > 10) val = val.substring(0, 10);
+      // Add space after 5th digit
+      if (val.length > 5) {
+        val = val.substring(0, 5) + ' ' + val.substring(5);
+      }
+      phoneInput.value = val;
+    });
+
+    function handleSendOtp() {
+      const raw = phoneInput.value.replace(/\s/g, '');
+      if (!validatePhone(raw)) {
+        showInputError(phoneInput, 'Please enter a valid 10-digit phone number');
+        return;
+      }
+      navigateTo('03-otp.html');
+    }
+
+    // Submit on Enter
+    phoneInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSendOtp();
+    });
+  </script>
+</body>
+</html>

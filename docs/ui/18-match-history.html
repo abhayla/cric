@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Match History</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <span class="header-title">Matches</span>
+      <div class="header-actions">
+        <button class="header-action" data-icon="search"></button>
+        <button class="header-action" data-icon="filter"></button>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <!-- Filter Chips -->
+      <div class="chip-group mb-16" id="filterChips">
+        <span class="chip active" data-value="all">All</span>
+        <span class="chip" data-value="won">Won</span>
+        <span class="chip" data-value="lost">Lost</span>
+        <span class="chip" data-value="tied">Tied</span>
+      </div>
+
+      <!-- Match List -->
+      <div id="matchList">
+        <!-- Live Match -->
+        <div class="match-card" data-result="live" onclick="navigateTo('12-scoring-page.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 10 Feb 2026 &bull; Marina Ground</span>
+            <span class="badge badge-live">LIVE</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+              <span class="team-name">Chennai Kings</span>
+              <span class="team-score">156/4</span>
+              <span class="team-overs">(18.2)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">BR</div>
+              <span class="team-name">Bangalore Royals</span>
+              <span class="team-score" style="color: var(--text-secondary);">—</span>
+              <span class="team-overs"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Match 1: Won -->
+        <div class="match-card" data-result="won" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 8 Feb 2026 &bull; Shivaji Park, Mumbai</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="team-name">Mumbai Warriors</span>
+              <span class="team-score">187/6</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">DS</div>
+              <span class="team-name">Delhi Strikers</span>
+              <span class="team-score">172/9</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+          </div>
+          <div class="match-result">Mumbai Warriors won by 15 runs</div>
+        </div>
+
+        <!-- Match 2: Won -->
+        <div class="match-card" data-result="won" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 5 Feb 2026 &bull; Eden Club Ground</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #F3E5F5; color: #6A1B9A;">KT</div>
+              <span class="team-name">Kolkata Thunder</span>
+              <span class="team-score">142/10</span>
+              <span class="team-overs">(19.3)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="team-name">Mumbai Warriors</span>
+              <span class="team-score">145/3</span>
+              <span class="team-overs">(17.1)</span>
+            </div>
+          </div>
+          <div class="match-result">Mumbai Warriors won by 7 wickets</div>
+        </div>
+
+        <!-- Match 3: Lost -->
+        <div class="match-card" data-result="lost" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 2 Feb 2026 &bull; Feroz Shah Kotla Club</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">DS</div>
+              <span class="team-name">Delhi Strikers</span>
+              <span class="team-score">198/5</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+              <span class="team-name">Chennai Kings</span>
+              <span class="team-score">199/4</span>
+              <span class="team-overs">(19.4)</span>
+            </div>
+          </div>
+          <div class="match-result">Chennai Kings won by 6 wickets</div>
+        </div>
+
+        <!-- Match 4: Won -->
+        <div class="match-card" data-result="won" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 30 Jan 2026 &bull; Chinnaswamy Club</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">BR</div>
+              <span class="team-name">Bangalore Royals</span>
+              <span class="team-score">165/7</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #F3E5F5; color: #6A1B9A;">KT</div>
+              <span class="team-name">Kolkata Thunder</span>
+              <span class="team-score">130/10</span>
+              <span class="team-overs">(18.1)</span>
+            </div>
+          </div>
+          <div class="match-result">Bangalore Royals won by 35 runs</div>
+        </div>
+
+        <!-- Match 5: Lost -->
+        <div class="match-card" data-result="lost" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 25 Jan 2026 &bull; DY Patil Ground</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="team-name">Mumbai Warriors</span>
+              <span class="team-score">148/8</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+              <span class="team-name">Chennai Kings</span>
+              <span class="team-score">152/5</span>
+              <span class="team-overs">(19.2)</span>
+            </div>
+          </div>
+          <div class="match-result">Chennai Kings won by 5 wickets</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    initBottomNav('matches');
+
+    // Filter chips
+    const filterChips = document.getElementById('filterChips');
+    filterChips.addEventListener('chip-change', (e) => {
+      const filter = e.detail.value;
+      document.querySelectorAll('#matchList .match-card').forEach(card => {
+        const result = card.dataset.result;
+        if (filter === 'all') {
+          card.style.display = '';
+        } else if (filter === 'won') {
+          card.style.display = result === 'won' ? '' : 'none';
+        } else if (filter === 'lost') {
+          card.style.display = result === 'lost' ? '' : 'none';
+        } else if (filter === 'tied') {
+          card.style.display = result === 'tied' ? '' : 'none';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

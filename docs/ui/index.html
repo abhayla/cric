@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — UI Prototypes</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .index-page { max-width: 700px; margin: 0 auto; padding: 32px 24px; }
+    .index-page .logo { text-align: center; margin-bottom: 8px; }
+    .index-page .subtitle { text-align: center; color: var(--text-secondary); font-size: var(--body); margin-bottom: 40px; }
+    .group-title {
+      font-size: var(--caption);
+      font-weight: var(--fw-bold);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      margin: 32px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .group-title:first-of-type { margin-top: 0; }
+    .screen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .screen-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: all var(--duration) var(--ease);
+    }
+    .screen-link:hover { border-color: var(--primary); box-shadow: var(--shadow-card); }
+    .screen-num {
+      width: 28px; height: 28px; border-radius: var(--radius-full);
+      background: var(--primary-light); color: var(--primary-dark);
+      font-size: var(--caption); font-weight: var(--fw-bold);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .screen-name { font-size: var(--body-sm); font-weight: var(--fw-medium); }
+    .screen-link.critical { border-left: 3px solid var(--primary); }
+    .screen-link.wip { opacity: 0.45; pointer-events: none; }
+    .screen-link.wip .screen-num { background: var(--surface); color: var(--text-secondary); }
+    .note { margin-top: 40px; padding: 16px; background: var(--surface); border-radius: var(--radius-md); font-size: var(--body-sm); color: var(--text-secondary); line-height: 1.6; }
+    body { background: var(--bg); }
+  </style>
+</head>
+<body>
+  <div class="index-page">
+    <div class="logo">
+      <span class="app-logo" style="color: var(--text-primary);">Cric<span>App</span></span>
+    </div>
+    <p class="subtitle">UI Prototype — 18 Screens</p>
+
+    <div class="group-title">A — Auth Flow</div>
+    <div class="screen-grid">
+      <a href="01-splash.html" class="screen-link">
+        <span class="screen-num">1</span>
+        <span class="screen-name">Splash</span>
+      </a>
+      <a href="02-login.html" class="screen-link">
+        <span class="screen-num">2</span>
+        <span class="screen-name">Login</span>
+      </a>
+      <a href="03-otp.html" class="screen-link">
+        <span class="screen-num">3</span>
+        <span class="screen-name">OTP Verification</span>
+      </a>
+      <a href="04-profile-setup.html" class="screen-link">
+        <span class="screen-num">4</span>
+        <span class="screen-name">Profile Setup</span>
+      </a>
+    </div>
+
+    <div class="group-title">B — Home & Navigation</div>
+    <div class="screen-grid">
+      <a href="05-home.html" class="screen-link">
+        <span class="screen-num">5</span>
+        <span class="screen-name">Home</span>
+      </a>
+    </div>
+
+    <div class="group-title">C — Teams Flow</div>
+    <div class="screen-grid">
+      <a href="06-teams-list.html" class="screen-link">
+        <span class="screen-num">6</span>
+        <span class="screen-name">Teams List</span>
+      </a>
+      <a href="07-create-team.html" class="screen-link">
+        <span class="screen-num">7</span>
+        <span class="screen-name">Create Team</span>
+      </a>
+      <a href="08-team-detail.html" class="screen-link">
+        <span class="screen-num">8</span>
+        <span class="screen-name">Team Detail</span>
+      </a>
+      <a href="09-manage-roster.html" class="screen-link">
+        <span class="screen-num">9</span>
+        <span class="screen-name">Manage Roster</span>
+      </a>
+    </div>
+
+    <div class="group-title">D — Match Setup Flow</div>
+    <div class="screen-grid">
+      <a href="10-match-setup.html" class="screen-link">
+        <span class="screen-num">10</span>
+        <span class="screen-name">Match Setup</span>
+      </a>
+      <a href="11-toss.html" class="screen-link">
+        <span class="screen-num">11</span>
+        <span class="screen-name">Toss</span>
+      </a>
+    </div>
+
+    <div class="group-title">E — Scoring Flow (Critical)</div>
+    <div class="screen-grid">
+      <a href="12-scoring-page.html" class="screen-link critical">
+        <span class="screen-num">12</span>
+        <span class="screen-name">Scoring Page</span>
+      </a>
+      <a href="13-wicket-dialog.html" class="screen-link critical">
+        <span class="screen-num">13</span>
+        <span class="screen-name">Wicket Dialog</span>
+      </a>
+      <a href="14-extras-panel.html" class="screen-link critical">
+        <span class="screen-num">14</span>
+        <span class="screen-name">Extras Panel</span>
+      </a>
+    </div>
+
+    <div class="group-title">F — Post-Match Screens</div>
+    <div class="screen-grid">
+      <a href="15-scorecard.html" class="screen-link">
+        <span class="screen-num">15</span>
+        <span class="screen-name">Scorecard</span>
+      </a>
+      <a href="16-match-analytics.html" class="screen-link">
+        <span class="screen-num">16</span>
+        <span class="screen-name">Match Analytics</span>
+      </a>
+      <a href="17-player-profile.html" class="screen-link">
+        <span class="screen-num">17</span>
+        <span class="screen-name">Player Profile</span>
+      </a>
+      <a href="18-match-history.html" class="screen-link">
+        <span class="screen-num">18</span>
+        <span class="screen-name">Match History</span>
+      </a>
+    </div>
+
+    <div class="note">
+      These are <strong>design prototypes only</strong> — not production code. They inform the Flutter implementation.
+      Each screen renders in a 390×844px phone frame. Open individual screens to see the mobile preview.
+    </div>
+  </div>
+</body>
+</html>

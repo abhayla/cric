@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Wicket Dialog</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .wicket-step { display: none; }
+    .wicket-step.active { display: block; }
+    .fielder-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-md); margin-bottom: 8px;
+      cursor: pointer; transition: all var(--duration) var(--ease);
+    }
+    .fielder-row:hover { border-color: var(--wicket); }
+    .fielder-row.selected { border-color: var(--wicket); background: #FFEBEE; }
+    .which-batter-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px; border: 2px solid var(--border);
+      border-radius: var(--radius-md); cursor: pointer;
+      transition: all var(--duration) var(--ease);
+    }
+    .which-batter-row:hover { border-color: var(--wicket); }
+    .which-batter-row.selected { border-color: var(--wicket); background: #FFEBEE; }
+    .toggle-switch {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0;
+    }
+    .switch {
+      width: 48px; height: 28px; border-radius: 14px;
+      background: var(--border); position: relative; cursor: pointer;
+      transition: background var(--duration) var(--ease);
+    }
+    .switch.on { background: var(--primary); }
+    .switch::after {
+      content: ''; position: absolute; width: 22px; height: 22px;
+      border-radius: 50%; background: white; top: 3px; left: 3px;
+      transition: transform var(--duration) var(--ease);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .switch.on::after { transform: translateX(20px); }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Scoring page backdrop (dimmed) -->
+    <div style="background: var(--header); padding: 12px 16px; color: white; opacity: 0.5;">
+      <div style="font-size: var(--caption); color: rgba(255,255,255,0.7);">Mumbai Warriors — 1st Innings</div>
+      <div style="font-size: var(--score-lg); font-weight: 700;">87/3 <span style="font-size: var(--body-sm); color: rgba(255,255,255,0.5);">(12.4)</span></div>
+    </div>
+
+    <!-- Wicket Modal (shown as full overlay) -->
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; background: var(--overlay); padding: 16px;">
+      <div class="modal" style="width: 100%;">
+        <div class="modal-header" style="background: #FFEBEE;">
+          <span class="modal-title" style="color: var(--wicket);">Wicket!</span>
+          <button class="modal-close" onclick="navigateTo('12-scoring-page.html')">
+            <span data-icon="close" style="width:20px;height:20px;"></span>
+          </button>
+        </div>
+        <div class="modal-body" style="max-height: 55vh; overflow-y: auto;">
+
+          <!-- Step 1: Dismissal Type -->
+          <div class="wicket-step active" data-wicket-step="1">
+            <h4 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">How was the batter dismissed?</h4>
+            <div class="dismissal-grid">
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Bowled')">Bowled</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Caught')">Caught</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'LBW')">LBW</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Run Out')">Run Out</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Stumped')">Stumped</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Hit Wicket')">Hit Wicket</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Retired')">Retired</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Obstructing')">Obstruct</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Timed Out')">Timed Out</div>
+            </div>
+          </div>
+
+          <!-- Step 2: Fielder (for Caught/Stumped/Run Out) -->
+          <div class="wicket-step" data-wicket-step="2">
+            <h4 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;" id="fielderTitle">Select Fielder</h4>
+
+            <div class="search-bar mb-16" style="height: 40px;">
+              <span class="search-icon" data-icon="search" style="width:16px;height:16px;"></span>
+              <input type="text" placeholder="Search..." style="font-size: var(--body-sm);" id="fielderSearch">
+            </div>
+
+            <div id="fielderList">
+              <div class="fielder-row" onclick="selectFielder(this, 'Rahul Kapoor')">
+                <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">RK</div>
+                <span>Rahul Kapoor</span>
+              </div>
+              <div class="fielder-row" onclick="selectFielder(this, 'Suresh Reddy')">
+                <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">SR</div>
+                <span>Suresh Reddy</span>
+              </div>
+              <div class="fielder-row" onclick="selectFielder(this, 'Mahesh Desai')">
+                <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">MD</div>
+                <span>Mahesh Desai</span>
+              </div>
+              <div class="fielder-row" onclick="selectFielder(this, 'Ankit Pandey')">
+                <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">AP</div>
+                <span>Ankit Pandey</span>
+              </div>
+              <div class="fielder-row" onclick="selectFielder(this, 'Vivek Chauhan')">
+                <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">VC</div>
+                <span>Vivek Chauhan</span>
+              </div>
+              <div class="fielder-row" onclick="selectFielder(this, 'Gaurav Saxena')">
+                <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">GS</div>
+                <span>Gaurav Saxena (WK)</span>
+              </div>
+              <div class="fielder-row" onclick="selectFielder(this, 'Harsh Mishra')">
+                <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">HM</div>
+                <span>Harsh Mishra</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Run Out extras (only for Run Out) -->
+          <div class="wicket-step" data-wicket-step="3">
+            <h4 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 16px;">Run Out Details</h4>
+
+            <!-- Which batter was dismissed? -->
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: var(--body-sm); font-weight: var(--fw-medium); margin-bottom: 8px; display: block;">Which batter was dismissed?</label>
+              <div class="flex gap-8">
+                <div class="which-batter-row selected" style="flex: 1;" onclick="selectDismissedBatter(this, 'striker')">
+                  <div style="font-size: var(--body-sm); font-weight: var(--fw-medium);">Karan Singh</div>
+                  <div style="font-size: var(--caption); color: var(--text-secondary);">Striker</div>
+                </div>
+                <div class="which-batter-row" style="flex: 1;" onclick="selectDismissedBatter(this, 'non-striker')">
+                  <div style="font-size: var(--body-sm); font-weight: var(--fw-medium);">Aditya Joshi</div>
+                  <div style="font-size: var(--caption); color: var(--text-secondary);">Non-striker</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Had batters crossed? -->
+            <div class="toggle-switch">
+              <span style="font-size: var(--body-sm); font-weight: var(--fw-medium);">Had batters crossed?</span>
+              <div class="switch" onclick="this.classList.toggle('on')"></div>
+            </div>
+
+            <!-- Direct hit? -->
+            <div class="toggle-switch">
+              <span style="font-size: var(--body-sm); font-weight: var(--fw-medium);">Direct hit?</span>
+              <div class="switch" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" style="flex: 1;" id="wicketBackBtn" onclick="wicketBack()" disabled>Back</button>
+          <button class="btn btn-danger" style="flex: 1;" id="wicketNextBtn" onclick="wicketNext()">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let currentWicketStep = 1;
+    let dismissalType = null;
+    let selectedFielder = null;
+    const needsFielder = ['Caught', 'Stumped', 'Run Out'];
+    const needsRunOutDetails = ['Run Out'];
+
+    function selectDismissal(el, type) {
+      document.querySelectorAll('.dismissal-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      dismissalType = type;
+    }
+
+    function selectFielder(row, name) {
+      document.querySelectorAll('.fielder-row').forEach(r => r.classList.remove('selected'));
+      row.classList.add('selected');
+      selectedFielder = name;
+    }
+
+    function selectDismissedBatter(row, which) {
+      document.querySelectorAll('.which-batter-row').forEach(r => r.classList.remove('selected'));
+      row.classList.add('selected');
+    }
+
+    function updateWicketSteps() {
+      document.querySelectorAll('.wicket-step').forEach(s => s.classList.remove('active'));
+      document.querySelector(`[data-wicket-step="${currentWicketStep}"]`).classList.add('active');
+      document.getElementById('wicketBackBtn').disabled = currentWicketStep === 1;
+
+      // Update button text
+      let isLast = false;
+      if (currentWicketStep === 1 && !needsFielder.includes(dismissalType)) isLast = false;
+      if (currentWicketStep === 2 && !needsRunOutDetails.includes(dismissalType)) isLast = true;
+      if (currentWicketStep === 3) isLast = true;
+      if (currentWicketStep === 1 && dismissalType && !needsFielder.includes(dismissalType)) isLast = true;
+
+      document.getElementById('wicketNextBtn').textContent = isLast ? 'Confirm Wicket' : 'Next';
+    }
+
+    function wicketNext() {
+      if (currentWicketStep === 1) {
+        if (!dismissalType) return;
+        if (needsFielder.includes(dismissalType)) {
+          currentWicketStep = 2;
+          document.getElementById('fielderTitle').textContent =
+            dismissalType === 'Caught' ? 'Caught by?' :
+            dismissalType === 'Stumped' ? 'Stumped by?' : 'Run Out by?';
+        } else {
+          // Bowled, LBW, Hit Wicket — no fielder needed, confirm directly
+          navigateTo('12-scoring-page.html');
+          return;
+        }
+      } else if (currentWicketStep === 2) {
+        if (!selectedFielder) return;
+        if (needsRunOutDetails.includes(dismissalType)) {
+          currentWicketStep = 3;
+        } else {
+          navigateTo('12-scoring-page.html');
+          return;
+        }
+      } else if (currentWicketStep === 3) {
+        navigateTo('12-scoring-page.html');
+        return;
+      }
+      updateWicketSteps();
+    }
+
+    function wicketBack() {
+      if (currentWicketStep > 1) {
+        currentWicketStep--;
+        updateWicketSteps();
+      }
+    }
+
+    // Fielder search
+    document.getElementById('fielderSearch').addEventListener('input', function() {
+      const q = this.value.toLowerCase();
+      document.querySelectorAll('.fielder-row').forEach(row => {
+        const name = row.querySelector('span').textContent.toLowerCase();
+        row.style.display = name.includes(q) ? '' : 'none';
+      });
+    });
+
+    updateWicketSteps();
+  </script>
+</body>
+</html>

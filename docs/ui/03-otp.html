@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — OTP Verification</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <button class="back-btn" onclick="navigateTo('02-login.html')">
+        <span data-icon="back"></span>
+      </button>
+      <span class="header-title">Verify OTP</span>
+    </div>
+
+    <div class="page-content no-bottom-nav" style="display: flex; flex-direction: column;">
+      <!-- Illustration / Instructions -->
+      <div style="text-align: center; padding-top: 40px; margin-bottom: 40px;">
+        <div style="margin-bottom: 16px;">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style="display: inline-block;">
+            <rect x="8" y="4" width="48" height="56" rx="8" fill="var(--primary-light)" stroke="var(--primary)" stroke-width="2"/>
+            <rect x="20" y="24" width="24" height="16" rx="4" fill="var(--primary)" opacity="0.2"/>
+            <text x="32" y="36" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--primary-dark)">OTP</text>
+            <circle cx="32" cy="14" r="3" fill="var(--primary)"/>
+          </svg>
+        </div>
+        <h2 style="font-size: var(--title); font-weight: var(--fw-bold); margin-bottom: 8px;">Enter Verification Code</h2>
+        <p style="color: var(--text-secondary); font-size: var(--body-sm);">
+          We've sent a 6-digit code to<br>
+          <strong style="color: var(--text-primary);">+91 98765 43210</strong>
+        </p>
+      </div>
+
+      <!-- OTP Input -->
+      <div class="otp-group" id="otpGroup">
+        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" autofocus>
+        <input type="text" class="otp-input" maxlength="1" inputmode="numeric">
+        <input type="text" class="otp-input" maxlength="1" inputmode="numeric">
+        <input type="text" class="otp-input" maxlength="1" inputmode="numeric">
+        <input type="text" class="otp-input" maxlength="1" inputmode="numeric">
+        <input type="text" class="otp-input" maxlength="1" inputmode="numeric">
+      </div>
+
+      <!-- Timer & Resend -->
+      <div style="text-align: center; margin-top: 24px;">
+        <div class="countdown" id="resendSection">
+          Resend code in <span class="timer" id="countdownTimer">00:30</span>
+        </div>
+        <button class="btn btn-sm" id="resendBtn" style="display: none; margin: 0 auto; color: var(--primary); font-weight: var(--fw-semibold);" onclick="handleResend()">
+          Resend Code
+        </button>
+      </div>
+
+      <!-- Spacer -->
+      <div style="flex: 1;"></div>
+
+      <!-- Verify Button -->
+      <div style="padding: 0 8px 32px;">
+        <button class="btn btn-primary" id="verifyBtn" onclick="handleVerify()">Verify</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Start countdown
+    const timer = startCountdown('countdownTimer', 30, () => {
+      document.getElementById('resendSection').style.display = 'none';
+      document.getElementById('resendBtn').style.display = 'inline-flex';
+    });
+
+    // Auto-navigate on OTP complete
+    document.addEventListener('otp-complete', (e) => {
+      handleVerify();
+    });
+
+    function handleVerify() {
+      const inputs = document.querySelectorAll('.otp-input');
+      const otp = Array.from(inputs).map(i => i.value).join('');
+      if (otp.length < 6) {
+        // Highlight empty inputs
+        inputs.forEach(i => {
+          if (!i.value) i.style.borderColor = 'var(--danger)';
+        });
+        return;
+      }
+      // Simulate: new user → profile setup, returning user → home
+      navigateTo('04-profile-setup.html');
+    }
+
+    function handleResend() {
+      document.getElementById('resendBtn').style.display = 'none';
+      document.getElementById('resendSection').style.display = '';
+      startCountdown('countdownTimer', 30, () => {
+        document.getElementById('resendSection').style.display = 'none';
+        document.getElementById('resendBtn').style.display = 'inline-flex';
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Splash</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <div class="page-content centered no-bottom-nav" style="background: var(--bg);">
+      <!-- Cricket ball icon -->
+      <div style="margin-bottom: 24px;">
+        <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+          <circle cx="36" cy="36" r="34" fill="#C62828" stroke="#A01A1A" stroke-width="2"/>
+          <path d="M20 18C26 28 26 44 20 54" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M52 18C46 28 46 44 52 54" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <!-- Seam stitches left -->
+          <line x1="18" y1="22" x2="22" y2="24" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="17" y1="28" x2="21" y2="29" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="17" y1="34" x2="21" y2="34" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="17" y1="40" x2="21" y2="40" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="18" y1="46" x2="22" y2="45" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <!-- Seam stitches right -->
+          <line x1="54" y1="22" x2="50" y2="24" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="55" y1="28" x2="51" y2="29" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="55" y1="34" x2="51" y2="34" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="55" y1="40" x2="51" y2="40" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="54" y1="46" x2="50" y2="45" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <!-- App Name -->
+      <div class="app-logo" style="margin-bottom: 8px;">Cric<span>App</span></div>
+      <p style="color: var(--text-secondary); font-size: var(--body-sm);">Score every ball. Own every moment.</p>
+
+      <!-- Loading indicator -->
+      <div style="margin-top: 48px;">
+        <div style="width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <script src="app.js"></script>
+  <script>
+    // Auto-redirect to login after 2 seconds
+    setTimeout(() => {
+      navigateTo('02-login.html');
+    }, 2000);
+  </script>
+</body>
+</html>

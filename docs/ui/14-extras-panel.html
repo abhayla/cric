@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Extras Panel</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .extra-run-btn {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 2px solid var(--border); background: var(--bg);
+      font-size: var(--heading); font-weight: var(--fw-bold);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all var(--duration) var(--ease);
+    }
+    .extra-run-btn:hover { border-color: var(--warning); color: var(--warning); }
+    .extra-run-btn.selected { background: var(--warning); color: white; border-color: var(--warning); }
+    .extra-type-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 16px; border-radius: var(--radius-full);
+      background: var(--warning); color: white;
+      font-size: var(--body); font-weight: var(--fw-bold);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Scoring page backdrop (dimmed) -->
+    <div style="background: var(--header); padding: 12px 16px; color: white; opacity: 0.5;">
+      <div style="font-size: var(--caption); color: rgba(255,255,255,0.7);">Mumbai Warriors — 1st Innings</div>
+      <div style="font-size: var(--score-lg); font-weight: 700;">87/3 <span style="font-size: var(--body-sm); color: rgba(255,255,255,0.5);">(12.4)</span></div>
+    </div>
+
+    <!-- Dimmed middle -->
+    <div style="flex: 1; background: var(--overlay);"></div>
+
+    <!-- Bottom Sheet -->
+    <div style="background: var(--bg); border-radius: var(--radius-lg) var(--radius-lg) 0 0; box-shadow: var(--shadow-modal);">
+      <div style="width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 8px auto 4px;"></div>
+
+      <div style="padding: 12px 16px;">
+        <!-- Extra Type Header -->
+        <div class="flex justify-between items-center mb-16">
+          <h3 style="font-size: var(--heading); font-weight: var(--fw-bold);">Extra</h3>
+          <span class="extra-type-badge" id="extraTypeBadge">Wide</span>
+        </div>
+
+        <!-- Additional Runs -->
+        <div style="margin-bottom: 20px;">
+          <label style="font-size: var(--body-sm); font-weight: var(--fw-medium); margin-bottom: 12px; display: block;">Additional Runs</label>
+          <div class="flex justify-center gap-12">
+            <button class="extra-run-btn selected" onclick="selectExtraRuns(this, 0)">0</button>
+            <button class="extra-run-btn" onclick="selectExtraRuns(this, 1)">1</button>
+            <button class="extra-run-btn" onclick="selectExtraRuns(this, 2)">2</button>
+            <button class="extra-run-btn" onclick="selectExtraRuns(this, 3)">3</button>
+            <button class="extra-run-btn" onclick="selectExtraRuns(this, 4)">4</button>
+          </div>
+        </div>
+
+        <!-- Wicket on Wide (optional, for Wide/No Ball) -->
+        <div id="wicketOnExtraSection">
+          <div class="divider"></div>
+          <div class="flex justify-between items-center" style="padding: 8px 0;">
+            <div>
+              <div style="font-size: var(--body-sm); font-weight: var(--fw-medium);">Wicket on this delivery?</div>
+              <div style="font-size: var(--caption); color: var(--text-secondary);" id="wicketTypes">Stumped or Run Out only</div>
+            </div>
+            <div class="switch" id="wicketSwitch" onclick="toggleWicketOnExtra()"></div>
+          </div>
+
+          <!-- Wicket type selector (hidden by default) -->
+          <div id="wicketTypeSelector" style="display: none; margin-top: 12px;">
+            <div class="chip-group">
+              <span class="chip" data-value="Stumped" onclick="selectWicketType(this)">Stumped</span>
+              <span class="chip" data-value="Run Out" onclick="selectWicketType(this)">Run Out</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Summary -->
+        <div class="flex justify-between items-center" style="padding: 8px 0; margin-bottom: 12px;">
+          <span style="font-size: var(--body-sm); color: var(--text-secondary);">Total runs for this delivery</span>
+          <span style="font-size: var(--title); font-weight: var(--fw-bold);" id="totalExtraRuns">1</span>
+        </div>
+
+        <!-- Confirm -->
+        <button class="btn btn-primary" onclick="confirmExtra()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Get extra type from URL
+    const params = new URLSearchParams(window.location.search);
+    const extraType = params.get('type') || 'wide';
+    let additionalRuns = 0;
+    let extraBase = 1; // Wide and NB have 1 base run, Bye/LB have 0
+
+    const labels = { wide: 'Wide', noball: 'No Ball', bye: 'Bye', legbye: 'Leg Bye' };
+    document.getElementById('extraTypeBadge').textContent = labels[extraType] || 'Wide';
+
+    // Bye and Leg Bye don't have a base run penalty
+    if (extraType === 'bye' || extraType === 'legbye') {
+      extraBase = 0;
+      document.getElementById('wicketOnExtraSection').style.display = 'none';
+    }
+    if (extraType === 'noball') {
+      document.getElementById('wicketTypes').textContent = 'Run Out only';
+    }
+
+    updateTotalRuns();
+
+    function selectExtraRuns(btn, runs) {
+      document.querySelectorAll('.extra-run-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      additionalRuns = runs;
+      updateTotalRuns();
+    }
+
+    function updateTotalRuns() {
+      document.getElementById('totalExtraRuns').textContent = extraBase + additionalRuns;
+    }
+
+    function toggleWicketOnExtra() {
+      const sw = document.getElementById('wicketSwitch');
+      sw.classList.toggle('on');
+      document.getElementById('wicketTypeSelector').style.display = sw.classList.contains('on') ? '' : 'none';
+    }
+
+    function selectWicketType(chip) {
+      document.querySelectorAll('#wicketTypeSelector .chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    }
+
+    function confirmExtra() {
+      navigateTo('12-scoring-page.html');
+    }
+  </script>
+</body>
+</html>

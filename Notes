@@ -43,3 +43,82 @@ Suggestion should include but not limited to docs management, Product Developmen
 
 These docs will be used as single source of truth for this project implementation.
 Note - scope is only to document these processes for this project. I will then review and approve it.Start with folder structure and doc management.
+
+
+Top Picks — Cricket-Specific UI Kits & Designs
+
+  1. Figma: Cricket Live Score and Streaming App UI Kit (FREE)
+
+  - Clean, developer-friendly cricket app UI kit on Figma Community
+  - Covers live scoring, streaming, match screens
+  - https://www.figma.com/community/file/1282961554302744980/cricket-live-score-and-streaming-app-ui-kit
+
+  2. Figma: Cricket App UI/UX Design (FREE)
+
+  - 2 color variations, cricket-focused screens
+  - https://www.figma.com/community/file/1271754606379478544/cricket-app-ui-ux-design
+
+  3. Figma: Sportsbuzz — Live Cricket Scoring App UI Kit (FREE)
+
+  - Real-time cricket scoring focus with live updates UI
+  - https://www.figma.com/community/file/1446029239534624541/sportsbuzz-opinion-trading-game-show-live-cricket-scoring-app-ui-kit
+
+  4. Figma: Fentacey Cricket App Design (FREE)
+
+  - Cricket app design with full screen set
+  - https://www.figma.com/community/file/1283759039254216747/fentacey-cricket-app-design
+
+  5. Dribbble: CRICK HUB — Cricket Live Score Sport App
+
+  - Modern cricket live score UI by Caliber Design
+  - https://dribbble.com/shots/24596317-CRICK-HUB-Cricket-live-Score-Sport-App-Mobile-UI
+
+  6. Cricket.com by Lollypop Design Studio
+
+  - Professional agency-designed cricket app (award-winning studio)
+  - https://lollypop.design/projects/cricket-com/
+
+  ---
+  Sports Live Score UI Kits (Dark Theme)
+
+  7. Figma: Scora — Live Score App UI Kit (FREE)
+
+  - 134 editable screens, Light & Dark themes, full auto-layout
+  - Sports scoring focus — very comprehensive
+  - https://www.figma.com/community/file/1218380743704156550/scora-live-score-app-ui-kit
+
+  8. Figma: Live Score App UI Kit (FREE)
+
+  - Dark mode mobile sports scoring app, full auto-layout + components
+  - https://www.figma.com/community/file/1237711018456644474/live-score-app-ui-kit
+
+  9. Figma: Live Score UI Kit (FREEBIES)
+
+  - Free sports live score UI kit
+  - https://www.figma.com/community/file/936495139689782604/live-score-ui-kit-freebies
+
+  10. UI8: Filllo Cricket Live Score UI Kit (Paid)
+
+  - Premium cricket live score kit with polished screens
+  - https://ui8.net/filllo-design-agency/products/filllo-cricket-live-score-ui-kit
+
+  ---
+  Browsable Galleries
+
+  - https://dribbble.com/tags/cricket-app — browse hundreds of cricket app shots
+  - https://dribbble.com/tags/cricket-score — scoring-specific designs
+  - https://dribbble.com/tags/live-score-cricket-ui
+  - https://www.behance.net/search/projects/cricket%20score%20ui
+  - https://dribbble.com/tags/sport-score — general sports scoring UIs
+
+  ---
+  My Recommendation
+
+  The Figma Community options (1-4, 7-9) are the best starting point because:
+  - They're free and you can open them directly in Figma
+  - You can inspect exact colors, spacing, typography, and components
+  - They're editable — you can adapt them to your M3 dark theme with green seed color
+  - I can capture exact design tokens from screenshots you share
+
+  Best combo: Open #1 (Cricket Live Score) + #7 (Scora) in Figma. The cricket one gives you domain-specific patterns, and Scora gives you a   
+  polished dark theme system with 134 screens.
