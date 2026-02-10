@@ -116,6 +116,7 @@
 | role | varchar(20) | "captain", "vice_captain", "player" |
 | is_active | boolean | default true |
 | joined_at | timestamp | |
+| updated_at | timestamp | |
 
 **Unique constraint:** (team_id, player_id)
 **Max roster size:** 25 players per team (enforced at application level)
@@ -381,6 +382,7 @@ Playing XI for each team in a specific match.
 | man_of_match_id | uuid FK → users.id | nullable |
 | summary | text | e.g. "Team A won by 5 wickets" |
 | created_at | timestamp | |
+| updated_at | timestamp | |
 
 ### 6.3 `match_analytics`
 | Column | Type | Notes |
@@ -443,6 +445,7 @@ Junction table linking teams to tournaments.
 | group_name | varchar(10) | nullable ("A", "B", etc. — null for round_robin/knockout) |
 | seed_number | integer | nullable, seeding for knockout |
 | joined_at | timestamp | |
+| updated_at | timestamp | |
 
 **Unique constraint:** (tournament_id, team_id)
 
@@ -455,6 +458,7 @@ Group definitions for group_knockout format.
 | tournament_id | uuid FK → tournaments.id | |
 | name | varchar(10) | "A", "B", "C", "D" |
 | created_at | timestamp | |
+| updated_at | timestamp | |
 
 **Unique constraint:** (tournament_id, name)
 
@@ -518,6 +522,7 @@ Open team registration requests with organizer approval workflow.
 | rejection_reason | varchar(500) | nullable, organizer can provide reason |
 | requested_at | timestamp | default now() |
 | resolved_at | timestamp | nullable, set when approved/rejected |
+| updated_at | timestamp | |
 
 **Unique constraint:** (tournament_id, team_id) — one request per team per tournament
 
