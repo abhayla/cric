@@ -274,6 +274,17 @@ Delivery recording MUST succeed locally even if the server is unreachable. Never
 - Scoring must never be interrupted by network state changes.
 - Log sync failures at `w` (warning) level for later debugging.
 
+### App Background/Kill Recovery (E2)
+
+No special handling needed — rely on the offline-first architecture:
+
+| Scenario | Behavior |
+|----------|----------|
+| **App backgrounded** | WebSocket disconnects. Auto-reconnect on resume (per Section 8). Scoring state preserved in memory. |
+| **OS kills app** | Every delivery is persisted to local Drift DB immediately (Step 8 of pipeline). On relaunch, resume from local DB state. |
+| **Resume UX** | Brief "Resuming match..." loading state while reading local DB and re-establishing WebSocket. |
+| **Data safety** | All scoring data is in SQLite before any UI confirmation. No data loss possible from app kill. |
+
 ---
 
 ## 6. Security: Token Storage & Auth
@@ -457,6 +468,12 @@ No background sync when app is killed (Android budget device battery limits).
 - Backoff between retry batches: 5s → 10s → 30s → 60s cap.
 - After 5 consecutive failures on a batch, mark those items as `FAILED`. Continue to next batch.
 - **Retry count persists across app restarts.** The `retry_count` is stored in the SQLite `sync_queue` table and is NOT reset on app relaunch. This prevents endless retries of permanently broken items (e.g., server schema mismatch, deleted resources).
+- **Retry count reset rules:**
+  - Reset to 0 on successful sync of that specific entity.
+  - Items reaching `retry_count = 5` are marked FAILED (status = 'failed').
+  - FAILED items are retried via manual pull-to-refresh (resets count to 0, status back to 'pending').
+  - On match completion: one final forced sync attempt for ALL pending/failed items (resets all counts to 0).
+  - Never auto-reset on app restart — only explicit success or user-initiated retry resets the count.
 - Sync queue schema (local SQLite, ref [DATABASE.md](../planning/DATABASE.md) Section 10): `id`, `entity_type`, `entity_id`, `operation`, `payload`, `retry_count`, `status`, `created_at`.
 
 ```dart
@@ -540,6 +557,8 @@ Modify schema files in `apps/server/src/db/schema/`, then:
 bunx drizzle-kit generate    # Creates migration SQL files
 bunx drizzle-kit migrate     # Applies migrations to PostgreSQL
 ```
+
+**Migration strategy (C4):** Development uses manual `bunx drizzle-kit migrate` after schema changes. Production deployment strategy (automated migrations, rollbacks) deferred to Phase 7.
 
 ### Backward Compatibility
 
@@ -740,19 +759,25 @@ Use `--dart-define` at build time: `flutter run --dart-define=ENV=dev`. Access v
 ```dart
 // core/constants/app_constants.dart
 class AppConstants {
-  static const _env = String.fromEnvironment('ENV', defaultValue: 'dev');
-
-  static String get apiBaseUrl => switch (_env) {
-    'prod' => 'https://api.cricapp.com/api/v1',
-    'staging' => 'https://staging-api.cricapp.com/api/v1',
-    _ => 'http://localhost:3000/api/v1',
-  };
+  // D1: Default to Android emulator localhost; override via --dart-define for physical device
+  static const apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://10.0.2.2:3000/api/v1',
+  );
 }
 ```
 
 ### Firebase Per Environment
 
 **MVP: Single Firebase project** (no staging/production split). The VPS is the only environment. Post-MVP: create separate projects per environment with their own `google-services.json` placed per flavor configuration.
+
+### Package Version Strategy (C6)
+
+- Use `flutter pub add <package>` and `bun add <package>` to get latest stable versions at time of project initialization.
+- If Riverpod 3.0 is available, use it; otherwise use latest 2.x with adjusted patterns.
+- Document actual installed versions in `pubspec.yaml` / `package.json` (caret ranges via `^`).
+- Version ranges in [IMPLEMENTATION_PLAN.md](../planning/IMPLEMENTATION_PLAN.md) Sections 3-4 are **minimum targets**, not pinned versions.
+- No version pinning unless a known-broken minor release is identified.
 
 ### Drift Database
 

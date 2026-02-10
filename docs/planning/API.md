@@ -859,6 +859,12 @@ Push offline changes to server. Accepts all scoring entities in a single call.
 
 All entity arrays are optional — only include entities that have pending changes.
 
+**Batching rules:**
+- Single endpoint accepts all entity types in one request.
+- Server processes entities in dependency order: match → innings → deliveries → stats → fallOfWickets → overs → matchResult.
+- Maximum 50 deliveries per request. If pending deliveries > 50, split into multiple requests with deliveries batched; other entity types (innings, stats, etc.) sent only in the first request.
+- `matchResult` is a single object (not array) — null when no result to sync.
+
 **Response (200):**
 ```json
 {

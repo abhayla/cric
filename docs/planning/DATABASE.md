@@ -220,11 +220,11 @@ Playing XI for each team in a specific match.
 | id | uuid PK | |
 | innings_id | uuid FK → innings.id | |
 | over_number | integer | 1-based over |
-| ball_number | integer | 1-6 for legal deliveries. Extras share ball_number with the upcoming legal delivery (e.g., if 2 legal balls then a wide, the wide has ball_number=3 and the next legal delivery also has ball_number=3). |
+| ball_number | integer | 1-6 for legal deliveries. Extras share ball_number with the upcoming legal delivery (e.g., if 2 legal balls then a wide, the wide has ball_number=3 and the next legal delivery also has ball_number=3). Penalty deliveries use ball_number=0. |
 | sequence_number | integer | Client-assigned, monotonically incrementing per innings (1, 2, 3..., includes extras). Server validates uniqueness within innings on sync. Conflicts (duplicate sequence_number for same innings_id) → rejected with error, client must reconcile. |
 | striker_id | uuid FK → users.id | |
 | non_striker_id | uuid FK → users.id | |
-| bowler_id | uuid FK → users.id | |
+| bowler_id | uuid FK → users.id | nullable for penalty deliveries (is_penalty = true). NULL = penalty not bowled. |
 | runs_from_bat | integer | default 0 |
 | is_wide | boolean | default false |
 | wide_runs | integer | default 0 (typically 1) |

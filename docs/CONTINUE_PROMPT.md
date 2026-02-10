@@ -106,6 +106,40 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - **[T15]** Super over stats excluded from career stats and tournament leaderboard; count only toward match result.
 - **[T16]** Leaderboard stays at 4 categories: runs, wickets, batting_avg, economy (no change from T7).
 
+### Round 4 Final Gap Analysis (A1-A5, B1-B5, C1-C6, D1-D3, E1-E3)
+
+**Scoring Engine Logic (A1-A5):**
+- **[A1]** Undo scope: blocked after transition — undo available only before new batter confirmed or new bowler confirmed.
+- **[A2]** Penalty delivery fields: bowler_id = NULL, ball_number = 0, over_number = current over. Penalty runs don't affect bowler economy.
+- **[A3]** Super over UI trigger: auto-trigger with confirmation. Knockout tie → Match Complete modal shows "Start Super Over" button. Standalone tie → COMPLETED "Match Tied" (no super over).
+- **[A4]** Bowler mid-over replacement (ICC Law 22.7): any bowler not at max overs qualifies; previous-over bowler CAN replace; replacement cannot bowl NEXT over; injured bowlers excluded.
+- **[A5]** 5-run penalty direction: both directions supported. UI toggle "Awarded to Batting/Fielding team". Batting team penalty → current innings extras. Fielding team penalty → other team's innings total.
+
+**UI Flows — Missing Prototypes (B1-B5):**
+- **[B1]** Select New Batter: single-tap bottom sheet list. Title "Select New Batter" + "Replacing: [name]". Player name + batting style + role. Auto-select if only 1 remaining.
+- **[B2]** Select Next Bowler: single-tap bottom sheet. Title "Over X+1". Eligible list (O-M-R-W + economy). Ineligible greyed out with reason. Auto-select if only 1 eligible.
+- **[B3]** Innings Transition: 3-step stepper. Step 1: 2 opening batsmen (checkboxes). Step 2: 1 opening bowler (radio). Step 3: Confirm + "Start Innings".
+- **[B4]** Match Complete: result text + final scores. "View Scorecard" (primary) + "Back to Home" (outlined). No MVP display (shown on scorecard).
+- **[B5]** Super Over Setup: 3-step stepper. Step 1: Team A 3 batters + striker/non-striker. Step 2: Team A bowler. Step 3: Team B batters + bowler. Batting order auto-determined (team that batted 2nd goes first).
+
+**Technical Implementation (C1-C6):**
+- **[C1]** Sync batching: single POST /api/v1/sync/push with all entity types. Server processes in dependency order. Deliveries > 50 → multiple requests, other entities in first only.
+- **[C2]** Sync retry reset: reset to 0 on success. FAILED at retry_count=5. FAILED items retried via pull-to-refresh (resets to 0). Match completion triggers final forced sync attempt. Never auto-reset on restart.
+- **[C3]** Date/time format: storage UTC. Display: "d MMM yyyy" + 12h AM/PM. Relative for < 7 days ("Today", "Yesterday", "3 days ago").
+- **[C4]** Drizzle migration strategy: removed from MVP scope. Dev: manual `bunx drizzle-kit migrate`. Production strategy deferred to Phase 7.
+- **[C5]** Image upload: team logo only (256x256, quality 80%, max 100KB, server rejects > 100KB with 413). Profile photo deferred to post-MVP (initials avatar).
+- **[C6]** Package versions: latest stable at time of init. Use `flutter pub add` / `bun add`. pubspec.yaml/package.json versions are minimum targets.
+
+**Infrastructure (D1-D3):**
+- **[D1]** Dev API URL: default `http://10.0.2.2:3000/api/v1` (emulator). Override via `--dart-define=API_BASE_URL=...` for physical device. Production URL at Phase 7.
+- **[D2]** PostgreSQL: existing VPS PostgreSQL 16.8. DB names: `cricapp_dev` (dev), `cricapp` (prod). Credentials in .env.
+- **[D3]** Nginx: new server block file at Phase 7. HTTP proxy + WebSocket upgrade. SSL via Cloudflare. Direct port 3000 for development.
+
+**Cross-Cutting UX (E1-E3):**
+- **[E1]** Android back button: scoring page shows confirmation dialog "Match in progress. Exit scoring?" with Stay/Exit. Exit saves locally. Toss/Setup: normal back. Dialogs: dismiss dialog.
+- **[E2]** App background/kill recovery: rely on offline-first. Background: WS disconnects, auto-reconnect. Kill: resume from local DB. Brief "Resuming match..." loading.
+- **[E3]** Accessibility minimal for MVP: 48x48dp touch targets, M3 dark WCAG AA, basic Semantics on scoring buttons, respect system font (except scoring page). Deferred: full screen reader, high contrast, color blind.
+
 ### Round 2 Pre-Implementation Audit (Q1-Q25 + AR-1 through AR-14)
 
 **Auto-resolved from cricket laws (AR):**
@@ -187,6 +221,24 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - **[G25]** Wagon wheel selector: dropdown above chart, default top scorer, filter by striker_id + innings_id
 
 ## Completed Work
+
+### Step 0g: Pre-Implementation Gap Analysis Round 4 — Final & Exhaustive (22 Decisions)
+
+Audited every planning doc (4,216 lines), process doc (2,593 lines), and all 24 UI prototypes. Found documents 90%+ complete and internally consistent. The 22 gaps below were the only remaining items that would cause assumptions during implementation. All 22 resolved and applied across 7 docs.
+
+**SCORING_RULES.md:** Added A1 (undo blocked after transition) to Section 4 constraints. Updated A2 (penalty delivery: bowler_id=NULL, ball_number=0) in Section 3.6. Updated A3 (super over UI trigger: auto-trigger with confirmation modal) in Section 9.7. Updated A4 (bowler mid-over replacement per ICC Law 22.7: previous-over bowler CAN replace) in Section 6.4b. Updated A5 (5-run penalty direction toggle) in Section 3.6. Fixed duplicate Section 3.9 numbering → 3.11 Dismissal Types.
+
+**DATABASE.md:** Updated A2: deliveries.bowler_id now nullable for penalty deliveries. Added ball_number=0 note for penalties.
+
+**API.md:** Added C1 sync batching rules to Section 1.7: single endpoint, dependency order processing, 50 delivery max per request.
+
+**CODE_STANDARDS.md:** Added B1 (Select New Batter modal), B2 (Select Next Bowler modal), B3 (Innings Transition 3-step stepper), B4 (Match Complete modal), B5 (Super Over Setup flow). Added C3 (date/time display format table). Updated C5 (team logo: client compression 256x256/80%, server 413 rejection; profile photo deferred). Added E1 (Android back button behavior table). Added E3 (minimal a11y: touch targets, WCAG AA, Semantics, font scaling).
+
+**IMPLEMENTATION_PRACTICES.md:** Added C2 (sync retry reset rules: reset on success, FAILED at 5, pull-to-refresh retry, match completion forced sync). Added C4 (Drizzle migration: manual for dev, deferred for prod). Added C6 (package version strategy: latest stable, caret ranges). Updated D1 (API URL default: 10.0.2.2:3000 for emulator). Added E2 (app background/kill recovery: offline-first, no special handling).
+
+**IMPLEMENTATION_PLAN.md:** Added D1 (dev API URL config with dart-define). Added D2 (PostgreSQL setup: cricapp_dev / cricapp databases on VPS). Updated D3 (Nginx: HTTP proxy + WS upgrade, SSL via Cloudflare, direct port for dev).
+
+**CONTINUE_PROMPT.md:** Added all 22 R4 decisions in categorized format (A1-A5, B1-B5, C1-C6, D1-D3, E1-E3).
 
 ### Step 0f: Pre-Implementation Readiness Audit Round 2 (25 Questions + 14 Auto-Resolved)
 

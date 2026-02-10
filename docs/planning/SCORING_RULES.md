@@ -238,6 +238,11 @@ Matches ICC Standard Match Conditions (Law 41.17).
 
 Recording method: Create a separate penalty delivery in the relevant innings.
   - Delivery record: is_penalty = true, total_runs = 5, bat_runs = 0, is_legal = false
+  - bowler_id = NULL (penalty is not bowled by anyone)
+  - ball_number = 0 (not a real delivery)
+  - over_number = current over (context only)
+  - striker_id / non_striker_id = current batters (context only)
+  - Penalty runs don't affect any bowler's economy or figures
   - No bowler/batter attribution on penalty delivery
 
 If penalty awarded to BATTING team:
@@ -254,7 +259,9 @@ If penalty awarded to FIELDING team:
 - Bowler: 0 runs against bowler
 - Strike: No change
 - UI flow: Scorer taps "Set" button → "5-Run Penalty" →
-  Select which team receives the penalty runs → Confirm
+  Toggle: "Awarded to Batting Team" / "Awarded to Fielding Team" → Confirm
+  (Both directions supported per ICC Laws — batting team penalty adds to current
+  batting innings extras; fielding team penalty adds to other team's innings total)
 ```
 
 ### 3.7 Maiden Overs
@@ -336,7 +343,7 @@ An innings ends when ANY of:
      → Yes/No → On confirm: innings marked completed with `completed_reason = 'declared'`
 ```
 
-### 3.9 Dismissal Types
+### 3.11 Dismissal Types
 
 | # | Type | Code | Fielder Required | Bowler Credited |
 |---|------|------|------------------|-----------------|
@@ -416,6 +423,11 @@ CONSTRAINTS:
   - Only the scorer can undo
   - Cannot undo after innings/match completion (must reopen first — see Section 4.1)
   - Maximum undo chain: implementation allows multiple consecutive undos
+  - **Blocked after transition:** Undo is available only for the most recent delivery
+    AND only before the next state transition (new batter confirmed or new bowler confirmed).
+    Once the scorer confirms a new batter selection or new bowler selection, the
+    previous delivery cannot be undone. This prevents complex state reversal across
+    player selection boundaries.
 ```
 
 ### 4.1 Reopen After Completion
@@ -588,9 +600,12 @@ When **WICKET** is tapped:
 A bowler cannot change mid-over under normal circumstances. However, if the bowler is injured:
 
 1. Scorer taps "Set" button → "Bowler Injured" option
-2. "Select Replacement Bowler" dialog opens (only eligible bowlers shown)
+2. "Select Replacement Bowler" dialog opens with eligible bowlers:
+   - Any bowler not at max overs qualifies
+   - Previous-over bowler CAN replace (exception to consecutive-over rule per ICC Law 22.7)
+   - Bowlers already injured in this match are excluded from the list
 3. The replacement bowler completes the remaining balls of the over
-4. The replacement bowler CANNOT bowl the next over (consecutive over rule applies to the OVER, not the individual bowler)
+4. The replacement bowler CANNOT bowl the NEXT over (consecutive over rule applies)
 5. Both bowlers' stats are recorded for the over: original bowler's deliveries + replacement bowler's deliveries
 
 ### 6.5 End of Over Flow
@@ -856,9 +871,16 @@ The super over uses the **same delivery processing pipeline** (Section 2, Steps 
 ### 9.7 UI Flow
 
 1. After regulation match ends tied in a knockout fixture:
-   - Show innings summary with "Match Tied" message
-   - Show "Super Over Required" prompt with "Start Super Over" button
-2. Scorer selects 3 batters + 1 bowler for each team
+   - Match Complete modal shows "Match Tied" result text
+   - Modal has "Start Super Over" button (replaces "View Scorecard" as primary CTA)
+   - Secondary button: "Back to Home" (outlined)
+   - Standalone match tie → COMPLETED with "Match Tied" (no super over option)
+2. Tapping "Start Super Over" opens the Super Over Setup stepper (3 steps):
+   - Step 1: "Team A Batters" — Select 3 from Playing XI (checkboxes) + mark striker/non-striker
+   - Step 2: "Team A Bowler" — Select 1 from Playing XI (radio)
+   - Step 3: "Team B Batters + Bowler" — Same as steps 1+2 combined
+   - Footer: "Start Super Over" button
+   - Batting order auto-determined: team that batted 2nd in regulation goes first (per ICC)
 3. Super over scoring page uses the same scoring controls
 4. Super over section shown separately on the scorecard
 5. If super over ties → repeat prompt for another super over

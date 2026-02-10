@@ -504,6 +504,22 @@ dev_dependencies:
 | Monitoring | Existing VPS health check script (every 5 min) — add CricApp to `$sites` array |
 | Backups | Daily `pg_dump` cron to `C:\Apps\backups\` with 7-day retention |
 
+#### Development API URL (D1)
+
+- **Default:** `http://10.0.2.2:3000/api/v1` (Android emulator routes to host machine's localhost)
+- **Physical device override:** `flutter run --dart-define=API_BASE_URL=http://192.168.x.x:3000/api/v1`
+- **Store in:** `core/constants/app_constants.dart` with `String.fromEnvironment` fallback
+- **Production URL:** Configured at Phase 7 deployment time (domain TBD)
+
+#### PostgreSQL Setup (D2)
+
+- **Server:** Use existing VPS PostgreSQL 16.8 (already installed, localhost:5432)
+- **Development database:** `cricapp_dev`
+- **Production database:** `cricapp`
+- **Credentials:** Stored in `.env` file, never committed to git
+- **Setup command:** `CREATE DATABASE cricapp_dev; CREATE USER cricapp_user WITH PASSWORD '...'; GRANT ALL PRIVILEGES ON DATABASE cricapp_dev TO cricapp_user;`
+- **`.env.example`** created with placeholder values during Phase 1 init
+
 #### Environment Variables (`.env.example`)
 
 Create `apps/server/.env.example` during Phase 1 initialization with these 12 variables:
@@ -527,7 +543,7 @@ WS_HEARTBEAT_INTERVAL_MS=30000
 
 - [ ] Create PostgreSQL database + user for CricApp (`cricapp` / `cricapp_user`)
 - [ ] Deploy Bun server via PM2 (`ecosystem.config.js`)
-- [ ] Create Nginx site config (`C:\Apps\nginx\conf\sites\cricapp.conf`) with WebSocket proxy support
+- [ ] Create Nginx site config (`C:\Apps\nginx\conf\sites\cricapp.conf`) — HTTP proxy to port 3000 + WebSocket upgrade headers. SSL via Cloudflare (Nginx on HTTP). For development: use direct port 3000 access (no Nginx needed).
 - [ ] Register domain, configure Cloudflare DNS (A record → VPS IP, proxied)
 - [ ] Set up GitHub Actions self-hosted runner for CricApp repo
 - [ ] Create `.github/workflows/deploy.yml` for auto-deploy on push to main

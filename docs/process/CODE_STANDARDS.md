@@ -649,6 +649,18 @@ Use M3's built-in surface tones. No custom surface colors.
 | `surfaceContainerHighest` | Top-level containers, bottom sheets |
 | `primaryContainer` | Active/selected states (current batter highlight) |
 
+### Date/Time Display Format (C3)
+
+| Context | Format | Example |
+|---------|--------|---------|
+| Storage | UTC timestamps everywhere | `2026-02-10T14:30:00Z` |
+| Display dates | `d MMM yyyy` | "8 Feb 2026" |
+| Display times | 12-hour with AM/PM | "2:30 PM" |
+| Relative (< 7 days) | Natural language | "Today", "Yesterday", "3 days ago" |
+| Relative (>= 7 days) | Absolute date | "8 Feb 2026" |
+
+Implement a single date formatting utility on each platform (`date_utils.dart` / `date-utils.ts`).
+
 ### State Patterns
 
 | State | Pattern |
@@ -682,13 +694,62 @@ Use M3 default page transitions only. No custom animations for MVP:
 
 ### Match Complete Modal (G18)
 
-Triggered when match result is determined (2nd innings complete, target chased, or all out):
+> **See B4 above for the definitive spec.** Summary: Result text + final scores, "View Scorecard" (primary) + "Back to Home" (outlined). No MVP display in modal (shown on scorecard). Tied knockout → "Start Super Over" button.
+
+### Select New Batter Modal (B1)
+
+Triggered when a wicket falls and the batting team is not all out:
+
+- **Type:** Bottom sheet (single-tap list, no separate confirm button — speed)
+- **Title:** "Select New Batter" + subtitle "Replacing: [dismissed batter name]"
+- **List:** Available batters (not yet batted + retired hurt returnable)
+- **Each row:** Player name | Batting style (RHB/LHB) | Role badge (C, WK, etc.)
+- **Interaction:** Single tap selects + confirms immediately
+- **New batter takes dismissed batter's crease position** (see SCORING_RULES.md Section 3.11 for position rules by dismissal type)
+- **Auto-select:** If only 1 remaining batter, auto-select with toast "Last batter [name] coming in"
+
+### Select Next Bowler Modal (B2)
+
+Triggered at the end of each over (after 6 legal deliveries):
+
+- **Type:** Bottom sheet (single-tap, consistency with B1)
+- **Title:** "Select Bowler" + subtitle "Over X+1"
+- **Eligible bowlers list:** Player name | O-M-R-W | Economy rate
+- **Ineligible bowlers:** Greyed out at bottom with reason ("Max overs reached" / "Bowled previous over")
+- **Interaction:** Single tap selects
+- **Auto-select:** If only 1 eligible bowler, auto-select with toast
+
+### Innings Transition Modal (B3)
+
+Triggered when the first innings ends (all out, overs exhausted, or declaration):
+
+- **Type:** Modal dialog with 3-step stepper (similar to toss flow)
+- **Title:** "Start 2nd Innings" + subtitle "[Team name] batting, Target: X"
+- **Step 1:** Select 2 opening batsmen from batting team's Playing XI (checkboxes, max 2)
+- **Step 2:** Select 1 opening bowler from bowling team's Playing XI (radio select)
+- **Step 3:** Confirm + "Start Innings" button
+- **Before stepper:** Show innings summary (total runs, wickets, overs, run rate, extras breakdown, top performers)
+
+### Match Complete Modal (B4)
+
+Triggered when match result is determined:
 
 - **Type:** Modal dialog (not a separate screen)
-- **Content:** "Match Complete!" header, result text (e.g., "Mumbai Warriors won by 15 runs"), final scores of both teams
-- **Buttons:** "View Scorecard" (primary), "Back to Home" (secondary)
-- **Tied knockout:** Show "Match Tied! Super Over Required" with "Start Super Over" button instead
-- **Layout:** Reuse the Innings Transition modal layout with different content
+- **Content:** Result text auto-generated (e.g., "Mumbai Warriors won by 15 runs"), final scores of both teams
+- **Buttons:** "View Scorecard" (primary) | "Back to Home" (outlined)
+- **No MVP player display** in this modal (shown on scorecard page instead)
+- **Tied knockout:** Show "Match Tied" with "Start Super Over" button (replaces "View Scorecard")
+
+### Super Over Setup Flow (B5)
+
+Triggered when scorer taps "Start Super Over" on the Match Complete modal for a tied knockout match:
+
+- **Type:** Full-screen 3-step stepper
+- **Step 1:** "Team A Batters" — Select 3 from Playing XI (checkboxes) + mark striker/non-striker from selected 3
+- **Step 2:** "Team A Bowler" — Select 1 from Playing XI (radio)
+- **Step 3:** "Team B Batters + Bowler" — Same as steps 1+2 combined for the other team
+- **Footer:** "Start Super Over" button
+- **Batting order:** Auto-determined — team that batted 2nd in regulation goes first (per ICC rules)
 
 ### Playing XI Selection (G19)
 
@@ -786,19 +847,24 @@ When a captain adds a player to their team roster, the dialog offers two options
 - Create mode: Name input + Phone number input + Role selector → "Create & Add" button
 - On success: player appears in roster list immediately
 
-### Team Logo
+### Team Logo (C5)
 
 - Upload: Simple file picker (`image_picker`), no cropping. Accept JPEG/PNG only.
-- Max size: 100KB (compress if needed).
+- **Client-side compression:** Resize to 256x256px, quality 80%, before upload. Target < 100KB.
+- **Server validation:** Reject files > 100KB with HTTP 413 error.
 - Display: 48dp circle (`CircleAvatar`).
 - Fallback: First letter of team name on `primaryContainer` background.
 - Storage: Upload to server, store URL in `teams.logo_url`.
 
+### User Avatar (C5)
+
+- **MVP: Initials only** (first letter of display name). No photo upload.
+- Display: `CircleAvatar` with initials on `primaryContainer` background.
+- **Profile photo: DEFERRED to post-MVP.** Initials-only avatar for MVP.
+
 ### User Avatar
 
-- MVP: Initials only (first letter of display name). No photo upload.
-- Display: `CircleAvatar` with initials on `primaryContainer` background.
-- Post-MVP: Add camera/gallery picker for profile photos.
+> **See User Avatar (C5) above for the definitive spec.** MVP: Initials only, profile photo deferred to post-MVP.
 
 ### Settings Screen
 
@@ -812,6 +878,17 @@ When a captain adds a player to their team roster, the dialog offers two options
 - **Phone OTP only** for MVP. No Google Sign-In, no Email/Password.
 - Single login screen: Phone number input → "Send OTP" button → OTP verification page.
 - New users go through profile setup (US-13) after first sign-in.
+
+### Android Back Button Behavior (E1)
+
+| Screen | Back Button Behavior |
+|--------|---------------------|
+| **Scoring page** | Confirmation dialog: "Match in progress. Exit scoring?" with "Stay" (primary) + "Exit" (danger outlined). Exit saves state locally (offline-first) and navigates to home. |
+| **Toss / Match Setup** | Normal back navigation (go to previous screen) |
+| **Wicket / Extras dialogs** | Dismiss the dialog, return to scoring page |
+| **All other screens** | Normal back navigation |
+
+Implement using `PopScope` widget on the scoring page to intercept back press.
 
 ### Home Dashboard
 
@@ -832,6 +909,16 @@ Standard keys for the `local_preferences` SQLite table (key-value store):
 | `user_id` | UUID string | Current logged-in user's ID |
 | `last_viewed_team_id` | UUID string | Last team the user viewed (for quick resume) |
 | `app_version_seen` | Semver string | Last app version user saw (for what's-new prompts) |
+
+### Accessibility (E3) — Minimal for MVP
+
+| Requirement | Implementation |
+|-------------|---------------|
+| Touch targets | 48x48dp minimum (already specified in Scoring Button Sizes) |
+| Color contrast | M3 dark theme provides inherent WCAG AA compliance |
+| Semantic labels | Basic `Semantics` widget on scoring buttons (e.g., "Score 4 runs", "Record wide") |
+| Font scaling | Respect system font size except scoring page (locked to prevent layout breakage) |
+| **Deferred** | Full screen reader support, high contrast mode, color blind mode — all post-MVP |
 
 ---
 
