@@ -84,7 +84,7 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - **[Q11]** MVP tie-breaker: share the rank (joint placement), next rank skips
 - **[Q12]** "Set" menu has "Reopen Last Innings" and "Reopen Match" options (contextual)
 - **[Q13]** Auth is **Phone OTP only** — no Google, no Email for MVP
-- **[Q14]** "Set" button menu: 5 items (Declare Innings, Abandon Match, 5-Run Penalty, Reopen Last Innings, Reopen Match)
+- **[Q14]** "Set" button menu: 6 items (Declare Innings, Abandon Match, 5-Run Penalty, Bowler Injured, Reopen Last Innings, Reopen Match)
 - **[Q15]** Scoring button sizes: Run 56x56dp circular, Extras 48x40dp rect, Wicket 56x56dp red, Other 48x48dp, Action bar 40x40dp
 - **[Q16]** Connectivity dot: 8dp in score header top-right (green/yellow/red)
 - **[Q17]** Offline error handling: log + dot color change only — no dialogs/toasts/banners during scoring
@@ -105,6 +105,60 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - **[T14]** Super over for knockout ties: triggered when knockout match ends tied. 1 over per side, 3 batters, 2-wicket limit. Repeat if tied again (sudden death with different bowlers). Result type = "super_over".
 - **[T15]** Super over stats excluded from career stats and tournament leaderboard; count only toward match result.
 - **[T16]** Leaderboard stays at 4 categories: runs, wickets, batting_avg, economy (no change from T7).
+
+### Round 2 Pre-Implementation Audit (Q1-Q25 + AR-1 through AR-14)
+
+**Auto-resolved from cricket laws (AR):**
+- **[AR-1]** Caught dismissal: runs before catch DO NOT count (batter gets 0). Law 33.
+- **[AR-2]** Hit wicket on no-ball: batter NOT out (no-ball overrides).
+- **[AR-3]** Stumped off wide: bowler IS credited with wicket.
+- **[AR-4]** Wide + bye: mutually exclusive (wide IS an extra type). Add validation.
+- **[AR-5]** Free hit expiry: expires on next LEGAL delivery. Byes/leg-byes on free hit = legal delivery, so free hit consumed.
+- **[AR-6]** All-out threshold: `players_per_side - 1` (not hardcoded 10). Flexible team sizes.
+- **[AR-7]** ball_number semantics: extras share ball_number with upcoming legal delivery.
+- **[AR-8]** Local DB transaction: ALL writes in Step 8 of pipeline must be in single Drift transaction.
+- **[AR-9]** Validation: both client (UX speed) and server (authoritative on sync).
+- **[AR-10]** Added index on deliveries.sequence_number for performance.
+- **[AR-11]** Added unique constraint (innings_id, over_number) on overs table.
+- **[AR-13]** "Handled Ball" merged into "Obstructing the Field" per 2017 Laws. Removed from seed data.
+- **[AR-14]** Byes/leg-byes do NOT break maidens (already in docs, confirmed).
+
+**Scoring Engine (Q1-Q7):**
+- **[Q1]** Mankad: deferred to post-MVP (breaks delivery pipeline assumption, very rare in amateur cricket).
+- **[Q2]** Timed Out + Obstructing Field: deferred to post-MVP (keep in DB enum, grey out in wicket dialog).
+- **[Q3]** Retired hurt last-man: innings ends if < 2 active batters remain. Retired hurt CAN return, so not permanently unavailable.
+- **[Q4]** Configurable wide_runs/no_ball_runs: denormalized to matches table (default 1). Pipeline reads from matches table per-match.
+- **[Q5]** 5-run penalty is undoable: reverse penalty_runs from innings total, delete penalty delivery record.
+- **[Q6]** ABANDONED matches can be reopened by scorer/organizer if result not finalized. Confirmation dialog shown.
+- **[Q7]** Bowler injury mid-over: "Bowler Injured" option in Set menu. Replacement bowler completes remaining balls. Cannot bowl next over.
+
+**Database (Q8-Q11):**
+- **[Q8]** 5 new columns on matches table: players_per_side (default 11), max_overs_per_bowler (nullable), wide_runs (default 1), no_ball_runs (default 1), powerplay_overs (nullable). Copied from tournament on creation.
+- **[Q9]** sequence_number: client-assigned, monotonically incrementing per innings. Server validates uniqueness on sync.
+- **[Q10]** player_career_stats: recalculated server-side when match status → COMPLETED. NOT incremental during scoring.
+- **[Q11]** Local SQLite: 16 mirrored tables + 2 local-only (sync_queue, local_preferences). Tournament tables server-only.
+
+**API & Sync (Q12-Q16):**
+- **[Q12]** REST-only for scoring writes. WebSocket is broadcast-only (read path). Removed delivery/undo_delivery from WS client-to-server messages.
+- **[Q13]** Sync push expanded to all scoring entities: deliveries, innings, battingStats, bowlingStats, fieldingStats, fallOfWickets, overs, matchPlayers, matchResult.
+- **[Q14]** Conflict resolution: last-write-wins by updated_at. Server wins. Conflicts[] in sync push response with server versions.
+- **[Q15]** Toss endpoint already includes opener selection (openingStrikerId, openingNonStrikerId, openingBowlerId).
+- **[Q16]** WebSocket reconnection: server sends full match_state snapshot on join/rejoin. No message queue or replay needed.
+
+**UI/UX (Q17-Q22):**
+- **[Q17]** Wagon wheel zone selection deferred to post-MVP. wagonWheelZoneId removed from delivery payload.
+- **[Q18]** "More..." button (48x48dp) with number picker (0-12) for overthrow scenarios (5, 7, etc.).
+- **[Q19]** Manual strike swap icon button between batter cards. UI-only operation, no delivery record.
+- **[Q20]** Viewer mode: same scoring page layout, all scoring controls hidden. Access via "Watch Live" → WebSocket read-only.
+- **[Q21]** Add Player dialog: "Search by phone" (find existing user) + "Create new" (placeholder profile claimable later).
+- **[Q22]** Bottom nav: 5 tabs — Home, Matches, Tournaments, Teams, Profile.
+
+**Infrastructure (Q23-Q25):**
+- **[Q23]** Single Firebase project for MVP (no staging/production split).
+- **[Q24]** Interpret light prototypes into M3 dark theme (layout/structure identical, colors inverted per interpretation table in CODE_STANDARDS.md).
+- **[Q25]** 12 env vars in .env.example: DATABASE_URL, JWT_SECRET, FIREBASE_SERVICE_ACCOUNT_PATH, PORT, WS_PORT, CORS_ORIGIN, UPLOADS_DIR, MAX_UPLOAD_SIZE_MB, LOG_LEVEL, NODE_ENV, SYNC_BATCH_SIZE, WS_HEARTBEAT_INTERVAL_MS.
+
+### Round 1 Pre-Implementation Gap Resolution (G1-G32)
 
 - **[G1]** FK cascades: RESTRICT (users/teams/matches), CASCADE (parent→children), SET NULL (optional FKs)
 - **[G2]** updated_at: application-level on both platforms (Drizzle .$onUpdate, Drift DAO methods)
@@ -133,6 +187,24 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - **[G25]** Wagon wheel selector: dropdown above chart, default top scorer, filter by striker_id + innings_id
 
 ## Completed Work
+
+### Step 0f: Pre-Implementation Readiness Audit Round 2 (25 Questions + 14 Auto-Resolved)
+
+A comprehensive re-audit of ALL planning docs identified 25 additional gaps requiring user decisions and 14 auto-resolvable gaps (from cricket laws/best practices). All 39 resolved and applied to planning/process docs.
+
+**DATABASE.md:** Added 5 rule columns to `matches` table (players_per_side, max_overs_per_bowler, wide_runs, no_ball_runs, powerplay_overs). Added index on deliveries.sequence_number. Added unique constraint on overs(innings_id, over_number). Updated local SQLite tables to 16 mirrored + 2 local-only (tournament tables server-only). Documented sequence_number client-assignment, career stats update trigger, all-out threshold. Removed "handled_ball" from seed data (merged into obstructing_field per 2017 Laws).
+
+**API.md:** Changed scoring to REST-only writes, WebSocket broadcast-only. Removed delivery/undo_delivery from WS client-to-server messages. Expanded sync push to accept all scoring entities. Added conflict resolution section (last-write-wins). Added match_state snapshot message for WS reconnection. Removed wagonWheelZoneId from delivery payload.
+
+**SCORING_RULES.md:** Added deferred items section (Mankad, Timed Out, Obstructing Field, wagon wheel zones). Added retired hurt last-man rule. Added configurable wide_runs/no_ball_runs throughout pipeline. Added penalty undo procedure. Updated ABANDONED state to allow reopen. Added bowler injury mid-over change rule. Added 6th "Set" menu item (Bowler Injured). Added caught-dismissal runs rule, hit-wicket-on-no-ball rule, stumped-off-wide bowler credit, wide+bye exclusivity, free hit expiry rule, all-out threshold, transaction requirement.
+
+**CODE_STANDARDS.md:** Added "More..." button spec, manual strike swap button, scorer vs viewer mode table, Add Player dialog spec, 5-tab bottom navigation, M3 dark theme interpretation table. Updated WS message types (removed client→server scoring).
+
+**IMPLEMENTATION_PLAN.md:** Added 12-var .env.example. Resolved Firebase contradiction (single project MVP). Updated data flow to REST-only writes.
+
+**IMPLEMENTATION_PRACTICES.md:** Fixed Firebase per-environment contradiction. Updated env vars reference.
+
+**CONTINUE_PROMPT.md:** Added all Q1-Q25 + AR-1 through AR-14 decisions.
 
 ### Step 0e: Pre-Implementation Gap Analysis Resolution (32 Gaps)
 

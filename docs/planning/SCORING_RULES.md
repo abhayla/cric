@@ -22,6 +22,13 @@
 | INNINGS_BREAK | LIVE | Opening players for 2nd innings selected |
 | LIVE | COMPLETED | All out OR overs exhausted OR target chased OR scores tied (2nd innings) |
 | Any | ABANDONED | Manual abandonment by scorer |
+| ABANDONED | (previous state) | Reopen by scorer/organizer (only if result not finalized) |
+
+**Reopen rules (ABANDONED → previous state):**
+- Only the scorer or tournament organizer can reopen an abandoned match.
+- Reopen returns the match to the state it was in before abandonment.
+- Confirmation dialog: "This match was abandoned. Resume scoring?"
+- Once a `match_result` record has been created and finalized (e.g., tournament standings updated), the match cannot be reopened.
 
 **Abandonment rules:**
 - **UI flow:** Scorer taps "Set" button → "Abandon Match" → Confirmation dialog → On confirm: match status → ABANDONED.
@@ -40,27 +47,30 @@ Every ball bowled follows this exact sequence:
 Step 1:  VALIDATE delivery input
            ├── Valid batter pair (striker + non-striker, must be different)
            ├── Valid bowler (not same as last over's bowler in consecutive overs)
-           ├── Bowler within over limit: max overs per bowler = ceil(totalOvers / 5)
+           ├── Bowler within over limit: matches.max_overs_per_bowler or ceil(totalOvers / 5)
            ├── Valid over/ball number
            ├── Match is in "live" state
-           └── Scorer is authorized (matches.scorer_id must match current user)
+           ├── Scorer is authorized (matches.scorer_id must match current user)
+           ├── Extras mutual exclusivity: wide + bye is invalid (wide IS an extra type)
+           └── Both client and server validate (client for UX speed, server authoritative on sync)
 
 Step 2:  CALCULATE runs
-           ├── runs_from_bat (0, 1, 2, 3, 4, 6)
-           ├── wide_runs (1 + any additional runs scored off wide)
-           ├── no_ball_runs (1 + any additional runs scored off no-ball)
+           ├── runs_from_bat (0, 1, 2, 3, 4, 6, or any value for overthrows)
+           ├── wide_runs (matches.wide_runs + any additional runs scored off wide)
+           ├── no_ball_runs (matches.no_ball_runs + any additional runs scored off no-ball)
            ├── bye_runs (runs off byes)
            ├── leg_bye_runs (runs off leg-byes)
            └── total_runs = sum of all above
+           Note: Read wide_runs/no_ball_runs penalty from matches table (default 1, configurable per tournament).
 
 Step 3:  HANDLE extras
            ├── Wide:
-           │     ├── +1 run to bowling figures + extras
+           │     ├── +matches.wide_runs (default 1) to bowling figures + extras
            │     ├── Ball does NOT count as legal delivery
            │     ├── Runs do NOT count to batter
            │     └── Additional runs off wide → extras (wides)
            ├── No-ball:
-           │     ├── +1 run to extras
+           │     ├── +matches.no_ball_runs (default 1) to extras
            │     ├── Ball does NOT count as legal delivery
            │     ├── Runs from bat DO count to batter
            │     ├── Next delivery is a FREE HIT
@@ -75,7 +85,7 @@ Step 3:  HANDLE extras
 Step 4:  HANDLE wicket (if applicable)
            ├── Record dismissal type + fielder + bowler credit
            ├── Update fall of wickets (score, overs at fall)
-           ├── Check if ALL OUT (10 wickets = innings over)
+           ├── Check if ALL OUT (wickets == players_per_side - 1, NOT hardcoded 10)
            └── New batter required (unless all out)
 
 Step 5:  CALCULATE strike change
@@ -99,11 +109,14 @@ Step 7:  CHECK innings completion
            ├── Target chased (2nd innings only) → match over
            └── Declaration (manual, typically longer formats)
 
-Step 8:  PERSIST to local SQLite (Drift)
+Step 8:  PERSIST to local SQLite (Drift) — ALL WRITES IN A SINGLE DRIFT TRANSACTION
            ├── Save delivery record
            ├── Update batting_stats for striker
            ├── Update bowling_stats for bowler
            ├── Update innings totals
+           ├── Update fielding_stats (if wicket with fielder)
+           ├── Save fall_of_wickets (if wicket)
+           ├── Save overs record (if over completed)
            └── Mark as synced=false
 
 Step 9:  SEND via WebSocket
@@ -154,9 +167,10 @@ End of Over Special:
 
 ```
 - Ball count: NOT a legal delivery (over ball count stays)
-- Runs: +1 to extras (wides category)
+- Runs: +matches.wide_runs (default 1, configurable per tournament) to extras (wides category)
 - Additional runs: If batsmen run on a wide, those runs add to wides too
 - Bowler: Wide runs count against bowler's figures
+- Stumped off wide: bowler IS credited with the wicket
 - Batter: 0 runs credited to batter, 0 balls faced
 - Strike: Additional odd runs → swap; even/zero → no swap
 - Wicket on wide: Only stumped or run out possible
@@ -175,9 +189,10 @@ End of Over Special:
 
 ```
 - Ball count: NOT a legal delivery (over ball count stays)
-- Runs: +1 to extras (no-balls category)
+- Runs: +matches.no_ball_runs (default 1, configurable per tournament) to extras (no-balls category)
 - Bat runs: If batter hits the ball, runs from bat count to batter
 - Bowler: No-ball runs + runs from bat count against bowler
+- Hit wicket on no-ball: batter is NOT out (no-ball overrides the dismissal)
 - Batter: Runs from bat credited, ball NOT counted in balls faced
   (some scoring systems do count it; we follow CricHeroes convention of NOT counting)
 - **No-ball + byes:** If no-ball bowled and batter misses but batsmen run:
@@ -188,6 +203,7 @@ End of Over Special:
   - On free hit: Only run out dismissal is possible
   - If the free hit is also a no-ball → another free hit follows
   - **Free hit persists through wides:** If a wide is bowled during a free hit, the next delivery is still a free hit (since a wide is not a legal delivery)
+  - **Free hit expiry:** Free hit expires on the next LEGAL delivery. Byes/leg-byes on a free hit delivery ARE legal deliveries, so the free hit is consumed. But if the free hit delivery is a wide or no-ball, the free hit continues to the next delivery.
 - Strike: Normal odd/even rules for runs from bat
 ```
 
@@ -296,9 +312,10 @@ UI: Scorer uses the "..." (Other) button to enter the total runs including overt
 ```
 An innings ends when ANY of:
 
-1. ALL OUT: 10 wickets fallen
-   - Team has 11 players, 10 can be dismissed (one stays not out)
-   - Batting team can have fewer than 11 if players unavailable (retired hurt, etc.)
+1. ALL OUT: `players_per_side - 1` wickets fallen (NOT hardcoded to 10)
+   - Team has `players_per_side` players, `players_per_side - 1` can be dismissed (one stays not out)
+   - Batting team can have fewer active batters if players retired hurt
+   - **Retired hurt last-man rule:** If after a wicket or retirement, fewer than 2 active batters remain (all others dismissed or retired out), the innings ends. A retired hurt batter CAN return, so they do not count as permanently unavailable. If a retired hurt batter is the only option, the "Select New Batter" dialog shows them marked "Retired Hurt — can return".
 
 2. OVERS EXHAUSTED: Maximum overs bowled
    - T20: 20 overs
@@ -335,7 +352,8 @@ An innings ends when ANY of:
 
 | 10 | Timed Out | to | No | No |
 | 11 | Obstructing Field | of | No | No |
-| 12 | Handled Ball | hb | No | No |
+
+> **Types 10-11 (Timed Out, Obstructing Field) are deferred to post-MVP.** They remain in the DB enum but are greyed out in the wicket dialog. Extremely rare in amateur cricket. "Handled Ball" is no longer a separate dismissal — it was merged into "Obstructing the Field" in the 2017 Laws of Cricket.
 
 **Note:** On a free hit delivery, only "Run Out" (type 4) is possible.
 
@@ -346,9 +364,11 @@ An innings ends when ANY of:
 - **UI flow:** Scorer taps Wicket → Retired → submenu: "Retired Hurt" / "Retired Out". New batter dialog follows immediately.
 - **Return from Retired Hurt:** When a new wicket falls, if a retired hurt batter is available, the "Select New Batter" dialog shows them as an option (marked as "Retired Hurt — can return").
 
+**Caught dismissal — runs before catch:** If batsmen complete runs before a catch is taken, the runs do NOT count (Law 33). The batter is credited with 0 runs on a caught dismissal. Any completed runs are voided.
+
 **New batter position by dismissal type:**
 - **Bowled, LBW, Hit Wicket, Stumped:** Striker was dismissed → new batter takes the striker's end.
-- **Caught, Caught & Bowled:** New batter at striker's end (unless an odd number of runs were completed before the catch, which is rare).
+- **Caught, Caught & Bowled:** New batter at striker's end. (If batsmen crossed before catch, non-striker returns to original end.)
 - **Run Out:** Depends on "Had batters crossed?" (see Section 3.1, item 7).
 - **Retired Hurt / Retired Out:** New batter replaces the retiring batter at their current end.
 
@@ -384,6 +404,12 @@ UNDO removes the most recent delivery and reverses ALL state changes:
    - Undo first ball of innings → error (can't undo)
    - Undo after over change → reopen previous over
 8. Send undo via WebSocket to update all viewers
+
+UNDO PENALTY DELIVERY (5-run penalty):
+  - Remove the penalty delivery record (is_penalty = true)
+  - Reverse penalty_runs from innings total
+  - If penalty was to fielding team's innings, reverse innings.penalty_runs
+  - Same constraint: only the LAST delivery can be undone
 
 CONSTRAINTS:
   - Only the LAST delivery can be undone
@@ -508,12 +534,13 @@ The scoring page uses a fixed-scroll-fixed layout:
 
 No app bar on the scoring page — full-screen immersive layout. The "Set" button (for declaration, abandonment, penalties, reopen) is positioned in the score header area.
 
-**"Set" button menu items (5 total):**
+**"Set" button menu items (6 total):**
 1. **Declare Innings** — End current innings voluntarily (see Section 3.8)
 2. **Abandon Match** — Abandon match entirely (see Section 1, Abandonment rules)
 3. **5-Run Penalty** — Award 5-run penalty to either team (see Section 3.6)
-4. **Reopen Last Innings** — *(contextual, only shown after innings completion)* Reverses innings completion (see Section 4.1)
-5. **Reopen Match** — *(contextual, only shown when match is COMPLETED)* Reverses match completion (see Section 4.1)
+4. **Bowler Injured** — Replace bowler mid-over (see Section 6.4b)
+5. **Reopen Last Innings** — *(contextual, only shown after innings completion)* Reverses innings completion (see Section 4.1)
+6. **Reopen Match** — *(contextual, only shown when match is COMPLETED or ABANDONED)* Reverses match/abandoned completion (see Section 4.1 and Section 1 Reopen rules)
 
 ### 6.1 Run Buttons
 
@@ -555,6 +582,16 @@ When **WICKET** is tapped:
 5. If run out → show "Direct Hit?" toggle (default off). If on, records `fielding_stats.direct_hits` for the fielder. If off, records as relay/assist run out.
 6. Confirm wicket → record delivery + wicket
 7. If not all out → show "Select New Batter" dialog
+
+### 6.4b Bowler Injury Mid-Over
+
+A bowler cannot change mid-over under normal circumstances. However, if the bowler is injured:
+
+1. Scorer taps "Set" button → "Bowler Injured" option
+2. "Select Replacement Bowler" dialog opens (only eligible bowlers shown)
+3. The replacement bowler completes the remaining balls of the over
+4. The replacement bowler CANNOT bowl the next over (consecutive over rule applies to the OVER, not the individual bowler)
+5. Both bowlers' stats are recorded for the over: original bowler's deliveries + replacement bowler's deliveries
 
 ### 6.5 End of Over Flow
 
@@ -825,3 +862,19 @@ The super over uses the **same delivery processing pipeline** (Section 2, Steps 
 3. Super over scoring page uses the same scoring controls
 4. Super over section shown separately on the scorecard
 5. If super over ties → repeat prompt for another super over
+
+---
+
+## 10. Deferred to Post-MVP
+
+The following scoring features are intentionally deferred. They remain in the DB enum/schema but are not implemented in the MVP scoring pipeline or UI:
+
+| Feature | Reason | Notes |
+|---------|--------|-------|
+| **Mankad (run-out before delivery)** | Requires fundamentally different recording flow — no delivery record, just a wicket. Very rare in amateur cricket. | The 10-step pipeline assumes a ball has been bowled. Mankad would need a separate "non-delivery wicket" flow. |
+| **Timed Out dismissal** | Extremely rare. No ball bowled, doesn't fit delivery pipeline. | Keep in DB enum, grey out in wicket dialog. |
+| **Obstructing the Field dismissal** | Extremely rare in amateur cricket. | Keep in DB enum, grey out in wicket dialog. (Note: "Handled Ball" was merged into this per 2017 Laws.) |
+| **Wagon Wheel zone selection during scoring** | Dramatically simplifies scoring flow. Zone selection adds friction to every boundary. | Remove `wagonWheelZoneId` from delivery payload. Post-MVP: add zone picker after boundary shots. |
+| **DLS calculations** | Complex, not needed for most amateur formats. | |
+| **Shot type tracking** | No `shot_types` table in MVP. | |
+| **Partnerships** | Can be computed from deliveries post-hoc. | |

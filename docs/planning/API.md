@@ -527,9 +527,9 @@ Full scorecard with batting and bowling cards for all innings.
 
 ---
 
-### 1.4 Scoring (REST Fallback)
+### 1.4 Scoring (REST — Primary Write Path)
 
-Primary scoring happens via WebSocket. REST endpoints are fallback for poor connectivity.
+REST is the **primary write path** for all scoring mutations. The scorer's app records deliveries locally, then syncs via REST. WebSocket is **broadcast-only** (read path for viewers). This eliminates the risk of duplicate deliveries from dual REST+WS write paths.
 
 ```
 POST   /api/v1/matches/:id/deliveries
@@ -556,10 +556,11 @@ Record a delivery.
   "isWicket": false,
   "isBoundaryFour": true,
   "isBoundarySix": false,
-  "wagonWheelZoneId": 3,
   "wicket": null
 }
 ```
+
+> **Note:** `wagonWheelZoneId` is deferred to post-MVP. Wagon wheel visualization will estimate shot direction from run count and shot type.
 
 **Wicket object (when `isWicket` is true):**
 ```json
@@ -822,7 +823,7 @@ MVP rankings for the match.
 ```
 POST   /api/v1/sync/push
 ```
-Push offline changes to server.
+Push offline changes to server. Accepts all scoring entities in a single call.
 
 **Request:**
 ```json
@@ -830,18 +831,50 @@ Push offline changes to server.
   "deliveries": [
     { "localId": "local_uuid", "...delivery_data..." }
   ],
+  "innings": [
+    { "localId": "local_uuid", "...innings_data..." }
+  ],
+  "battingStats": [
+    { "localId": "local_uuid", "...batting_stats_data..." }
+  ],
+  "bowlingStats": [
+    { "localId": "local_uuid", "...bowling_stats_data..." }
+  ],
+  "fieldingStats": [
+    { "localId": "local_uuid", "...fielding_stats_data..." }
+  ],
+  "fallOfWickets": [
+    { "localId": "local_uuid", "...fow_data..." }
+  ],
+  "overs": [
+    { "localId": "local_uuid", "...overs_data..." }
+  ],
+  "matchPlayers": [
+    { "localId": "local_uuid", "...match_players_data..." }
+  ],
+  "matchResult": { "localId": "local_uuid", "...match_result_data..." },
   "timestamp": "2025-03-15T10:30:00Z"
 }
 ```
 
+All entity arrays are optional — only include entities that have pending changes.
+
 **Response (200):**
 ```json
 {
-  "synced": 5,
+  "synced": 15,
   "idMappings": [
-    { "localId": "local_uuid", "serverId": "server_uuid" }
+    { "localId": "local_uuid", "serverId": "server_uuid", "entityType": "delivery" }
   ],
-  "conflicts": []
+  "conflicts": [
+    {
+      "entityType": "innings",
+      "entityId": "uuid",
+      "serverVersion": { "...server_entity_data..." },
+      "serverUpdatedAt": "2025-03-15T10:32:00Z",
+      "resolution": "server_wins"
+    }
+  ]
 }
 ```
 
@@ -880,7 +913,6 @@ Pull changes since last sync.
       "isBoundaryFour": true,
       "isBoundarySix": false,
       "isFreeHit": false,
-      "wagonWheelZoneId": 3,
       "timestamp": "2025-03-15T10:30:00Z"
     }
   ],
@@ -935,6 +967,15 @@ Pull changes since last sync.
   "updatedAt": "2025-03-15T10:35:00Z"
 }
 ```
+
+#### Sync Conflict Resolution
+
+**Strategy:** Last-write-wins using `updated_at` timestamps. Server is authoritative.
+
+- When the same entity is modified both locally and on the server, the server's `updated_at` wins.
+- The `conflicts[]` array in the sync push response includes the server's version of conflicted entities so the client can update its local copy.
+- Single-scorer model means conflicts are extremely rare (only possible for match setup edits from multiple devices).
+- Client behavior on conflict: silently accept server version, update local DB, continue.
 
 ---
 
@@ -1538,7 +1579,7 @@ Tournament-scoped player leaderboard.
 
 Connection is authenticated via JWT query parameter. Server verifies the token and associates the WebSocket with the user.
 
-**Anonymous viewers:** Read-only WebSocket connections (viewers) do not require authentication. Connect without a `token` parameter to join match rooms as a subscriber. Anonymous connections can only receive `score_update`, `wicket`, `innings_complete`, and `match_complete` messages — they cannot send `delivery` or `undo_delivery` messages. Scorers still require a valid Firebase JWT.
+**Anonymous viewers:** Read-only WebSocket connections (viewers) do not require authentication. Connect without a `token` parameter to join match rooms as a subscriber. WebSocket is broadcast-only — all scoring mutations go through REST. Anonymous connections receive all broadcast messages (`match_state`, `score_update`, `wicket`, `innings_complete`, `match_complete`, `delivery_undone`). Scorers still require a valid Firebase JWT for REST scoring endpoints.
 
 ### 2.2 Client to Server Messages
 
@@ -1558,45 +1599,7 @@ Connection is authenticated via JWT query parameter. Server verifies the token a
 }
 ```
 
-**Record delivery (scorer only):**
-```json
-{
-  "type": "delivery",
-  "matchId": "uuid",
-  "data": {
-    "overNumber": 5,
-    "ballNumber": 3,
-    "sequenceNumber": 28,
-    "strikerId": "uuid",
-    "nonStrikerId": "uuid",
-    "bowlerId": "uuid",
-    "runsFromBat": 4,
-    "wideRuns": 0,
-    "noBallRuns": 0,
-    "byeRuns": 0,
-    "legByeRuns": 0,
-    "isWide": false,
-    "isNoBall": false,
-    "isBye": false,
-    "isLegBye": false,
-    "isWicket": false,
-    "isBoundaryFour": true,
-    "isBoundarySix": false,
-    "isFreeHit": false,
-    "wagonWheelZoneId": 3,
-    "wicket": null
-  }
-}
-```
-
-**Undo delivery (scorer only):**
-```json
-{
-  "type": "undo_delivery",
-  "matchId": "uuid",
-  "deliveryId": "uuid"
-}
-```
+> **Note:** Scoring mutations (`delivery`, `undo_delivery`) are **NOT** sent via WebSocket. The scorer's app writes to local DB, then syncs via REST (`POST /matches/:id/deliveries`, `DELETE /matches/:id/deliveries/:did`). The server broadcasts the result to viewers via WebSocket. This is a **read-only broadcast** model — WebSocket is the publish path, REST is the write path.
 
 ### 2.3 Server to Client Messages
 
@@ -1746,25 +1749,53 @@ Connection is authenticated via JWT query parameter. Server verifies the token a
 ### 2.4 Room Management
 
 - Each match = one WebSocket room (topic: `match:<matchId>`)
-- **Scorer** joins as publisher (can send delivery/undo messages)
-- **Viewers** join as subscribers (receive-only)
+- **All connections** are subscribers (receive broadcast messages)
+- **Scoring mutations** go through REST, not WebSocket (scorer's app → REST → server persists → server broadcasts via WebSocket)
 - Uses Bun's native `server.publish(topic, message)` for broadcasting
+- On join/rejoin, server sends `match_state` snapshot to the connecting client
 - Automatic cleanup when all connections leave a room
 
 ### 2.5 Reconnection & Catch-Up
 
 When a viewer or scorer disconnects and reconnects:
 1. Client re-sends `join_match` message with `matchId`.
-2. Client fetches **latest match snapshot** via REST: `GET /matches/:id` (includes current score, batters, bowler) + `GET /matches/:id/deliveries?inningsId=<current>` for current over display.
-3. No delivery replay — the REST snapshot provides the current state. WebSocket resumes from there with new real-time updates.
+2. Server responds with a **full state snapshot** via a `match_state` message containing: complete current score, batting/bowling stats, current over deliveries, and last 6 deliveries.
+3. No delivery replay or message queue needed — the snapshot provides the complete current state. WebSocket resumes from there with new real-time updates.
 4. If scorer reconnects, the `scorer_id` lock is still in place — no re-authentication beyond the existing Firebase JWT on the WebSocket connection.
+
+**`match_state` message (sent on join/rejoin):**
+```json
+{
+  "type": "match_state",
+  "matchId": "uuid",
+  "data": {
+    "status": "live",
+    "inningsNumber": 1,
+    "totalRuns": 87,
+    "totalWickets": 3,
+    "overs": "12.3",
+    "currentRunRate": 6.96,
+    "requiredRunRate": null,
+    "target": null,
+    "striker": { "id": "uuid", "name": "R. Sharma", "runs": 45, "balls": 32, "fours": 5, "sixes": 2, "strikeRate": 140.63 },
+    "nonStriker": { "id": "uuid", "name": "V. Kohli", "runs": 22, "balls": 18 },
+    "bowler": { "id": "uuid", "name": "J. Bumrah", "overs": "3.3", "maidens": 0, "runs": 22, "wickets": 1, "economy": 6.29 },
+    "currentOver": [
+      { "runs": 0, "display": "." },
+      { "runs": 1, "display": "1" },
+      { "runs": 4, "display": "4" }
+    ],
+    "recentDeliveries": [ "...last 6 deliveries..." ]
+  }
+}
+```
 
 ### 2.6 Concurrent Scoring Prevention
 
 The `matches.scorer_id` field acts as a lock. Only the designated scorer can submit deliveries or undo actions:
-- Server validates that the authenticated user's ID matches `matches.scorer_id` on every `delivery` and `undo_delivery` message.
-- If a non-scorer sends a scoring message, the server responds with `{ "type": "error", "message": "Not authorized to score this match" }`.
-- Same validation applies to REST scoring endpoints (`POST /matches/:id/deliveries`, `DELETE /matches/:id/deliveries/:did`).
+- Server validates that the authenticated user's ID matches `matches.scorer_id` on every REST scoring endpoint (`POST /matches/:id/deliveries`, `DELETE /matches/:id/deliveries/:did`, `POST /sync/push`).
+- If a non-scorer attempts a scoring mutation, the server responds with `403 FORBIDDEN: "Not authorized to score this match"`.
+- WebSocket connections do not perform scoring mutations — they only receive broadcasts.
 
 ---
 

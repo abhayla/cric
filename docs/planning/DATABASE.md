@@ -18,7 +18,7 @@
 | created_at | timestamp | default now() |
 
 ### 1.2 `dismissal_types`
-12 standard cricket dismissal types.
+11 standard cricket dismissal types.
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -29,7 +29,9 @@
 | requires_bowler_credit | boolean | true for bowled, caught, lbw, stumped, hit wicket |
 | created_at | timestamp | |
 
-**Seed values:** bowled, caught, lbw, run_out, stumped, hit_wicket, caught_and_bowled, retired_hurt, retired_out, timed_out, obstructing_field, handled_ball
+**Seed values (11):** bowled, caught, lbw, run_out, stumped, hit_wicket, caught_and_bowled, retired_hurt, retired_out, timed_out, obstructing_field
+
+> "Handled Ball" removed — merged into "Obstructing the Field" per 2017 Laws of Cricket. Timed Out and Obstructing Field are deferred to post-MVP (greyed out in wicket dialog).
 
 ### 1.3 `fielding_positions`
 16 standard cricket fielding positions.
@@ -135,7 +137,7 @@ Playing XI for each team in a specific match.
 | updated_at | timestamp | |
 
 **Unique constraint:** (match_id, team_id, player_id)
-**Max per team per match:** 11 players (enforced at application level)
+**Max per team per match:** `matches.players_per_side` players (default 11, enforced at application level)
 
 ---
 
@@ -156,6 +158,11 @@ Playing XI for each team in a specific match.
 | toss_decision | varchar(10) | "bat" or "bowl" (nullable) |
 | status | varchar(20) | "setup", "toss", "live", "innings_break", "completed", "abandoned" |
 | scorer_id | uuid FK → users.id | Who is scoring this match |
+| players_per_side | integer | default 11. Valid range: 2-11. For tournament matches, copied from tournament on creation. |
+| max_overs_per_bowler | integer | nullable. NULL = use default formula ceil(totalOvers/5). For tournament matches, copied from tournament. |
+| wide_runs | integer | default 1. Valid range: 1-5. Runs penalized per wide delivery. Scoring pipeline reads this. |
+| no_ball_runs | integer | default 1. Valid range: 1-5. Runs penalized per no-ball. Scoring pipeline reads this. |
+| powerplay_overs | integer | nullable. NULL = no powerplay. Display-only PP badge for MVP. |
 | created_by | uuid FK → users.id | |
 | match_date | date | |
 | created_at | timestamp | |
@@ -205,14 +212,16 @@ Playing XI for each team in a specific match.
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
+**Unique constraint:** (innings_id, over_number)
+
 ### 3.4 `deliveries` -- ATOMIC UNIT (most important table)
 | Column | Type | Notes |
 |--------|------|-------|
 | id | uuid PK | |
 | innings_id | uuid FK → innings.id | |
 | over_number | integer | 1-based over |
-| ball_number | integer | 1-6 for legal deliveries |
-| sequence_number | integer | auto-increment within innings (includes extras) |
+| ball_number | integer | 1-6 for legal deliveries. Extras share ball_number with the upcoming legal delivery (e.g., if 2 legal balls then a wide, the wide has ball_number=3 and the next legal delivery also has ball_number=3). |
+| sequence_number | integer | Client-assigned, monotonically incrementing per innings (1, 2, 3..., includes extras). Server validates uniqueness within innings on sync. Conflicts (duplicate sequence_number for same innings_id) → rejected with error, client must reconcile. |
 | striker_id | uuid FK → users.id | |
 | non_striker_id | uuid FK → users.id | |
 | bowler_id | uuid FK → users.id | |
@@ -550,6 +559,10 @@ Aggregated stats by format across all matches.
 | Super overs | `is_super_over` + `super_over_number` on innings | Reuses same delivery pipeline; stats excluded from career/leaderboard |
 | Tournament as template | 5 match rule fields on tournaments | Matches inherit locked rules from tournament; standalone matches use defaults |
 | Team registration | Separate `tournament_requests` table | Pending/approved/rejected workflow; organizer direct-add also supported |
+| Match rule denormalization | 5 rule columns on `matches` table | `players_per_side`, `max_overs_per_bowler`, `wide_runs`, `no_ball_runs`, `powerplay_overs` — copied from tournament on creation, configurable for standalone matches. Avoids JOINs during scoring. |
+| Career stats update | Server-side on match completion | `player_career_stats` recalculated from batting_stats + bowling_stats + fielding_stats for all players when match status → COMPLETED. NOT updated incrementally during scoring. |
+| All-out threshold | `players_per_side - 1` wickets | Not hardcoded to 10. Respects flexible team sizes (6-a-side, 8-a-side, etc.). |
+| Sequence number | Client-assigned, server-validated | Client assigns monotonically incrementing `sequence_number` per innings. Server validates uniqueness on sync. Single-scorer model prevents conflicts. |
 
 ### 9.1 Foreign Key Cascade Rules
 
@@ -662,6 +675,7 @@ CREATE INDEX idx_deliveries_bowler ON deliveries(bowler_id);
 CREATE INDEX idx_deliveries_striker ON deliveries(striker_id);
 CREATE INDEX idx_deliveries_over ON deliveries(innings_id, over_number);
 CREATE INDEX idx_deliveries_synced ON deliveries(synced) WHERE synced = false;
+CREATE INDEX idx_deliveries_sequence ON deliveries(innings_id, sequence_number);
 
 -- Stats
 CREATE INDEX idx_batting_stats_innings ON batting_stats(innings_id);
@@ -707,7 +721,11 @@ CREATE INDEX idx_tournament_requests_status ON tournament_requests(tournament_id
 
 The local SQLite database mirrors a subset of the PostgreSQL schema for offline-first capability:
 
-**Mirrored tables:** users, teams, team_rosters, match_players, matches, innings, overs, deliveries, batting_stats, bowling_stats, tournaments, tournament_teams, tournament_fixtures, tournament_standings, tournament_requests
+**Mirrored tables (16):** users, teams, team_rosters, match_players, matches, innings, overs, deliveries, batting_stats, bowling_stats, fielding_stats, fall_of_wickets, match_result, player_career_stats, ball_types, dismissal_types
+
+**Server-only tables (not mirrored locally):** tournaments, tournament_teams, tournament_groups, tournament_fixtures, tournament_standings, tournament_requests, fielding_positions, wagon_wheel_zones, match_analytics, wickets_by_delivery
+
+> Tournament tables stay server-only because tournament management requires connectivity. Wickets_by_delivery data is embedded in the delivery sync payload. Match analytics are computed server-side.
 
 **Additional local-only tables:**
 

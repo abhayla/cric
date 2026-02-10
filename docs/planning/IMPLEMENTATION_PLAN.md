@@ -45,11 +45,13 @@
 ### Data Flow - Live Scoring
 
 1. Scorer taps ball outcome on Flutter UI
-2. App saves to local Drift DB immediately (offline-safe)
-3. App sends delivery data via WebSocket to Bun server
+2. App saves to local Drift DB immediately (offline-safe, all writes in single transaction)
+3. App syncs delivery data to Bun server via **REST** (`POST /matches/:id/deliveries` or `POST /sync/push`)
 4. Bun server validates, persists to PostgreSQL
-5. Bun server broadcasts update to all match subscribers via WebSocket pub/sub
+5. Bun server **broadcasts** update to all match subscribers via **WebSocket** pub/sub (read-only broadcast)
 6. All viewers' Flutter apps receive update, refresh scorecard UI
+
+> **Important:** REST is the primary write path. WebSocket is broadcast-only (no client→server scoring messages). This eliminates duplicate delivery risk from dual write paths.
 
 ---
 
@@ -497,10 +499,29 @@ dev_dependencies:
 | Reverse proxy | Nginx 1.26.2 on port 80 |
 | SSL/CDN | Cloudflare (Flexible SSL mode, DDoS protection) |
 | CI/CD | GitHub Actions with self-hosted runner on VPS |
-| Firebase | Single project for MVP (dev + prod) |
+| Firebase | **Single project for MVP** (no staging/production split). Post-MVP: create separate projects per environment. |
 | Domain | TBD — register domain, add Cloudflare A record → 103.118.16.189 |
 | Monitoring | Existing VPS health check script (every 5 min) — add CricApp to `$sites` array |
 | Backups | Daily `pg_dump` cron to `C:\Apps\backups\` with 7-day retention |
+
+#### Environment Variables (`.env.example`)
+
+Create `apps/server/.env.example` during Phase 1 initialization with these 12 variables:
+
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/cricapp
+JWT_SECRET=your-jwt-secret-here
+FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json
+PORT=3000
+WS_PORT=3001
+CORS_ORIGIN=*
+UPLOADS_DIR=./uploads
+MAX_UPLOAD_SIZE_MB=2
+LOG_LEVEL=info
+NODE_ENV=development
+SYNC_BATCH_SIZE=50
+WS_HEARTBEAT_INTERVAL_MS=30000
+```
 
 #### Deployment tasks
 

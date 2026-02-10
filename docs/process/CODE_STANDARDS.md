@@ -374,8 +374,10 @@ All messages follow a consistent structure:
 
 | Direction | Message Types |
 |-----------|--------------|
-| Client → Server | `join_match`, `leave_match`, `delivery`, `undo_delivery` |
-| Server → Client | `score_update`, `wicket`, `innings_complete`, `match_complete`, `delivery_undone`, `error` |
+| Client → Server | `join_match`, `leave_match` |
+| Server → Client | `match_state`, `score_update`, `wicket`, `innings_complete`, `match_complete`, `delivery_undone`, `error` |
+
+> Scoring mutations (`delivery`, `undo_delivery`) go through REST, not WebSocket. WebSocket is broadcast-only. Server sends `match_state` snapshot on join/rejoin.
 
 ---
 
@@ -572,8 +574,29 @@ These colors provide good contrast on dark backgrounds. Use them consistently ac
 | Run buttons (0, 1, 2, 3, 4, 6) | 56x56dp | Circular | Primary scoring actions |
 | Extras buttons (Wide, No Ball, Bye, Leg Bye) | 48x40dp | Rounded rectangle | Secondary actions |
 | Wicket button | 56x56dp | Circular | Red/error color — critical action |
-| Other/Custom run | 48x48dp | Circular or rounded rect | Opens number picker |
+| "More..." button | 48x48dp | Circular with "..." label | Opens custom run number picker dialog (0-12) for overthrow scenarios (5, 7, etc.) |
 | Action bar buttons (Undo, Set) | 40x40dp | Circular | Smaller utility actions |
+| Strike swap button | 40x40dp | Circular with swap icon | Between batter cards. Taps swaps striker/non-striker. UI-only operation (no delivery record), just updates ScoringState. Essential for correcting mistakes. |
+
+### Scorer vs Viewer Mode (Q20)
+
+The scoring page has two modes determined by whether the current user is the match's scorer:
+
+| Aspect | Scorer Mode | Viewer Mode |
+|--------|------------|-------------|
+| Run buttons (0-4, 6, More...) | Visible, tappable | **Hidden** |
+| Extras buttons (Wide, NB, Bye, LB) | Visible, tappable | **Hidden** |
+| Wicket button | Visible, tappable | **Hidden** |
+| Undo button | Visible, tappable | **Hidden** |
+| Set button (menu) | Visible, tappable | **Hidden** |
+| Strike swap button | Visible, tappable | **Hidden** |
+| Score header | Visible | Visible |
+| Batter cards | Visible (striker highlighted) | Visible (striker highlighted) |
+| Bowler card | Visible | Visible |
+| Current over display | Visible | Visible |
+| Recent deliveries | Visible | Visible |
+| Access method | Scorer opens match from "Score Match" | Viewer opens match via "Watch Live" button → connects WebSocket → read-only scoring page |
+| Data source | Local Drift DB + sync | WebSocket broadcast only |
 
 ### Connectivity Status Indicator
 
@@ -595,6 +618,24 @@ Use M3 default `TextTheme` with Roboto. No custom sizes needed — M3 provides:
 | `bodyMedium` | Secondary content, descriptions |
 | `labelLarge` | Buttons, tabs |
 | `labelSmall` | Captions, stat labels ("R", "B", "4s", "6s", "SR") |
+
+### Dark Theme Interpretation (Q24)
+
+All 24 UI prototypes use a light blue theme. The app uses Material 3 Dark theme exclusively. When implementing, apply these interpretation rules:
+
+| Prototype Element | Dark Theme Equivalent |
+|-------------------|----------------------|
+| White backgrounds | `colorScheme.surface` (dark) |
+| Light gray cards | `colorScheme.surfaceContainer` |
+| Blue primary buttons | `colorScheme.primary` (green-tinted from seed #2E7D32) |
+| Blue text links | `colorScheme.primary` |
+| Dark text on light | `colorScheme.onSurface` (light text on dark) |
+| Gray secondary text | `colorScheme.onSurfaceVariant` |
+| Light borders | `colorScheme.outlineVariant` |
+| Blue header bars | `colorScheme.surfaceContainerHigh` |
+| White input fields | `colorScheme.surfaceContainerHighest` with `outlineVariant` border |
+
+The layout, spacing, and structure from prototypes remain identical — only colors invert to dark theme. Screenshots will be generated for review after Phase 1 setup.
 
 ### Surface Hierarchy (M3 Dark)
 
@@ -704,6 +745,18 @@ Generated at display time from delivery record fields. No `commentary_text` colu
 - **On change:** Re-render wagon wheel with selected player's shot data
 - **Query:** Filter `deliveries` by `striker_id` + `innings_id` where `runs_from_bat > 0`
 
+### Bottom Navigation (5 Tabs)
+
+| Tab | Icon | Label | Destination |
+|-----|------|-------|-------------|
+| 1 | `Icons.home` | Home | Home dashboard (recent matches, quick actions, my stats) |
+| 2 | `Icons.sports_cricket` | Matches | Match history list (all/won/lost/tied filters) |
+| 3 | `Icons.emoji_events` | Tournaments | Tournament list (my tournaments, public tournaments) |
+| 4 | `Icons.groups` | Teams | Teams list (my teams) |
+| 5 | `Icons.person` | Profile | Player profile with stats and settings |
+
+> Blueprint shows 3 tabs (Home, Teams, Profile) — outdated. Prototypes show 4 tabs — expanded to 5 with a dedicated Tournaments tab for quick access to tournament management.
+
 ### App Bar Pattern
 
 - Standard `AppBar` for most screens (back button auto-provided by `GoRouter`).
@@ -719,6 +772,19 @@ Generated at display time from delivery record fields. No `commentary_text` colu
 | Form validation error | Inline text below field (red, `bodySmall`) |
 | Destructive action success | `SnackBar`: "Match abandoned" / "Team deleted" |
 | Critical failure | Full-screen error with retry button |
+
+### Add Player Dialog (Q21)
+
+When a captain adds a player to their team roster, the dialog offers two options:
+
+1. **"Search by phone number"** — Finds an existing CricApp user by phone number. If found, sends a join invite (player appears in roster immediately for MVP — invitation system deferred to post-MVP).
+2. **"Create new player"** — Captain enters name + phone number. Creates a placeholder user profile that the player can later claim by signing up with that phone number.
+
+**Dialog layout:**
+- Toggle at top: "Search Existing" | "Create New"
+- Search mode: Phone number input → search button → result card → "Add to Team" button
+- Create mode: Name input + Phone number input + Role selector → "Create & Add" button
+- On success: player appears in roster list immediately
 
 ### Team Logo
 

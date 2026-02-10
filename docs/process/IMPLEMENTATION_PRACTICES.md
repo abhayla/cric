@@ -752,7 +752,7 @@ class AppConstants {
 
 ### Firebase Per Environment
 
-Separate Firebase projects per environment. Each has its own `google-services.json` placed per flavor configuration.
+**MVP: Single Firebase project** (no staging/production split). The VPS is the only environment. Post-MVP: create separate projects per environment with their own `google-services.json` placed per flavor configuration.
 
 ### Drift Database
 
@@ -760,7 +760,7 @@ Same schema across all environments. No environment-specific database behavior.
 
 ### Server Environment
 
-Copy `.env.example` → `.env`. Required variables: `DATABASE_URL`, `FIREBASE_PROJECT_ID`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `PORT`, `CORS_ORIGIN`. Ref: [CLAUDE.md](../../CLAUDE.md).
+Copy `.env.example` → `.env`. See [IMPLEMENTATION_PLAN.md](../planning/IMPLEMENTATION_PLAN.md) Phase 7 for the complete list of 12 environment variables.
 
 ---
 
