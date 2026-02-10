@@ -41,7 +41,7 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - Anonymous WebSocket viewers (no auth required for read-only)
 - Free hit tracking on no-balls; free hit persists through wides
 - Byes/leg-byes don't break maidens
-- No SUPER_OVER — tied match → COMPLETED with "Match Tied"
+- Standalone tied match → COMPLETED with "Match Tied"; knockout tournament tied match → Super Over (see T14)
 - No DLS calculations or shot types tables (deferred / not needed for MVP)
 - Partnerships deferred to post-MVP (compute from deliveries later)
 - Teams use soft delete (`is_active` boolean)
@@ -97,6 +97,14 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - **[T6]** Roles: Creator = organizer (no additional roles for MVP)
 - **[T7]** Stats: Tournament-scoped leaderboards (top scorers, wicket takers, batting avg, economy)
 - **[T8]** Timeline: New Phase 2.5 after Teams (Phase 2), before Scoring Engine (Phase 3)
+- **[T9]** Tournament as match rules template: 5 new config fields (players_per_side, max_overs_per_bowler, wide_runs, no_ball_runs, powerplay_overs). Tournament matches inherit locked rules; standalone matches use defaults.
+- **[T10]** Open team registration with organizer approval: new tournament_requests table (pending/approved/rejected). Team captain initiates, organizer approves/rejects. Direct-add by organizer also kept.
+- **[T11]** Roster size validation at registration: team must have at least players_per_side members in roster to register or be added.
+- **[T12]** Match created when scorer starts (not at fixture generation): fixture has match_id=NULL until scorer taps "Start Match", then match record is created inheriting tournament rules.
+- **[T13]** Time-of-day scheduling: scheduled_time (time) + estimated_duration_minutes (integer) added to tournament_fixtures alongside existing scheduled_date. Venue conflict detection (warning only, non-blocking).
+- **[T14]** Super over for knockout ties: triggered when knockout match ends tied. 1 over per side, 3 batters, 2-wicket limit. Repeat if tied again (sudden death with different bowlers). Result type = "super_over".
+- **[T15]** Super over stats excluded from career stats and tournament leaderboard; count only toward match result.
+- **[T16]** Leaderboard stays at 4 categories: runs, wickets, batting_avg, economy (no change from T7).
 
 ## Completed Work
 
@@ -124,6 +132,17 @@ Added full tournament/league management as Phase 2.5 in the MVP. Changes span 15
 - Updated DB ER panel: 24→27 tables, added tournament ER tables
 - Added SVG navigation arrows for tournament flow
 - Expanded canvas to accommodate new section
+
+### Tournament System Design Refinement
+Applied 8 review decisions (T9-T16) refining the Phase 2.5 tournament system:
+
+**Planning docs updated:**
+- **DATABASE.md:** Table count 27→28. Added 5 template columns to `tournaments` (players_per_side, max_overs_per_bowler, wide_runs, no_ball_runs, powerplay_overs). Added `tournament_requests` table (6th tournament table). Added scheduled_time + estimated_duration_minutes to `tournament_fixtures`. Added is_super_over + super_over_number to `innings`. Updated match_result.result_type enum to include "super_over". Added 2 new indexes. Updated SQLite mirrored tables.
+- **API.md:** Added 5 template fields to POST/PUT tournament schemas. Added 3 new registration endpoints (POST register, GET requests, PUT approve/reject). Updated fixture response/edit with scheduling fields + venue conflict warning. Added super over data to match detail response.
+- **SCORING_RULES.md:** Added Section 8.7: Match Rules Inheritance (tournament template → locked match fields). Added Section 9: Super Over Rules (trigger conditions, procedure, sudden death, result recording, stats exclusion, UI flow, scoring engine integration).
+- **IMPLEMENTATION_PLAN.md:** Phase 2.5 tasks expanded from 13→19. Added template fields, registration flow, roster validation, fixture scheduling, super over implementation. Updated verification plan.
+- **PDR.md:** Updated US-16 with template fields. Added US-23 (team self-registration) and US-24 (super over scoring). Moved super overs from excluded to included in MVP scope.
+- **CONTINUE_PROMPT.md:** Added decisions T9-T16.
 
 **Blocked:** `.claude/rules.md` edits denied by permission settings. Needed changes: add `tournaments/` to Flutter placement table, add tournament routes/service/NRR/schema to server placement table, update folder trees. Apply these when the protected file can be edited.
 

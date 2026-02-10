@@ -31,13 +31,15 @@
 | US-13 | Player | Set up my profile | Can set display name, batting style, bowling style, and player role after first login. | P0 | 1 |
 | US-14 | Player | View match history | Can see list of all matches I've participated in with results and my performance summary. | P1 | 5 |
 | US-15 | Player | View MVP rankings | Can see MVP rankings per match based on weighted batting + bowling + fielding contributions. | P2 | 5 |
-| US-16 | Organizer | Create a tournament | Can create a tournament with name, format (round-robin/knockout/group+knockout), overs, ball type, and point system. | P1 | 2.5 |
+| US-16 | Organizer | Create a tournament | Can create a tournament with name, format (round-robin/knockout/group+knockout), overs, ball type, point system, and match rule template (players per side, max overs per bowler, wide/no-ball penalty runs, powerplay overs). Tournament matches inherit these locked rules. | P1 | 2.5 |
 | US-17 | Organizer | Generate tournament fixtures | Can auto-generate fixtures and manually edit schedule/venue. | P1 | 2.5 |
 | US-18 | Organizer | Configure tournament settings | Can set points system, number of groups, qualification count, and third-place match option. | P1 | 2.5 |
 | US-19 | Player | View tournament standings | Can see points table with P/W/L/T/NR/Pts/NRR, grouped by group with qualification line. | P1 | 2.5 |
 | US-20 | Player | View knockout bracket | Can see knockout bracket visualization with completed results and upcoming fixtures. | P1 | 2.5 |
 | US-21 | Player | View tournament leaderboard | Can see tournament-scoped leaderboards for top scorers, wicket takers, best average, and best economy. | P1 | 2.5 |
 | US-22 | Player | Browse my tournaments | Can see list of all tournaments I've created or my team participates in, with status and format badges. | P1 | 2.5 |
+| US-23 | Captain | Register team for a tournament | Can request to join a tournament during registration period. Request goes to organizer for approval/rejection. Team must have minimum roster size (players_per_side). | P1 | 2.5 |
+| US-24 | Scorer | Score a super over in knockout matches | When a knockout tournament match ends tied, can initiate and score a super over (1 over per side, 3 batters). Repeats if tied again. Super over stats shown on scorecard but excluded from career stats. | P1 | 2.5 |
 
 ## Success Metrics
 
@@ -69,7 +71,7 @@ Detailed technical specifications live in dedicated planning docs. Do not duplic
 | Topic | Document | Key Sections |
 |-------|----------|-------------|
 | Architecture & phases | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | Section 1 (Architecture), Section 3 (Phases 1-7) |
-| Database schema | [DATABASE.md](DATABASE.md) | All 27 tables, 5 materialized views, indexes |
+| Database schema | [DATABASE.md](DATABASE.md) | All 28 tables, 5 materialized views, indexes |
 | REST API & WebSocket | [API.md](API.md) | Section 1 (REST), Section 2 (WebSocket) |
 | Scoring engine | [SCORING_RULES.md](SCORING_RULES.md) | Delivery pipeline, state machine, all cricket rules |
 | UI wireframes | [blueprint.html](blueprint.html) | 24 screens, 5 scoring dialogs |
@@ -88,11 +90,11 @@ Detailed technical specifications live in dedicated planning docs. Do not duplic
 - Match analytics (wagon wheel, manhattan, worm)
 - MVP rankings per match
 - Firebase Auth (Phone OTP only for MVP)
-- Tournament/league management (round-robin, knockout, group+knockout formats)
+- Tournament/league management (round-robin, knockout, group+knockout formats) with match rule templates, team self-registration, and super overs for knockout ties
 
 ### Explicitly Excluded from MVP
 - **iOS app** — Android only for initial launch
-- **Advanced tournament features** — Multi-leg tournaments, custom tiebreakers, super overs in knockouts
+- **Advanced tournament features** — Multi-leg tournaments, custom tiebreakers
 - **DLS (Duckworth-Lewis-Stern)** — Rain-affected match calculations
 - **Video highlights/replays** — No video integration
 - **Multi-language support** — English only

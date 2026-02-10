@@ -292,10 +292,31 @@ Get match details including current state.
       "totalWickets": 3,
       "overs": "12.3",
       "runRate": 6.96
-    }
+    },
+    "superOvers": [
+      {
+        "superOverNumber": 1,
+        "innings": [
+          {
+            "battingTeam": "Mumbai Warriors",
+            "totalRuns": 15,
+            "totalWickets": 1,
+            "overs": "1.0"
+          },
+          {
+            "battingTeam": "Delhi Dragons",
+            "totalRuns": 12,
+            "totalWickets": 2,
+            "overs": "0.5"
+          }
+        ]
+      }
+    ]
   }
 }
 ```
+
+The `superOvers` array is only present when the match has super over innings (`innings.is_super_over = true`). Empty array or omitted for matches without super overs.
 
 ---
 
@@ -861,9 +882,21 @@ Create a new tournament. Authenticated user becomes the organizer.
   "qualifyPerGroup": 2,
   "hasThirdPlaceMatch": false,
   "startDate": "2026-03-01",
-  "endDate": "2026-03-15"
+  "endDate": "2026-03-15",
+  "playersPerSide": 11,
+  "maxOversPerBowler": null,
+  "wideRuns": 1,
+  "noBallRuns": 1,
+  "powerplayOvers": null
 }
 ```
+
+New optional fields (match rules template):
+- `playersPerSide` — integer, default 11, range 2-11. Flexible team sizes (6-a-side, 8-a-side, etc.)
+- `maxOversPerBowler` — integer or null, range 1-50. NULL = use default formula ceil(totalOvers/5)
+- `wideRuns` — integer, default 1, range 1-5. Runs penalized per wide delivery
+- `noBallRuns` — integer, default 1, range 1-5. Runs penalized per no-ball delivery
+- `powerplayOvers` — integer or null, range 1-oversPerMatch. NULL = no powerplay
 
 **Response (201):**
 ```json
@@ -882,6 +915,11 @@ Create a new tournament. Authenticated user becomes the organizer.
     "numGroups": 2,
     "qualifyPerGroup": 2,
     "hasThirdPlaceMatch": false,
+    "playersPerSide": 11,
+    "maxOversPerBowler": null,
+    "wideRuns": 1,
+    "noBallRuns": 1,
+    "powerplayOvers": null,
     "createdBy": "uuid",
     "startDate": "2026-03-01",
     "endDate": "2026-03-15",
@@ -894,6 +932,9 @@ Create a new tournament. Authenticated user becomes the organizer.
 - `400` — Invalid format (must be "round_robin", "knockout", or "group_knockout").
 - `400` — `oversPerMatch` outside 1-50 range.
 - `400` — `numGroups` required when format is "group_knockout".
+- `400` — `playersPerSide` outside 2-11 range.
+- `400` — `maxOversPerBowler` outside 1-50 range (when provided).
+- `400` — `powerplayOvers` exceeds `oversPerMatch` (when provided).
 
 ---
 
@@ -948,6 +989,11 @@ Get tournament details including teams, groups, and configuration.
     "numGroups": 2,
     "qualifyPerGroup": 2,
     "hasThirdPlaceMatch": false,
+    "playersPerSide": 11,
+    "maxOversPerBowler": null,
+    "wideRuns": 1,
+    "noBallRuns": 1,
+    "powerplayOvers": null,
     "createdBy": "uuid",
     "startDate": "2026-03-01",
     "endDate": "2026-03-15",
@@ -980,10 +1026,15 @@ Update tournament settings. Only the organizer. Only allowed when status is "dra
   "name": "Updated Cup Name",
   "oversPerMatch": 10,
   "pointsWin": 3,
-  "startDate": "2026-03-05"
+  "startDate": "2026-03-05",
+  "playersPerSide": 8,
+  "maxOversPerBowler": 4,
+  "wideRuns": 2,
+  "noBallRuns": 1,
+  "powerplayOvers": 4
 }
 ```
-All fields optional — only provided fields are updated.
+All fields optional — only provided fields are updated. Includes the 5 match rule template fields.
 
 **Response (200):** Updated tournament object.
 
@@ -1019,7 +1070,7 @@ Valid transitions: `draft → registration → live → completed`
 ```
 POST   /api/v1/tournaments/:id/teams
 ```
-Add a team to the tournament. Only the organizer. Only allowed when status is "draft" or "registration".
+Add a team to the tournament directly (organizer bypass). Only the organizer. Only allowed when status is "draft" or "registration". Bypasses the registration request flow.
 
 **Request:**
 ```json
@@ -1044,8 +1095,126 @@ Add a team to the tournament. Only the organizer. Only allowed when status is "d
 
 **Errors:**
 - `400` — Team already in tournament.
+- `400` — Team roster has fewer than `playersPerSide` members.
 - `403` — Not the tournament organizer.
 - `409` — Cannot add teams after tournament is "live".
+
+---
+
+```
+POST   /api/v1/tournaments/:id/register
+```
+Team requests to join a tournament. Requires tournament status = "registration". The requesting user must be a captain or admin of the team.
+
+**Request:**
+```json
+{
+  "teamId": "uuid"
+}
+```
+
+**Response (201):**
+```json
+{
+  "request": {
+    "id": "uuid",
+    "tournamentId": "uuid",
+    "teamId": "uuid",
+    "teamName": "Mumbai Warriors",
+    "requestedBy": "uuid",
+    "status": "pending",
+    "requestedAt": "2026-02-10T12:00:00Z"
+  }
+}
+```
+
+**Errors:**
+- `400` — Tournament status is not "registration".
+- `400` — Team roster has fewer than `playersPerSide` members. Error message: "Team must have at least {n} players in roster".
+- `400` — Requesting user is not team captain or admin.
+- `409` — Team already has a pending or approved request for this tournament.
+- `409` — Team is already registered in this tournament.
+
+---
+
+```
+GET    /api/v1/tournaments/:id/requests
+```
+List registration requests for a tournament. Only the organizer.
+
+**Query params:** `?status=pending` (optional filter: "pending", "approved", "rejected")
+
+**Response (200):**
+```json
+{
+  "requests": [
+    {
+      "id": "uuid",
+      "teamId": "uuid",
+      "teamName": "Mumbai Warriors",
+      "teamCity": "Mumbai",
+      "rosterCount": 15,
+      "requestedBy": "uuid",
+      "requestedByName": "Rohit Sharma",
+      "status": "pending",
+      "rejectionReason": null,
+      "requestedAt": "2026-02-10T12:00:00Z",
+      "resolvedAt": null
+    }
+  ],
+  "total": 5
+}
+```
+
+**Errors:**
+- `403` — Not the tournament organizer.
+
+---
+
+```
+PUT    /api/v1/tournaments/:id/requests/:requestId
+```
+Approve or reject a registration request. Only the organizer.
+
+**Request (approve):**
+```json
+{
+  "status": "approved",
+  "groupName": "A",
+  "seedNumber": 1
+}
+```
+
+**Request (reject):**
+```json
+{
+  "status": "rejected",
+  "rejectionReason": "Team roster is incomplete"
+}
+```
+
+**Response (200):**
+```json
+{
+  "request": {
+    "id": "uuid",
+    "tournamentId": "uuid",
+    "teamId": "uuid",
+    "teamName": "Mumbai Warriors",
+    "status": "approved",
+    "resolvedAt": "2026-02-10T14:00:00Z"
+  }
+}
+```
+
+On approval: auto-inserts team into `tournament_teams` and sets `resolved_at`.
+On rejection: sets `status = "rejected"`, `resolved_at`, and optional `rejection_reason`.
+
+**Errors:**
+- `400` — Invalid status (must be "approved" or "rejected").
+- `400` — Request is not in "pending" status.
+- `403` — Not the tournament organizer.
+- `404` — Request not found.
 
 ---
 
@@ -1124,6 +1293,8 @@ List all fixtures for a tournament.
       "awayTeam": { "id": "uuid", "name": "Delhi Strikers" },
       "matchId": "uuid",
       "scheduledDate": "2026-03-01",
+      "scheduledTime": "09:00",
+      "estimatedDurationMinutes": 180,
       "venue": "Shivaji Park",
       "result": {
         "winner": "Mumbai Warriors",
@@ -1140,12 +1311,14 @@ List all fixtures for a tournament.
 ```
 PUT    /api/v1/tournaments/:id/fixtures/:fixtureId
 ```
-Edit a fixture (schedule date, venue, swap teams). Only the organizer.
+Edit a fixture (schedule date/time, venue, swap teams). Only the organizer.
 
 **Request:**
 ```json
 {
   "scheduledDate": "2026-03-05",
+  "scheduledTime": "14:30",
+  "estimatedDurationMinutes": 180,
   "venue": "Wankhede Stadium",
   "homeTeamId": "uuid",
   "awayTeamId": "uuid"
@@ -1153,7 +1326,15 @@ Edit a fixture (schedule date, venue, swap teams). Only the organizer.
 ```
 All fields optional.
 
-**Response (200):** Updated fixture object.
+**Response (200):** Updated fixture object. May include a `scheduleWarning` if a venue conflict is detected:
+```json
+{
+  "fixture": { "...updated fixture..." },
+  "scheduleWarning": "Another fixture at Wankhede Stadium on 2026-03-05 overlaps (Match #3 at 12:00, ~180 min)"
+}
+```
+
+**Schedule conflict detection:** When `scheduledDate` + `scheduledTime` + `venue` are all set, the server checks if another fixture at the same venue on the same date overlaps within `estimatedDurationMinutes`. Returns a warning in the response but does not block the operation.
 
 **Errors:**
 - `403` — Not the tournament organizer.
@@ -1388,7 +1569,8 @@ Connection is authenticated via JWT query parameter. Server verifies the token a
     "resultType": "wickets",
     "margin": 5,
     "summary": "Mumbai Warriors won by 5 wickets",
-    "manOfMatch": { "id": "uuid", "name": "R. Sharma" }
+    "manOfMatch": { "id": "uuid", "name": "R. Sharma" },
+    "superOverPlayed": false
   }
 }
 ```

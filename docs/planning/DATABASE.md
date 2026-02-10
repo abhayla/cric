@@ -4,7 +4,7 @@
 
 - **Server Database:** PostgreSQL (via Drizzle ORM)
 - **Local Database:** SQLite (via Drift in Flutter)
-- **Total Tables:** 27 core tables + 5 materialized views
+- **Total Tables:** 28 core tables + 5 materialized views
 
 ---
 
@@ -166,7 +166,7 @@ Playing XI for each team in a specific match.
 |--------|------|-------|
 | id | uuid PK | |
 | match_id | uuid FK → matches.id | |
-| innings_number | integer | 1 or 2 |
+| innings_number | integer | 1 or 2 (for regulation); 3, 4, 5... for super overs |
 | batting_team_id | uuid FK → teams.id | |
 | bowling_team_id | uuid FK → teams.id | |
 | total_runs | integer | default 0 |
@@ -177,6 +177,8 @@ Playing XI for each team in a specific match.
 | total_no_balls | integer | default 0 |
 | total_byes | integer | default 0 |
 | total_leg_byes | integer | default 0 |
+| is_super_over | boolean | default false. Distinguishes super over innings from regulation |
+| super_over_number | integer | nullable. 1, 2, 3... for sequential super overs |
 | is_completed | boolean | default false |
 | completed_reason | varchar(30) | "all_out", "overs_exhausted", "target_chased", "declared" |
 | target | integer | nullable (set for 2nd innings) |
@@ -364,7 +366,7 @@ Playing XI for each team in a specific match.
 | id | uuid PK | |
 | match_id | uuid FK → matches.id | UNIQUE |
 | winner_team_id | uuid FK → teams.id | nullable (tie/no result) |
-| result_type | varchar(20) | "runs", "wickets", "tie", "no_result" |
+| result_type | varchar(20) | "runs", "wickets", "tie", "no_result", "super_over" |
 | margin | integer | nullable (runs or wickets margin) |
 | man_of_match_id | uuid FK → users.id | nullable |
 | summary | text | e.g. "Team A won by 5 wickets" |
@@ -401,6 +403,11 @@ Playing XI for each team in a specific match.
 | num_groups | integer | default 1 (group_knockout format only) |
 | qualify_per_group | integer | default 2 (top-N per group) |
 | has_third_place_match | boolean | default false (knockout/group_knockout only) |
+| players_per_side | integer | default 11. Valid range: 2-11. Flexible team sizes (6-a-side, 8-a-side, etc.) |
+| max_overs_per_bowler | integer | nullable. Valid range: 1-50. NULL = use default formula ceil(totalOvers/5) |
+| wide_runs | integer | default 1. Valid range: 1-5. Runs penalized per wide delivery |
+| no_ball_runs | integer | default 1. Valid range: 1-5. Runs penalized per no-ball delivery |
+| powerplay_overs | integer | nullable. Valid range: 1-overs_per_match. NULL = no powerplay |
 | created_by | uuid FK → users.id | organizer |
 | start_date | date | nullable |
 | end_date | date | nullable |
@@ -456,6 +463,8 @@ Maps tournament rounds to actual matches.
 | home_team_id | uuid FK → teams.id | |
 | away_team_id | uuid FK → teams.id | |
 | scheduled_date | date | nullable |
+| scheduled_time | time | nullable. Time-of-day (e.g., "09:00", "14:30") |
+| estimated_duration_minutes | integer | nullable. Estimated match length in minutes |
 | venue | varchar(200) | nullable |
 | created_at | timestamp | |
 | updated_at | timestamp | |
@@ -485,6 +494,22 @@ Pre-computed standings per team per tournament (or per group).
 
 **Unique constraint:** (tournament_id, team_id)
 **Update trigger:** Recalculate after every tournament match reaches "completed" status.
+
+### 7.6 `tournament_requests`
+Open team registration requests with organizer approval workflow.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | default gen_random_uuid() |
+| tournament_id | uuid FK → tournaments.id | |
+| team_id | uuid FK → teams.id | |
+| requested_by | uuid FK → users.id | Team captain or admin who initiated |
+| status | varchar(20) | "pending", "approved", "rejected" |
+| rejection_reason | varchar(500) | nullable, organizer can provide reason |
+| requested_at | timestamp | default now() |
+| resolved_at | timestamp | nullable, set when approved/rejected |
+
+**Unique constraint:** (tournament_id, team_id) — one request per team per tournament
 
 ---
 
@@ -521,6 +546,9 @@ Aggregated stats by format across all matches.
 | Primary keys | UUIDs | Cross-device sync friendly, no conflicts |
 | Timestamps | All tables have created_at + updated_at | Audit trail, sync ordering, conflict resolution |
 | Tournament standings | Pre-computed table with NRR columns | Fast reads for points table; NRR requires cumulative overs data stored for recalc |
+| Super overs | `is_super_over` + `super_over_number` on innings | Reuses same delivery pipeline; stats excluded from career/leaderboard |
+| Tournament as template | 5 match rule fields on tournaments | Matches inherit locked rules from tournament; standalone matches use defaults |
+| Team registration | Separate `tournament_requests` table | Pending/approved/rejected workflow; organizer direct-add also supported |
 
 ---
 
@@ -566,6 +594,10 @@ CREATE INDEX idx_tournament_fixtures_match ON tournament_fixtures(match_id);
 CREATE INDEX idx_tournament_standings_tournament ON tournament_standings(tournament_id);
 CREATE INDEX idx_tournament_standings_group ON tournament_standings(tournament_id, group_name);
 CREATE INDEX idx_matches_tournament ON matches(tournament_id) WHERE tournament_id IS NOT NULL;
+
+-- Tournament requests
+CREATE INDEX idx_tournament_requests_tournament ON tournament_requests(tournament_id);
+CREATE INDEX idx_tournament_requests_status ON tournament_requests(tournament_id, status);
 ```
 
 ---
@@ -574,7 +606,7 @@ CREATE INDEX idx_matches_tournament ON matches(tournament_id) WHERE tournament_i
 
 The local SQLite database mirrors a subset of the PostgreSQL schema for offline-first capability:
 
-**Mirrored tables:** users, teams, team_rosters, match_players, matches, innings, overs, deliveries, batting_stats, bowling_stats, tournaments, tournament_teams, tournament_fixtures, tournament_standings
+**Mirrored tables:** users, teams, team_rosters, match_players, matches, innings, overs, deliveries, batting_stats, bowling_stats, tournaments, tournament_teams, tournament_fixtures, tournament_standings, tournament_requests
 
 **Additional local-only tables:**
 

@@ -426,19 +426,25 @@ dev_dependencies:
 - [ ] Implement basic offline data caching
 
 ### Phase 2.5: Tournament Management (Week 4-5)
-- [ ] Implement Tournament CRUD (API + Flutter)
-- [ ] Build: Tournaments List, Create Tournament screens
-- [ ] Implement team registration for tournaments
+- [ ] Implement Tournament CRUD with 5 template fields (API + Flutter) — players_per_side, max_overs_per_bowler, wide_runs, no_ball_runs, powerplay_overs
+- [ ] Build: Tournaments List, Create Tournament screens (include template fields in create form)
+- [ ] Implement open team registration with organizer approval flow (POST register, GET requests, PUT approve/reject)
+- [ ] Implement roster size validation at registration time (min players_per_side)
+- [ ] Implement organizer direct-add team (existing POST teams endpoint, now with roster validation)
 - [ ] Implement fixture auto-generation algorithms (round-robin, knockout, group+knockout)
-- [ ] Build: Tournament Detail screen (status, teams, fixtures tabs)
+- [ ] Implement fixture scheduling with time-of-day + estimated duration + venue conflict detection
+- [ ] Build: Tournament Detail screen (status, teams, fixtures, registration requests tabs)
 - [ ] Build: Standings/Points Table screen (sortable, group tabs)
 - [ ] Build: Knockout Bracket visualization
 - [ ] Implement NRR calculation engine (server-side)
 - [ ] Implement standings recalculation on match completion
 - [ ] Build: Tournament Leaderboard screen (runs, wickets, avg, economy tabs)
-- [ ] Add tournament_id FK to match creation flow
-- [ ] Update Match Setup screen with optional tournament context
+- [ ] Implement match creation from fixture ("Start Match" on unplayed fixture, inherits tournament template rules)
+- [ ] Update Match Setup screen with optional tournament context (locked fields when tournament match)
 - [ ] Update Home screen with "My Tournaments" section
+- [ ] Implement super over for knockout ties (trigger detection, super over innings, repeat on tie, result recording)
+- [ ] Super over UI: batter/bowler selection, scoring controls reuse, scorecard section
+- [ ] Super over stats exclusion from career stats and tournament leaderboard
 
 ### Phase 3: Scoring Engine (Week 6-8) -- THE CRITICAL PHASE
 - [ ] Implement delivery recording logic (server-side)
@@ -519,7 +525,7 @@ dev_dependencies:
 |-------------|-------------|
 | Phase 1 | Login with Phone OTP, see home screen, navigate between screens |
 | Phase 2 | Create team, add players, create match, complete toss |
-| Phase 2.5 | Create tournament (all 3 formats), add 4+ teams, generate fixtures, complete one match, verify standings update with correct NRR and points, verify knockout bracket auto-populates |
+| Phase 2.5 | Create tournament (all 3 formats) with template fields (custom players_per_side, wide_runs, etc.), test team self-registration + organizer approval flow, test roster size validation, add 4+ teams, generate fixtures with scheduling, complete one match (verify inherited rules are locked), verify standings update with correct NRR and points, verify knockout bracket auto-populates, test super over trigger on knockout tie, verify super over stats excluded from career/leaderboard |
 | Phase 3 | Score a complete T20 match ball-by-ball, verify scorecard accuracy, test undo, test offline scoring |
 | Phase 4 | View wagon wheel for a batter, manhattan for an innings, worm comparing both innings, MVP rankings |
 | Phase 5 | View player career stats, verify they match aggregate of individual match performances |

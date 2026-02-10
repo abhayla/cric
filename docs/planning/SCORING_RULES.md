@@ -659,3 +659,107 @@ When a match has `tournament_id` set (i.e., it is a tournament match):
   5. Update `tournament_standings` rows for both teams.
   6. If all group stage fixtures are complete and tournament format is `group_knockout`, auto-populate knockout bracket fixtures with qualified teams.
 - These hooks run server-side only. The Flutter app fetches updated standings via the API.
+
+### 8.7 Match Rules Inheritance from Tournament
+
+When a scorer starts a match from a tournament fixture, the match inherits these fields from the tournament configuration:
+
+| Tournament Field | Match Equivalent | Behavior |
+|-----------------|-----------------|----------|
+| `overs_per_match` | `total_overs` | Locked — not editable per match |
+| `ball_type_id` | `ball_type_id` | Locked |
+| `players_per_side` | Playing XI size | Locked — match_players enforces this count instead of hardcoded 11 |
+| `max_overs_per_bowler` | Bowler over limit | Locked — overrides default ceil(totalOvers/5) formula |
+| `wide_runs` | Wide penalty runs | Locked — scoring engine uses this instead of default 1 |
+| `no_ball_runs` | No-ball penalty runs | Locked — scoring engine uses this instead of default 1 |
+| `powerplay_overs` | Powerplay overs | Locked — field placement restrictions apply for these overs |
+
+**Match creation from fixture flow:**
+1. Scorer navigates to fixture in tournament detail
+2. Taps "Start Match" on an unplayed fixture (one with `match_id = NULL`)
+3. System creates match record with:
+   - `tournament_id` = fixture's tournament_id
+   - `home_team_id` / `away_team_id` from fixture
+   - `total_overs` = tournament.overs_per_match
+   - `ball_type_id` = tournament.ball_type_id
+   - `format` = derived from overs (≤20 → "T20", ≤50 → "ODI", else "custom")
+   - `scorer_id` = current user
+4. `tournament_fixtures.match_id` updated to point to new match
+5. Match proceeds through normal flow: SETUP → TOSS → LIVE → COMPLETED
+
+**Standalone matches** (tournament_id = null) continue to use defaults:
+- Players per side = 11
+- Bowler over limit = ceil(totalOvers/5)
+- Wide runs = 1, No-ball runs = 1
+- No powerplay
+
+---
+
+## 9. Super Over Rules
+
+### 9.1 Trigger Condition
+
+A super over is triggered when ALL of these conditions are met:
+1. Match is a tournament match (`tournament_id` is not null)
+2. Fixture `round_type` is a knockout round: "quarter_final", "semi_final", "final", or "third_place"
+3. Match result is tied (both innings completed, scores equal)
+
+**Non-knockout matches** (group stage, round-robin) that end in a tie are recorded as "tie" with points awarded per the tournament's `points_tie` config. No super over.
+
+**Standalone matches** (tournament_id = null) that end in a tie are recorded as "Match Tied" (existing behavior). No super over.
+
+### 9.2 Super Over Procedure
+
+1. **Batting order:** The team that batted **second** in regulation bats **first** in the super over.
+2. **Innings creation:** 2 additional innings records with `is_super_over = true`, `super_over_number = 1`.
+3. **Over limit:** 1 over (6 legal deliveries) per team.
+4. **Player limit:** 3 batters per team (2 at crease + 1 reserve who enters if a wicket falls). Any bowler from the Playing XI can bowl.
+5. **Wicket limit:** 2 wickets per side. When the 2nd wicket falls, the super over innings for that team ends (only 3 batters, 2 can be dismissed).
+6. **Bowler:** Any bowler from the Playing XI. No restriction on who bowled in regulation.
+7. **Extras, strike rotation, free hits:** All standard delivery pipeline rules (Section 2) apply identically.
+
+### 9.3 Super Over Tie (Sudden Death)
+
+If the super over also ends in a tie:
+1. Another super over is played (`super_over_number` increments: 2, 3, ...).
+2. **Different bowlers must be used** for each subsequent super over — the bowler from the previous super over cannot bowl again in the next one.
+3. Same batting order rule applies: the team that batted second in the previous super over bats first in the next.
+4. Repeat until a winner is determined.
+
+### 9.4 Result Recording
+
+- `match_result.result_type` = "super_over"
+- `match_result.winner_team_id` = winning team
+- `match_result.margin` = runs margin in the deciding super over
+- `match_result.summary` = e.g., "Mumbai Warriors won in Super Over"
+
+### 9.5 Stats Impact
+
+- **Super over stats do NOT count toward:**
+  - Player career stats (`player_career_stats`)
+  - Tournament leaderboard rankings
+  - Batting/bowling averages and aggregates
+- **Super over stats DO count toward:**
+  - Match result determination only
+  - Match scorecard display (shown as separate super over section)
+
+### 9.6 Scoring Engine Integration
+
+The super over uses the **same delivery processing pipeline** (Section 2, Steps 1-10) with these modifications:
+
+| Pipeline Step | Modification for Super Over |
+|--------------|----------------------------|
+| Step 1: VALIDATE | Wicket limit = 2 (not 10). Over limit = 1 (not totalOvers). Bowler over limit not applicable (only 1 over). |
+| Step 4: HANDLE wicket | ALL OUT check: 2 wickets = super over innings ends (3 batters, 2 dismissable). |
+| Step 7: CHECK innings completion | All out = 2 wickets. Overs exhausted = 1 over. Target chased = super over target. |
+| Step 8: PERSIST | Delivery saved to innings with `is_super_over = true`. |
+
+### 9.7 UI Flow
+
+1. After regulation match ends tied in a knockout fixture:
+   - Show innings summary with "Match Tied" message
+   - Show "Super Over Required" prompt with "Start Super Over" button
+2. Scorer selects 3 batters + 1 bowler for each team
+3. Super over scoring page uses the same scoring controls
+4. Super over section shown separately on the scorecard
+5. If super over ties → repeat prompt for another super over
