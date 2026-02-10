@@ -39,6 +39,9 @@ apps/server/bun.lockb
 *.freezed.dart
 *.gr.dart
 
+# Playwright MCP
+.playwright-mcp/
+
 # Screenshots / verification artifacts (track images/ for reference screenshots)
 *.png
 *.jpeg

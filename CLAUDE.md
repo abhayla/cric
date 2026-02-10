@@ -136,6 +136,7 @@ The scoring engine is the most critical piece. Key rules in [SCORING_RULES.md](d
 - **[IMPORTANT] Do not simulate or mock implementations — always write real, working code.**
 - Fix root causes, not symptoms — loop on test failures until the underlying issue is resolved.
 - **Screenshot verification loop:** After tests, take a screenshot and visually verify UI matches expected output. If it fails, fix and retest in a loop until all tests pass. Do not move on until verified.
+- **Playwright screenshots:** All Playwright MCP screenshots must be saved to `.playwright-mcp/screenshots/` (use the `filename` parameter with relative path `.playwright-mcp/screenshots/<name>.png`). Never save screenshots to the project root.
 - If requirements are ambiguous, ask one clarifying question at a time (with your recommendation based on best practices) until you reach 100% confidence — do not guess.
 - **Session handoff:** Always update [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) before ending work so the next session can resume seamlessly. Read it at the start of each session for context.
 
