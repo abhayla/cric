@@ -18,6 +18,7 @@
 | `docs/planning/API.md` | REST endpoints, WebSocket protocol | When API changes |
 | `docs/planning/SCORING_RULES.md` | Match state machine, delivery pipeline, cricket rules | When rules change |
 | `docs/planning/blueprint.html` | Interactive wireframes, architecture diagrams | Per phase completion |
+| `docs/planning/CRICHEROES_REFERENCE.md` | CricHeroes competitive analysis knowledge base | When starting a new CricApp phase |
 | `docs/process/PROJECT_MANAGEMENT.md` | This file — doc map, maintenance rules, codebase structure enforcement | When docs added/moved or structure rules change |
 | `docs/process/CODE_STANDARDS.md` | Single reference for all coding conventions: naming, API design, state management, error handling, testing, performance, logging, linting, tooling | When conventions change |
 | `docs/process/IMPLEMENTATION_PRACTICES.md` | Feature workflow, offline-first, state management, testing | When practices evolve |
@@ -35,7 +36,8 @@ docs/
 │   ├── DATABASE.md
 │   ├── API.md
 │   ├── SCORING_RULES.md
-│   └── blueprint.html
+│   ├── blueprint.html
+│   └── CRICHEROES_REFERENCE.md
 ├── process/                # HOW to build — workflows, standards, practices
 │   ├── PROJECT_MANAGEMENT.md
 │   ├── CODE_STANDARDS.md

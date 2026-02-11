@@ -75,6 +75,7 @@
       <span>CRR: <strong style="color: white;" id="crr">6.98</strong></span>
       <span id="rrrSection" style="display: none;">RRR: <strong style="color: white;" id="rrr">—</strong></span>
       <span id="targetSection" style="display: none;">Target: <strong style="color: var(--warning);" id="target">—</strong></span>
+      <span id="needSection" style="display: none; color: var(--warning); font-weight: var(--fw-semibold);" class="text-sm"></span>
     </div>
 
     <!-- Scoring Middle (Scrollable) -->
@@ -604,6 +605,36 @@
         document.getElementById('overthrowPicker').classList.remove('active');
       }
     });
+
+    // 2nd Innings demo — uncomment to show Target/RRR/Need context:
+    // show2ndInnings(188, 20);
+
+    function show2ndInnings(targetRuns, totalOvers) {
+      document.getElementById('rrrSection').style.display = '';
+      document.getElementById('targetSection').style.display = '';
+      document.getElementById('needSection').style.display = '';
+      document.getElementById('target').textContent = targetRuns;
+      document.querySelector('#scoreHeader [style*="1st Innings"]')
+        || (document.querySelector('#scoreHeader .overs-text').parentElement.previousElementSibling.innerHTML =
+            '<span id="battingTeam">Delhi Strikers</span> — 2nd Innings');
+      updateNeedContext(targetRuns, totalOvers);
+    }
+
+    function updateNeedContext(targetRuns, totalOvers) {
+      const runsNeeded = targetRuns - state.runs;
+      const totalBalls = totalOvers * 6;
+      const ballsBowled = state.overs * 6 + state.balls;
+      const ballsRemaining = totalBalls - ballsBowled;
+      const needEl = document.getElementById('needSection');
+      if (runsNeeded > 0 && ballsRemaining > 0) {
+        needEl.textContent = `Need ${runsNeeded} from ${ballsRemaining} balls`;
+        // Update RRR
+        const rrr = (runsNeeded / (ballsRemaining / 6)).toFixed(2);
+        document.getElementById('rrr').textContent = rrr;
+      } else if (runsNeeded <= 0) {
+        needEl.textContent = '';
+      }
+    }
 
     // Viewer mode toggle (Q20) — uncomment to demo:
     // document.getElementById('viewerIndicator').style.display = '';

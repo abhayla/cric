@@ -220,7 +220,40 @@ Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION
 - **[G24]** Empty states: per-screen icon + message + CTA (10 screens defined)
 - **[G25]** Wagon wheel selector: dropdown above chart, default top scorer, filter by striker_id + innings_id
 
+### Comprehensive CricHeroes Gap Review (69 Items, 9 Groups)
+
+Live web research across 30+ sources, 4 research agents, iterative user review of all 9 feature groups. Key finding: 25 of 69 items were already implemented in UI prototypes.
+
+**ADOPT (7 items — UI prototypes updated):**
+- **[CH-1]** SMS auto-read OTP: Flutter `smart_auth` package (logic only, Phase 1)
+- **[CH-3]** Searchable country code selector: `02-login.html` updated with 20 cricket nations dropdown
+- **[CH-4]** Location field in profile setup: `04-profile-setup.html` updated (optional city/state)
+- **[CH-13]** Bulk contact import for teams: phone contacts multi-select (logic only, Phase 2)
+- **[CH-14]** Team location field: `07-create-team.html` updated (optional location)
+- **[CH-29]** "Need X from Y balls" context: `12-scoring-page.html` updated (2nd innings context bar)
+- **[CH-52]** Run rate per-over graph: `16-match-analytics.html` updated (5th tab "Run Rate")
+
+**DEFER (20 items — post-MVP, see CRICHEROES_REFERENCE.md Section 12.3):**
+- WhatsApp Login (OTPless), PIN Login, Notifications tab, Team profile tabs, Invite link sharing, Match banners, Match officials, Live Match Edit, Post-match edit window, Projected score, Field position map, Awards (PoTM), Share as image, Player comparison, Badges, Awards display, Form tracker, Player tags, Bulk schedule import
+
+**ALREADY DONE (25 items):** CRR, RRR, partnership, batter SR, bowler economy, free hit badge, swap strike, scorecard tables, FOW, extras breakdown, super over, commentary, Manhattan/Worm/Wagon/MVP charts, tournament formats/points/groups/scheduling — all already in UI prototypes.
+
+**SKIP (18+ items):** Different tab structure, stories, side drawer, team attendance, CricPay, team chat, extra match types, virtual coin toss, pitch type, SQS, CricInsights PRO, sponsor features, payment processing.
+
 ## Completed Work
+
+### Comprehensive CricHeroes Gap Review
+
+Conducted live web research (30+ sources, 4 research agents covering auth/home/teams, scoring/analytics/scorecard, tournaments/profiles, and UI prototype analysis). Reviewed all 69 differences across 9 groups with iterative user approval. Updated 5 UI prototype files and CRICHEROES_REFERENCE.md Master Gap Summary (Section 12, now with subsections 12.1-12.5).
+
+### CricHeroes Comparison System Setup
+
+Created automated competitive intelligence system:
+- **`docs/planning/CRICHEROES_REFERENCE.md`** — Comprehensive CricHeroes knowledge base covering all features organized by CricApp phase (auth, teams, tournaments, scoring, analytics, profiles, real-time). Includes gap analysis tables with ADOPT/SKIP/DEFER recommendations. 69 gaps reviewed: 7 ADOPT, 25 ALREADY DONE, 20 DEFER, 18+ SKIP.
+- **`.claude/agents/cricheroes-comparator.md`** — Research agent that reads knowledge base + does live web analysis, outputs structured comparison reports.
+- **CLAUDE.md rule added** — Main agent automatically invokes comparator before implementing any new feature/screen. All clarifying questions include CricHeroes option.
+- **Workflow integrated** — Step 2.5 added to IMPLEMENTATION_PRACTICES.md feature workflow.
+- **Documentation updated** — CLAUDE_CODE_CONFIG.md (Agent #5), PROJECT_MANAGEMENT.md (doc map entry), CONTINUE_PROMPT.md.
 
 ### Step 0g: Pre-Implementation Gap Analysis Round 4 — Final & Exhaustive (22 Decisions)
 

@@ -39,10 +39,24 @@
         <div class="input-group">
           <label class="input-label">Phone Number</label>
           <div class="input-row">
-            <span class="input-prefix">+91</span>
+            <button class="input-prefix" id="countryCodeBtn" onclick="toggleCountryPicker()" style="cursor: pointer; gap: 6px; border: none; background: var(--surface); padding: 0 12px; font-size: var(--body); font-weight: var(--fw-medium); color: var(--text-secondary); border-right: 1px solid var(--border); height: 100%; display: flex; align-items: center;">
+              <span id="countryFlag" style="font-size: 18px;">🇮🇳</span>
+              <span id="countryCode">+91</span>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor"><path d="M5 6L0 0h10z"/></svg>
+            </button>
             <input type="tel" class="input-field" id="phoneInput" placeholder="98765 43210" maxlength="12" autocomplete="tel">
           </div>
           <span class="input-error" id="phoneError"></span>
+        </div>
+
+        <!-- Country Code Picker (hidden by default) -->
+        <div id="countryPicker" style="display: none; margin-top: 8px; border: 1.5px solid var(--border); border-radius: var(--radius-md); overflow: hidden; max-height: 240px;">
+          <div style="padding: 8px; border-bottom: 1px solid var(--border);">
+            <input type="text" id="countrySearch" class="input-field" placeholder="Search country..." style="height: 40px; font-size: var(--body-sm);" oninput="filterCountries()">
+          </div>
+          <div id="countryList" style="overflow-y: auto; max-height: 192px;">
+            <!-- Popular countries shown by default; full list filterable -->
+          </div>
         </div>
       </div>
 
@@ -63,6 +77,66 @@
   <script>
     const phoneInput = document.getElementById('phoneInput');
     const phoneError = document.getElementById('phoneError');
+
+    // Country data (popular countries for cricket-playing nations)
+    const countries = [
+      { flag: '🇮🇳', name: 'India', code: '+91' },
+      { flag: '🇵🇰', name: 'Pakistan', code: '+92' },
+      { flag: '🇧🇩', name: 'Bangladesh', code: '+880' },
+      { flag: '🇱🇰', name: 'Sri Lanka', code: '+94' },
+      { flag: '🇦🇺', name: 'Australia', code: '+61' },
+      { flag: '🇬🇧', name: 'United Kingdom', code: '+44' },
+      { flag: '🇿🇦', name: 'South Africa', code: '+27' },
+      { flag: '🇳🇿', name: 'New Zealand', code: '+64' },
+      { flag: '🇦🇪', name: 'UAE', code: '+971' },
+      { flag: '🇺🇸', name: 'United States', code: '+1' },
+      { flag: '🇨🇦', name: 'Canada', code: '+1' },
+      { flag: '🇳🇵', name: 'Nepal', code: '+977' },
+      { flag: '🇦🇫', name: 'Afghanistan', code: '+93' },
+      { flag: '🇿🇼', name: 'Zimbabwe', code: '+263' },
+      { flag: '🇮🇪', name: 'Ireland', code: '+353' },
+      { flag: '🇰🇪', name: 'Kenya', code: '+254' },
+      { flag: '🇴🇲', name: 'Oman', code: '+968' },
+      { flag: '🇸🇬', name: 'Singapore', code: '+65' },
+      { flag: '🇭🇰', name: 'Hong Kong', code: '+852' },
+      { flag: '🇲🇾', name: 'Malaysia', code: '+60' },
+    ];
+
+    function renderCountryList(filter = '') {
+      const list = document.getElementById('countryList');
+      const filtered = filter
+        ? countries.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()) || c.code.includes(filter))
+        : countries;
+      list.innerHTML = filtered.map(c => `
+        <div onclick="selectCountry('${c.flag}', '${c.code}')" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='transparent'">
+          <span style="font-size: 20px;">${c.flag}</span>
+          <span style="flex: 1; font-size: var(--body-sm);">${c.name}</span>
+          <span style="font-size: var(--body-sm); color: var(--text-secondary);">${c.code}</span>
+        </div>
+      `).join('');
+    }
+
+    function toggleCountryPicker() {
+      const picker = document.getElementById('countryPicker');
+      const isOpen = picker.style.display !== 'none';
+      picker.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) {
+        renderCountryList();
+        document.getElementById('countrySearch').value = '';
+        document.getElementById('countrySearch').focus();
+      }
+    }
+
+    function filterCountries() {
+      renderCountryList(document.getElementById('countrySearch').value);
+    }
+
+    function selectCountry(flag, code) {
+      document.getElementById('countryFlag').textContent = flag;
+      document.getElementById('countryCode').textContent = code;
+      document.getElementById('countryPicker').style.display = 'none';
+      phoneInput.focus();
+    }
 
     // Format phone number as user types
     phoneInput.addEventListener('input', () => {
@@ -89,6 +163,15 @@
     // Submit on Enter
     phoneInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') handleSendOtp();
+    });
+
+    // Close picker when clicking outside
+    document.addEventListener('click', (e) => {
+      const picker = document.getElementById('countryPicker');
+      const btn = document.getElementById('countryCodeBtn');
+      if (!picker.contains(e.target) && !btn.contains(e.target)) {
+        picker.style.display = 'none';
+      }
     });
   </script>
 </body>

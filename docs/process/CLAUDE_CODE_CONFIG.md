@@ -130,6 +130,35 @@ All skills use `disable-model-invocation: true`. This means Claude Code will nev
 
 ---
 
+### 5. CricHeroes Comparator — `cricheroes-comparator`
+
+**Purpose:** Compare CricApp features against CricHeroes (market leader, 40M+ users). Produces structured comparison reports with adopt/skip/defer gap recommendations.
+
+**Config file:** `.claude/agents/cricheroes-comparator.md`
+
+**Context files read before every task:**
+- [CRICHEROES_REFERENCE.md](../planning/CRICHEROES_REFERENCE.md) — Pre-built CricHeroes knowledge base (relevant section for the feature)
+- Relevant CricApp planning doc (DATABASE.md, API.md, SCORING_RULES.md, blueprint.html)
+
+**Domain expertise:**
+- CricHeroes feature inventory (scoring, teams, tournaments, analytics, profiles, community)
+- UI/UX pattern comparison (layout, flows, components, interaction patterns)
+- Feature gap analysis with adopt/skip/defer recommendations and effort estimates
+- Performance benchmarking (app size, scoring speed, offline capability, device support)
+
+**When invoked:**
+- Automatically before implementing any new feature or screen (per CLAUDE.md workflow rule)
+- When making significant UI/UX design decisions
+- When user asks "how does CricHeroes handle [X]?"
+
+**Key files this agent investigates:**
+- `docs/planning/CRICHEROES_REFERENCE.md` — primary knowledge base
+- `docs/planning/DATABASE.md`, `API.md`, `SCORING_RULES.md`, `blueprint.html` — CricApp specs
+- `apps/mobile/lib/src/features/` — existing implementation (if any)
+- Live web: `blog.cricheroes.com`, `cricheroes.com`, Play Store listing
+
+---
+
 ## Skills
 
 > **Implementation:** Config files in `.claude/skills/<skill-name>/SKILL.md`

@@ -49,6 +49,8 @@ For the full documentation map with purposes and update frequencies, see [PROJEC
 
 **Session handoff:** [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) — Start here for session context and next steps.
 
+**CricHeroes reference:** [CRICHEROES_REFERENCE.md](docs/planning/CRICHEROES_REFERENCE.md) — Competitive analysis knowledge base for automated CricHeroes comparison.
+
 ## Build & Run Commands (once initialized)
 
 ```bash
@@ -139,6 +141,7 @@ The scoring engine is the most critical piece. Key rules in [SCORING_RULES.md](d
 - **Playwright screenshots:** All Playwright MCP screenshots must be saved to `.playwright-mcp/screenshots/` (use the `filename` parameter with relative path `.playwright-mcp/screenshots/<name>.png`). Never save screenshots to the project root.
 - If requirements are ambiguous, ask one clarifying question at a time (with your recommendation based on best practices) until you reach 100% confidence — do not guess.
 - **Session handoff:** Always update [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) before ending work so the next session can resume seamlessly. Read it at the start of each session for context.
+- **CricHeroes comparison:** Before implementing any new feature or screen, automatically invoke the `cricheroes-comparator` agent with the feature/screen name. Review the comparison report. Incorporate ADOPT recommendations into the current implementation. Log DEFER items in CONTINUE_PROMPT.md. When making UI/UX decisions or asking clarifying questions, always include how CricHeroes handles the scenario as one option.
 
 **Implementation order:** Always build features inside-out: domain entities → data layer (datasources, repositories) → presentation (notifiers, pages, widgets). Never start with UI.
 

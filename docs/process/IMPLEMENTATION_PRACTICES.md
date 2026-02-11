@@ -41,6 +41,25 @@ For the feature you're implementing, read the relevant sections:
 | API endpoints | [API.md](../planning/API.md) — request/response shapes, status codes |
 | Scoring logic | [SCORING_RULES.md](../planning/SCORING_RULES.md) — delivery pipeline, state machine |
 | UI screens | [blueprint.html](../planning/blueprint.html) — wireframes, dialog layouts |
+| Any feature/screen | [CRICHEROES_REFERENCE.md](../planning/CRICHEROES_REFERENCE.md) — relevant section for competitive context |
+
+### Step 2.5: Run CricHeroes Comparison
+
+Before designing or building, invoke the `cricheroes-comparator` agent:
+
+> "Compare [feature/screen name] against CricHeroes"
+
+The agent reads `docs/planning/CRICHEROES_REFERENCE.md` and produces a structured comparison report. Act on the results:
+
+| Recommendation | Action |
+|---------------|--------|
+| **ADOPT** | Incorporate into current implementation. Mention in commit message. |
+| **DEFER** | Log in CONTINUE_PROMPT.md under future enhancements. Do not build now. |
+| **SKIP** | Ignore — not relevant for CricApp MVP. |
+
+If an ADOPT gap has effort "medium" or "large", confirm with user before proceeding — it may change scope.
+
+> Reference: [CRICHEROES_REFERENCE.md](../planning/CRICHEROES_REFERENCE.md)
 
 ### Step 3: Check Blueprint Wireframes
 
