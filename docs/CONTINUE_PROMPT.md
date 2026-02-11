@@ -16,7 +16,15 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION_PLAN.md`. Note: Phase 2.5 (Tournament Management) exists between Phase 2 (Teams) and Phase 3 (Scoring Engine).
+**Infrastructure is ready.** Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION_PLAN.md`. Note: Phase 2.5 (Tournament Management) exists between Phase 2 (Teams) and Phase 3 (Scoring Engine).
+
+**Pre-implementation setup completed:** 7 hooks, 12 skills, CI pipeline, validation scripts, MCP servers, permissions hardened. See "Pre-Implementation Infrastructure" in Completed Work.
+
+**GitHub MCP not yet configured.** Run `claude mcp add --scope user` to add the GitHub MCP server with a personal access token (scopes: `repo`, `workflow`).
+
+**PostgreSQL MCP placeholder.** Update `.mcp.json` with real credentials before using (currently has placeholder password).
+
+Phase 1 steps:
 
 1. Initialize Flutter project (`apps/mobile/`) with the folder structure from Section 2.1
 2. Initialize Bun server (`apps/server/`) with the folder structure from Section 2.2
@@ -242,6 +250,35 @@ Live web research across 30+ sources, 4 research agents, iterative user review o
 
 ## Completed Work
 
+### Pre-Implementation Infrastructure
+
+Hardened Claude Code development infrastructure with deterministic enforcement:
+
+**Hooks (7):** `.claude/hooks/` — PowerShell scripts for automated guardrails:
+- `validate-file-placement.ps1` — Enforces rules.md on every Edit/Write (snake_case, no widgets in core, service suffixes, etc.)
+- `guard-cross-feature-imports.ps1` — Blocks cross-feature data/domain imports on Write
+- `protect-sensitive-files.ps1` — Blocks writes to .env, credentials, keys on Edit/Write
+- `load-session-context.ps1` — Injects CONTINUE_PROMPT.md "What to Do Next" on session start
+- `reinject-after-compaction.ps1` — Re-injects critical rules after context compaction
+- `remind-session-handoff.ps1` — Blocks session end if CONTINUE_PROMPT.md not updated
+- `guard-bash-commands.ps1` — Blocks destructive git/file operations
+
+**Skills (6 new, 12 total):** `/analyze`, `/server-test`, `/commit-draft`, `/debug-log`, `/schema-parity`, `/drift-migrate`
+
+**MCP Servers (2):**
+- PostgreSQL MCP (project-scope, `.mcp.json` — gitignored)
+- GitHub MCP (user-scope, via `claude mcp add`)
+
+**CI Pipeline:** `.github/workflows/ci.yml` — 5 jobs (structure-validate, flutter-analyze, flutter-test, server-lint, server-test) on self-hosted Windows runner
+
+**Validation Scripts:** `scripts/validate-structure/` — `flutter-validator.js` + `server-validator.js` for CI and pre-commit use
+
+**Settings.json:** Expanded permissions (40 allow rules, 11 deny rules) + 7 hooks configured
+
+**Documentation synced:** CLAUDE_CODE_CONFIG.md (13 agents, 12 skills, 7 hooks, 2 MCP servers), PROJECT_MANAGEMENT.md, README.md, .gitignore
+
+---
+
 ### Comprehensive CricHeroes Gap Review
 
 Conducted live web research (30+ sources, 4 research agents covering auth/home/teams, scoring/analytics/scorecard, tournaments/profiles, and UI prototype analysis). Reviewed all 69 differences across 9 groups with iterative user approval. Updated 5 UI prototype files and CRICHEROES_REFERENCE.md Master Gap Summary (Section 12, now with subsections 12.1-12.5).
@@ -344,7 +381,7 @@ Applied 8 review decisions (T9-T16) refining the Phase 2.5 tournament system:
 - **PDR.md:** Updated US-16 with template fields. Added US-23 (team self-registration) and US-24 (super over scoring). Moved super overs from excluded to included in MVP scope.
 - **CONTINUE_PROMPT.md:** Added decisions T9-T16.
 
-**Blocked:** `.claude/rules.md` edits denied by permission settings. Needed changes: add `tournaments/` to Flutter placement table, add tournament routes/service/NRR/schema to server placement table, update folder trees. Apply these when the protected file can be edited.
+**Note:** `.claude/rules.md` tournament additions (lines 310, 329-332) were applied in a previous session.
 
 ### Step 0: Planning Doc Updates (Gap Analysis)
 A comprehensive gap analysis resolved 120 decisions across 22 rounds of Q&A. All planning docs have been updated:

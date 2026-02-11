@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  structure-validate:
+    name: Structure Validation
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Flutter structure
+        if: hashFiles('apps/mobile/lib/**') != ''
+        run: node scripts/validate-structure/flutter-validator.js
+
+      - name: Validate Server structure
+        if: hashFiles('apps/server/src/**') != ''
+        run: node scripts/validate-structure/server-validator.js
+
+  flutter-analyze:
+    name: Flutter Analyze
+    runs-on: self-hosted
+    if: hashFiles('apps/mobile/pubspec.yaml') != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get Flutter dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Run code generation
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run Flutter analyze
+        working-directory: apps/mobile
+        run: flutter analyze
+
+  flutter-test:
+    name: Flutter Test
+    runs-on: self-hosted
+    needs: flutter-analyze
+    if: hashFiles('apps/mobile/pubspec.yaml') != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get Flutter dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Run code generation
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run Flutter tests
+        working-directory: apps/mobile
+        run: flutter test
+
+  server-lint:
+    name: Server Lint
+    runs-on: self-hosted
+    if: hashFiles('apps/server/package.json') != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        working-directory: apps/server
+        run: bun install
+
+      - name: TypeScript type check
+        working-directory: apps/server
+        run: bunx tsc --noEmit
+
+  server-test:
+    name: Server Test
+    runs-on: self-hosted
+    needs: server-lint
+    if: hashFiles('apps/server/package.json') != ''
+    env:
+      DATABASE_URL: postgresql://cricapp_user:test_password@localhost:5432/cricapp_test
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        working-directory: apps/server
+        run: bun install
+
+      - name: Run server tests
+        working-directory: apps/server
+        run: bun test

@@ -1,6 +1,6 @@
 # Claude Code Configuration
 
-This document defines sub-agent specifications and skill definitions for Claude Code when working on CricApp. Agents and skills are implemented as actual config files in `.claude/agents/` and `.claude/skills/`.
+This document defines sub-agent specifications, skill definitions, hooks, and MCP server configuration for Claude Code when working on CricApp. Agents and skills are implemented as actual config files in `.claude/agents/` and `.claude/skills/`.
 
 ---
 
@@ -26,7 +26,7 @@ All skills use `disable-model-invocation: true`. This means Claude Code will nev
 
 ---
 
-## Sub-Agents
+## Sub-Agents (13)
 
 > **Implementation:** Config files in `.claude/agents/*.md`
 
@@ -159,7 +159,209 @@ All skills use `disable-model-invocation: true`. This means Claude Code will nev
 
 ---
 
-## Skills
+### 6. System Architect — `system-architect`
+
+**Purpose:** Expert system architect for CricApp. Architectural decisions, system design reviews, database schema analysis, API design, scoring engine architecture, offline-first patterns, and WebSocket protocol design.
+
+**Config file:** `.claude/agents/system-architect.md`
+
+**Domain expertise:**
+- Cricket domain logic and Flutter+Bun stack
+- Real-time mobile systems design
+- Offline-first architecture patterns
+- Database schema optimization
+
+---
+
+### 7. Code Reviewer — `code-reviewer`
+
+**Purpose:** Comprehensive code review and quality assessment. Use after implementing features, before merging PRs, for security vulnerability assessment, or when optimizing performance.
+
+**Config file:** `.claude/agents/code-reviewer.md`
+
+**Domain expertise:**
+- Code quality and technical debt analysis
+- Security vulnerability assessment
+- Performance bottleneck identification
+- Best practices compliance
+
+---
+
+### 8. Database Admin — `database-admin`
+
+**Purpose:** Database administration and performance optimization. Diagnosing performance bottlenecks, optimizing structures, managing indexes, analyzing query performance.
+
+**Config file:** `.claude/agents/database-admin.md`
+
+**Domain expertise:**
+- PostgreSQL performance optimization
+- Index management and query analysis
+- Backup strategies and health assessment
+
+---
+
+### 9. Debugger — `debugger`
+
+**Purpose:** Issue investigation and debugging specialist. Diagnosing errors, analyzing system behavior, investigating performance problems, examining logs.
+
+**Config file:** `.claude/agents/debugger.md`
+
+**Domain expertise:**
+- Error diagnosis and root cause analysis
+- Performance problem investigation
+- Test failure debugging
+- Log analysis (server, CI/CD)
+
+---
+
+### 10. Docs Manager — `docs-manager`
+
+**Purpose:** Technical documentation management. Creating/updating docs, establishing implementation standards, syncing docs with code changes.
+
+**Config file:** `.claude/agents/docs-manager.md`
+
+**Domain expertise:**
+- Documentation structure and consistency
+- Cross-reference link validation
+- Documentation summary reports
+
+---
+
+### 11. Git Manager — `git-manager`
+
+**Purpose:** Git operations specialist. Staging, committing, and pushing code changes safely with proper conventional commit messages.
+
+**Config file:** `.claude/agents/git-manager.md`
+
+**Domain expertise:**
+- Conventional commit message formatting
+- Branch workflow operations
+- Safe git practices
+
+---
+
+### 12. Planner Researcher — `planner-researcher`
+
+**Purpose:** Technical research and planning specialist. Researching best practices, analyzing codebase structure, designing system architectures, breaking down complex requirements.
+
+**Config file:** `.claude/agents/planner-researcher.md`
+
+**Domain expertise:**
+- Best practices research
+- System architecture design
+- Requirements breakdown
+- Technical planning
+
+---
+
+### 13. Tester — `tester`
+
+**Purpose:** Testing and quality assurance specialist. Running test suites, analyzing coverage, validating error handling, checking performance requirements.
+
+**Config file:** `.claude/agents/tester.md`
+
+**Domain expertise:**
+- Test suite execution and analysis
+- Coverage analysis
+- Error handling validation
+- Build process verification
+
+---
+
+## Hooks (7)
+
+> **Implementation:** PowerShell scripts in `.claude/hooks/*.ps1`
+>
+> Hooks run automatically on specific events. They read JSON from stdin, validate, and exit 0 (allow) or 2 (block with stderr message).
+
+### Hook 1: File Placement Validator
+
+**File:** `.claude/hooks/validate-file-placement.ps1`
+**Event:** PreToolUse on `Edit|Write`
+
+Validates file paths against rules.md before any write. Checks: no files in `lib/` root except `main.dart`, `snake_case.dart` naming, no widgets in `core/`, no `models/` in `domain/`, service `.service.ts` suffix, page/notifier/model suffixes, no files in server `src/` root except `index.ts`.
+
+**Skips:** `.claude/`, `docs/`, `test/`, `node_modules/`, `build/`, `.dart_tool/`, `android/`, generated files, config files at project root.
+
+---
+
+### Hook 2: Cross-Feature Import Guard
+
+**File:** `.claude/hooks/guard-cross-feature-imports.ps1`
+**Event:** PreToolUse on `Write`
+
+For Dart files in `features/<A>/`, scans content for imports from `features/<B>/(data|domain)/`. Blocks with guidance to use shared/ providers instead.
+
+**Skips:** Non-Dart files, test files, generated files, files not in a feature directory.
+
+---
+
+### Hook 3: Sensitive File Protection
+
+**File:** `.claude/hooks/protect-sensitive-files.ps1`
+**Event:** PreToolUse on `Edit|Write`
+
+Blocks writes to `.env*`, `*credentials*`, `*service-account*`, `google-services.json`, `*.key`, `*.pem`, `*.p12`.
+
+**Allows:** `.env.example`, files in `docs/`, files in `test/`.
+
+---
+
+### Hook 4: Session Start Context Loader
+
+**File:** `.claude/hooks/load-session-context.ps1`
+**Event:** SessionStart (startup, resume)
+
+Reads `docs/CONTINUE_PROMPT.md` and outputs the "What to Do Next" section to stdout, injecting it as context for Claude. Never blocks.
+
+---
+
+### Hook 5: Post-Compaction Context Re-injection
+
+**File:** `.claude/hooks/reinject-after-compaction.ps1`
+**Event:** SessionStart (compact)
+
+After context compaction, outputs condensed critical rules: top 10 file placement anti-patterns, 10-step delivery pipeline, match state machine, 5 critical cricket rules. Never blocks.
+
+---
+
+### Hook 6: Session Handoff Reminder
+
+**File:** `.claude/hooks/remind-session-handoff.ps1`
+**Event:** Stop
+
+Checks if `docs/CONTINUE_PROMPT.md` has uncommitted changes. If source files were changed but CONTINUE_PROMPT.md was not updated, blocks with a reminder. Skips for pure research sessions (no source file changes).
+
+---
+
+### Hook 7: Bash Command Safety Guard
+
+**File:** `.claude/hooks/guard-bash-commands.ps1`
+**Event:** PreToolUse on `Bash`
+
+Blocks destructive commands: `rm -rf`, `rm -fr`, `git push --force`, `git push -f`, `git reset --hard`, `git clean -f`, `git clean -fd`, `git branch -D`, `--no-verify`. Allows `git push --force-with-lease` as a safer alternative.
+
+---
+
+## MCP Servers (2)
+
+### PostgreSQL MCP (project-scope)
+
+**Config:** `.mcp.json` at project root (gitignored — contains connection string)
+**Server:** `@modelcontextprotocol/server-postgres` via `cmd /c npx`
+**Connection:** `postgresql://cricapp_user:<password>@localhost:5432/cricapp_dev`
+**Security:** Read-only database user (SELECT grants only)
+
+### GitHub MCP (user-scope)
+
+**Config:** Via `claude mcp add --scope user` (stored in user's global config, not in project)
+**Server:** GitHub's official MCP endpoint
+**Used for:** PR creation/review, issue management, Actions status checks
+**Authentication:** Personal access token with `repo`, `workflow` scopes
+
+---
+
+## Skills (12)
 
 > **Implementation:** Config files in `.claude/skills/<skill-name>/SKILL.md`
 >
@@ -258,3 +460,85 @@ cd apps/server && bunx drizzle-kit migrate
 ```
 
 **When to use:** After modifying any Drizzle schema file in `apps/server/src/db/schema/`.
+
+---
+
+### `/analyze`
+
+**Purpose:** Run Flutter static analysis only (no build_runner). Faster than `/build-check` when you only need lint checking.
+
+**Config file:** `.claude/skills/analyze/SKILL.md`
+
+**Command:**
+```bash
+cd apps/mobile && flutter analyze
+```
+
+**When to use:** Quick lint check during development. Use `/build-check` instead when generated files need updating.
+
+---
+
+### `/server-test`
+
+**Purpose:** Run Bun server test suite (all tests or a specific file).
+
+**Config file:** `.claude/skills/server-test/SKILL.md`
+
+**Command:**
+```bash
+cd apps/server && bun test [$ARGUMENTS]
+```
+
+**When to use:** After changes to server routes, services, middleware, or WebSocket handlers.
+
+---
+
+### `/commit-draft`
+
+**Purpose:** Analyze staged changes and draft a conventional commit message. Does NOT commit — only drafts for user review.
+
+**Config file:** `.claude/skills/commit-draft/SKILL.md`
+
+**Output format:** `<type>(<scope>): <description>` + Co-Authored-By line.
+
+**When to use:** Before committing, to get a properly formatted conventional commit message.
+
+---
+
+### `/debug-log`
+
+**Purpose:** Create or update a debug iteration log per [CODE_FIXES.md](CODE_FIXES.md) workflow.
+
+**Config file:** `.claude/skills/debug-log/SKILL.md`
+
+**Usage:** `/debug-log <issue-name>` — Creates `docs/debug/<issue-name>.md` with iteration tracking table.
+
+**Escalation tiers:** Iteration 4 (Tier 1), 6 (Tier 2), 8 (Tier 3), 10 (HARD CAP).
+
+**When to use:** When debugging a non-trivial issue that may require multiple fix attempts.
+
+---
+
+### `/schema-parity`
+
+**Purpose:** Compare Drift (Flutter) tables against Drizzle (server) schema. Read-only parity check.
+
+**Config file:** `.claude/skills/schema-parity/SKILL.md`
+
+**Output:** Structured diff report — matched tables, column mismatches, missing tables, type mapping validation.
+
+**When to use:** After modifying Drizzle or Drift schema files, or during schema review.
+
+---
+
+### `/drift-migrate`
+
+**Purpose:** Manage Drift schema version bumps and scaffold migration code.
+
+**Config file:** `.claude/skills/drift-migrate/SKILL.md`
+
+**Modes:**
+- **Default (safe):** Read-only scaffold — shows migration code without writing
+- **Apply:** `/drift-migrate apply` — Writes migration code and runs build_runner
+
+**When to use:** After adding/modifying Drift table columns or adding new tables.

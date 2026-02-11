@@ -5,11 +5,121 @@
       "Bash(cd apps/mobile && dart run build_runner:*)",
       "Bash(cd apps/mobile && flutter analyze:*)",
       "Bash(cd apps/server && bun test:*)",
-      "Bash(cd apps/server && bunx drizzle-kit:*)"
+      "Bash(cd apps/server && bunx drizzle-kit:*)",
+      "Bash(cd apps/mobile && dart format:*)",
+      "Bash(cd apps/mobile && flutter run:*)",
+      "Bash(cd apps/mobile && flutter pub add:*)",
+      "Bash(cd apps/mobile && flutter pub get:*)",
+      "Bash(cd apps/mobile && flutter pub remove:*)",
+      "Bash(cd apps/mobile && flutter clean:*)",
+      "Bash(cd apps/mobile && flutter build:*)",
+      "Bash(cd apps/server && bun install:*)",
+      "Bash(cd apps/server && bun add:*)",
+      "Bash(cd apps/server && bun remove:*)",
+      "Bash(cd apps/server && bun run:*)",
+      "Bash(flutter create:*)",
+      "Bash(bun init:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git branch:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)",
+      "Bash(git tag:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(tree:*)",
+      "Bash(pwd:*)"
     ],
     "deny": [
       "Edit(CLAUDE.md)",
-      "Edit(.claude/rules.md)"
+      "Edit(.claude/rules.md)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git checkout .:*)",
+      "Bash(*--no-verify:*)",
+      "Bash(rm -rf:*)",
+      "Bash(rm -fr:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/validate-file-placement.ps1"
+          },
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/protect-sensitive-files.ps1"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/guard-cross-feature-imports.ps1"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/guard-bash-commands.ps1"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/load-session-context.ps1"
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/reinject-after-compaction.ps1"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/remind-session-handoff.ps1"
+          }
+        ]
+      }
     ]
   }
 }

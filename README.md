@@ -10,7 +10,7 @@ A cricket scoring mobile app targeting amateur/grassroots cricketers in India. B
 | Backend | Bun + ElysiaJS + Drizzle ORM |
 | Database (Server) | PostgreSQL |
 | Database (Local) | Drift / SQLite |
-| Auth | Firebase Auth (Phone OTP, Google, Email) |
+| Auth | Firebase Auth (Phone OTP only for MVP) |
 | Real-time | Bun Native WebSockets |
 | Target | Android only (MVP) |
 | UI Theme | Material 3 Dark |
@@ -29,7 +29,8 @@ cric/
 │   │   ├── DATABASE.md
 │   │   ├── API.md
 │   │   ├── SCORING_RULES.md
-│   │   └── blueprint.html
+│   │   ├── blueprint.html
+│   │   └── CRICHEROES_REFERENCE.md
 │   ├── process/         # Workflow & standards docs
 │   │   ├── PROJECT_MANAGEMENT.md
 │   │   ├── CODE_STANDARDS.md
@@ -37,10 +38,17 @@ cric/
 │   │   ├── CODE_FIXES.md
 │   │   ├── GITHUB_ISSUES.md
 │   │   └── CLAUDE_CODE_CONFIG.md
+│   ├── debug/           # Debug iteration logs
 │   └── CONTINUE_PROMPT.md
+├── scripts/
+│   └── validate-structure/  # CI structure validation
 ├── .claude/
-│   └── rules.md
-├── Notes
+│   ├── rules.md
+│   ├── hooks/           # Automated guardrails (7 hooks)
+│   ├── agents/          # Research-only sub-agents (13)
+│   └── skills/          # User-invocable skills (12)
+├── .github/
+│   └── workflows/       # CI pipeline
 ├── CLAUDE.md
 ├── .gitignore
 └── README.md
@@ -53,9 +61,10 @@ cric/
 - [Product Requirements](docs/planning/PDR.md) - Product vision, user stories, success metrics, MVP scope
 - [Implementation Plan](docs/planning/IMPLEMENTATION_PLAN.md) - Full phased roadmap, architecture, and verification plan
 - [API Design](docs/planning/API.md) - REST endpoints and WebSocket protocol
-- [Database Schema](docs/planning/DATABASE.md) - All 24 tables, views, and design decisions
+- [Database Schema](docs/planning/DATABASE.md) - All 28 tables, views, and design decisions
 - [Scoring Rules](docs/planning/SCORING_RULES.md) - Cricket rules engine, state machine, MVP algorithm
 - [Blueprint](docs/planning/blueprint.html) - Interactive wireframes and architecture diagrams (open in browser)
+- [CricHeroes Reference](docs/planning/CRICHEROES_REFERENCE.md) - Competitive analysis knowledge base
 
 ### Process
 
@@ -69,6 +78,18 @@ cric/
 ### Session Management
 
 - [Continue Prompt](docs/CONTINUE_PROMPT.md) - Context for resuming work across sessions
+
+## CI/CD
+
+GitHub Actions CI pipeline (`.github/workflows/ci.yml`) runs on push to `main`/`develop` and PRs:
+
+1. **Structure Validation** — Enforces file placement rules via `scripts/validate-structure/`
+2. **Flutter Analyze** — Static analysis (`flutter analyze`)
+3. **Flutter Test** — Full test suite (`flutter test`)
+4. **Server Lint** — TypeScript type checking (`bunx tsc --noEmit`)
+5. **Server Test** — Bun test suite (`bun test`)
+
+Runner: self-hosted (Windows Server 2022 VPS). Jobs skip automatically when their target directory has no changes.
 
 ## Key Features (MVP)
 

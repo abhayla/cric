@@ -9,12 +9,13 @@ nul
 *.swp
 *.swo
 
-# Claude Code (ignore all except rules, settings, agents, skills)
+# Claude Code (ignore all except rules, settings, agents, skills, hooks)
 .claude/*
 !.claude/rules.md
 !.claude/settings.json
 !.claude/agents/
 !.claude/skills/
+!.claude/hooks/
 
 # Flutter / Dart
 apps/mobile/.dart_tool/
@@ -28,6 +29,9 @@ apps/mobile/pubspec.lock
 # Bun / Node
 apps/server/node_modules/
 apps/server/bun.lockb
+
+# MCP config (contains connection strings)
+.mcp.json
 
 # Environment
 .env

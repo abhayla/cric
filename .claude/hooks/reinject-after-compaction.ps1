@@ -1,0 +1,36 @@
+# Hook: Post-Compaction Context Re-injection
+# Event: SessionStart (compact)
+# After context compaction, outputs condensed critical rules
+
+Write-Output "=== CRITICAL RULES (re-injected after context compaction) ==="
+Write-Output ""
+Write-Output "FILE PLACEMENT - NEVER DO THESE:"
+Write-Output "1. No files directly in lib/ except main.dart"
+Write-Output "2. No widgets in core/ (use shared/widgets/ or feature widgets/)"
+Write-Output "3. No models/ in domain/ (domain has entities/ only)"
+Write-Output "4. No cross-feature data/ or domain/ imports"
+Write-Output "5. Dart: snake_case.dart | TS: kebab-case.ts or dot.notation.ts"
+Write-Output "6. Pages: _page.dart | Notifiers: _notifier.dart | Models: _model.dart"
+Write-Output "7. Services: .service.ts suffix required"
+Write-Output "8. No files in server src/ root except index.ts"
+Write-Output "9. Drift tables only in shared/data/database/tables/"
+Write-Output "10. Generated files (*.g.dart, *.freezed.dart, *.gr.dart) - never edit manually"
+Write-Output ""
+Write-Output "DELIVERY PIPELINE (10 steps):"
+Write-Output "1.Validate -> 2.CalcRuns -> 3.HandleExtras -> 4.ProcessWicket ->"
+Write-Output "5.RotateStrike -> 6.UpdateStats -> 7.CheckOver -> 8.CheckInnings ->"
+Write-Output "9.Broadcast -> 10.Persist"
+Write-Output ""
+Write-Output "MATCH STATE MACHINE:"
+Write-Output "SETUP -> TOSS -> LIVE -> INNINGS_BREAK -> LIVE -> COMPLETED (ABANDONED at any point)"
+Write-Output ""
+Write-Output "CRITICAL CRICKET RULES:"
+Write-Output "- Odd runs swap strike; end of over swaps too"
+Write-Output "- Wides/no-balls are NOT legal deliveries (don't count toward 6-ball over)"
+Write-Output "- No-ball triggers free hit (only run out possible on free hit)"
+Write-Output "- Byes/leg-byes don't count against bowler and don't break maidens"
+Write-Output "- All out = players_per_side - 1 wickets (not hardcoded 10)"
+Write-Output ""
+Write-Output "=== Full rules: .claude/rules.md | CLAUDE.md ==="
+
+exit 0

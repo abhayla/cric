@@ -24,7 +24,10 @@
 | `docs/process/IMPLEMENTATION_PRACTICES.md` | Feature workflow, offline-first, state management, testing | When practices evolve |
 | `docs/process/CODE_FIXES.md` | Debugging workflow, common issues, fix protocol | When patterns discovered |
 | `docs/process/GITHUB_ISSUES.md` | Issue templates, labels, milestones, workflow | When process changes |
-| `docs/process/CLAUDE_CODE_CONFIG.md` | Sub-agent specs, skill definitions | When agents/skills change |
+| `docs/process/CLAUDE_CODE_CONFIG.md` | Sub-agent specs, skill definitions, hooks, MCP servers | When agents/skills/hooks change |
+| `.mcp.json` | MCP server configuration (PostgreSQL) — gitignored | When MCP servers change |
+| `.github/workflows/ci.yml` | CI pipeline (structure validation, Flutter analyze/test, server lint/test) | When CI jobs change |
+| `scripts/validate-structure/` | Structure validation scripts (flutter-validator.js, server-validator.js) | When placement rules change |
 
 ### Folder Structure
 
@@ -45,6 +48,8 @@ docs/
 │   ├── CODE_FIXES.md
 │   ├── GITHUB_ISSUES.md
 │   └── CLAUDE_CODE_CONFIG.md
+├── debug/                  # Debug iteration logs (created by /debug-log skill)
+│   └── .gitkeep
 └── CONTINUE_PROMPT.md      # Session handoff (root for quick access)
 ```
 

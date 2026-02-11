@@ -4,10 +4,11 @@ Add this condition to Passing criteria - take screenshot after each testing, ana
 If any issue or error found then fix it and retest it. Do this in loop until the issue is fixed and test passes. Instead of shortcuts, Focus on the roor cause of the problem
 
 
-Do not proceed until you have 100% confidence of what I want. Ask me questions until you reach that confidence. Ask one question at a time. Tell me the number of questions you are going to ask.
+Do not proceed until you have 100% confidence of what I want. Ask me questions until you reach that confidence. 
+Ask one question at a time. Tell me the approximate number of questions you are going to ask.
 For each question, always give your recommendation. Your recommendation should be based on best practices and standards.
 After each response and before asking next question, Check industry standards, check the related codebase and docs and then add your knowlegebase to proceed.
-Run through your final plan with me for my review iteratively for each section. Create the final plan only after my  approval.                                         
+Run through your final plan with me for my review iteratively for each section. Create the final plan only after my approval.                                         
 
 Create a prompt to Save the current context state and start from here in the next context from here referring the required docs. Save this prompt in 
 \docs\CONTINUE_PROMPT.md
