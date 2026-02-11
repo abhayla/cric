@@ -14,7 +14,7 @@
     }
     .score-comparison .team-block { text-align: center; flex: 1; }
     .score-comparison .team-block .team-avatar-lg {
-      width: 48px; height: 48px; border-radius: 50%;
+      width: 56px; height: 56px; border-radius: 50%;
       margin: 0 auto 6px;
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 16px;
@@ -124,11 +124,11 @@
 
         <div class="scorecard-extras">
           <span>Extras</span>
-          <span>12 (Wd 4, NB 2, B 2, LB 2, P 2)</span>
+          <span>10 (Wd 4, NB 2, B 2, LB 2, P 0)</span>
         </div>
         <div class="scorecard-total">
           <span>Total (6 wkts, 20.0 ov)</span>
-          <span>189</span>
+          <span>187</span>
         </div>
 
         <!-- Yet to Bat -->
@@ -214,7 +214,7 @@
             </tr>
           </tbody>
         </table>
-        <div class="scorecard-extras"><span>Extras</span><span>8 (Wd 3, NB 1, B 2, LB 2, P 0)</span></div>
+        <div class="scorecard-extras"><span>Extras</span><span>4 (Wd 1, NB 1, B 1, LB 1, P 0)</span></div>
         <div class="scorecard-total"><span>Total (9 wkts, 20.0 ov)</span><span>172</span></div>
       </div>
     </div>
@@ -223,7 +223,7 @@
     <div class="tab-panel" data-panel="commentary" style="padding: 0 16px; padding-bottom: 80px;">
       <!-- Empty State (G24) — toggle: document.getElementById('emptyCommentary').style.display = '' -->
       <div id="emptyCommentary" class="empty-state" style="display: none;">
-        <div class="empty-icon">&#x1F4AC;</div>
+        <div class="empty-icon" data-icon="chat_bubble_outline" style="font-size: 64px; opacity: 0.38;"></div>
         <div class="empty-title">No Commentary</div>
         <div class="empty-text">Ball-by-ball commentary will appear here during the match.</div>
       </div>

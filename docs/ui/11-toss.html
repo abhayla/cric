@@ -24,7 +24,7 @@
     }
     .player-select-row {
       display: flex; align-items: center; gap: 12px;
-      padding: 10px 12px; border: 1.5px solid var(--border);
+      padding: 12px; border: 1.5px solid var(--border);
       border-radius: var(--radius-md); margin-bottom: 8px;
       cursor: pointer; transition: all var(--duration) var(--ease);
     }
@@ -38,6 +38,38 @@
     .player-select-row.selected .player-select-check {
       background: var(--primary); border-color: var(--primary); color: white;
     }
+    .btn-row { display: flex; gap: 12px; padding-bottom: 24px; }
+    .btn-row .btn { flex: 1; }
+    .btn-back {
+      background: none; border: 1.5px solid var(--border); color: var(--text-primary);
+      border-radius: var(--radius-md); padding: 14px; font-size: var(--body);
+      font-weight: var(--fw-semibold); cursor: pointer;
+    }
+    .btn-back:hover { border-color: var(--primary); color: var(--primary); }
+    .striker-prompt {
+      margin-top: 16px; padding: 16px; border-radius: var(--radius-md);
+      background: var(--surface); border: 1.5px solid var(--primary);
+    }
+    .striker-prompt h4 { font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px; color: var(--primary); }
+    .striker-option {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-md);
+      margin-bottom: 8px; cursor: pointer; transition: all var(--duration) var(--ease);
+    }
+    .striker-option:hover { border-color: var(--primary); }
+    .striker-option.selected { border-color: var(--primary); background: var(--primary-light); }
+    .striker-radio {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid var(--border); flex-shrink: 0;
+    }
+    .striker-option.selected .striker-radio { border-color: var(--primary); border-width: 5px; }
+
+    /* Compact stepper for 5 steps */
+    #tossSteps { padding: 0 8px; }
+    #tossSteps .step-connector { min-width: 12px; margin: 0 4px; }
+    #tossSteps .step-label { font-size: 10px; }
+    #tossSteps .step-number { width: 24px; height: 24px; font-size: 11px; }
+    #tossSteps .step { gap: 3px; }
   </style>
 </head>
 <body>
@@ -65,6 +97,16 @@
         <div class="step-connector"></div>
         <div class="step" data-step="3">
           <div class="step-number">3</div>
+          <span class="step-label">XI-A</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" data-step="4">
+          <div class="step-number">4</div>
+          <span class="step-label">XI-B</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step" data-step="5">
+          <div class="step-number">5</div>
           <span class="step-label">Openers</span>
         </div>
       </div>
@@ -86,27 +128,191 @@
         </div>
       </div>
 
-      <!-- Step 2: Chose to bat/bowl -->
+      <!-- Step 2: Chose to bat/field -->
       <div class="toss-step" data-toss-step="2">
         <h3 style="font-size: var(--heading); font-weight: var(--fw-bold); text-align: center; margin-bottom: 8px;">
-          <span id="tossWinnerName">—</span> chose to
+          <span id="tossWinnerName">&mdash;</span> chose to
         </h3>
-        <p class="text-secondary text-center text-sm mb-16">Select batting or bowling</p>
+        <p class="text-secondary text-center text-sm mb-16">Select batting or fielding</p>
 
-        <div class="toggle-group" id="batBowlToggle" style="max-width: 280px; margin: 0 auto;">
+        <div class="toggle-group" id="batFieldToggle" style="max-width: 280px; margin: 0 auto;">
           <div class="toggle-option" data-value="bat" onclick="selectChoice('bat')">
-            <div style="font-size: 28px; margin-bottom: 4px;">🏏</div>
+            <div style="margin-bottom: 4px;"><span data-icon="sports_cricket" style="width: 32px; height: 32px;"></span></div>
             Bat
           </div>
-          <div class="toggle-option" data-value="bowl" onclick="selectChoice('bowl')">
-            <div style="font-size: 28px; margin-bottom: 4px;">⚾</div>
-            Bowl
+          <div class="toggle-option" data-value="field" onclick="selectChoice('field')">
+            <div style="margin-bottom: 4px;"><span data-icon="sports" style="width: 32px; height: 32px;"></span></div>
+            Field
           </div>
         </div>
       </div>
 
-      <!-- Step 3: Select Openers -->
+      <!-- Step 3: Playing XI — Team A (batting team) -->
       <div class="toss-step" data-toss-step="3">
+        <h3 style="font-size: var(--heading); font-weight: var(--fw-bold); margin-bottom: 4px;">
+          Playing XI
+        </h3>
+        <p class="text-secondary text-sm mb-16">Select 11 from <span id="xiTeamAName">Mumbai Warriors</span></p>
+
+        <div id="xiTeamAList">
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">AM</div>
+            <div class="player-info">
+              <div class="player-name">Arjun Mehta (C)</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">VS</div>
+            <div class="player-info">
+              <div class="player-name">Vikram Sharma</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">RP</div>
+            <div class="player-info">
+              <div class="player-name">Rohan Patel</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">KS</div>
+            <div class="player-info">
+              <div class="player-name">Karan Singh</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">All-Rounder</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">NV</div>
+            <div class="player-info">
+              <div class="player-name">Nikhil Verma (WK)</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">WK-Batter</div>
+            </div>
+          </div>
+          <!-- Remaining 6 players shown as selected (11 total in roster, all pre-selected) -->
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">SD</div>
+            <div class="player-info">
+              <div class="player-name">Suresh Dubey</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">All-Rounder</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">PK</div>
+            <div class="player-info">
+              <div class="player-name">Pradeep Kumar</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &middot; Right Arm Fast</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">RT</div>
+            <div class="player-info">
+              <div class="player-name">Rajesh Tiwari</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &middot; Right Arm Medium</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MJ</div>
+            <div class="player-info">
+              <div class="player-name">Manoj Joshi</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &middot; Right Arm Off Spin</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">DG</div>
+            <div class="player-info">
+              <div class="player-name">Deepak Gupta</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &middot; Left Arm Orthodox</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'A')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">AY</div>
+            <div class="player-info">
+              <div class="player-name">Amit Yadav</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &middot; Right Arm Leg Spin</div>
+            </div>
+          </div>
+        </div>
+        <p class="text-secondary text-sm" style="margin-top: 8px; text-align: right;"><span id="xiTeamACount">11</span> / 11 selected</p>
+      </div>
+
+      <!-- Step 4: Playing XI — Team B (fielding team) -->
+      <div class="toss-step" data-toss-step="4">
+        <h3 style="font-size: var(--heading); font-weight: var(--fw-bold); margin-bottom: 4px;">
+          Playing XI
+        </h3>
+        <p class="text-secondary text-sm mb-16">Select 11 from <span id="xiTeamBName">Delhi Strikers</span></p>
+
+        <div id="xiTeamBList">
+          <div class="player-select-row selected" onclick="toggleXI(this, 'B')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">RK</div>
+            <div class="player-info">
+              <div class="player-name">Rahul Kapoor (C)</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'B')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">SB</div>
+            <div class="player-info">
+              <div class="player-name">Sanjay Bansal</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'B')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">VR</div>
+            <div class="player-info">
+              <div class="player-name">Vivek Reddy (WK)</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">WK-Batter</div>
+            </div>
+          </div>
+          <!-- Show 3 sample bowlers; implementation shows full roster -->
+          <div class="player-select-row selected" onclick="toggleXI(this, 'B')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">HM</div>
+            <div class="player-info">
+              <div class="player-name">Harsh Mishra</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &middot; Right Arm Fast</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'B')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">NY</div>
+            <div class="player-info">
+              <div class="player-name">Naveen Yadav</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &middot; Right Arm Fast</div>
+            </div>
+          </div>
+          <div class="player-select-row selected" onclick="toggleXI(this, 'B')">
+            <div class="player-select-check"></div>
+            <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">AP</div>
+            <div class="player-info">
+              <div class="player-name">Ankit Pandey</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Bowler &middot; Right Arm Medium</div>
+            </div>
+          </div>
+          <!-- Remaining 5 players abbreviated for wireframe -->
+          <p class="text-secondary text-sm" style="text-align: center; padding: 8px 0;">+ 5 more players (all selected)</p>
+        </div>
+        <p class="text-secondary text-sm" style="margin-top: 8px; text-align: right;"><span id="xiTeamBCount">11</span> / 11 selected</p>
+      </div>
+
+      <!-- Step 5: Select Openers -->
+      <div class="toss-step" data-toss-step="5">
         <h3 style="font-size: var(--heading); font-weight: var(--fw-bold); margin-bottom: 4px;">
           Select Opening Batsmen
         </h3>
@@ -118,7 +324,7 @@
             <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">AM</div>
             <div class="player-info">
               <div class="player-name">Arjun Mehta</div>
-              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batsman</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter</div>
             </div>
           </div>
           <div class="player-select-row" onclick="toggleOpener(this)">
@@ -126,7 +332,7 @@
             <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">VS</div>
             <div class="player-info">
               <div class="player-name">Vikram Sharma</div>
-              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batsman</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter</div>
             </div>
           </div>
           <div class="player-select-row" onclick="toggleOpener(this)">
@@ -134,7 +340,7 @@
             <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">RP</div>
             <div class="player-info">
               <div class="player-name">Rohan Patel</div>
-              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batsman</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter</div>
             </div>
           </div>
           <div class="player-select-row" onclick="toggleOpener(this)">
@@ -142,7 +348,7 @@
             <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">KS</div>
             <div class="player-info">
               <div class="player-name">Karan Singh</div>
-              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">All-rounder</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">All-Rounder</div>
             </div>
           </div>
           <div class="player-select-row" onclick="toggleOpener(this)">
@@ -150,9 +356,15 @@
             <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">NV</div>
             <div class="player-info">
               <div class="player-name">Nikhil Verma</div>
-              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Wicketkeeper</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">WK-Batter</div>
             </div>
           </div>
+        </div>
+
+        <!-- Striker designation prompt (appears after selecting 2 openers) -->
+        <div class="striker-prompt" id="strikerPrompt" style="display: none;">
+          <h4>Who will face the first ball?</h4>
+          <div id="strikerOptions"></div>
         </div>
 
         <div class="divider" style="margin: 16px 0;"></div>
@@ -168,7 +380,7 @@
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">HM</div>
             <div class="player-info">
               <div class="player-name">Harsh Mishra</div>
-              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Fast</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Arm Fast</div>
             </div>
           </div>
           <div class="player-select-row" onclick="selectBowler(this)">
@@ -176,7 +388,7 @@
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">NY</div>
             <div class="player-info">
               <div class="player-name">Naveen Yadav</div>
-              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Fast</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Arm Fast</div>
             </div>
           </div>
           <div class="player-select-row" onclick="selectBowler(this)">
@@ -184,7 +396,7 @@
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">AP</div>
             <div class="player-info">
               <div class="player-name">Ankit Pandey</div>
-              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Medium</div>
+              <div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Arm Medium</div>
             </div>
           </div>
         </div>
@@ -193,8 +405,9 @@
       <!-- Spacer -->
       <div style="flex: 1;"></div>
 
-      <!-- CTA -->
-      <div style="padding-bottom: 24px;">
+      <!-- CTA Buttons -->
+      <div class="btn-row" id="btnRow">
+        <button class="btn-back" id="tossBackBtn" onclick="prevTossStep()" style="display: none;">Back</button>
         <button class="btn btn-primary" id="tossNextBtn" onclick="nextTossStep()">Next</button>
       </div>
     </div>
@@ -203,10 +416,14 @@
   <script src="app.js"></script>
   <script>
     let currentStep = 1;
+    const totalSteps = 5;
     let tossWinner = null;
     let tossChoice = null;
-    let selectedOpeners = 0;
+    let selectedOpeners = [];
+    let strikerSelected = null;
     let bowlerSelected = false;
+    let xiCountA = 11;
+    let xiCountB = 11;
 
     function updateSteps() {
       document.querySelectorAll('.toss-step').forEach(s => s.classList.remove('active'));
@@ -222,9 +439,11 @@
         c.classList.toggle('completed', i + 1 < currentStep);
       });
 
-      // Update button text
-      const btn = document.getElementById('tossNextBtn');
-      btn.textContent = currentStep === 3 ? 'Start Match' : 'Next';
+      // Update button text and back button visibility
+      const nextBtn = document.getElementById('tossNextBtn');
+      const backBtn = document.getElementById('tossBackBtn');
+      nextBtn.textContent = currentStep === totalSteps ? 'Start Match' : 'Next';
+      backBtn.style.display = currentStep > 1 ? '' : 'none';
     }
 
     function selectTossWinner(card, team) {
@@ -237,20 +456,60 @@
 
     function selectChoice(choice) {
       tossChoice = choice;
-      document.querySelectorAll('#batBowlToggle .toggle-option').forEach(o => o.classList.remove('active'));
+      document.querySelectorAll('#batFieldToggle .toggle-option').forEach(o => o.classList.remove('active'));
       document.querySelector(`[data-value="${choice}"]`).classList.add('active');
     }
 
-    function toggleOpener(row) {
+    function toggleXI(row, team) {
+      const countEl = document.getElementById(team === 'A' ? 'xiTeamACount' : 'xiTeamBCount');
       if (row.classList.contains('selected')) {
         row.classList.remove('selected');
         row.querySelector('.player-select-check').innerHTML = '';
-        selectedOpeners--;
-      } else if (selectedOpeners < 2) {
+        if (team === 'A') xiCountA--; else xiCountB--;
+      } else {
         row.classList.add('selected');
         row.querySelector('.player-select-check').innerHTML = ICONS.check;
-        selectedOpeners++;
+        if (team === 'A') xiCountA++; else xiCountB++;
       }
+      countEl.textContent = team === 'A' ? xiCountA : xiCountB;
+    }
+
+    function toggleOpener(row) {
+      const name = row.querySelector('.player-name').textContent;
+      if (row.classList.contains('selected')) {
+        row.classList.remove('selected');
+        row.querySelector('.player-select-check').innerHTML = '';
+        selectedOpeners = selectedOpeners.filter(n => n !== name);
+        strikerSelected = null;
+      } else if (selectedOpeners.length < 2) {
+        row.classList.add('selected');
+        row.querySelector('.player-select-check').innerHTML = ICONS.check;
+        selectedOpeners.push(name);
+      }
+      updateStrikerPrompt();
+    }
+
+    function updateStrikerPrompt() {
+      const prompt = document.getElementById('strikerPrompt');
+      const options = document.getElementById('strikerOptions');
+      if (selectedOpeners.length === 2) {
+        prompt.style.display = '';
+        options.innerHTML = selectedOpeners.map(name =>
+          `<div class="striker-option${strikerSelected === name ? ' selected' : ''}" onclick="selectStriker('${name}')">
+            <div class="striker-radio"></div>
+            <span style="font-weight: var(--fw-medium);">${name}</span>
+          </div>`
+        ).join('');
+      } else {
+        prompt.style.display = 'none';
+        options.innerHTML = '';
+        strikerSelected = null;
+      }
+    }
+
+    function selectStriker(name) {
+      strikerSelected = name;
+      updateStrikerPrompt();
     }
 
     function selectBowler(row) {
@@ -266,17 +525,34 @@
     function nextTossStep() {
       if (currentStep === 1) {
         if (!tossWinner) return;
-        currentStep = 2;
-        updateSteps();
       } else if (currentStep === 2) {
         if (!tossChoice) return;
-        currentStep = 3;
-        updateSteps();
       } else if (currentStep === 3) {
-        if (selectedOpeners < 2 || !bowlerSelected) return;
+        if (xiCountA !== 11) return; // validate players_per_side
+      } else if (currentStep === 4) {
+        if (xiCountB !== 11) return;
+      } else if (currentStep === 5) {
+        if (selectedOpeners.length < 2 || !strikerSelected || !bowlerSelected) return;
         navigateTo('12-scoring-page.html');
+        return;
+      }
+      currentStep++;
+      updateSteps();
+    }
+
+    function prevTossStep() {
+      if (currentStep > 1) {
+        currentStep--;
+        updateSteps();
       }
     }
+
+    // Initialize checkmarks on pre-selected XI rows
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.player-select-row.selected .player-select-check').forEach(el => {
+        el.innerHTML = ICONS.check;
+      });
+    });
 
     updateSteps();
   </script>

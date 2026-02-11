@@ -57,16 +57,23 @@
     .t-progress-text {
       font-size: var(--caption); color: var(--text-secondary); white-space: nowrap;
     }
+    .badge-registration {
+      background: #FFF3E0; color: #E65100;
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: var(--radius-full);
+      font-size: var(--caption-sm); font-weight: var(--fw-semibold);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .t-winner {
+      font-size: var(--caption); color: var(--primary); font-weight: var(--fw-semibold); margin-top: 6px;
+    }
   </style>
 </head>
 <body>
   <div class="phone-frame">
     <!-- Header -->
     <div class="header-bar">
-      <span class="header-title">My Tournaments</span>
-      <div class="header-actions">
-        <button class="header-action" data-icon="search"></button>
-      </div>
+      <span class="header-title">Tournaments</span>
     </div>
 
     <!-- Content -->
@@ -86,13 +93,27 @@
         <div class="t-date">1 Mar — 15 Mar 2026</div>
         <div class="t-progress">
           <div class="t-progress-bar">
-            <div class="t-progress-fill" style="width: 60%;"></div>
+            <div class="t-progress-fill" style="width: 47%;"></div>
           </div>
-          <span class="t-progress-text">7/12 matches</span>
+          <span class="t-progress-text">7/15 matches</span>
         </div>
       </div>
 
-      <!-- Tournament 2: DRAFT -->
+      <!-- Tournament 2: REGISTRATION -->
+      <div class="tournament-card" onclick="navigateTo('21-tournament-detail.html')">
+        <div class="t-header">
+          <span class="t-name">Summer Sixes League</span>
+          <span class="badge-registration">REGISTRATION</span>
+        </div>
+        <div class="t-meta">
+          <span class="format-badge">Round Robin</span>
+          <span class="t-meta-item">6 overs</span>
+          <span class="t-meta-item">4/8 teams</span>
+        </div>
+        <div class="t-date">15 Apr — 30 Apr 2026</div>
+      </div>
+
+      <!-- Tournament 3: DRAFT -->
       <div class="tournament-card" onclick="navigateTo('21-tournament-detail.html')">
         <div class="t-header">
           <span class="t-name">Corporate Premier League</span>
@@ -118,6 +139,7 @@
           <span class="t-meta-item">8 teams</span>
         </div>
         <div class="t-date">10 Jan — 25 Jan 2026</div>
+        <div class="t-winner"><span data-icon="trophy" style="width: 14px; height: 14px; display: inline-block; vertical-align: -2px;"></span> Winner: Mumbai Warriors</div>
         <div class="t-progress">
           <div class="t-progress-bar">
             <div class="t-progress-fill" style="width: 100%;"></div>
@@ -130,7 +152,7 @@
 
     <!-- Empty State (G24) — toggle: document.getElementById('emptyState').style.display = '' -->
     <div id="emptyState" class="empty-state" style="display: none;">
-      <div class="empty-icon">&#x1F3C6;</div>
+      <div class="empty-icon" data-icon="trophy" style="font-size: 64px; opacity: 0.38;"></div>
       <div class="empty-title">No Tournaments</div>
       <div class="empty-text">Create a tournament to organize matches between teams.</div>
       <button class="empty-cta" onclick="navigateTo('20-create-tournament.html')">Create Tournament</button>

@@ -11,7 +11,7 @@
     .so-step.active { display: block; }
     .player-check-row {
       display: flex; align-items: center; gap: 12px;
-      padding: 10px 12px; border: 1.5px solid var(--border);
+      padding: 14px 12px; border: 1.5px solid var(--border);
       border-radius: var(--radius-md); margin-bottom: 8px;
       cursor: pointer; transition: all var(--duration) var(--ease);
     }
@@ -27,7 +27,7 @@
     }
     .player-radio-row {
       display: flex; align-items: center; gap: 12px;
-      padding: 10px 12px; border: 1.5px solid var(--border);
+      padding: 14px 12px; border: 1.5px solid var(--border);
       border-radius: var(--radius-md); margin-bottom: 8px;
       cursor: pointer; transition: all var(--duration) var(--ease);
     }
@@ -64,8 +64,13 @@
           <span class="modal-title">Super Over Setup</span>
         </div>
 
+        <!-- Batting order info -->
+        <div style="padding: 12px 16px 0;">
+          <div style="font-size: var(--caption); color: var(--text-secondary); text-align: center;">Mumbai Warriors bat first (chased in regulation)</div>
+        </div>
+
         <!-- Stepper -->
-        <div style="padding: 16px 16px 0;">
+        <div style="padding: 8px 16px 0;">
           <div class="stepper">
             <div class="step active" id="step1"><div class="step-number">1</div><div class="step-label">MW Bat</div></div>
             <div class="step-connector" id="conn1"></div>
@@ -90,13 +95,13 @@
             <div class="player-check-row selected" onclick="toggleSOCheck(this)">
               <div class="check-box">&#10003;</div>
               <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">AM</div>
-              <div class="player-info"><div class="player-name">Arjun Mehta</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batsman &bull; RHB</div></div>
+              <div class="player-info"><div class="player-name">Arjun Mehta</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter &bull; RHB</div></div>
               <span class="role-tag">Non-striker</span>
             </div>
             <div class="player-check-row selected" onclick="toggleSOCheck(this)">
               <div class="check-box">&#10003;</div>
               <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">VS</div>
-              <div class="player-info"><div class="player-name">Vikram Sharma</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batsman &bull; RHB</div></div>
+              <div class="player-info"><div class="player-name">Vikram Sharma</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter &bull; RHB</div></div>
               <span class="role-tag">Reserve</span>
             </div>
             <div class="player-check-row" onclick="toggleSOCheck(this)">
@@ -107,7 +112,7 @@
             <div class="player-check-row" onclick="toggleSOCheck(this)">
               <div class="check-box"></div>
               <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">NV</div>
-              <div class="player-info"><div class="player-name">Nikhil Verma</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Wicketkeeper &bull; RHB</div></div>
+              <div class="player-info"><div class="player-name">Nikhil Verma</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">WK-Batter &bull; RHB</div></div>
             </div>
           </div>
 
@@ -119,30 +124,30 @@
             <div class="player-radio-row selected" onclick="selectSORadio(this)">
               <div class="radio-dot"></div>
               <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">RK</div>
-              <div class="player-info"><div class="player-name">Rajesh Kumar</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Fast &bull; 3-0-32-2</div></div>
+              <div class="player-info"><div class="player-name">Rajesh Kumar</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Arm Fast &bull; 3-0-32-2</div></div>
             </div>
             <div class="player-radio-row" onclick="selectSORadio(this)">
               <div class="radio-dot"></div>
               <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">PG</div>
-              <div class="player-info"><div class="player-name">Prashant Gupta</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Fast &bull; 4-0-38-1</div></div>
+              <div class="player-info"><div class="player-name">Prashant Gupta</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Arm Fast &bull; 4-0-38-1</div></div>
             </div>
             <div class="player-radio-row" onclick="selectSORadio(this)">
               <div class="radio-dot"></div>
               <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">DN</div>
-              <div class="player-info"><div class="player-name">Deepak Nair</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Left Spin &bull; 4-1-28-2</div></div>
+              <div class="player-info"><div class="player-name">Deepak Nair</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Left Arm Orthodox &bull; 4-1-28-2</div></div>
             </div>
           </div>
 
           <!-- Step 3: Team B Batters + Bowler -->
           <div class="so-step" data-step="3">
             <h4 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 4px;">Delhi Strikers — Setup</h4>
-            <p class="text-secondary text-sm mb-16">Select 3 batters and 1 bowler.</p>
+            <p class="text-secondary text-sm mb-16">Select 3 batters, designate striker, and select 1 bowler.</p>
 
             <div style="font-size: var(--body-sm); font-weight: var(--fw-semibold); margin-bottom: 8px; color: var(--text-secondary);">Batters (select 3)</div>
             <div class="player-check-row selected" onclick="toggleSOCheck(this)">
               <div class="check-box">&#10003;</div>
               <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">RK</div>
-              <div class="player-info"><div class="player-name">Rahul Kapoor</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batsman &bull; RHB</div></div>
+              <div class="player-info"><div class="player-name">Rahul Kapoor</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Batter &bull; RHB</div></div>
               <span class="role-tag striker">Striker</span>
             </div>
             <div class="player-check-row selected" onclick="toggleSOCheck(this)">
@@ -164,12 +169,12 @@
             <div class="player-radio-row selected" onclick="selectSORadio(this)">
               <div class="radio-dot"></div>
               <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">HM</div>
-              <div class="player-info"><div class="player-name">Harsh Mishra</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Fast &bull; 4-0-38-1</div></div>
+              <div class="player-info"><div class="player-name">Harsh Mishra</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Arm Fast &bull; 4-0-38-1</div></div>
             </div>
             <div class="player-radio-row" onclick="selectSORadio(this)">
               <div class="radio-dot"></div>
               <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">NY</div>
-              <div class="player-info"><div class="player-name">Naveen Yadav</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Fast &bull; 4-0-42-1</div></div>
+              <div class="player-info"><div class="player-name">Naveen Yadav</div><div class="player-role" style="font-size:var(--caption); color: var(--text-secondary);">Right Arm Fast &bull; 4-0-42-1</div></div>
             </div>
           </div>
         </div>
@@ -216,6 +221,16 @@
     }
 
     function toggleSOCheck(row) {
+      const container = row.closest('.so-step');
+      const selected = container.querySelectorAll('.player-check-row.selected');
+      if (!row.classList.contains('selected') && selected.length >= 3) {
+        // Auto-deselect oldest when selecting 4th
+        const first = selected[0];
+        first.classList.remove('selected');
+        first.querySelector('.check-box').innerHTML = '';
+        const tag = first.querySelector('.role-tag');
+        if (tag) tag.remove();
+      }
       row.classList.toggle('selected');
       const box = row.querySelector('.check-box');
       box.innerHTML = row.classList.contains('selected') ? '&#10003;' : '';

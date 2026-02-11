@@ -32,8 +32,24 @@
       border-radius: var(--radius-md); font-size: var(--title); font-weight: var(--fw-bold);
     }
     .overs-input-row .overs-field:focus { border-color: var(--primary); }
-    .overs-preset { display: flex; gap: 8px; }
+    .overs-preset { display: flex; gap: 8px; flex-wrap: wrap; }
     .overs-preset .chip { min-width: 48px; justify-content: center; }
+    .lock-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: var(--caption); font-weight: var(--fw-regular);
+      color: var(--primary); margin-left: 8px;
+    }
+    .lock-badge span[data-icon] { width: 14px; height: 14px; }
+    .field-locked { opacity: 0.5; pointer-events: none; }
+    .field-locked .chip { cursor: default; }
+    .advanced-toggle {
+      width: 100%; text-align: left; padding: 12px 0; border: none;
+      background: none; color: var(--text-secondary); font-size: var(--body);
+      cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+    }
+    .advanced-toggle:hover { color: var(--text-primary); }
+    .advanced-panel { margin-top: 12px; }
+    .advanced-panel .input-group + .input-group { margin-top: 16px; }
   </style>
 </head>
 <body>
@@ -81,8 +97,8 @@
       </div>
 
       <!-- Overs -->
-      <div class="section" style="margin-top: var(--section-gap);">
-        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Match Format</h3>
+      <div class="section" style="margin-top: var(--section-gap);" id="oversSection">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Match Format <span class="lock-badge" id="formatLockBadge" style="display:none;"><span data-icon="lock"></span> Locked by tournament</span></h3>
         <div class="overs-input-row">
           <input type="number" class="overs-field" id="oversInput" value="20" min="1" max="50">
           <span style="font-size: var(--body); color: var(--text-secondary);">overs per side</span>
@@ -90,19 +106,43 @@
         <div class="overs-preset" style="margin-top: 12px;">
           <span class="chip" data-value="5" onclick="setOvers(5, this)">5</span>
           <span class="chip" data-value="10" onclick="setOvers(10, this)">10</span>
+          <span class="chip" data-value="15" onclick="setOvers(15, this)">15</span>
           <span class="chip active" data-value="20" onclick="setOvers(20, this)">20</span>
+          <span class="chip" data-value="25" onclick="setOvers(25, this)">25</span>
           <span class="chip" data-value="50" onclick="setOvers(50, this)">50</span>
         </div>
       </div>
 
+      <!-- Players Per Side -->
+      <div class="section" style="margin-top: var(--section-gap);" id="playersSection">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Players Per Side <span class="lock-badge" id="playersLockBadge" style="display:none;"><span data-icon="lock"></span> Locked by tournament</span></h3>
+        <div class="overs-input-row">
+          <input type="number" class="overs-field" id="playersInput" value="11" min="2" max="11">
+          <span style="font-size: var(--body); color: var(--text-secondary);">players per team</span>
+        </div>
+        <div class="overs-preset" style="margin-top: 12px;">
+          <span class="chip" data-value="6" onclick="setPlayers(6, this)">6</span>
+          <span class="chip" data-value="8" onclick="setPlayers(8, this)">8</span>
+          <span class="chip active" data-value="11" onclick="setPlayers(11, this)">11</span>
+        </div>
+      </div>
+
       <!-- Ball Type -->
-      <div class="section" style="margin-top: var(--section-gap);">
-        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Ball Type</h3>
+      <div class="section" style="margin-top: var(--section-gap);" id="ballTypeSection">
+        <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Ball Type <span class="lock-badge" id="ballTypeLockBadge" style="display:none;"><span data-icon="lock"></span> Locked by tournament</span></h3>
         <div class="chip-group" id="ballTypeChips">
           <span class="chip active" data-value="Leather">Leather</span>
           <span class="chip" data-value="Tennis">Tennis</span>
           <span class="chip" data-value="Tape">Tape</span>
           <span class="chip" data-value="Other">Other</span>
+        </div>
+      </div>
+
+      <!-- Match Date -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <div class="input-group" style="margin-top: 0;">
+          <label class="input-label">Match Date</label>
+          <input type="date" class="input-field" id="matchDateInput">
         </div>
       </div>
 
@@ -114,9 +154,35 @@
         </div>
       </div>
 
+      <!-- Advanced Settings (collapsed by default) -->
+      <div class="section" style="margin-top: var(--section-gap);" id="advancedSection">
+        <button class="advanced-toggle" onclick="toggleAdvanced()">
+          <span>Advanced Settings</span>
+          <span data-icon="chevronDown" id="advancedChevron" style="width: 20px; height: 20px; transition: transform 0.2s;"></span>
+        </button>
+        <div class="advanced-panel" id="advancedPanel" style="display: none;">
+          <div class="input-group" style="margin-top: 0;">
+            <label class="input-label">Wide Runs <span style="font-weight: var(--fw-regular); color: var(--text-secondary); font-size: var(--caption);">(default: 1)</span></label>
+            <input type="number" class="input-field" id="wideRunsInput" value="1" min="1" max="5">
+          </div>
+          <div class="input-group">
+            <label class="input-label">No-Ball Runs <span style="font-weight: var(--fw-regular); color: var(--text-secondary); font-size: var(--caption);">(default: 1)</span></label>
+            <input type="number" class="input-field" id="noBallRunsInput" value="1" min="1" max="5">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Max Overs Per Bowler <span style="font-weight: var(--fw-regular); color: var(--text-secondary); font-size: var(--caption);">(optional)</span></label>
+            <input type="number" class="input-field" id="maxOversInput" placeholder="Auto (e.g. 4 for 20-over match)" min="1" max="50">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Powerplay Overs <span style="font-weight: var(--fw-regular); color: var(--text-secondary); font-size: var(--caption);">(optional)</span></label>
+            <input type="number" class="input-field" id="powerplayInput" placeholder="e.g. 6" min="1" max="50">
+          </div>
+        </div>
+      </div>
+
       <!-- Empty State (G24) — toggle: document.getElementById('emptyState').style.display = '' -->
       <div id="emptyState" class="empty-state" style="display: none;">
-        <div class="empty-icon">&#x1F4C5;</div>
+        <div class="empty-icon"><span data-icon="groups" style="width: 48px; height: 48px; color: var(--text-secondary);"></span></div>
         <div class="empty-title">No Teams Available</div>
         <div class="empty-text">Create a team first to set up a match.</div>
         <button class="empty-cta" onclick="navigateTo('07-create-team.html')">Create Team</button>
@@ -229,10 +295,25 @@
   <script src="app.js"></script>
   <script>
     let teamBSelected = false;
+    let tournamentSelected = false;
+
+    // Set today's date as default
+    document.addEventListener('DOMContentLoaded', function() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('matchDateInput').value = today;
+    });
 
     function setOvers(val, chipEl) {
+      if (tournamentSelected) return;
       document.getElementById('oversInput').value = val;
-      document.querySelectorAll('.overs-preset .chip').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('#oversSection .overs-preset .chip').forEach(c => c.classList.remove('active'));
+      if (chipEl) chipEl.classList.add('active');
+    }
+
+    function setPlayers(val, chipEl) {
+      if (tournamentSelected) return;
+      document.getElementById('playersInput').value = val;
+      document.querySelectorAll('#playersSection .overs-preset .chip').forEach(c => c.classList.remove('active'));
       if (chipEl) chipEl.classList.add('active');
     }
 
@@ -248,18 +329,86 @@
       closeModal('teamSelectModal');
     }
 
+    function setTournamentLock(locked) {
+      tournamentSelected = locked;
+      const lockIds = ['formatLockBadge', 'playersLockBadge', 'ballTypeLockBadge'];
+      const sectionIds = ['oversSection', 'playersSection', 'ballTypeSection'];
+
+      lockIds.forEach(id => {
+        document.getElementById(id).style.display = locked ? 'inline-flex' : 'none';
+      });
+
+      // Lock/unlock overs
+      document.getElementById('oversInput').disabled = locked;
+      document.querySelectorAll('#oversSection .overs-preset .chip').forEach(c => {
+        locked ? c.classList.add('disabled') : c.classList.remove('disabled');
+      });
+
+      // Lock/unlock players per side
+      document.getElementById('playersInput').disabled = locked;
+      document.querySelectorAll('#playersSection .overs-preset .chip').forEach(c => {
+        locked ? c.classList.add('disabled') : c.classList.remove('disabled');
+      });
+
+      // Lock/unlock ball type
+      document.querySelectorAll('#ballTypeChips .chip').forEach(c => {
+        locked ? c.classList.add('disabled') : c.classList.remove('disabled');
+      });
+
+      // Lock/unlock advanced settings
+      document.getElementById('wideRunsInput').disabled = locked;
+      document.getElementById('noBallRunsInput').disabled = locked;
+      document.getElementById('maxOversInput').disabled = locked;
+      document.getElementById('powerplayInput').disabled = locked;
+
+      // Auto-expand advanced panel when tournament is selected (to show inherited values)
+      if (locked) {
+        document.getElementById('advancedPanel').style.display = 'block';
+        document.getElementById('advancedChevron').style.transform = 'rotate(180deg)';
+      }
+    }
+
     function selectTournament(name) {
       const selector = document.getElementById('tournamentSelector');
       if (name) {
         selector.classList.add('selected');
         selector.querySelector('.team-selector-name').textContent = name;
         selector.querySelector('.team-selector-name').style.color = '';
+        // Simulate inherited tournament rules
+        document.getElementById('oversInput').value = 20;
+        document.getElementById('playersInput').value = 11;
+        document.getElementById('wideRunsInput').value = 1;
+        document.getElementById('noBallRunsInput').value = 1;
+        document.getElementById('maxOversInput').value = 4;
+        document.getElementById('powerplayInput').value = 6;
+        setTournamentLock(true);
       } else {
         selector.classList.remove('selected');
         selector.querySelector('.team-selector-name').textContent = 'None \u2014 Standalone Match';
         selector.querySelector('.team-selector-name').style.color = 'var(--text-secondary)';
+        setTournamentLock(false);
+        // Reset advanced fields to defaults
+        document.getElementById('wideRunsInput').value = 1;
+        document.getElementById('noBallRunsInput').value = 1;
+        document.getElementById('maxOversInput').value = '';
+        document.getElementById('powerplayInput').value = '';
       }
       closeModal('tournamentSelectModal');
+    }
+
+    function toggleAdvanced() {
+      const panel = document.getElementById('advancedPanel');
+      const chevron = document.getElementById('advancedChevron');
+      const isOpen = panel.style.display === 'block';
+      panel.style.display = isOpen ? 'none' : 'block';
+      chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+
+    function validateOvers(overs) {
+      if (isNaN(overs) || overs === null || overs === undefined) return false;
+      if (overs < 1 || overs > 50) return false;
+      if (!Number.isInteger(overs)) return false;
+      return true;
     }
 
     function handleProceed() {
@@ -272,6 +421,7 @@
       const overs = parseInt(document.getElementById('oversInput').value);
       if (!validateOvers(overs)) {
         document.getElementById('oversInput').style.borderColor = 'var(--danger)';
+        setTimeout(() => { document.getElementById('oversInput').style.borderColor = ''; }, 2000);
         return;
       }
       navigateTo('11-toss.html');

@@ -64,6 +64,9 @@
       <div class="tab" data-tab="groupB">Group B</div>
     </div>
 
+    <!-- Tournament Context -->
+    <div class="tournament-bar">Weekend Warriors Cup</div>
+
     <!-- Content -->
     <div class="page-content no-padding" style="padding-bottom: calc(var(--bottom-nav-h) + var(--page-margin));">
 
@@ -90,7 +93,7 @@
                 <div class="team-cell">
                   <div class="avatar sm" style="background: #E3F2FD; color: #1565C0; width: 24px; height: 24px; font-size: 10px;">MW</div>
                   <span class="team-name-tbl">Mumbai Warriors</span>
-                  <span style="font-size: 9px; color: var(--primary); font-weight: 600; margin-left: 4px;">Qualified</span>
+                  <span style="font-size: var(--caption-sm); color: var(--primary); font-weight: 600; margin-left: 4px;">Qualified</span>
                 </div>
               </td>
               <td>3</td>
@@ -107,7 +110,7 @@
                 <div class="team-cell">
                   <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32; width: 24px; height: 24px; font-size: 10px;">CK</div>
                   <span class="team-name-tbl">Chennai Kings</span>
-                  <span style="font-size: 9px; color: var(--primary); font-weight: 600; margin-left: 4px;">Qualified</span>
+                  <span style="font-size: var(--caption-sm); color: var(--primary); font-weight: 600; margin-left: 4px;">Qualified</span>
                 </div>
               </td>
               <td>3</td>
@@ -178,7 +181,7 @@
                 <div class="team-cell">
                   <div class="avatar sm" style="background: #FFF3E0; color: #E65100; width: 24px; height: 24px; font-size: 10px;">BR</div>
                   <span class="team-name-tbl">Bangalore Royals</span>
-                  <span style="font-size: 9px; color: var(--primary); font-weight: 600; margin-left: 4px;">Qualified</span>
+                  <span style="font-size: var(--caption-sm); color: var(--primary); font-weight: 600; margin-left: 4px;">Qualified</span>
                 </div>
               </td>
               <td>3</td>
@@ -195,7 +198,7 @@
                 <div class="team-cell">
                   <div class="avatar sm" style="background: #FFFDE7; color: #F57F17; width: 24px; height: 24px; font-size: 10px;">HP</div>
                   <span class="team-name-tbl">Hyderabad Panthers</span>
-                  <span style="font-size: 9px; color: var(--primary); font-weight: 600; margin-left: 4px;">Qualified</span>
+                  <span style="font-size: var(--caption-sm); color: var(--primary); font-weight: 600; margin-left: 4px;">Qualified</span>
                 </div>
               </td>
               <td>3</td>
@@ -246,7 +249,7 @@
 
     <!-- Empty State (G24) — toggle: document.getElementById('emptyState').style.display = '' -->
     <div id="emptyState" class="empty-state" style="display: none;">
-      <div class="empty-icon">&#x1F4CA;</div>
+      <div class="empty-icon" data-icon="leaderboard" style="font-size: 64px; opacity: 0.38;"></div>
       <div class="empty-title">No Standings Yet</div>
       <div class="empty-text">Standings will appear once group stage matches are played.</div>
     </div>

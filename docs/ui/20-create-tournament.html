@@ -44,7 +44,7 @@
       display: flex; align-items: center; gap: 12px;
     }
     .stepper-btn {
-      width: 36px; height: 36px; border-radius: var(--radius-full);
+      width: 40px; height: 40px; border-radius: var(--radius-full);
       border: 1.5px solid var(--border); color: var(--text-secondary);
       display: flex; align-items: center; justify-content: center;
       font-size: var(--heading); font-weight: var(--fw-bold);
@@ -87,7 +87,7 @@
       <div class="section">
         <div class="input-group" style="margin-top: 0;">
           <label class="input-label">Tournament Name</label>
-          <input type="text" class="input-field" placeholder="e.g. Weekend Warriors Cup" id="tournamentName">
+          <input type="text" class="input-field" placeholder="e.g. Weekend Warriors Cup" id="tournamentName" maxlength="100" required>
         </div>
       </div>
 
@@ -111,7 +111,9 @@
         <div class="overs-preset" style="margin-top: 12px;">
           <span class="chip" data-value="5" onclick="setOvers(5, this)">5</span>
           <span class="chip" data-value="10" onclick="setOvers(10, this)">10</span>
+          <span class="chip" data-value="15" onclick="setOvers(15, this)">15</span>
           <span class="chip active" data-value="20" onclick="setOvers(20, this)">20</span>
+          <span class="chip" data-value="25" onclick="setOvers(25, this)">25</span>
           <span class="chip" data-value="50" onclick="setOvers(50, this)">50</span>
         </div>
       </div>
@@ -127,8 +129,53 @@
         </div>
       </div>
 
-      <!-- Points System -->
-      <div class="section" style="margin-top: var(--section-gap);">
+      <!-- Match Rules (T9 template fields) -->
+      <div class="conditional-section" id="matchRules" style="margin-top: var(--section-gap);">
+        <div class="section-label">Match Rules</div>
+        <div class="stepper-row">
+          <span class="stepper-label">Players Per Side</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="stepValue('playersPerSide', -1)">−</button>
+            <span class="stepper-value" id="playersPerSide">11</span>
+            <button class="stepper-btn" onclick="stepValue('playersPerSide', 1)">+</button>
+          </div>
+        </div>
+        <div class="stepper-row" style="border-top: 1px solid var(--border);">
+          <span class="stepper-label">Max Overs/Bowler</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="stepValue('maxOversBowler', -1)">−</button>
+            <span class="stepper-value" id="maxOversBowler">4</span>
+            <button class="stepper-btn" onclick="stepValue('maxOversBowler', 1)">+</button>
+          </div>
+        </div>
+        <div class="stepper-row" style="border-top: 1px solid var(--border);">
+          <span class="stepper-label">Wide Runs</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="stepValue('wideRuns', -1)">−</button>
+            <span class="stepper-value" id="wideRuns">1</span>
+            <button class="stepper-btn" onclick="stepValue('wideRuns', 1)">+</button>
+          </div>
+        </div>
+        <div class="stepper-row" style="border-top: 1px solid var(--border);">
+          <span class="stepper-label">No-Ball Runs</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="stepValue('noBallRuns', -1)">−</button>
+            <span class="stepper-value" id="noBallRuns">1</span>
+            <button class="stepper-btn" onclick="stepValue('noBallRuns', 1)">+</button>
+          </div>
+        </div>
+        <div class="stepper-row" style="border-top: 1px solid var(--border);">
+          <span class="stepper-label">Powerplay Overs</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="stepValue('powerplayOvers', -1)">−</button>
+            <span class="stepper-value" id="powerplayOvers">—</span>
+            <button class="stepper-btn" onclick="stepValue('powerplayOvers', 1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Points System (hidden for knockout) -->
+      <div class="section" id="pointsSystem" style="margin-top: var(--section-gap);">
         <h3 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;">Points System</h3>
         <div class="points-grid">
           <div class="points-cell">
@@ -198,10 +245,10 @@
         <div class="stepper-row">
           <span class="stepper-label">Match Duration</span>
           <div class="stepper-controls">
-            <button class="stepper-btn" onclick="stepMinutes('matchDuration', -15)">−</button>
-            <span class="stepper-value" id="matchDuration">30</span>
+            <button class="stepper-btn" onclick="stepMinutes('matchDuration', -30)">−</button>
+            <span class="stepper-value" id="matchDuration">180</span>
             <span style="font-size: var(--body-sm); color: var(--text-secondary);">min</span>
-            <button class="stepper-btn" onclick="stepMinutes('matchDuration', 15)">+</button>
+            <button class="stepper-btn" onclick="stepMinutes('matchDuration', 30)">+</button>
           </div>
         </div>
 
@@ -236,24 +283,47 @@
 
     function stepValue(id, delta) {
       const el = document.getElementById(id);
-      let val = parseInt(el.textContent) + delta;
+      const cur = el.textContent;
+      // Handle "—" (null) for powerplayOvers
+      if (id === 'powerplayOvers') {
+        if (cur === '—' && delta > 0) { el.textContent = 1; return; }
+        if (cur === '—') return;
+        let val = parseInt(cur) + delta;
+        if (val < 1) { el.textContent = '—'; return; }
+        val = Math.min(val, 50);
+        el.textContent = val; return;
+      }
+      let val = parseInt(cur) + delta;
       if (id === 'numGroups') val = Math.max(1, Math.min(val, 8));
       if (id === 'qualifyN') val = Math.max(1, Math.min(val, 4));
+      if (id === 'playersPerSide') val = Math.max(2, Math.min(val, 11));
+      if (id === 'maxOversBowler') val = Math.max(1, Math.min(val, 50));
+      if (id === 'wideRuns' || id === 'noBallRuns') val = Math.max(1, Math.min(val, 5));
       el.textContent = val;
     }
 
     function stepMinutes(id, delta) {
       const el = document.getElementById(id);
       let val = parseInt(el.textContent) + delta;
-      if (id === 'matchDuration') val = Math.max(0, Math.min(val, 300));
+      if (id === 'matchDuration') val = Math.max(30, Math.min(val, 600));
       if (id === 'matchGap') val = Math.max(0, Math.min(val, 120));
       el.textContent = val;
     }
 
-    // Show/hide group settings based on format
+    // Show/hide sections based on format
     document.getElementById('formatChips').addEventListener('chip-change', (e) => {
       const groupSection = document.getElementById('groupSettings');
-      groupSection.style.display = e.detail.value === 'group_knockout' ? 'block' : 'none';
+      const pointsSection = document.getElementById('pointsSystem');
+      if (e.detail.value === 'knockout') {
+        groupSection.style.display = 'none';
+        pointsSection.style.display = 'none';
+      } else if (e.detail.value === 'group_knockout') {
+        groupSection.style.display = 'block';
+        pointsSection.style.display = 'block';
+      } else {
+        groupSection.style.display = 'none';
+        pointsSection.style.display = 'block';
+      }
     });
   </script>
 </body>

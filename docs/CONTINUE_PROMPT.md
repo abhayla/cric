@@ -16,15 +16,232 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Infrastructure is ready.** Start with **Phase 1: Foundation** as described in `docs/planning/IMPLEMENTATION_PLAN.md`. Note: Phase 2.5 (Tournament Management) exists between Phase 2 (Teams) and Phase 3 (Scoring Engine).
+**Resume wireframe review from Group F (Post-Match).** A systematic 28-screen wireframe review is in progress. Groups A (Auth), B (Home), C (Teams), D (Match Setup), D2 (Tournament Flow), and E (Scoring Flow) are complete. Continue with the remaining group below.
 
-**Pre-implementation setup completed:** 7 hooks, 12 skills, CI pipeline, validation scripts, MCP servers, permissions hardened. See "Pre-Implementation Infrastructure" in Completed Work.
+### Wireframe Review — Current State
 
-**GitHub MCP not yet configured.** Run `claude mcp add --scope user` to add the GitHub MCP server with a personal access token (scopes: `repo`, `workflow`).
+**Completed:**
+- Group A: Auth Flow (01-splash, 02-login, 03-otp, 04-profile-setup) — DONE
+- Group B: Home & Navigation (05-home) — DONE
+- Group C: Teams Flow (06-teams-list, 07-create-team, 08-team-detail, 09-manage-roster) — DONE
+- Group D: Match Setup (10-match-setup, 11-toss) — DONE
+- Group D2: Tournament Flow (19-tournaments-list, 20-create-tournament, 21-tournament-detail, 22-standings, 23-knockout-bracket, 24-tournament-leaderboard) — DONE
 
-**PostgreSQL MCP placeholder.** Update `.mcp.json` with real credentials before using (currently has placeholder password).
+**Remaining (in order):**
+- **Group F: Post-Match** — 15-scorecard, 16-match-analytics, 17-player-profile, 18-match-history
 
-Phase 1 steps:
+### Per-Screen Review Process
+
+For each screen:
+1. Open `docs/ui/XX-name.html` in Playwright browser (HTTP server on port 9123: `python -m http.server 9123 --directory docs/ui`), take screenshot
+2. Read the HTML source
+3. Launch 4 agents in parallel (use `sonnet` model for speed):
+   - `cricheroes-comparator` — Compare against CricHeroes equivalent screen
+   - `planner-researcher` — Technical planning, architecture, implementation concerns
+   - `scoring-researcher` — Cricket rules compliance, scoring logic implications
+   - `ui-researcher` — M3 dark theme, accessibility, widget structure
+4. Compile consolidated report with CRITICAL / MEDIUM / LOW issues
+5. Apply wireframe edits and doc fixes for approved changes
+6. Get user approval before proceeding to next screen/group
+
+### Key Docs to Reference During Review
+
+- `docs/ui/*.html` — All 28 wireframe files
+- `docs/ui/styles.css` — Shared CSS variables and components
+- `docs/planning/DATABASE.md` — Schema (enums, column names, table relationships)
+- `docs/planning/API.md` — Endpoint specs (field names, request/response shapes)
+- `docs/planning/SCORING_RULES.md` — Cricket rules, match state machine, delivery pipeline
+- `docs/process/CODE_STANDARDS.md` — M3 dark theme tokens, UI patterns, design decisions
+- `docs/planning/CRICHEROES_REFERENCE.md` — CricHeroes competitive analysis
+- `.claude/rules.md` — File placement rules for Flutter implementation
+
+### Changes Applied During Wireframe Review
+
+#### Session 1 — Groups A & B
+
+**Theme change (applies globally):**
+- M3 seed color changed from `#2E7D32` (green) to `#1976D2` (blue)
+- Updated in: CODE_STANDARDS.md, CONTINUE_PROMPT.md, CRICHEROES_REFERENCE.md
+
+**04-profile-setup.html:**
+- Removed photo upload area (deferred per C5 — initials avatar only)
+- Fixed playing role dropdown: Batter, Bowler, All-Rounder, WK-Batter (matches DB enums)
+- Fixed bowling style dropdown: 9 options matching DATABASE.md (split "Left Arm Spin" into Orthodox + Chinaman)
+- Updated location placeholder
+
+**05-home.html:**
+- Removed search icon (search deferred to post-MVP)
+- Replaced "Catches: 14" with "Avg: 31.8" in My Stats grid
+- Added CRR: 8.51 to live match card
+- Changed 3rd match to "Match Tied" result (165 vs 165) for result type coverage
+
+**DATABASE.md:**
+- `users.display_name`: varchar(100) → varchar(60) (aligns with API 2-50 char validation)
+- `users.city` → `users.location` (renamed)
+- `teams.city` → `teams.location` (renamed)
+
+**API.md:**
+- All `"city":` fields renamed to `"location":` across all endpoints
+
+**CODE_STANDARDS.md:**
+- Fixed `player_role` enum: `'keeper'` → `'wk_batter'` (matches DATABASE.md)
+
+#### Session 2 — Group C (Teams Flow)
+
+**CLAUDE.md:**
+- Added `bunx tsc --noEmit` to Bun server build commands
+- Added Implementation Phases summary section (7 phases, Weeks 1-12)
+- Added CI Pipeline section (5 jobs, self-hosted Windows runner)
+
+**06-teams-list.html (5 changes):**
+- Removed search icon from header (search deferred to post-MVP)
+- Switched from 3-column to 2-column grid (`grid-template-columns: repeat(2, 1fr)`)
+- Added role badge (OWNER / CAPTAIN / MEMBER) per card — CSS class `.team-grid-role`
+- Added location to meta text: `"11 players · Mumbai"` format
+- Replaced empty state emoji `&#x1F465;` with Material icon `data-icon="groups"`
+
+**07-create-team.html (2 changes):**
+- Removed Ball Type chip group entirely (ball_type is on `matches` table, not `teams` — confirmed via DATABASE.md and CricHeroes behavior)
+- Changed team name `maxlength="30"` → `maxlength="50"` (matches API validation rule G11: 2-50 chars)
+
+**08-team-detail.html (6 changes):**
+- Changed subtitle from `"Leather Ball · 11 Players"` to `"Mumbai · 11 Players"` (ball type not a team attribute)
+- Changed stats card from 3-column (Matches/Wins/Losses) to 4-column (Matches 12/Wins 8/Losses 3/Tied 1) — covers all result types
+- Fixed all-rounder descriptions: `"Right Fast"` → `"Right Hand Bat · Right Arm Fast"`, `"Left Spin"` → `"Left Hand Bat · Left Arm Orthodox"` (show both batting + bowling style)
+- Fixed WK section: header `"Wicketkeeper"` → `"WK-Batters"`, role `"Right Hand Bat"` → `"WK-Batter · Right Hand Bat"`
+- Fixed bowler descriptions to match DB enums: `"Right Fast"` → `"Right Arm Fast"`, `"Right Medium"` → `"Right Arm Medium"`, `"Left Spin"` → `"Left Arm Orthodox"`, `"Off Break"` → `"Right Arm Off Spin"`
+- Replaced empty state emojis: `&#x1F4CB;` → `data-icon="scoreboard"`, `&#x1F464;` → `data-icon="person_add"`
+
+**09-manage-roster.html (7 changes):**
+- Removed inline `#addPlayerModal` (conflicts with dedicated `28-add-player.html` page — "Add Player" button correctly navigates there)
+- Fixed role labels: `"Batsman"` → `"Batter"`, `"Wicketkeeper"` → `"WK-Batter"` (matches DB enum display convention established in screen 08)
+- Fixed all bowling style descriptions to match DB enums: `"Right Fast"` → `"Right Arm Fast"`, `"Right Medium"` → `"Right Arm Medium"`, `"Left Spin"` → `"Left Arm Orthodox"`, `"Off Break"` → `"Right Arm Off Spin"`
+- All-rounder subtitles now show both batting + bowling style: `"All-rounder · Right Hand Bat · Right Arm Fast"`
+- Added captain `C` badge on Arjun Mehta (CricHeroes ADOPT — `team_rosters.role = captain`)
+- Added `WK` badge on Nikhil Verma (CricHeroes ADOPT — indicates designated keeper)
+- Increased remove button touch target from 32px → 40px (closer to 48dp minimum per E3)
+
+#### Session 3 — Group D (Match Setup)
+
+**10-match-setup.html (6 changes):**
+- Added `players_per_side` field: number input (range 2-11) with preset chips (6, 8, 11) — critical for scoring engine all-out threshold
+- Added tournament rule locking (T9): when tournament selected, all inherited fields show "Locked by tournament" badges and are disabled (overs, ball_type, players_per_side, plus advanced settings)
+- Expanded overs presets from 4 to 6: added 15 and 25 (5, 10, 15, 20, 25, 50)
+- Added Match Date field with `type="date"` defaulting to today
+- Added collapsible Advanced Settings panel: wide_runs, no_ball_runs, max_overs_per_bowler, powerplay_overs (with tournament locking support)
+- Replaced empty state emoji with Material icon `data-icon="groups"`
+
+**11-toss.html (full rewrite, 8 changes):**
+- Expanded from 3-step to 5-step stepper: Toss > Choice > XI-A > XI-B > Openers (G19 Playing XI embedded in toss flow)
+- Added Playing XI selection steps for both teams (Steps 3-4): full roster lists with checkboxes, "X / 11 selected" counters, players_per_side validation
+- Changed "Bowl" to "Field" for toss decision (correct cricket terminology)
+- Added striker designation prompt: after selecting 2 openers, "Who will face the first ball?" radio selection (matches API `openingStrikerId`/`openingNonStrikerId`)
+- Added Back button for step navigation (visible on steps 2-5)
+- Fixed all role labels: "Batsman" to "Batter", "Wicketkeeper" to "WK-Batter", "All-rounder" to "All-Rounder"
+- Fixed bowling style labels: "Right Fast" to "Right Arm Fast", "Right Medium" to "Right Arm Medium", plus full enum labels
+- Added compact stepper CSS overrides for 5 steps to fit phone frame width
+- Replaced emoji icons with Material icons (`data-icon="sports_cricket"`, `data-icon="sports"`)
+- Increased player row padding to 12px for 48dp touch targets
+- CTA button shows "Start Match" on final step
+
+#### Session 4 — Group D2 (Tournament Flow)
+
+**19-tournaments-list.html (5 changes):**
+- Removed search icon from header (search deferred to post-MVP)
+- Added location to card subtitle: `"8 Teams · Mumbai"` format
+- Changed "Upcoming" badge to use outlined style for visual hierarchy
+- Replaced empty state emoji `&#x1F3C6;` with Material icon `data-icon="trophy"`
+- Added pull-to-refresh hint text below list
+
+**20-create-tournament.html (7 changes):**
+- Added `maxlength="100"` to tournament name input
+- Expanded overs presets from 4 to 6: added 15 and 25 (5, 10, 15, 20, 25, 50)
+- Added Match Rules section (T9 template fields): players_per_side, max_overs_per_bowler, wide_runs, no_ball_runs, powerplay_overs — all with stepper controls
+- Added Match Schedule section (T13): default start time, match duration (stepper, minutes), gap between matches (stepper, minutes)
+- Increased stepper button size from 32px → 40px for touch targets
+- Show/hide Points System and Group Stage Settings sections based on format selection (knockout hides both, round_robin hides groups)
+- Added `chip-change` custom event listener for format conditional visibility
+
+**21-tournament-detail.html (6 changes):**
+- Changed settings gear icon to overflow menu: `data-icon="settings"` → `data-icon="menu"` (contextual entity actions, not global settings)
+- Fixed match count: `12` → `15` in hero stats (8-team Group+KO = 12 group + 2 semi + 1 final)
+- Added L column to standings mini-table (Team/P/W/L/Pts/NRR) — differentiates 2W-0L-1T from 2W-1L
+- Changed `btn btn-outline btn-sm` → `btn btn-outline` for Bracket/Leaderboard quick link buttons
+- Added 3 hidden empty states for Overview ("No Upcoming Matches"), Fixtures ("No Fixtures Yet"), Teams ("No Teams Registered") tabs
+
+**22-standings.html (4 changes):**
+- Added tournament context bar between header-tabs and content: `<div class="tournament-bar">Weekend Warriors Cup</div>`
+- Fixed qualified badge font-size: `9px` → `var(--caption-sm)` across all 4 qualified badges
+- Replaced empty state emoji `&#x1F4CA;` with `data-icon="leaderboard"` SVG pattern
+- Added `leaderboard` SVG icon to app.js ICONS object
+
+**23-knockout-bracket.html (5 changes):**
+- Added tournament context bar with `.tournament-bar` CSS and HTML
+- Replaced trophy emoji `🏆` with `data-icon="trophy"` SVG pattern in winner section
+- Added overs to bracket scores: `187/6` → `187/6 (20.0)`, `172/9` → `172/9 (20.0)`
+- Added result summary below SF1 match card: "MW won by 15 runs"
+- Added empty state: "Bracket Not Ready" with trophy icon for pre-group-stage state
+
+**24-tournament-leaderboard.html (3 changes):**
+- Replaced empty state emoji `&#x1F3C5;` with `data-icon="trophy"` SVG pattern
+- Fixed Batting Avg detail: `"245 runs, 3 inn"` → `"245 runs, 3 dis"` (batting average = runs/dismissals, NOT runs/innings)
+- Fixed Economy detail: `"6 wkts, 12 ov"` → `"70 runs, 12 ov"` (economy = runs conceded/overs, wickets are irrelevant context)
+
+#### Session 5 — Group E (Scoring Flow)
+
+**13-wicket-dialog.html (no changes needed):**
+- Reviewed by 3 agents (cricheroes-comparator, scoring-researcher, ui-researcher). All terminology, dismissal types, fielder selection, run out details already correct per DB enums and SCORING_RULES.md.
+
+**14-extras-panel.html (no changes needed):**
+- Reviewed by 3 agents. Extra types, additional runs selector, wicket-on-extra toggle, and total runs calculation all match SCORING_RULES.md pipeline. Bye/leg-bye correctly hide wicket section.
+
+**26-match-complete.html (4 changes):**
+- Fixed team avatar size: `48px` → `56px` (matches `.avatar.lg` design token)
+- Standardized footer: custom `.match-complete-actions` → `.modal-footer` with `flex-direction: column; gap: 8px`
+- Super Over button changed from `btn-outline` → `btn-primary` (primary CTA for tied knockout)
+- JS toggle function updated: swaps View Scorecard to `btn-outline` when tied knockout state active
+
+**27-super-over-setup.html (8 changes):**
+- Fixed touch targets: `.player-check-row` and `.player-radio-row` padding `10px` → `14px 12px` (48dp compliance)
+- Fixed terminology: "Batsman" → "Batter" (replace_all), "Wicketkeeper" → "WK-Batter" (replace_all)
+- Fixed bowling styles: "Right Fast" → "Right Arm Fast", "Left Spin" → "Left Arm Orthodox" (full DB enum labels)
+- Added batting order info bar above stepper: "Mumbai Warriors bat first (chased in regulation)"
+- Updated Step 3 description: "Select 3 batters and 1 bowler." → "Select 3 batters, designate striker, and select 1 bowler."
+- JS `toggleSOCheck()` updated with max-3 batter enforcement (auto-deselect oldest when 4th selected)
+
+**28-add-player.html (3 changes):**
+- Fixed role chips: "Batsman" → "Batter" with `data-value="batter"`, "Wicketkeeper" → "WK-Batter" with `data-value="wk_batter"`, "allrounder" → `data-value="all_rounder"`
+- Fixed bowling style chips: replaced 6 abbreviated labels with full 9-value DB enum (right_arm_medium, right_arm_fast, right_arm_off_spin, right_arm_leg_spin, left_arm_fast, left_arm_medium, left_arm_orthodox, left_arm_chinaman, none)
+- Fixed search result bowling label: "Right Medium" → "Right Arm Medium"
+
+### Implementation Notes (Logged During Review, No Wireframe Changes)
+
+- **Pull-to-refresh**: ADOPT on all list screens (`RefreshIndicator` wrapper, trivial)
+- **Empty states**: Use per-section empty states on Home, not one generic full-page state
+- **My Stats on Home**: Show 0 values until Phase 5 career stats are built
+- **Bottom nav "Tourneys"**: Test label truncation on 320dp width devices during implementation
+- **Live match card (2nd innings)**: Show "Need X from Y balls" + RRR (already planned per CH-29)
+- **Profile setup**: Reused for Edit Profile (pre-filled via route params)
+- **All match result types**: Implementation must handle: won by runs, won by wickets, Match Tied, No Result, Won in Super Over
+- **Ball type is match-level, NOT team-level**: `ball_type_id` exists on `matches` table only — removed from team create/detail screens
+- **Tournament rule locking (T9)**: Match setup fields inherited from tournament must be visually locked and non-editable. 5 fields: players_per_side, max_overs_per_bowler, wide_runs, no_ball_runs, powerplay_overs + overs and ball_type
+- **Playing XI embedded in toss flow (G19)**: Steps 3-4 of toss stepper, not a separate screen. Checkbox list from roster, validated against players_per_side
+- **Striker/non-striker distinction required**: API toss endpoint requires `openingStrikerId` and `openingNonStrikerId` — toss UI must collect "Who will face the first ball?" after selecting 2 openers
+- **5-step toss stepper compact CSS**: When stepper has 5+ steps, use smaller step numbers (24px), shorter labels (10px), and reduced connector width (12px min, 4px margin) to fit phone frame
+- **Bowling style display convention**: Always use full DB enum label format: "Right Arm Fast" not "Right Fast", "Left Arm Orthodox" not "Left Spin", "Right Arm Off Spin" not "Off Break"
+- **Role display convention**: Use "Batter" (not "Batsman"), "WK-Batter" (not "Wicketkeeper") — consistent with DB enum `player_role` values
+- **Captain/keeper badges**: Show (C) and (WK) badges next to player names on roster/team screens
+- **Tournament context bar**: Sub-screens (standings, bracket, leaderboard) need a `.tournament-bar` showing tournament name for navigation context
+- **Match count for Group+KO**: 8 teams, 2 groups of 4 = C(4,2)×2 = 12 group matches + 2 semi-finals + 1 final = 15 total
+- **Batting average formula**: runs/dismissals (NOT runs/innings) — standard cricket convention
+- **Economy detail context**: Show runs conceded + overs bowled (not wickets — wickets are irrelevant to economy rate)
+- **Tournament leaderboard MVP**: No `tournament_player_stats` table needed — aggregate on-the-fly from `batting_stats`/`bowling_stats` filtered by tournament_id join through matches
+- **Empty state icon convention**: Use `data-icon` SVG pattern throughout (not emoji characters) for consistent rendering across devices
+- **Format conditional sections**: On Create Tournament, Knockout hides both Points System and Group Stage Settings; Round Robin hides Group Settings only; Group+KO shows both
+
+---
+
+**After wireframe review is complete**, proceed with Phase 1 implementation:
 
 1. Initialize Flutter project (`apps/mobile/`) with the folder structure from Section 2.1
 2. Initialize Bun server (`apps/server/`) with the folder structure from Section 2.2
@@ -33,9 +250,13 @@ Phase 1 steps:
 5. Set up Firebase project + configure Flutter Firebase
 6. Implement Firebase Auth (Phone OTP only — no Google/Email for MVP)
 7. Implement auth middleware on Bun (Firebase JWT verification)
-8. Set up Material 3 dark theme
+8. Set up Material 3 dark theme (seed color `#1976D2`)
 9. Set up go_router with auth guards
 10. Build screens: Splash, Login, OTP, Profile Setup
+
+**GitHub MCP not yet configured.** Run `claude mcp add --scope user` to add the GitHub MCP server with a personal access token (scopes: `repo`, `workflow`).
+
+**PostgreSQL MCP placeholder.** Update `.mcp.json` with real credentials before using (currently has placeholder password).
 
 ## Key Design Decisions Already Made
 
@@ -69,7 +290,7 @@ Phase 1 steps:
 - Declaration behind "Set" button; abandonment stats DO count in career
 - 5-run penalty supported with full UI flow
 - Custom run input (overthrows) + custom extras input
-- M3 dark theme: seed color #2E7D32, Roboto, Material Symbols, portrait lock
+- M3 dark theme: seed color #1976D2, Roboto, Material Symbols, portrait lock
 - 8dp grid spacing system, M3 default transitions only
 - Scoring page: fixed header (top) + scrollable middle + fixed buttons (bottom)
 - Initials-only avatar for MVP; simple file picker for team logo (no crop)
@@ -249,6 +470,26 @@ Live web research across 30+ sources, 4 research agents, iterative user review o
 **SKIP (18+ items):** Different tab structure, stories, side drawer, team attendance, CricPay, team chat, extra match types, virtual coin toss, pitch type, SQS, CricInsights PRO, sponsor features, payment processing.
 
 ## Completed Work
+
+### Wireframe Review (In Progress — 6 of 7 Groups Done)
+
+Systematic review of all 28 HTML wireframes in `docs/ui/` before implementation. Each screen gets a visual review + 3-agent parallel analysis (CricHeroes comparison, domain rules compliance, M3 dark theme/accessibility).
+
+**Groups completed:** A (Auth Flow — 4 screens), B (Home — 1 screen), C (Teams Flow — 4 screens), D (Match Setup — 2 screens), D2 (Tournament Flow — 6 screens), E (Scoring Flow — 7 screens) = 24 of 28 screens reviewed.
+
+**Session 1 changes (Groups A+B):** Theme seed color #2E7D32→#1976D2, profile setup photo upload removed + enums fixed, home screen search removed + stats/CRR/result types improved, DATABASE.md `city`→`location` + `display_name` varchar reduced, CODE_STANDARDS.md `keeper`→`wk_batter`, API.md `city`→`location`.
+
+**Session 2 changes (Group C):** CLAUDE.md improved (tsc, phases, CI sections). Teams-list 2-col grid + role badges + location. Create-team ball type removed + maxlength fixed. Team-detail subtitle/stats/player-descriptions/emojis all fixed. Manage-roster inline modal removed + role labels/bowling styles/badges/touch targets all fixed.
+
+**Session 3 changes (Group D):** Match-setup: players_per_side field, tournament rule locking, expanded overs presets, match date, advanced settings panel, Material icons. Toss: full rewrite — 5-step stepper with Playing XI selection (G19), striker designation, "Field" terminology, role/bowling style label fixes, back navigation, compact stepper CSS.
+
+**Session 4 changes (Group D2):** Tournaments-list: search removed, location added, empty state icon fixed. Create-tournament: maxlength, overs presets, T9 match rules section, T13 scheduling, format conditional visibility. Tournament-detail: overflow menu, match count 15, L column in standings, empty states. Standings: tournament context bar, qualified badge sizing, empty state icon. Knockout-bracket: context bar, trophy SVG, overs in scores, result summary, empty state. Leaderboard: empty state icon, batting avg detail (dismissals not innings), economy detail (runs conceded not wickets).
+
+**Session 5 changes (Group E):** Scoring flow screens 12-14 + 25-28 reviewed. Wicket dialog and extras panel needed no changes. Match-complete: avatar size 56px, modal-footer standardization, Super Over btn-primary for tied knockout, JS toggle for button states. Super-over-setup: touch targets 14px, Batter/WK-Batter terminology, full bowling style labels, batting order info bar, max-3 enforcement JS. Add-player: role chip data-values fixed, bowling styles expanded to full 9-value DB enum, search result label fixed.
+
+See "Changes Applied During Wireframe Review" section for full change log.
+
+---
 
 ### Pre-Implementation Infrastructure
 

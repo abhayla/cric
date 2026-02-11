@@ -85,12 +85,12 @@
 | firebase_uid | varchar(128) UNIQUE | Firebase Auth UID |
 | phone | varchar(15) | nullable |
 | email | varchar(255) | nullable |
-| display_name | varchar(100) | required |
+| display_name | varchar(60) | required |
 | avatar_url | text | nullable |
 | batting_style | varchar(20) | "right_hand", "left_hand" |
 | bowling_style | varchar(30) | "right_arm_fast", "right_arm_medium", "right_arm_off_spin", "right_arm_leg_spin", "left_arm_fast", "left_arm_medium", "left_arm_orthodox", "left_arm_chinaman", "none" |
 | player_role | varchar(20) | "batter", "bowler", "all_rounder", "wk_batter" |
-| city | varchar(100) | nullable |
+| location | varchar(100) | nullable |
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
@@ -100,7 +100,7 @@
 | id | uuid PK | |
 | name | varchar(100) | |
 | logo_url | text | nullable |
-| city | varchar(100) | nullable |
+| location | varchar(100) | nullable |
 | created_by | uuid FK → users.id | Team owner |
 | is_active | boolean | default true |
 | created_at | timestamp | |

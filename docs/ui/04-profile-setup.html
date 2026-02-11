@@ -17,14 +17,8 @@
     </div>
 
     <div class="page-content no-bottom-nav" style="display: flex; flex-direction: column;">
-      <!-- Avatar Upload -->
-      <div style="text-align: center; padding-top: 24px; margin-bottom: 32px;">
-        <div class="upload-area" onclick="this.style.borderColor='var(--primary)'">
-          <span class="upload-icon" data-icon="camera"></span>
-          <span class="upload-text">Photo</span>
-        </div>
-        <p style="font-size: var(--caption); color: var(--text-secondary); margin-top: 8px;">Optional</p>
-      </div>
+      <!-- Spacer (photo upload deferred to post-MVP per C5 — initials avatar only) -->
+      <div style="height: 24px;"></div>
 
       <!-- Form Fields -->
       <div style="padding: 0 8px;">
@@ -38,10 +32,10 @@
           <label class="input-label">Playing Role *</label>
           <select class="input-field" id="roleSelect">
             <option value="" disabled selected>Select your role</option>
-            <option value="Batsman">Batsman</option>
-            <option value="Bowler">Bowler</option>
-            <option value="All-rounder">All-rounder</option>
-            <option value="Wicketkeeper">Wicketkeeper</option>
+            <option value="batter">Batter</option>
+            <option value="bowler">Bowler</option>
+            <option value="all_rounder">All-Rounder</option>
+            <option value="wk_batter">WK-Batter</option>
           </select>
           <span class="input-error" id="roleError"></span>
         </div>
@@ -58,20 +52,21 @@
           <label class="input-label">Bowling Style</label>
           <select class="input-field" id="bowlSelect">
             <option value="" disabled selected>Select bowling style</option>
-            <option value="Right Fast">Right Arm Fast</option>
-            <option value="Right Medium">Right Arm Medium</option>
-            <option value="Off Break">Off Break</option>
-            <option value="Leg Break">Leg Break</option>
-            <option value="Left Fast">Left Arm Fast</option>
-            <option value="Left Medium">Left Arm Medium</option>
-            <option value="Left Spin">Left Arm Spin</option>
-            <option value="None">I don't bowl</option>
+            <option value="right_arm_fast">Right Arm Fast</option>
+            <option value="right_arm_medium">Right Arm Medium</option>
+            <option value="right_arm_off_spin">Right Arm Off Spin</option>
+            <option value="right_arm_leg_spin">Right Arm Leg Spin</option>
+            <option value="left_arm_fast">Left Arm Fast</option>
+            <option value="left_arm_medium">Left Arm Medium</option>
+            <option value="left_arm_orthodox">Left Arm Orthodox</option>
+            <option value="left_arm_chinaman">Left Arm Chinaman</option>
+            <option value="none">I Don't Bowl</option>
           </select>
         </div>
 
         <div class="input-group">
           <label class="input-label">Location</label>
-          <input type="text" class="input-field" id="locationInput" placeholder="City, State (e.g. Mumbai, Maharashtra)" autocomplete="address-level2">
+          <input type="text" class="input-field" id="locationInput" placeholder="e.g. Mumbai, Maharashtra" autocomplete="address-level2">
         </div>
       </div>
 

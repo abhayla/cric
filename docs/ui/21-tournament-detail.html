@@ -87,7 +87,7 @@
       </button>
       <span class="header-title">Tournament</span>
       <div class="header-actions">
-        <button class="header-action" data-icon="settings"></button>
+        <button class="header-action" data-icon="menu"></button>
       </div>
     </div>
 
@@ -108,7 +108,7 @@
           <div class="stat-label" style="color: rgba(255,255,255,0.7);">Teams</div>
         </div>
         <div class="stat-item" style="padding: 8px 4px;">
-          <div class="stat-value" style="color: var(--text-on-dark);">12</div>
+          <div class="stat-value" style="color: var(--text-on-dark);">15</div>
           <div class="stat-label" style="color: rgba(255,255,255,0.7);">Matches</div>
         </div>
         <div class="stat-item" style="padding: 8px 4px;">
@@ -157,20 +157,27 @@
           </div>
           <table class="standings-mini" style="border-collapse: collapse;">
             <thead>
-              <tr><th>Team</th><th>P</th><th>W</th><th>Pts</th><th>NRR</th></tr>
+              <tr><th>Team</th><th>P</th><th>W</th><th>L</th><th>Pts</th><th>NRR</th></tr>
             </thead>
             <tbody>
-              <tr><td>Mumbai Warriors</td><td>3</td><td>2</td><td>4</td><td>+1.25</td></tr>
-              <tr><td>Chennai Kings</td><td>3</td><td>2</td><td>4</td><td>+0.89</td></tr>
-              <tr><td>Delhi Strikers</td><td>3</td><td>1</td><td>2</td><td>-0.34</td></tr>
+              <tr><td>Mumbai Warriors</td><td>3</td><td>2</td><td>1</td><td>4</td><td>+1.25</td></tr>
+              <tr><td>Chennai Kings</td><td>3</td><td>2</td><td>1</td><td>4</td><td>+0.89</td></tr>
+              <tr><td>Delhi Strikers</td><td>3</td><td>1</td><td>2</td><td>2</td><td>-0.34</td></tr>
             </tbody>
           </table>
         </div>
 
         <!-- Quick Links -->
         <div style="margin-top: var(--section-gap); display: flex; gap: 8px;">
-          <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="navigateTo('23-knockout-bracket.html')">Bracket</button>
-          <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="navigateTo('24-tournament-leaderboard.html')">Leaderboard</button>
+          <button class="btn btn-outline" style="flex: 1;" onclick="navigateTo('23-knockout-bracket.html')">Bracket</button>
+          <button class="btn btn-outline" style="flex: 1;" onclick="navigateTo('24-tournament-leaderboard.html')">Leaderboard</button>
+        </div>
+
+        <!-- Empty State: No Upcoming Match (toggle display) -->
+        <div class="empty-state" style="display: none; padding: 32px 0;">
+          <div class="empty-icon" data-icon="calendar" style="font-size: 48px; opacity: 0.38;"></div>
+          <div class="empty-title">No Upcoming Matches</div>
+          <div class="empty-text">All matches have been completed or fixtures haven't been scheduled yet.</div>
         </div>
       </div>
 
@@ -240,6 +247,13 @@
             </div>
           </div>
         </div>
+
+        <!-- Empty State: No Fixtures (toggle display) -->
+        <div class="empty-state" style="display: none; padding: 32px 0;">
+          <div class="empty-icon" data-icon="calendar" style="font-size: 48px; opacity: 0.38;"></div>
+          <div class="empty-title">No Fixtures Yet</div>
+          <div class="empty-text">Fixtures will appear here once the tournament schedule is generated.</div>
+        </div>
       </div>
 
       <!-- Teams Tab -->
@@ -302,6 +316,13 @@
             <div class="team-name-sm">Jaipur Jaguars</div>
             <div class="team-seed">Seed #4</div>
           </div>
+        </div>
+
+        <!-- Empty State: No Teams (toggle display) -->
+        <div class="empty-state" style="display: none; padding: 32px 0;">
+          <div class="empty-icon" data-icon="teams" style="font-size: 48px; opacity: 0.38;"></div>
+          <div class="empty-title">No Teams Registered</div>
+          <div class="empty-text">Teams will appear here once they register for the tournament.</div>
         </div>
       </div>
     </div>

@@ -206,7 +206,7 @@ Use `varchar` with constrained values, not database enums. This avoids migration
 
 ```sql
 match_status varchar(20)    -- 'setup', 'toss', 'live', 'innings_break', 'completed', 'abandoned'
-player_role varchar(20)     -- 'batter', 'bowler', 'all_rounder', 'keeper'
+player_role varchar(20)     -- 'batter', 'bowler', 'all_rounder', 'wk_batter'
 batting_style varchar(20)   -- 'right_hand', 'left_hand'
 ```
 
@@ -534,8 +534,8 @@ Target: smooth performance on 2GB RAM budget Android devices. See [IMPLEMENTATIO
 
 | Token | Value | Notes |
 |-------|-------|-------|
-| M3 seed color | `#2E7D32` (Green 800) | Cricket green. All M3 tonal surfaces derive from this. |
-| Color scheme | `ColorScheme.fromSeed(seedColor: Color(0xFF2E7D32), brightness: Brightness.dark)` | Dark theme only for MVP. |
+| M3 seed color | `#1976D2` (Blue 700) | Primary blue. All M3 tonal surfaces derive from this. |
+| Color scheme | `ColorScheme.fromSeed(seedColor: Color(0xFF1976D2), brightness: Brightness.dark)` | Dark theme only for MVP. |
 | Font family | Roboto | Android system font. No `google_fonts` download needed. Use M3 default `TextTheme`. |
 | Icon set | Material Symbols | Variable weight/fill. Built into Flutter via `Icons.*`. |
 | Orientation | Portrait only | Lock via `SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])` in `main()`. |
@@ -627,7 +627,7 @@ All 24 UI prototypes use a light blue theme. The app uses Material 3 Dark theme 
 |-------------------|----------------------|
 | White backgrounds | `colorScheme.surface` (dark) |
 | Light gray cards | `colorScheme.surfaceContainer` |
-| Blue primary buttons | `colorScheme.primary` (green-tinted from seed #2E7D32) |
+| Blue primary buttons | `colorScheme.primary` (blue-tinted from seed #1976D2) |
 | Blue text links | `colorScheme.primary` |
 | Dark text on light | `colorScheme.onSurface` (light text on dark) |
 | Gray secondary text | `colorScheme.onSurfaceVariant` |

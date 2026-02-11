@@ -23,13 +23,13 @@
     <div style="text-align: center; padding: 24px 16px; background: var(--surface);">
       <div class="avatar xl" style="margin: 0 auto 12px; background: #E3F2FD; color: #1565C0;">MW</div>
       <h2 style="font-size: var(--title); font-weight: var(--fw-bold);">Mumbai Warriors</h2>
-      <p style="font-size: var(--body-sm); color: var(--text-secondary);">Leather Ball &bull; 11 Players</p>
+      <p style="font-size: var(--body-sm); color: var(--text-secondary);">Mumbai &bull; 11 Players</p>
     </div>
 
     <!-- Stats Row -->
     <div style="padding: 0 16px;">
       <div class="card" style="margin-top: -16px; position: relative; z-index: 1;">
-        <div class="stat-grid cols-3">
+        <div class="stat-grid cols-4">
           <div class="stat-item">
             <div class="stat-value">12</div>
             <div class="stat-label">Matches</div>
@@ -39,8 +39,12 @@
             <div class="stat-label">Wins</div>
           </div>
           <div class="stat-item">
-            <div class="stat-value">4</div>
+            <div class="stat-value">3</div>
             <div class="stat-label">Losses</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">1</div>
+            <div class="stat-label">Tied</div>
           </div>
         </div>
       </div>
@@ -96,7 +100,7 @@
       <div class="tab-panel" data-panel="matches">
         <!-- Empty State (G24) — toggle: document.getElementById('emptyMatches').style.display = '' -->
         <div id="emptyMatches" class="empty-state" style="display: none;">
-          <div class="empty-icon">&#x1F4CB;</div>
+          <div class="empty-icon" data-icon="scoreboard" style="font-size: 64px; opacity: 0.38;"></div>
           <div class="empty-title">No Matches Played</div>
           <div class="empty-text">Matches involving this team will appear here.</div>
         </div>
@@ -151,7 +155,7 @@
       <div class="tab-panel" data-panel="players">
         <!-- Empty State (G24) — toggle: document.getElementById('emptyPlayers').style.display = '' -->
         <div id="emptyPlayers" class="empty-state" style="display: none;">
-          <div class="empty-icon">&#x1F464;</div>
+          <div class="empty-icon" data-icon="person_add" style="font-size: 64px; opacity: 0.38;"></div>
           <div class="empty-title">No Players Added</div>
           <div class="empty-text">Add players to build your team roster.</div>
           <button class="empty-cta" onclick="navigateTo('09-manage-roster.html')">Add Player</button>
@@ -192,24 +196,24 @@
             <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">KS</div>
             <div class="player-info">
               <div class="player-name">Karan Singh</div>
-              <div class="player-role">Right Fast</div>
+              <div class="player-role">Right Hand Bat · Right Arm Fast</div>
             </div>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">AJ</div>
             <div class="player-info">
               <div class="player-name">Aditya Joshi</div>
-              <div class="player-role">Left Spin</div>
+              <div class="player-role">Left Hand Bat · Left Arm Orthodox</div>
             </div>
           </div>
 
           <!-- Wicketkeeper -->
-          <h4 style="font-size: var(--caption); font-weight: var(--fw-bold); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px;">Wicketkeeper</h4>
+          <h4 style="font-size: var(--caption); font-weight: var(--fw-bold); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px;">WK-Batters</h4>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">NV</div>
             <div class="player-info">
               <div class="player-name">Nikhil Verma</div>
-              <div class="player-role">Right Hand Bat</div>
+              <div class="player-role">WK-Batter · Right Hand Bat</div>
             </div>
           </div>
 
@@ -219,35 +223,35 @@
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">RK</div>
             <div class="player-info">
               <div class="player-name">Rajesh Kumar</div>
-              <div class="player-role">Right Fast</div>
+              <div class="player-role">Right Arm Fast</div>
             </div>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">SR</div>
             <div class="player-info">
               <div class="player-name">Sanjay Rao</div>
-              <div class="player-role">Right Medium</div>
+              <div class="player-role">Right Arm Medium</div>
             </div>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">DN</div>
             <div class="player-info">
               <div class="player-name">Deepak Nair</div>
-              <div class="player-role">Left Spin</div>
+              <div class="player-role">Left Arm Orthodox</div>
             </div>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">AT</div>
             <div class="player-info">
               <div class="player-name">Amit Tiwari</div>
-              <div class="player-role">Off Break</div>
+              <div class="player-role">Right Arm Off Spin</div>
             </div>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">PG</div>
             <div class="player-info">
               <div class="player-name">Prashant Gupta</div>
-              <div class="player-role">Right Fast</div>
+              <div class="player-role">Right Arm Fast</div>
             </div>
           </div>
         </div>

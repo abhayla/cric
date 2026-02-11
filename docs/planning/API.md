@@ -57,7 +57,7 @@ Update user profile (batting style, bowling style, role, etc.).
   "battingStyle": "right_hand",
   "bowlingStyle": "right_arm_medium",
   "playerRole": "batter",
-  "city": "Mumbai"
+  "location": "Mumbai"
 }
 ```
 
@@ -76,7 +76,7 @@ Create a new team. Authenticated user becomes team owner.
 ```json
 {
   "name": "Mumbai Warriors",
-  "city": "Mumbai",
+  "location": "Mumbai",
   "logoUrl": "https://..."
 }
 ```
@@ -99,7 +99,7 @@ List teams the authenticated user belongs to or created.
     {
       "id": "uuid",
       "name": "Mumbai Warriors",
-      "city": "Mumbai",
+      "location": "Mumbai",
       "logoUrl": "...",
       "playerCount": 15,
       "role": "owner"
@@ -123,7 +123,7 @@ Get team details including roster.
   "team": {
     "id": "uuid",
     "name": "Mumbai Warriors",
-    "city": "Mumbai",
+    "location": "Mumbai",
     "logoUrl": "...",
     "createdBy": "uuid",
     "roster": [
@@ -152,7 +152,7 @@ Update team info. Only team owner/captain.
 ```json
 {
   "name": "Mumbai Warriors Updated",
-  "city": "Pune",
+  "location": "Pune",
   "logoUrl": "https://..."
 }
 ```
@@ -625,7 +625,7 @@ Search players by name. Case-insensitive partial match.
       "displayName": "Rohit Sharma",
       "battingStyle": "right_hand",
       "bowlingStyle": "right_arm_medium",
-      "city": "Mumbai"
+      "location": "Mumbai"
     }
   ]
 }
@@ -649,7 +649,7 @@ Get player profile.
     "battingStyle": "right_hand",
     "bowlingStyle": "right_arm_medium",
     "playerRole": "batter",
-    "city": "Mumbai",
+    "location": "Mumbai",
     "avatarUrl": "https://...",
     "teams": [
       { "id": "uuid", "name": "Mumbai Warriors", "role": "captain" }

@@ -617,6 +617,11 @@ select.input-field {
   color: var(--text-secondary);
 }
 
+.badge-abandoned {
+  background: var(--error-surface, #FEE2E2);
+  color: var(--error, #EF4444);
+}
+
 .badge-upcoming {
   background: var(--primary-light);
   color: var(--primary-dark);
@@ -1169,7 +1174,7 @@ select.input-field {
 }
 
 .extras-btn {
-  height: 40px;
+  height: 48px;
   min-width: 48px;
   padding: 0 16px;
   border-radius: var(--radius-sm);
@@ -1488,6 +1493,45 @@ select.input-field {
   background: var(--wicket);
   color: var(--text-on-dark);
   border-color: var(--wicket);
+}
+
+/* ----- Toggle Switch ----- */
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.switch {
+  width: 48px;
+  height: 28px;
+  border-radius: 14px;
+  background: var(--border);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--duration) var(--ease);
+}
+
+.switch.on {
+  background: var(--primary);
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  top: 3px;
+  left: 3px;
+  transition: transform var(--duration) var(--ease);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.switch.on::after {
+  transform: translateX(20px);
 }
 
 /* ----- Toggle / Selector ----- */

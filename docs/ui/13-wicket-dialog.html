@@ -10,7 +10,7 @@
     .wicket-step.active { display: block; }
     .fielder-row {
       display: flex; align-items: center; gap: 12px;
-      padding: 10px 12px; border: 1.5px solid var(--border);
+      padding: 14px 12px; border: 1.5px solid var(--border);
       border-radius: var(--radius-md); margin-bottom: 8px;
       cursor: pointer; transition: all var(--duration) var(--ease);
     }
@@ -24,23 +24,7 @@
     }
     .which-batter-row:hover { border-color: var(--wicket); }
     .which-batter-row.selected { border-color: var(--wicket); background: #FFEBEE; }
-    .toggle-switch {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 0;
-    }
-    .switch {
-      width: 48px; height: 28px; border-radius: 14px;
-      background: var(--border); position: relative; cursor: pointer;
-      transition: background var(--duration) var(--ease);
-    }
-    .switch.on { background: var(--primary); }
-    .switch::after {
-      content: ''; position: absolute; width: 22px; height: 22px;
-      border-radius: 50%; background: white; top: 3px; left: 3px;
-      transition: transform var(--duration) var(--ease);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-    .switch.on::after { transform: translateX(20px); }
+    /* .toggle-switch and .switch styles now in styles.css */
   </style>
 </head>
 <body>
@@ -72,9 +56,10 @@
               <div class="dismissal-option" onclick="selectDismissal(this, 'Run Out')">Run Out</div>
               <div class="dismissal-option" onclick="selectDismissal(this, 'Stumped')">Stumped</div>
               <div class="dismissal-option" onclick="selectDismissal(this, 'Hit Wicket')">Hit Wicket</div>
-              <div class="dismissal-option" onclick="selectDismissal(this, 'Retired')">Retired</div>
-              <div class="dismissal-option" onclick="selectDismissal(this, 'Obstructing')">Obstruct</div>
-              <div class="dismissal-option" onclick="selectDismissal(this, 'Timed Out')">Timed Out</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Retired Hurt')">Ret. Hurt</div>
+              <div class="dismissal-option" onclick="selectDismissal(this, 'Retired Out')">Ret. Out</div>
+              <div class="dismissal-option disabled" style="opacity: 0.35; pointer-events: none;">Obstruct</div>
+              <div class="dismissal-option disabled" style="opacity: 0.35; pointer-events: none;">Timed Out</div>
             </div>
           </div>
 
@@ -82,7 +67,7 @@
           <div class="wicket-step" data-wicket-step="2">
             <h4 style="font-size: var(--body); font-weight: var(--fw-semibold); margin-bottom: 12px;" id="fielderTitle">Select Fielder</h4>
 
-            <div class="search-bar mb-16" style="height: 40px;">
+            <div class="search-bar mb-16" style="height: 48px;">
               <span class="search-icon" data-icon="search" style="width:16px;height:16px;"></span>
               <input type="text" placeholder="Search..." style="font-size: var(--body-sm);" id="fielderSearch">
             </div>
@@ -149,6 +134,17 @@
               <span style="font-size: var(--body-sm); font-weight: var(--fw-medium);">Direct hit?</span>
               <div class="switch" onclick="this.classList.toggle('on')"></div>
             </div>
+
+            <!-- Runs completed before run out -->
+            <div style="margin-top: 8px;">
+              <label style="font-size: var(--body-sm); font-weight: var(--fw-medium); margin-bottom: 8px; display: block;">Runs completed before run out</label>
+              <div class="flex gap-8">
+                <div class="dismissal-option selected" style="flex: 1; padding: 12px 8px;" onclick="selectRunOutRuns(this, 0)">0</div>
+                <div class="dismissal-option" style="flex: 1; padding: 12px 8px;" onclick="selectRunOutRuns(this, 1)">1</div>
+                <div class="dismissal-option" style="flex: 1; padding: 12px 8px;" onclick="selectRunOutRuns(this, 2)">2</div>
+                <div class="dismissal-option" style="flex: 1; padding: 12px 8px;" onclick="selectRunOutRuns(this, 3)">3</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -183,6 +179,11 @@
     function selectDismissedBatter(row, which) {
       document.querySelectorAll('.which-batter-row').forEach(r => r.classList.remove('selected'));
       row.classList.add('selected');
+    }
+
+    function selectRunOutRuns(el, runs) {
+      el.parentElement.querySelectorAll('.dismissal-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
     }
 
     function updateWicketSteps() {

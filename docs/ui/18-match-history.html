@@ -12,7 +12,6 @@
     <div class="header-bar">
       <span class="header-title">Matches</span>
       <div class="header-actions">
-        <button class="header-action" data-icon="search"></button>
         <button class="header-action" data-icon="filter"></button>
       </div>
     </div>
@@ -24,6 +23,7 @@
         <span class="chip" data-value="won">Won</span>
         <span class="chip" data-value="lost">Lost</span>
         <span class="chip" data-value="tied">Tied</span>
+        <span class="chip" data-value="no_result">No Result</span>
       </div>
 
       <!-- Match List -->
@@ -164,12 +164,81 @@
           </div>
           <div class="match-result">Chennai Kings won by 5 wickets</div>
         </div>
+
+        <!-- Match 6: Tied -->
+        <div class="match-card" data-result="tied" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 20 Jan 2026 &bull; Gymkhana Ground</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="team-name">Mumbai Warriors</span>
+              <span class="team-score">165/8</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">BR</div>
+              <span class="team-name">Bangalore Royals</span>
+              <span class="team-score">165/9</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+          </div>
+          <div class="match-result">Match Tied</div>
+        </div>
+
+        <!-- Match 7: Super Over Win (tournament match) -->
+        <div class="match-card" data-result="won" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 15 Jan 2026 &bull; Wankhede Club &bull; Premier League T20</span>
+            <span class="badge badge-completed">Completed</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="team-name">Mumbai Warriors</span>
+              <span class="team-score">178/7</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #F3E5F5; color: #6A1B9A;">KT</div>
+              <span class="team-name">Kolkata Thunder</span>
+              <span class="team-score">178/8</span>
+              <span class="team-overs">(20.0)</span>
+            </div>
+          </div>
+          <div class="match-result">Mumbai Warriors won in Super Over</div>
+        </div>
+
+        <!-- Match 8: Abandoned -->
+        <div class="match-card" data-result="no_result" onclick="navigateTo('15-scorecard.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; 10 Jan 2026 &bull; Oval Maidan</span>
+            <span class="badge badge-abandoned">Abandoned</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">DS</div>
+              <span class="team-name">Delhi Strikers</span>
+              <span class="team-score">78/3</span>
+              <span class="team-overs">(10.5)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">MW</div>
+              <span class="team-name">Mumbai Warriors</span>
+              <span class="team-score" style="color: var(--text-secondary);">&mdash;</span>
+              <span class="team-overs"></span>
+            </div>
+          </div>
+          <div class="match-result">No Result</div>
+        </div>
       </div>
     </div>
 
     <!-- Empty State (G24) — toggle: document.getElementById('emptyState').style.display = '' -->
     <div id="emptyState" class="empty-state" style="display: none;">
-      <div class="empty-icon">&#x1F4CB;</div>
+      <div class="empty-icon" data-icon="scoreboard"></div>
       <div class="empty-title">No Match History</div>
       <div class="empty-text">Your past matches will appear here once you play.</div>
       <button class="empty-cta" onclick="navigateTo('10-match-setup.html')">Start a Match</button>
@@ -197,6 +266,8 @@
           card.style.display = result === 'lost' ? '' : 'none';
         } else if (filter === 'tied') {
           card.style.display = result === 'tied' ? '' : 'none';
+        } else if (filter === 'no_result') {
+          card.style.display = result === 'no_result' ? '' : 'none';
         }
       });
     });

@@ -132,10 +132,10 @@
 
 | Gap | CricHeroes | CricApp | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
-| Default theme | Light mode | Dark mode only (M3 Dark, seed #2E7D32) | SKIP — deliberate differentiation | — |
+| Default theme | Light mode | Dark mode only (M3 Dark, seed #1976D2) | SKIP — deliberate differentiation | — |
 | Light mode option | Available | Not in MVP | DEFER (post-MVP) | Low |
 | Custom themes | PRO feature | Not planned | SKIP | Low |
-| Brand color | Green ~#4CAF50 | Green #2E7D32 (darker, M3 seed) | — | — |
+| Brand color | Green ~#4CAF50 | Blue #1976D2 (M3 seed) | — | — |
 
 ---
 
@@ -617,7 +617,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 | Element | CricHeroes | CricApp |
 |---------|-----------|---------|
 | Default | Light mode | Dark mode (M3) |
-| Primary | Green (~#4CAF50) | Green (#2E7D32) |
+| Primary | Green (~#4CAF50) | Blue (#1976D2) |
 | Four | Blue highlight | Blue (#1565C0) per G23 |
 | Six | Purple highlight | Purple (#6A1B9A) per G23 |
 | Wicket | Red | Red (#C62828) per G23 |

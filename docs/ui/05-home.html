@@ -11,21 +11,21 @@
     <!-- Dark Header -->
     <div class="header-bar">
       <span class="app-logo-sm">Cric<span>App</span></span>
-      <div class="header-actions">
-        <button class="header-action" data-icon="search"></button>
-      </div>
+      <!-- Search deferred to post-MVP per CODE_STANDARDS.md -->
     </div>
 
     <!-- Page Content -->
     <div class="page-content">
 
-      <!-- Quick Actions -->
+      <!-- Quick Actions — Stacked Rows -->
       <div class="section">
-        <div class="quick-actions">
-          <button class="quick-action-btn btn-primary" onclick="navigateTo('10-match-setup.html')" style="flex: 2;">
-            <span data-icon="plus" style="width:18px;height:18px;display:inline-block;vertical-align:middle;margin-right:4px;"></span>
+        <div style="margin-bottom: 8px;">
+          <button class="quick-action-btn btn-primary" onclick="navigateTo('10-match-setup.html')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <span data-icon="plus" style="width:18px;height:18px;display:inline-block;"></span>
             Start Match
           </button>
+        </div>
+        <div class="quick-actions">
           <button class="quick-action-btn btn-outline" onclick="navigateTo('07-create-team.html')">Create Team</button>
           <button class="quick-action-btn btn-outline" onclick="navigateTo('20-create-tournament.html')">Tournament</button>
         </div>
@@ -56,6 +56,7 @@
               <span class="team-overs"></span>
             </div>
           </div>
+          <div style="padding: 0 12px 8px; font-size: var(--caption); color: var(--text-secondary);">CRR: 8.51</div>
         </div>
       </div>
 
@@ -134,7 +135,7 @@
           <div class="match-result">Mumbai Warriors won by 7 wickets</div>
         </div>
 
-        <!-- Match 3 -->
+        <!-- Match 3 — Tied result example -->
         <div class="match-card" onclick="navigateTo('15-scorecard.html')">
           <div class="match-header">
             <span class="match-meta">T20 &bull; 2 Feb 2026</span>
@@ -144,17 +145,17 @@
             <div class="team-row">
               <div class="avatar sm" style="background: #FCE4EC; color: #C62828;">DS</div>
               <span class="team-name">Delhi Strikers</span>
-              <span class="team-score">198/5</span>
+              <span class="team-score">165/8</span>
               <span class="team-overs">(20.0)</span>
             </div>
             <div class="team-row">
               <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
               <span class="team-name">Chennai Kings</span>
-              <span class="team-score">199/4</span>
-              <span class="team-overs">(19.4)</span>
+              <span class="team-score">165/10</span>
+              <span class="team-overs">(20.0)</span>
             </div>
           </div>
-          <div class="match-result">Chennai Kings won by 6 wickets</div>
+          <div class="match-result">Match Tied</div>
         </div>
       </div>
 
@@ -179,8 +180,8 @@
               <div class="stat-label">Wickets</div>
             </div>
             <div class="stat-item">
-              <div class="stat-value">14</div>
-              <div class="stat-label">Catches</div>
+              <div class="stat-value">31.8</div>
+              <div class="stat-label">Avg</div>
             </div>
           </div>
         </div>

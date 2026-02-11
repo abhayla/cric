@@ -41,6 +41,19 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 
 Planning is 100% complete. **No code has been implemented yet** — `apps/mobile/` and `apps/server/` directories do not exist. Start implementation from Phase 1 in the implementation plan.
 
+## Implementation Phases
+
+Phases from [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md) — build in order:
+
+1. **Foundation** — Project init, PostgreSQL + Drizzle, Firebase Auth, M3 dark theme, go_router, auth screens
+2. **Teams & Match Setup** — Teams CRUD, match creation, Drift local DB, offline caching
+3. **Tournament Management** — Tournament CRUD, fixture generation, standings, knockout bracket, NRR, super over
+4. **Scoring Engine (CRITICAL)** — Delivery recording, scoring state machine, cricket rules, undo, WebSocket broadcast, innings/match completion, offline sync
+5. **Analytics** — Wagon wheel, Manhattan chart, Worm graph, MVP algorithm
+6. **Player Profiles & Stats** — Career stats aggregation, player profile, match history
+7. **Polish & Testing** — Scoring engine tests, integration tests, performance testing
+8. **Deployment** — VPS (Windows Server), PM2, Nginx, Cloudflare, `pg_dump` backups
+
 ## Key Documentation
 
 Read the planning docs before implementing. Follow the process docs during implementation.
@@ -67,6 +80,7 @@ cd apps/server && bun install              # Install dependencies
 cd apps/server && bun run src/index.ts     # Start server
 cd apps/server && bun test                 # Run all tests
 cd apps/server && bun test src/path/to.test.ts                 # Run single test file
+cd apps/server && bunx tsc --noEmit        # TypeScript type check (no emit)
 cd apps/server && bunx drizzle-kit generate  # Generate migrations
 cd apps/server && bunx drizzle-kit migrate   # Apply migrations
 ```
@@ -74,6 +88,18 @@ cd apps/server && bunx drizzle-kit migrate   # Apply migrations
 **Environment setup:** Copy `apps/server/.env.example` to `apps/server/.env` and fill in PostgreSQL + Firebase credentials before starting the server.
 
 **Code generation:** Files matching `*.g.dart`, `*.freezed.dart`, `*.gr.dart` are auto-generated. Never edit them manually — re-run `build_runner` instead.
+
+## CI Pipeline
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on a self-hosted Windows runner with 5 jobs:
+
+1. **structure-validate** — Runs `node scripts/validate-structure/flutter-validator.js` and `server-validator.js` to enforce folder placement rules from `.claude/rules.md`
+2. **flutter-analyze** — `flutter pub get` → `build_runner build` → `flutter analyze`
+3. **flutter-test** — (depends on analyze) `flutter test`
+4. **server-lint** — `bunx tsc --noEmit`
+5. **server-test** — (depends on lint) `bun test` with a test PostgreSQL database
+
+Jobs only run when their respective `apps/` directory has files (conditional on `hashFiles`).
 
 ## Architecture Decisions
 

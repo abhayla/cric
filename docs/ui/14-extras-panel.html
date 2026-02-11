@@ -42,7 +42,12 @@
         <!-- Extra Type Header -->
         <div class="flex justify-between items-center mb-16">
           <h3 style="font-size: var(--heading); font-weight: var(--fw-bold);">Extra</h3>
-          <span class="extra-type-badge" id="extraTypeBadge">Wide</span>
+          <div class="flex items-center gap-12">
+            <span class="extra-type-badge" id="extraTypeBadge">Wide</span>
+            <button class="modal-close" onclick="navigateTo('12-scoring-page.html')">
+              <span data-icon="close" style="width:18px;height:18px;"></span>
+            </button>
+          </div>
         </div>
 
         <!-- Additional Runs -->
@@ -54,6 +59,7 @@
             <button class="extra-run-btn" onclick="selectExtraRuns(this, 2)">2</button>
             <button class="extra-run-btn" onclick="selectExtraRuns(this, 3)">3</button>
             <button class="extra-run-btn" onclick="selectExtraRuns(this, 4)">4</button>
+            <button class="extra-run-btn" onclick="openCustomRunPicker()" style="font-size: var(--heading);">...</button>
           </div>
         </div>
 
@@ -133,6 +139,15 @@
     function selectWicketType(chip) {
       document.querySelectorAll('#wicketTypeSelector .chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
+    }
+
+    function openCustomRunPicker() {
+      const val = prompt('Enter additional runs (0-12):', '5');
+      if (val !== null && !isNaN(val) && val >= 0) {
+        document.querySelectorAll('.extra-run-btn').forEach(b => b.classList.remove('selected'));
+        additionalRuns = parseInt(val);
+        updateTotalRuns();
+      }
     }
 
     function confirmExtra() {

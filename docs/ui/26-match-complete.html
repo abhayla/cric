@@ -15,7 +15,7 @@
     }
     .score-comparison .team-block { text-align: center; flex: 1; }
     .score-comparison .team-block .team-avatar-lg {
-      width: 48px; height: 48px; border-radius: 50%;
+      width: 56px; height: 56px; border-radius: 50%;
       margin: 0 auto 6px;
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 16px;
@@ -28,9 +28,7 @@
       text-align: center; padding: 16px;
       font-size: var(--heading); font-weight: var(--fw-bold); color: var(--primary-dark);
     }
-    .match-complete-actions {
-      padding: 16px; display: flex; flex-direction: column; gap: 8px;
-    }
+    /* Actions use standard .modal-footer from styles.css */
   </style>
 </head>
 <body>
@@ -73,11 +71,11 @@
 
           <!-- Super Over Button (hidden by default — toggle via JS for tied knockout) -->
           <div id="superOverBtn" style="display: none; padding: 0 16px 8px;">
-            <button class="btn btn-outline w-full" onclick="navigateTo('27-super-over-setup.html')">Start Super Over</button>
+            <button class="btn btn-primary" onclick="navigateTo('27-super-over-setup.html')">Start Super Over</button>
           </div>
         </div>
 
-        <div class="match-complete-actions">
+        <div class="modal-footer" style="flex-direction: column; gap: 8px;">
           <button class="btn btn-primary" onclick="navigateTo('15-scorecard.html')">View Scorecard</button>
           <button class="btn btn-outline w-full" onclick="navigateTo('05-home.html')">Back to Home</button>
         </div>
@@ -96,6 +94,17 @@
       document.getElementById('resultText').textContent = tiedKnockout
         ? 'Match Tied — Super Over required'
         : 'Mumbai Warriors won by 15 runs';
+      // When tied knockout, View Scorecard becomes secondary
+      const viewBtn = document.querySelector('.modal-footer .btn-primary');
+      if (tiedKnockout) {
+        viewBtn.classList.remove('btn-primary');
+        viewBtn.classList.add('btn-outline');
+        viewBtn.classList.add('w-full');
+      } else {
+        viewBtn.classList.add('btn-primary');
+        viewBtn.classList.remove('btn-outline');
+        viewBtn.classList.remove('w-full');
+      }
     }
     // Uncomment to demo tied state:
     // toggleTiedState();
