@@ -1,0 +1,19 @@
+targets:
+  $default:
+    builders:
+      freezed:
+        generate_for:
+          include:
+            - lib/src/**/*.dart
+      json_serializable:
+        generate_for:
+          include:
+            - lib/src/**/*.dart
+      riverpod_generator:
+        generate_for:
+          include:
+            - lib/src/**/*.dart
+      drift_dev:
+        generate_for:
+          include:
+            - lib/src/**/*.dart

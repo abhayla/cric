@@ -90,7 +90,7 @@ function checkKebabCase() {
 function checkFolderStructure() {
   if (!fs.existsSync(SRC_ROOT)) return;
 
-  const expectedDirs = ["routes", "services", "db", "middleware", "types", "websocket", "utils"];
+  const expectedDirs = ["config", "routes", "services", "db", "middleware", "types", "websocket", "utils"];
   const actualEntries = fs.readdirSync(SRC_ROOT, { withFileTypes: true });
 
   for (const entry of actualEntries) {

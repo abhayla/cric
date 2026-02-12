@@ -29,6 +29,7 @@ apps/mobile/pubspec.lock
 # Bun / Node
 apps/server/node_modules/
 apps/server/bun.lockb
+apps/server/bun.lock
 
 # MCP config (contains connection strings)
 .mcp.json
@@ -51,6 +52,9 @@ apps/server/bun.lockb
 *.jpeg
 
 # Debug logs (track docs/debug/.gitkeep to preserve folder)
+
+# Prompt templates (personal workflow aids)
+prompts/
 
 # Misc
 *.log
