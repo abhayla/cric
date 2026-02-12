@@ -50,7 +50,8 @@
       "Bash(cd apps/server && npx prettier:*)"
     ],
     "deny": [
-      "Edit(CLAUDE.md)",
+      "Edit(*cric/CLAUDE.md)",
+      "Write(*cric/CLAUDE.md)",
       "Edit(.claude/rules.md)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
