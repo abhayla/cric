@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/presentation/pages/splash_page.dart';
 import 'providers.dart';
 
 /// Route paths.
@@ -56,7 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: AppRoutes.splash,
-        builder: (context, state) => const _PlaceholderPage('Splash'),
+        builder: (context, state) => const SplashPage(),
       ),
       GoRoute(
         path: AppRoutes.login,

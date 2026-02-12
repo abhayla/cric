@@ -11,7 +11,7 @@ void main() {
       ),
     );
 
-    // Initial route is splash — 'Splash' appears in both AppBar and body
-    expect(find.text('Splash'), findsNWidgets(2));
+    // Initial route is splash — shows CricApp title (two-tone RichText)
+    expect(find.textContaining('Cric'), findsOneWidget);
   });
 }
