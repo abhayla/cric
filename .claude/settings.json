@@ -42,7 +42,12 @@
       "Bash(tree:*)",
       "Bash(pwd:*)",
       "Bash(python -m http.server:*)",
-      "Bash(adb:*)"
+      "Bash(adb:*)",
+      "Bash(cd apps/mobile && flutter screenshot:*)",
+      "Bash(node scripts:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx prettier:*)",
+      "Bash(cd apps/server && npx prettier:*)"
     ],
     "deny": [
       "Edit(CLAUDE.md)",
@@ -116,13 +121,24 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/auto-format.ps1"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/remind-session-handoff.ps1"
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/quality-gate.ps1"
           }
         ]
       }

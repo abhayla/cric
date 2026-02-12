@@ -2,7 +2,7 @@
 name: ui-researcher
 description: Research and analyze Flutter UI implementation, widget structure, theme compliance, and screen layout against HTML wireframes. Use when planning new screens, investigating UI bugs, or verifying Material 3 light theme compliance.
 tools: Read, Grep, Glob, WebFetch, WebSearch
-model: opus
+model: haiku
 ---
 
 # UI Researcher

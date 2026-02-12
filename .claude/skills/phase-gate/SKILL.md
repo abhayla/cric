@@ -2,6 +2,7 @@
 name: phase-gate
 description: Run phase completion gate checks to verify all exit criteria are met before progressing to the next implementation phase.
 disable-model-invocation: true
+context: fork
 allowed-tools: Bash, Read, Glob, Grep, mcp__playwright__browser_navigate, mcp__playwright__browser_take_screenshot
 ---
 

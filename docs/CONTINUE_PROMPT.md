@@ -16,7 +16,21 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Resume wireframe review from Group F (Post-Match).** A systematic 28-screen wireframe review is in progress. Groups A (Auth), B (Home), C (Teams), D (Match Setup), D2 (Tournament Flow), and E (Scoring Flow) are complete. Continue with the remaining group below.
+**Start Phase 1 implementation** using the 17-step TDD workflow in PLAYBOOK.md. Wireframe review Groups A-E complete (24/28 screens). Group F (Post-Match: 15-scorecard, 16-match-analytics, 17-player-profile, 18-match-history) can be reviewed during Phase 4-5 when those features are built.
+
+### Best Practices Overhaul Completed (This Session)
+
+Infrastructure improvements applied before implementation begins:
+
+1. **TDD Workflow** — PLAYBOOK.md rewritten: 15→17 steps with strict Red-Green-Refactor per layer (Steps 3/5/7 = RED, Steps 4/6/8 = GREEN+REFACTOR). New `/tdd` skill. IMPLEMENTATION_PRACTICES.md Section 13.5 added.
+2. **Agent Tuning** — Model optimization: 3 agents downgraded (ui-researcher→haiku, docs-manager→haiku, 3 agents→sonnet), 3 agents upgraded to inherit main model (scoring-researcher, system-architect, debugger). 5 agents now accumulate knowledge in `.claude/agents/memory/`.
+3. **Auto-Format Hook** — PostToolUse hook formats .dart (dart format) and .ts (prettier) on every Edit/Write. Skips generated files.
+4. **Quality Gate** — Stop hook replaces remind-session-handoff. Checks CONTINUE_PROMPT.md + uncommitted source changes.
+5. **Enhanced Compaction** — Reinject hook now includes git state (branch, modified files, staged files) + "What to Do Next" excerpt.
+6. **CLAUDE.md Slimmed** — Cricket Domain Rules → 3-line reference (full rules in `.claude/skills/cricket-domain/SKILL.md`). Compaction guidance + hierarchy plan added.
+7. **New Skills** — `cricket-domain` (full rules reference), `tdd` (guided TDD). `context: fork` on phase-gate + screenshot-verify.
+8. **Agent Preloading** — scoring-researcher, database-researcher, tester now read relevant skills before starting.
+9. **Settings** — 5 new allow rules (screenshot, node scripts, mkdir, prettier). 47 total allow rules, 10 hooks.
 
 ### Wireframe Review — Current State
 
@@ -495,16 +509,18 @@ See "Changes Applied During Wireframe Review" section for full change log.
 
 Hardened Claude Code development infrastructure with deterministic enforcement:
 
-**Hooks (7):** `.claude/hooks/` — PowerShell scripts for automated guardrails:
+**Hooks (9):** `.claude/hooks/` — PowerShell scripts for automated guardrails:
 - `validate-file-placement.ps1` — Enforces rules.md on every Edit/Write (snake_case, no widgets in core, service suffixes, etc.)
 - `guard-cross-feature-imports.ps1` — Blocks cross-feature data/domain imports on Write
 - `protect-sensitive-files.ps1` — Blocks writes to .env, credentials, keys on Edit/Write
 - `load-session-context.ps1` — Injects CONTINUE_PROMPT.md "What to Do Next" on session start
-- `reinject-after-compaction.ps1` — Re-injects critical rules after context compaction
-- `remind-session-handoff.ps1` — Blocks session end if CONTINUE_PROMPT.md not updated
+- `reinject-after-compaction.ps1` — Re-injects critical rules + git state + task context after compaction
+- `quality-gate.ps1` — Blocks session end if CONTINUE_PROMPT.md not updated or uncommitted source changes
 - `guard-bash-commands.ps1` — Blocks destructive git/file operations
+- `auto-invoke-cricheroes-comparator.ps1` — Auto-invokes CricHeroes comparison on feature file writes
+- `auto-format.ps1` — Formats .dart/.ts files on Edit/Write (skips generated files)
 
-**Skills (6 new, 12 total):** `/analyze`, `/server-test`, `/commit-draft`, `/debug-log`, `/schema-parity`, `/drift-migrate`
+**Skills (16 total):** `/analyze`, `/server-test`, `/commit-draft`, `/debug-log`, `/schema-parity`, `/drift-migrate`, `/score-test`, `/build-check`, `/sync-test`, `/screenshot-verify`, `/session-handoff`, `/db-migrate`, `/phase-gate`, `/issue-create`, `/tdd`, `/cricket-domain`
 
 **MCP Servers (2):**
 - PostgreSQL MCP (project-scope, `.mcp.json` — gitignored)
@@ -514,9 +530,9 @@ Hardened Claude Code development infrastructure with deterministic enforcement:
 
 **Validation Scripts:** `scripts/validate-structure/` — `flutter-validator.js` + `server-validator.js` for CI and pre-commit use
 
-**Settings.json:** Expanded permissions (40 allow rules, 11 deny rules) + 7 hooks configured
+**Settings.json:** Expanded permissions (47 allow rules, 11 deny rules) + 10 hooks configured (PreToolUse, PostToolUse, SessionStart, Stop)
 
-**Documentation synced:** CLAUDE_CODE_CONFIG.md (13 agents, 12 skills, 7 hooks, 2 MCP servers), PROJECT_MANAGEMENT.md, README.md, .gitignore
+**Documentation synced:** CLAUDE_CODE_CONFIG.md (13 agents, 16 skills, 9 hooks, 2 MCP servers), PROJECT_MANAGEMENT.md, README.md, .gitignore
 
 ---
 
@@ -690,4 +706,4 @@ See [CLAUDE.md](../CLAUDE.md#monorepo-layout) for the folder structure and [.cla
 
 ## Instructions for Next Session
 
-Read this file first, then read `docs/planning/IMPLEMENTATION_PLAN.md` Phase 1 section. Follow the workflow in `docs/process/IMPLEMENTATION_PRACTICES.md`. Begin implementation from step 1. Refer to `docs/planning/DATABASE.md` for schema, `docs/planning/API.md` for endpoints, `docs/planning/SCORING_RULES.md` for cricket logic, and `docs/planning/blueprint.html` for visual architecture reference.
+Read this file first, then read `docs/planning/IMPLEMENTATION_PLAN.md` Phase 1 section. Follow the **17-step TDD workflow** in `docs/process/PLAYBOOK.md` — write tests BEFORE implementation for each layer (Steps 3/5/7 = RED, Steps 4/6/8 = GREEN+REFACTOR). Use `/tdd <feature> <layer>` skill for guided TDD. Refer to `docs/planning/DATABASE.md` for schema, `docs/planning/API.md` for endpoints, `docs/planning/SCORING_RULES.md` for cricket logic (or `.claude/skills/cricket-domain/SKILL.md` for quick reference), and `docs/planning/blueprint.html` for visual architecture reference.

@@ -2,7 +2,7 @@
 name: api-researcher
 description: Research and analyze REST API routes, service layer logic, WebSocket protocol implementation, and middleware configuration. Use when planning new endpoints, investigating API bugs, or verifying implementation matches API.md spec.
 tools: Read, Grep, Glob, WebFetch, WebSearch
-model: opus
+model: sonnet
 ---
 
 # API & WebSocket Researcher

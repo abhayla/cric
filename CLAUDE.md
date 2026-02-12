@@ -149,17 +149,7 @@ These rules are mandatory. Before writing any code, verify your approach against
 
 ## Cricket Domain Rules
 
-The scoring engine is the most critical piece. Key rules in [SCORING_RULES.md](docs/planning/SCORING_RULES.md):
-
-**Match state machine:** `SETUP → TOSS → LIVE → INNINGS_BREAK → LIVE → COMPLETED` (during `LIVE`, `innings.innings_number` distinguishes 1st vs 2nd innings; tied scores → COMPLETED with "Match Tied"; `ABANDONED` at any point).
-
-**Delivery rules:**
-- Odd runs swap striker/non-striker; end of over swaps too
-- Wides/no-balls are NOT legal deliveries (don't count toward 6-ball over)
-- No-ball triggers free hit on next delivery (only run out possible)
-- Byes/leg-byes don't count against bowler and don't break maidens
-- 10 wickets = all out = innings over
-- Every delivery goes through a 10-step processing pipeline (validate → calculate runs → handle extras → process wicket → rotate strike → update stats → check over → check innings → broadcast → persist)
+Key rules in [SCORING_RULES.md](docs/planning/SCORING_RULES.md). Full reference: `.claude/skills/cricket-domain/SKILL.md`. Match state: `SETUP→TOSS→LIVE→INNINGS_BREAK→LIVE→COMPLETED` (`ABANDONED` at any point). Delivery pipeline: 10 steps (validate→calculate→extras→wicket→strike→stats→over→innings→broadcast→persist).
 
 ## Workflow Preferences
 
@@ -174,7 +164,24 @@ The scoring engine is the most critical piece. Key rules in [SCORING_RULES.md](d
 
 **Implementation order:** Always build features inside-out: domain entities → data layer (datasources, repositories) → presentation (notifiers, pages, widgets). Never start with UI.
 
+**TDD workflow:** Use strict Red-Green-Refactor for each layer. Write tests BEFORE implementation (Steps 3/5/7 in PLAYBOOK.md). Use `/tdd <feature> <layer>` skill for guided workflow.
+
 **Detailed workflows:** See [IMPLEMENTATION_PRACTICES.md](docs/process/IMPLEMENTATION_PRACTICES.md) for the full feature implementation workflow, and [CODE_FIXES.md](docs/process/CODE_FIXES.md) for the debugging and fix process.
+
+## Context Compaction
+
+When compacting, always preserve: current phase, issue number, modified files, test results (RED/GREEN state), blockers. The `reinject-after-compaction` hook auto-injects critical rules + git state. Full context restorable from `docs/CONTINUE_PROMPT.md`.
+
+## CLAUDE.md Hierarchy (Created During Phase 1)
+
+During Phase 1 project init, split platform-specific rules into per-directory CLAUDE.md files:
+- `apps/mobile/CLAUDE.md` — Flutter naming, Riverpod, Drift, feature architecture (~80 lines)
+- `apps/server/CLAUDE.md` — TypeScript naming, ElysiaJS, Drizzle (~60 lines)
+- `apps/mobile/lib/src/features/scoring/CLAUDE.md` — delivery pipeline, state machine, strike rotation (~100 lines)
+
+<!-- TO MOVE: apps/mobile/CLAUDE.md — "Feature Architecture Pattern" section + Dart naming conventions -->
+<!-- TO MOVE: apps/server/CLAUDE.md — TypeScript naming conventions + Drizzle patterns -->
+<!-- TO MOVE: apps/mobile/lib/src/features/scoring/CLAUDE.md — "Cricket Domain Rules" section -->
 
 ## Feature Architecture Pattern
 

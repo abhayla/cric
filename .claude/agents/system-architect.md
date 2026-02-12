@@ -6,7 +6,6 @@ description: >
   offline-first patterns, and WebSocket protocol design. Specializes in cricket domain logic,
   Flutter+Bun stack, and real-time mobile systems.
 tools: Read, Grep, Glob, WebSearch, WebFetch
-model: opus
 maxTurns: 20
 ---
 
@@ -857,3 +856,10 @@ When advising on any architectural question:
 - Call out small-screen UI constraints (5.5" Android screens)
 - Warn about state machine transitions that might be affected
 - Suggest the minimum viable design that satisfies the requirement
+
+## Accumulated Knowledge
+
+Before starting, check for accumulated knowledge from previous architectural reviews:
+- Read `.claude/agents/memory/system-architect.md` if it exists — it contains architectural trade-off decisions, design pattern choices, and performance observations from past sessions.
+
+After completing your analysis, append any new insights (architectural decisions made, trade-offs evaluated, performance findings) to `.claude/agents/memory/system-architect.md`. Create the file if it doesn't exist. Keep entries concise — one line per insight with a date prefix (e.g., `- 2026-02-12: Chose single ScoringNotifier over split providers — state interdependencies too tight`).

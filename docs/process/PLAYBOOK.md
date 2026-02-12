@@ -6,9 +6,9 @@ Autonomous implementation workflow for CricApp. Ties together all planning docs,
 
 ---
 
-## 1. Per-Feature Autonomous Workflow (15 Steps)
+## 1. Per-Feature Autonomous Workflow (17 Steps — TDD)
 
-Execute this workflow for every GitHub Issue (screen or feature). All 13 agents are used at specific workflow points — agents are **read-only context collectors** that never write code.
+Execute this workflow for every GitHub Issue (screen or feature). All 13 agents are used at specific workflow points — agents are **read-only context collectors** that never write code. Tests are written BEFORE implementation using strict Red-Green-Refactor TDD.
 
 ### Step 1: Load the Issue
 
@@ -41,30 +41,66 @@ Task(database-researcher, "Check deliveries/innings/overs schema for scoring pag
 Task(api-researcher, "Verify scoring REST endpoints and WebSocket broadcast")
 ```
 
-### Step 3: Implement Domain Layer
+### Step 3: Write Domain Tests (RED)
 
-Build inside-out per CLAUDE.md:
+Write tests BEFORE implementation. Tests should be written against interfaces and specs — NOT existing code.
+
+1. Create test file at `test/src/features/<feature>/domain/`
+2. Write unit tests for entity behavior, validation rules, and domain logic from SCORING_RULES.md / DATABASE.md
+3. Write tests against repository interfaces (abstract contracts)
+4. Run tests — **confirm FAIL (RED state)**
+5. Do NOT implement anything yet
+
+**Context isolation:** In RED phase, do NOT read existing implementation files — write tests against INTERFACES and SPECS only.
+
+### Step 4: Implement Domain Layer (GREEN + REFACTOR)
+
 1. Entity classes in `features/<feature>/domain/entities/`
 2. Repository interfaces in `features/<feature>/domain/repositories/`
 3. Pure Dart — no framework dependencies
+4. Run tests — **confirm PASS (GREEN state)**
+5. **REFACTOR:** Clean up without breaking tests
+6. Run tests one final time after refactor
 
-### Step 4: Implement Data Layer
+### Step 5: Write Data Tests (RED)
+
+1. Create test file at `test/src/features/<feature>/data/`
+2. Write tests with mocked datasources, testing repository contracts
+3. Write tests for model serialization (Freezed toJson/fromJson round-trips)
+4. Run tests — **confirm FAIL (RED state)**
+5. Do NOT implement anything yet
+
+### Step 6: Implement Data Layer (GREEN + REFACTOR)
 
 1. Freezed models in `features/<feature>/data/models/` (add `@freezed` + `@JsonSerializable`)
 2. Run `dart run build_runner build --delete-conflicting-outputs`
 3. Local datasource (Drift) in `features/<feature>/data/datasources/`
 4. Remote datasource (Dio) in `features/<feature>/data/datasources/`
 5. Repository implementation in `features/<feature>/data/repositories/`
+6. Run tests — **confirm PASS (GREEN state)**
+7. **REFACTOR:** Clean up without breaking tests
+8. Run tests one final time after refactor
 
-### Step 5: Implement Presentation Layer
+### Step 7: Write Presentation Tests (RED)
+
+1. Create test file at `test/src/features/<feature>/presentation/`
+2. Write notifier state transition tests with mocked repository
+3. Write widget tests (pump with `ProviderScope` overrides, tap buttons, verify UI updates)
+4. Run tests — **confirm FAIL (RED state)**
+5. Do NOT implement anything yet
+
+### Step 8: Implement Presentation Layer (GREEN + REFACTOR)
 
 1. Freezed state class for the notifier
 2. Riverpod Notifier in `features/<feature>/presentation/notifiers/`
 3. Page widget in `features/<feature>/presentation/pages/`
 4. Feature-specific widgets in `features/<feature>/presentation/widgets/`
 5. Provider declarations in `features/<feature>/providers.dart`
+6. Run tests — **confirm PASS (GREEN state)**
+7. **REFACTOR:** Clean up without breaking tests
+8. Run tests one final time after refactor
 
-### Step 6: Build Check
+### Step 9: Build Check
 
 Run `/build-check` skill (or manually):
 ```bash
@@ -73,26 +109,20 @@ cd apps/mobile && flutter analyze
 ```
 Fix all analysis issues before proceeding.
 
-### Step 7: Playwright Wireframe Comparison
+### Step 10: Playwright Wireframe Comparison
 
 Follow the protocol in **Section 3** below. Run `/screenshot-verify XX` where XX is the screen number.
 
-### Step 8: Post-Implementation Review (2 Agents)
+### Step 11: Post-Implementation Review (2 Agents)
 
 ```
 Task(code-reviewer, "Review <feature> implementation for quality, YAGNI/KISS/DRY compliance")
-Task(tester, "Generate test cases for <feature>, check coverage and edge cases")
+Task(tester, "Check <feature> test coverage and identify gaps — tests should already exist from TDD steps")
 ```
 
-### Step 9: Run Tests
+Focus: The tester agent now verifies coverage GAPS rather than generating tests from scratch — tests already exist from Steps 3/5/7.
 
-Run the appropriate skill based on feature type:
-- `/score-test` — Scoring engine features
-- `/sync-test` — Offline sync features
-- `/server-test` — Server/API features
-- Manual: `cd apps/mobile && flutter test test/path/`
-
-### Step 10: Fix Loop (Test Failures)
+### Step 12: Fix Loop (Test Failures)
 
 Follow [CODE_FIXES.md](CODE_FIXES.md) escalation tiers:
 - **Normal (1-3 iterations):** Re-read failure, try a different code path
@@ -101,14 +131,14 @@ Follow [CODE_FIXES.md](CODE_FIXES.md) escalation tiers:
 - **Tier 3 (8-9):** Audit architecture
 - **Hard Cap (10):** Stop and present findings to user
 
-### Step 11: Fix Loop (Wireframe Mismatch)
+### Step 13: Fix Loop (Wireframe Mismatch)
 
 If `/screenshot-verify` reported FAIL:
 1. Fix the specific discrepancies listed
 2. Re-run `/screenshot-verify XX`
 3. Max 5 iterations — if still failing, log the discrepancy in the issue and continue
 
-### Step 12: Commit
+### Step 14: Commit
 
 1. Invoke `git-manager` agent for safe git practices review
 2. Commit with conventional commit referencing issue number:
@@ -116,13 +146,13 @@ If `/screenshot-verify` reported FAIL:
    feat(scoring): implement scoring page UI (#42)
    ```
 
-### Step 13: Update GitHub Issue
+### Step 15: Update GitHub Issue
 
 ```bash
 gh issue edit <number> --body "..." # Check off completed acceptance criteria
 ```
 
-### Step 14: Session Handoff
+### Step 16: Session Handoff
 
 Run `/session-handoff` to update `docs/CONTINUE_PROMPT.md` with:
 - What was completed
@@ -130,7 +160,7 @@ Run `/session-handoff` to update `docs/CONTINUE_PROMPT.md` with:
 - Any blockers
 - File tree changes
 
-### Step 15: Next Issue or Phase Gate
+### Step 17: Next Issue or Phase Gate
 
 - If more issues in the milestone → loop to Step 1
 - If milestone complete → run `/phase-gate N` (see Section 2)
@@ -167,6 +197,7 @@ Run `/session-handoff` to update `docs/CONTINUE_PROMPT.md` with:
 - [ ] Login with Phone OTP → see home screen → navigate between tabs
 - [ ] 6 wireframe comparisons pass
 - [ ] 40%+ test coverage (auth notifier, domain entities)
+- [ ] TDD coverage verified (tests written before implementation for each layer)
 - [ ] `docs/CONTINUE_PROMPT.md` updated
 
 **Phase gate agents:** `database-admin` (schema review), `docs-manager` (doc consistency)
@@ -199,6 +230,7 @@ Run `/session-handoff` to update `docs/CONTINUE_PROMPT.md` with:
 - [ ] Create team, add players, create match, complete toss works end-to-end
 - [ ] 7 wireframe comparisons pass
 - [ ] 50%+ test coverage
+- [ ] TDD coverage verified (tests written before implementation for each layer)
 - [ ] Offline caching verified (airplane mode → data persists)
 
 ---
@@ -229,6 +261,7 @@ Run `/session-handoff` to update `docs/CONTINUE_PROMPT.md` with:
 - [ ] Create tournament (all 3 formats) → generate fixtures → complete 1 match → standings update
 - [ ] NRR verified against manual calculation
 - [ ] Super over triggers on knockout tie
+- [ ] TDD coverage verified (tests written before implementation for each layer)
 - [ ] 7 wireframe comparisons pass
 
 ---
@@ -270,6 +303,7 @@ Run `/session-handoff` to update `docs/CONTINUE_PROMPT.md` with:
 - [ ] Offline scoring works → syncs when reconnected
 - [ ] 60+ scoring engine unit tests
 - [ ] 60%+ overall test coverage
+- [ ] TDD coverage verified (tests written before implementation for each layer)
 - [ ] 6 wireframe comparisons pass
 
 ---
@@ -460,6 +494,11 @@ As a [role], I want to [action] so that [benefit].
 - [ ] Feature-specific widgets
 - [ ] providers.dart declarations
 
+### TDD Checklist
+- [ ] Domain tests written BEFORE domain implementation (RED→GREEN→REFACTOR)
+- [ ] Data tests written BEFORE data implementation (RED→GREEN→REFACTOR)
+- [ ] Presentation tests written BEFORE presentation implementation (RED→GREEN→REFACTOR)
+
 ### Tests
 - [ ] Domain unit tests
 - [ ] Repository unit tests (mocked datasources)
@@ -520,12 +559,13 @@ Use `/issue-create N` skill to auto-generate issues for a phase.
 
 ### Ending a Session
 
-The `remind-session-handoff` hook blocks session end if `CONTINUE_PROMPT.md` hasn't been updated. Update it with:
+The `quality-gate` hook blocks session end if `CONTINUE_PROMPT.md` hasn't been updated or if uncommitted source changes exist. Update it with:
 
 1. **Completed work** — issues closed, features implemented
-2. **Next step** — exact issue number and step in the 15-step workflow
-3. **Blockers** — any unresolved issues or questions
-4. **File tree changes** — new files created, modified files
+2. **Next step** — exact issue number and step in the 17-step TDD workflow
+3. **TDD state** — which RED/GREEN/REFACTOR phase you're in per layer
+4. **Blockers** — any unresolved issues or questions
+5. **File tree changes** — new files created, modified files
 
 ### Edge Cases
 
@@ -535,5 +575,5 @@ The `remind-session-handoff` hook blocks session end if `CONTINUE_PROMPT.md` has
 | Agent conflicts | Prioritize: SCORING_RULES > DATABASE > API |
 | Build errors | Max 5 fix iterations, then pause for user |
 | Missing wireframe | Pause and ask user — never guess |
-| Context compaction mid-feature | The hook re-injects rules + current phase/screen/checklist status |
+| Context compaction mid-feature | The hook re-injects rules + git state + current phase/screen/checklist status |
 | Test failure at hard cap (10) | Stop, present findings to user, do NOT proceed |

@@ -15,6 +15,7 @@
 11. [Sync: Advanced Conflict Resolution](#11-sync-advanced-conflict-resolution)
 12. [Database Schema Migrations](#12-database-schema-migrations)
 13. [Testing Approach Per Layer](#13-testing-approach-per-layer)
+13.5. [TDD — Test-Driven Development Per Layer](#135-tdd--test-driven-development-per-layer)
 14. [Code Review Practices for Scoring](#14-code-review-practices-for-scoring)
 15. [Logging & Crash Reporting](#15-logging--crash-reporting)
 16. [Code Generation Workflow](#16-code-generation-workflow)
@@ -664,6 +665,92 @@ When tests fail repeatedly, follow escalation tiers in [CODE_FIXES.md](CODE_FIXE
 - **Tier 2 (6-7):** Widen scope, trace full path.
 - **Tier 3 (8-9):** Audit architecture.
 - **Hard Cap (10):** Stop and present findings to user.
+
+---
+
+## 13.5. TDD — Test-Driven Development Per Layer
+
+Every feature follows strict Red-Green-Refactor TDD. Tests are written BEFORE implementation for each layer. This catches design issues early and produces tests that verify behavior, not implementation details.
+
+### TDD Cycle Per Layer
+
+| Step | Action | Verify |
+|------|--------|--------|
+| **RED** | Write test against interface/spec | `flutter test` → all FAIL |
+| **GREEN** | Implement minimum code to pass | `flutter test` → all PASS |
+| **REFACTOR** | Clean up without breaking tests | `flutter test` → still PASS |
+
+### Domain Layer TDD
+
+Write pure unit tests against entity interfaces and domain logic functions. No mocks needed — domain has no external dependencies.
+
+```dart
+// test/src/features/scoring/domain/delivery_test.dart
+// Written BEFORE scoring/domain/entities/delivery.dart exists
+
+test('should calculate total runs including extras', () {
+  final delivery = Delivery(
+    runsFromBat: 4,
+    wideRuns: 0,
+    noBallRuns: 0,
+    byeRuns: 0,
+    legByeRuns: 0,
+  );
+  expect(delivery.totalRuns, 4);
+});
+
+test('wide should not be a legal delivery', () {
+  final delivery = Delivery(isWide: true, wideRuns: 1);
+  expect(delivery.isLegal, false);
+});
+```
+
+### Data Layer TDD
+
+Mock datasources and test repository contracts. Verify model serialization round-trips.
+
+```dart
+// test/src/features/scoring/data/scoring_repository_test.dart
+// Written BEFORE scoring/data/repositories/ exists
+
+test('should save delivery to local datasource first', () async {
+  when(() => mockLocalDs.insertDelivery(any())).thenAnswer((_) async => model);
+  await repo.recordDelivery(input);
+  verify(() => mockLocalDs.insertDelivery(any())).called(1);
+});
+
+test('should wrap DriftException into ScoringException', () {
+  when(() => mockLocalDs.insertDelivery(any())).thenThrow(DriftDatabaseException(''));
+  expect(() => repo.recordDelivery(input), throwsA(isA<ScoringException>()));
+});
+```
+
+### Presentation Layer TDD
+
+Test notifier state transitions with mocked repository, then widget behavior.
+
+```dart
+// test/src/features/scoring/presentation/scoring_notifier_test.dart
+// Written BEFORE scoring/presentation/notifiers/ exists
+
+test('recordDelivery should update totalRuns', () async {
+  when(() => mockRepo.recordDelivery(any())).thenAnswer((_) async => delivery);
+  await notifier.recordDelivery(input);
+  expect(notifier.state.totalRuns, 4);
+});
+```
+
+### TDD Exceptions
+
+Skip TDD for:
+- **Generated code** — *.g.dart, *.freezed.dart, *.gr.dart (test the source annotations, not output)
+- **Static UI with no logic** — splash screen, about page (use `/screenshot-verify` instead)
+- **Configuration files** — router setup, theme constants (test via integration tests)
+- **Third-party wrappers** — Firebase init, Drift database constructor (test the layer above)
+
+### Reference
+
+Use `/tdd <feature> <layer>` skill for guided TDD workflow. See [PLAYBOOK.md](PLAYBOOK.md) Steps 3-8 for the full 17-step integration.
 
 ---
 
