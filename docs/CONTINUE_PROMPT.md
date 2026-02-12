@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 1 in progress — Issue #1 complete, Issue #2 next
+**Status:** Phase 1 in progress — Issues #1-#2 complete, Issue #3 next
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,15 +16,15 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Continue Phase 1: Start Issue #2** (PostgreSQL + Drizzle schema + seed data). Follow PLAYBOOK.md workflow.
+**Continue Phase 1: Start Issue #3** (Firebase Auth setup + server middleware). Follow PLAYBOOK.md workflow.
 
 ### Phase 1 Progress
 
 | Issue | Title | Status |
 |-------|-------|--------|
 | #1 | Project initialization (Flutter + Bun scaffolds) | DONE |
-| #2 | PostgreSQL + Drizzle schema + seed data | **NEXT** |
-| #3 | Firebase Auth setup + server middleware | Pending |
+| #2 | PostgreSQL + Drizzle schema + seed data | DONE |
+| #3 | Firebase Auth setup + server middleware | **NEXT** |
 | #4 | M3 Light theme + go_router + auth guards | Pending |
 | #5 | Splash screen | Pending |
 | #6 | Login page | Pending |
@@ -33,6 +33,40 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #9 | Home page (dashboard) | Pending |
 | #10 | Bottom navigation shell | Pending |
 | #11 | Match history page (empty state) | Pending |
+
+### Issue #2 Completion Summary
+
+PostgreSQL database + Drizzle ORM schema + seed data:
+
+**Database setup:**
+- Created `cricapp_user` and `cricapp_dev` database on local PostgreSQL 16.8
+- `.env` file configured with real credentials
+- `.mcp.json` updated with cricapp_dev connection
+
+**Schema (8 files in `apps/server/src/db/schema/`):**
+- `master-data.ts` — 4 tables: ball_types, dismissal_types, fielding_positions, wagon_wheel_zones
+- `users.ts` — 1 table: users (UUID PK, firebase_uid UNIQUE)
+- `teams.ts` — 2 tables: teams, team_rosters (unique team+player)
+- `matches.ts` — 4 tables: matches, match_players, match_result, match_analytics
+- `innings.ts` — 2 tables: innings, overs (super over support)
+- `deliveries.ts` — 3 tables: deliveries (29 cols, 6 indexes), wickets_by_delivery, fall_of_wickets
+- `stats.ts` — 4 tables: batting_stats, bowling_stats, fielding_stats, player_career_stats
+- `tournaments.ts` — 6 tables: tournaments + teams/groups/fixtures/standings/requests
+- **Total: 26 tables** (DATABASE.md header says 28 but actual table definitions count to 26)
+
+**Migrations:** 2 SQL files generated and applied (initial schema + unique constraints on master data)
+
+**Seed data:** 43 records across 4 master tables (idempotent via onConflictDoNothing + unique constraints):
+- 4 ball types (leather, tennis, tape, other)
+- 11 dismissal types (with requires_fielder and requires_bowler_credit flags)
+- 16 fielding positions (with codes)
+- 12 wagon wheel zones (30-degree segments, OF1-OF6 + ON1-ON6)
+
+**Tests:** 40 tests pass (31 schema validation + 9 seed data)
+- `test/db/schema-validation.test.ts` — Table count, column presence, critical fields
+- `test/db/seed.test.ts` — Record counts, flag correctness, angle values
+
+**Design note:** `matches.tournament_id` is a plain UUID column without FK constraint (avoids circular import between matches.ts and tournaments.ts). The partial index `idx_matches_tournament` is defined. The FK can be added via raw SQL migration if needed.
 
 ### Issue #1 Completion Summary
 
@@ -314,7 +348,7 @@ For each screen:
 
 **GitHub MCP not yet configured.** Run `claude mcp add --scope user` to add the GitHub MCP server with a personal access token (scopes: `repo`, `workflow`).
 
-**PostgreSQL MCP placeholder.** Update `.mcp.json` with real credentials before using (currently has placeholder password).
+**PostgreSQL MCP configured.** `.mcp.json` has real cricapp_dev credentials. Restart Claude Code to pick up changes if MCP auth fails.
 
 ## Key Design Decisions Already Made
 
