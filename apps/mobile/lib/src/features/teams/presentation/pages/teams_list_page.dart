@@ -60,9 +60,9 @@ class _TeamsGrid extends StatelessWidget {
       itemCount: teams.length,
       itemBuilder: (context, index) => TeamCard(
         team: teams[index],
-        onTap: () {
-          // TODO: Navigate to team detail page
-        },
+        onTap: () => context.push(
+          AppRoutes.teamDetailPath(teams[index].id),
+        ),
       ),
     );
   }

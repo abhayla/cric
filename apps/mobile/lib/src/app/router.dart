@@ -9,6 +9,7 @@ import '../features/auth/presentation/pages/splash_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/home/presentation/pages/match_history_page.dart';
 import '../features/teams/presentation/pages/create_team_page.dart';
+import '../features/teams/presentation/pages/team_detail_page.dart';
 import '../features/teams/presentation/pages/teams_list_page.dart';
 import 'providers.dart';
 
@@ -24,6 +25,10 @@ abstract final class AppRoutes {
   static const String teams = '/teams';
   static const String profile = '/profile';
   static const String createTeam = '/teams/create';
+  static const String teamDetail = '/teams/:teamId';
+
+  /// Build team detail path with actual ID.
+  static String teamDetailPath(String teamId) => '/teams/$teamId';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -112,6 +117,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRouter.of(context).pop();
           },
         ),
+      ),
+      GoRoute(
+        path: AppRoutes.teamDetail,
+        builder: (context, state) {
+          final teamId = state.pathParameters['teamId']!;
+          return TeamDetailPage(teamId: teamId);
+        },
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
