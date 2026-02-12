@@ -535,12 +535,12 @@ Target: smooth performance on 2GB RAM budget Android devices. See [IMPLEMENTATIO
 | Token | Value | Notes |
 |-------|-------|-------|
 | M3 seed color | `#1976D2` (Blue 700) | Primary blue. All M3 tonal surfaces derive from this. |
-| Color scheme | `ColorScheme.fromSeed(seedColor: Color(0xFF1976D2), brightness: Brightness.dark)` | Dark theme only for MVP. |
+| Color scheme | `ColorScheme.fromSeed(seedColor: Color(0xFF1976D2), brightness: Brightness.light)` | Light theme only for MVP. |
 | Font family | Roboto | Android system font. No `google_fonts` download needed. Use M3 default `TextTheme`. |
 | Icon set | Material Symbols | Variable weight/fill. Built into Flutter via `Icons.*`. |
 | Orientation | Portrait only | Lock via `SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])` in `main()`. |
 
-### Scoring Semantic Colors (M3 Dark)
+### Scoring Semantic Colors (M3 Light)
 
 | Element | Color | Implementation |
 |---------|-------|----------------|
@@ -554,7 +554,7 @@ Target: smooth performance on 2GB RAM budget Android devices. See [IMPLEMENTATIO
 | Free hit badge | Orange pill | `Color(0xFFE65100)` background, white text |
 | Live badge | Red | `Color(0xFFEF4444)` with pulse animation |
 
-These colors provide good contrast on dark backgrounds. Use them consistently across the scoring page, current over display, and commentary tab.
+These colors provide good contrast on light backgrounds. Use them consistently across the scoring page, current over display, and commentary tab.
 
 ### Spacing System (8dp Grid)
 
@@ -619,25 +619,25 @@ Use M3 default `TextTheme` with Roboto. No custom sizes needed — M3 provides:
 | `labelLarge` | Buttons, tabs |
 | `labelSmall` | Captions, stat labels ("R", "B", "4s", "6s", "SR") |
 
-### Dark Theme Interpretation (Q24)
+### Light Theme Implementation (Q24)
 
-All 24 UI prototypes use a light blue theme. The app uses Material 3 Dark theme exclusively. When implementing, apply these interpretation rules:
+All 24 UI prototypes use a light blue theme. The app uses Material 3 Light theme, matching the wireframes directly. Use M3 `colorScheme` tokens — never hardcode colors:
 
-| Prototype Element | Dark Theme Equivalent |
-|-------------------|----------------------|
-| White backgrounds | `colorScheme.surface` (dark) |
+| Prototype Element | M3 Light Token |
+|-------------------|---------------|
+| White backgrounds | `colorScheme.surface` |
 | Light gray cards | `colorScheme.surfaceContainer` |
-| Blue primary buttons | `colorScheme.primary` (blue-tinted from seed #1976D2) |
+| Blue primary buttons | `colorScheme.primary` (blue from seed #1976D2) |
 | Blue text links | `colorScheme.primary` |
-| Dark text on light | `colorScheme.onSurface` (light text on dark) |
+| Dark text | `colorScheme.onSurface` |
 | Gray secondary text | `colorScheme.onSurfaceVariant` |
 | Light borders | `colorScheme.outlineVariant` |
 | Blue header bars | `colorScheme.surfaceContainerHigh` |
 | White input fields | `colorScheme.surfaceContainerHighest` with `outlineVariant` border |
 
-The layout, spacing, and structure from prototypes remain identical — only colors invert to dark theme. Screenshots will be generated for review after Phase 1 setup.
+The layout, spacing, structure, and colors from prototypes map directly to M3 Light theme tokens. Screenshots will be generated for review after Phase 1 setup.
 
-### Surface Hierarchy (M3 Dark)
+### Surface Hierarchy (M3 Light)
 
 Use M3's built-in surface tones. No custom surface colors.
 
@@ -915,7 +915,7 @@ Standard keys for the `local_preferences` SQLite table (key-value store):
 | Requirement | Implementation |
 |-------------|---------------|
 | Touch targets | 48x48dp minimum (already specified in Scoring Button Sizes) |
-| Color contrast | M3 dark theme provides inherent WCAG AA compliance |
+| Color contrast | M3 light theme provides inherent WCAG AA compliance |
 | Semantic labels | Basic `Semantics` widget on scoring buttons (e.g., "Score 4 runs", "Record wide") |
 | Font scaling | Respect system font size except scoring page (locked to prevent layout breakage) |
 | **Deferred** | Full screen reader support, high contrast mode, color blind mode — all post-MVP |

@@ -39,7 +39,7 @@ For each screen:
    - `cricheroes-comparator` — Compare against CricHeroes equivalent screen
    - `planner-researcher` — Technical planning, architecture, implementation concerns
    - `scoring-researcher` — Cricket rules compliance, scoring logic implications
-   - `ui-researcher` — M3 dark theme, accessibility, widget structure
+   - `ui-researcher` — M3 light theme, accessibility, widget structure
 4. Compile consolidated report with CRITICAL / MEDIUM / LOW issues
 5. Apply wireframe edits and doc fixes for approved changes
 6. Get user approval before proceeding to next screen/group
@@ -51,7 +51,7 @@ For each screen:
 - `docs/planning/DATABASE.md` — Schema (enums, column names, table relationships)
 - `docs/planning/API.md` — Endpoint specs (field names, request/response shapes)
 - `docs/planning/SCORING_RULES.md` — Cricket rules, match state machine, delivery pipeline
-- `docs/process/CODE_STANDARDS.md` — M3 dark theme tokens, UI patterns, design decisions
+- `docs/process/CODE_STANDARDS.md` — M3 light theme tokens, UI patterns, design decisions
 - `docs/planning/CRICHEROES_REFERENCE.md` — CricHeroes competitive analysis
 - `.claude/rules.md` — File placement rules for Flutter implementation
 
@@ -250,7 +250,7 @@ For each screen:
 5. Set up Firebase project + configure Flutter Firebase
 6. Implement Firebase Auth (Phone OTP only — no Google/Email for MVP)
 7. Implement auth middleware on Bun (Firebase JWT verification)
-8. Set up Material 3 dark theme (seed color `#1976D2`)
+8. Set up Material 3 light theme (seed color `#1976D2`)
 9. Set up go_router with auth guards
 10. Build screens: Splash, Login, OTP, Profile Setup
 
@@ -290,7 +290,7 @@ For each screen:
 - Declaration behind "Set" button; abandonment stats DO count in career
 - 5-run penalty supported with full UI flow
 - Custom run input (overthrows) + custom extras input
-- M3 dark theme: seed color #1976D2, Roboto, Material Symbols, portrait lock
+- M3 light theme: seed color #1976D2, Roboto, Material Symbols, portrait lock
 - 8dp grid spacing system, M3 default transitions only
 - Scoring page: fixed header (top) + scrollable middle + fixed buttons (bottom)
 - Initials-only avatar for MVP; simple file picker for team logo (no crop)
@@ -367,7 +367,7 @@ For each screen:
 **Cross-Cutting UX (E1-E3):**
 - **[E1]** Android back button: scoring page shows confirmation dialog "Match in progress. Exit scoring?" with Stay/Exit. Exit saves locally. Toss/Setup: normal back. Dialogs: dismiss dialog.
 - **[E2]** App background/kill recovery: rely on offline-first. Background: WS disconnects, auto-reconnect. Kill: resume from local DB. Brief "Resuming match..." loading.
-- **[E3]** Accessibility minimal for MVP: 48x48dp touch targets, M3 dark WCAG AA, basic Semantics on scoring buttons, respect system font (except scoring page). Deferred: full screen reader, high contrast, color blind.
+- **[E3]** Accessibility minimal for MVP: 48x48dp touch targets, M3 light WCAG AA, basic Semantics on scoring buttons, respect system font (except scoring page). Deferred: full screen reader, high contrast, color blind.
 
 ### Round 2 Pre-Implementation Audit (Q1-Q25 + AR-1 through AR-14)
 
@@ -418,7 +418,7 @@ For each screen:
 
 **Infrastructure (Q23-Q25):**
 - **[Q23]** Single Firebase project for MVP (no staging/production split).
-- **[Q24]** Interpret light prototypes into M3 dark theme (layout/structure identical, colors inverted per interpretation table in CODE_STANDARDS.md).
+- **[Q24]** Light prototypes map directly to M3 light theme (layout/structure/colors match, use M3 tokens per CODE_STANDARDS.md).
 - **[Q25]** 12 env vars in .env.example: DATABASE_URL, JWT_SECRET, FIREBASE_SERVICE_ACCOUNT_PATH, PORT, WS_PORT, CORS_ORIGIN, UPLOADS_DIR, MAX_UPLOAD_SIZE_MB, LOG_LEVEL, NODE_ENV, SYNC_BATCH_SIZE, WS_HEARTBEAT_INTERVAL_MS.
 
 ### Round 1 Pre-Implementation Gap Resolution (G1-G32)

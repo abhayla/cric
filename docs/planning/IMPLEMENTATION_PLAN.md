@@ -83,7 +83,7 @@ apps/mobile/
 │   │   │   │   └── exceptions.dart
 │   │   │   ├── extensions/
 │   │   │   ├── theme/
-│   │   │   │   ├── app_theme.dart               # M3 dark theme
+│   │   │   │   ├── app_theme.dart               # M3 light theme
 │   │   │   │   └── app_colors.dart
 │   │   │   └── utils/
 │   │   │       ├── cricket_utils.dart           # Strike rotation, over calc
@@ -415,7 +415,7 @@ dev_dependencies:
 - [ ] Set up Firebase project + configure Flutter Firebase
 - [ ] Implement Firebase Auth (Phone OTP only — no Google/Email for MVP)
 - [ ] Implement auth middleware on Bun (Firebase JWT verification)
-- [ ] Set up Material 3 dark theme
+- [ ] Set up Material 3 light theme
 - [ ] Set up go_router with auth guards
 - [ ] Build: Splash, Login, OTP, Profile Setup screens
 

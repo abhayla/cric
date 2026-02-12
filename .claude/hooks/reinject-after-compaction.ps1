@@ -1,6 +1,6 @@
 # Hook: Post-Compaction Context Re-injection
 # Event: SessionStart (compact)
-# After context compaction, outputs condensed critical rules
+# After context compaction, outputs condensed critical rules + current session context
 
 Write-Output "=== CRITICAL RULES (re-injected after context compaction) ==="
 Write-Output ""
@@ -31,6 +31,35 @@ Write-Output "- No-ball triggers free hit (only run out possible on free hit)"
 Write-Output "- Byes/leg-byes don't count against bowler and don't break maidens"
 Write-Output "- All out = players_per_side - 1 wickets (not hardcoded 10)"
 Write-Output ""
+
+# Extract current session context from CONTINUE_PROMPT.md
+$continueFile = "docs\CONTINUE_PROMPT.md"
+if (Test-Path $continueFile) {
+    Write-Output "=== CURRENT SESSION CONTEXT ==="
+
+    $content = Get-Content $continueFile -Raw
+
+    # Extract current phase from "What to Do Next" section
+    if ($content -match 'Phase\s+(\d+\.?\d*)') {
+        Write-Output "Current Phase: $($Matches[1])"
+    }
+
+    # Extract current screen being worked on
+    if ($content -match '(?:current|working on|next).*?(\d{2}-[a-z-]+\.html)') {
+        Write-Output "Current Screen: $($Matches[1])"
+    }
+
+    # Count pending checklist items in "What to Do Next"
+    $pendingItems = ([regex]::Matches($content, '- \[ \]')).Count
+    $completedItems = ([regex]::Matches($content, '- \[x\]')).Count
+    if ($pendingItems -gt 0 -or $completedItems -gt 0) {
+        Write-Output "Checklist: $completedItems done, $pendingItems pending"
+    }
+
+    Write-Output ""
+}
+
+Write-Output "WORKFLOW: Read PLAYBOOK.md for per-feature steps and phase gates."
 Write-Output "=== Full rules: .claude/rules.md | CLAUDE.md ==="
 
 exit 0

@@ -92,7 +92,7 @@ All skills use `disable-model-invocation: true`. This means Claude Code will nev
 
 **Domain expertise:**
 - Screen layout comparison against blueprint wireframes
-- Material 3 dark theme token compliance (no hardcoded colors)
+- Material 3 light theme token compliance (no hardcoded colors)
 - Accessibility: 48x48dp touch targets, semantics
 - Performance: ListView.builder, Riverpod select() for granular rebuilds
 - Widget placement rule verification

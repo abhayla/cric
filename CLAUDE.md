@@ -16,7 +16,7 @@ CricApp is a cricket scoring mobile app (CricHeroes competitor) for amateur cric
 | Server DB | PostgreSQL |
 | Auth | Firebase Auth (Phone OTP only for MVP) |
 | Real-time | Bun Native WebSockets |
-| UI Theme | Material 3 Dark |
+| UI Theme | Material 3 Light |
 | Target | Android only (MVP) |
 
 ## Monorepo Layout
@@ -45,7 +45,7 @@ Planning is 100% complete. **No code has been implemented yet** — `apps/mobile
 
 Phases from [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md) — build in order:
 
-1. **Foundation** — Project init, PostgreSQL + Drizzle, Firebase Auth, M3 dark theme, go_router, auth screens
+1. **Foundation** — Project init, PostgreSQL + Drizzle, Firebase Auth, M3 light theme, go_router, auth screens
 2. **Teams & Match Setup** — Teams CRUD, match creation, Drift local DB, offline caching
 3. **Tournament Management** — Tournament CRUD, fixture generation, standings, knockout bracket, NRR, super over
 4. **Scoring Engine (CRITICAL)** — Delivery recording, scoring state machine, cricket rules, undo, WebSocket broadcast, innings/match completion, offline sync
@@ -63,6 +63,8 @@ For the full documentation map with purposes and update frequencies, see [PROJEC
 **Session handoff:** [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) — Start here for session context and next steps.
 
 **CricHeroes reference:** [CRICHEROES_REFERENCE.md](docs/planning/CRICHEROES_REFERENCE.md) — Competitive analysis knowledge base for automated CricHeroes comparison.
+
+**Implementation playbook:** [PLAYBOOK.md](docs/process/PLAYBOOK.md) — Step-by-step autonomous implementation workflow with phase gates.
 
 ## Build & Run Commands (once initialized)
 
@@ -168,6 +170,7 @@ The scoring engine is the most critical piece. Key rules in [SCORING_RULES.md](d
 - If requirements are ambiguous, ask one clarifying question at a time (with your recommendation based on best practices) until you reach 100% confidence — do not guess.
 - **Session handoff:** Always update [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) before ending work so the next session can resume seamlessly. Read it at the start of each session for context.
 - **CricHeroes comparison:** Before implementing any new feature or screen, automatically invoke the `cricheroes-comparator` agent with the feature/screen name. Review the comparison report. Incorporate ADOPT recommendations into the current implementation. Log DEFER items in CONTINUE_PROMPT.md. When making UI/UX decisions or asking clarifying questions, always include how CricHeroes handles the scenario as one option.
+- **Wireframe comparison:** After building any screen UI, compare against `docs/ui/XX-name.html` using Playwright MCP. See PLAYBOOK.md Section 3 for the full comparison protocol.
 
 **Implementation order:** Always build features inside-out: domain entities → data layer (datasources, repositories) → presentation (notifiers, pages, widgets). Never start with UI.
 

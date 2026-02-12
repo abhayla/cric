@@ -45,7 +45,7 @@
 | Dimension | CricHeroes | CricApp (Planned) |
 |-----------|-----------|-------------------|
 | Primary Market | Global (100+ countries, India-centric) | India (amateur cricket) |
-| Theme | Light default, dark available | Material 3 Dark only |
+| Theme | Light default, dark available | Material 3 Light only |
 | Offline | Supported for scoring | Offline-first architecture (deeper) |
 | Target Devices | All devices | Budget Android (2GB RAM focus) |
 | App Size | ~80-100MB APK, 230MB iOS | Target: <30MB APK |
@@ -132,8 +132,8 @@
 
 | Gap | CricHeroes | CricApp | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
-| Default theme | Light mode | Dark mode only (M3 Dark, seed #1976D2) | SKIP — deliberate differentiation | — |
-| Light mode option | Available | Not in MVP | DEFER (post-MVP) | Low |
+| Default theme | Light mode | Light mode only (M3 Light, seed #1976D2) | — | — |
+| Dark mode option | Available as toggle | Not in MVP | DEFER (post-MVP) | Low |
 | Custom themes | PRO feature | Not planned | SKIP | Low |
 | Brand color | Green ~#4CAF50 | Blue #1976D2 (M3 seed) | — | — |
 
@@ -616,12 +616,12 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 | Element | CricHeroes | CricApp |
 |---------|-----------|---------|
-| Default | Light mode | Dark mode (M3) |
+| Default | Light mode | Light mode (M3) |
 | Primary | Green (~#4CAF50) | Blue (#1976D2) |
 | Four | Blue highlight | Blue (#1565C0) per G23 |
 | Six | Purple highlight | Purple (#6A1B9A) per G23 |
 | Wicket | Red | Red (#C62828) per G23 |
-| Background | White (light mode) | Dark surface hierarchy (M3) |
+| Background | White (light mode) | Light surface hierarchy (M3) |
 
 ### 11.3 Scoring Interface Layout Comparison
 

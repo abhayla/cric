@@ -40,7 +40,9 @@
       "Bash(ls:*)",
       "Bash(dir:*)",
       "Bash(tree:*)",
-      "Bash(pwd:*)"
+      "Bash(pwd:*)",
+      "Bash(python -m http.server:*)",
+      "Bash(adb:*)"
     ],
     "deny": [
       "Edit(CLAUDE.md)",
@@ -77,6 +79,10 @@
           {
             "type": "command",
             "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/guard-cross-feature-imports.ps1"
+          },
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/auto-invoke-cricheroes-comparator.ps1"
           }
         ]
       },
