@@ -8,6 +8,7 @@ import '../features/auth/presentation/pages/profile_setup_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/home/presentation/pages/match_history_page.dart';
+import '../features/teams/presentation/pages/create_team_page.dart';
 import '../features/teams/presentation/pages/teams_list_page.dart';
 import 'providers.dart';
 
@@ -22,6 +23,7 @@ abstract final class AppRoutes {
   static const String tournaments = '/tournaments';
   static const String teams = '/teams';
   static const String profile = '/profile';
+  static const String createTeam = '/teams/create';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -99,6 +101,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           onSave: (data) {
             // Profile saved → navigate to home (auth redirect handles this)
             GoRouter.of(context).go(AppRoutes.home);
+          },
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.createTeam,
+        builder: (context, state) => CreateTeamPage(
+          onSubmit: (name, location) {
+            // TODO: Call API to create team, then navigate to team detail
+            GoRouter.of(context).pop();
           },
         ),
       ),

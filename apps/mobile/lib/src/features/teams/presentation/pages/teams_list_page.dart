@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router.dart';
 import '../../domain/entities/team.dart';
 import '../../providers.dart';
 import '../widgets/team_card.dart';
@@ -33,9 +35,7 @@ class TeamsListPage extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Navigate to create team page
-        },
+        onPressed: () => context.push(AppRoutes.createTeam),
         child: const Icon(Icons.add),
       ),
     );
@@ -102,9 +102,7 @@ class _EmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: () {
-                  // TODO: Navigate to create team page
-                },
+                onPressed: () => context.push(AppRoutes.createTeam),
                 icon: const Icon(Icons.add),
                 label: const Text('Create a Team'),
               ),
