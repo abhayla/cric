@@ -11,16 +11,16 @@ class PlayerRow extends StatelessWidget {
 
   Color _avatarBackground(ThemeData theme) => switch (entry.playerRole) {
         PlayerRole.batter => theme.colorScheme.primaryContainer,
-        PlayerRole.allRounder => const Color(0xFFE8F5E9),
-        PlayerRole.wkBatter => const Color(0xFFFFF3E0),
+        PlayerRole.allRounder => theme.colorScheme.secondaryContainer,
+        PlayerRole.wkBatter => theme.colorScheme.tertiaryContainer,
         PlayerRole.bowler => theme.colorScheme.errorContainer,
         null => theme.colorScheme.surfaceContainerHighest,
       };
 
   Color _avatarForeground(ThemeData theme) => switch (entry.playerRole) {
         PlayerRole.batter => theme.colorScheme.onPrimaryContainer,
-        PlayerRole.allRounder => const Color(0xFF2E7D32),
-        PlayerRole.wkBatter => const Color(0xFFE65100),
+        PlayerRole.allRounder => theme.colorScheme.onSecondaryContainer,
+        PlayerRole.wkBatter => theme.colorScheme.onTertiaryContainer,
         PlayerRole.bowler => theme.colorScheme.onErrorContainer,
         null => theme.colorScheme.onSurfaceVariant,
       };
@@ -83,6 +83,24 @@ class PlayerRow extends StatelessWidget {
                   ),
                 ),
               ),
+            if (entry.isKeeper) ...[
+              if (entry.isCaptain) const SizedBox(width: 4),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'WK',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onTertiaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
