@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Planning complete, implementation not yet started
+**Status:** Phase 1 in progress — Issue #1 complete, Issue #2 next
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,9 +16,53 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Start Phase 1 implementation** using the 17-step TDD workflow in PLAYBOOK.md. Wireframe review Groups A-E complete (24/28 screens). Group F (Post-Match: 15-scorecard, 16-match-analytics, 17-player-profile, 18-match-history) can be reviewed during Phase 4-5 when those features are built.
+**Continue Phase 1: Start Issue #2** (PostgreSQL + Drizzle schema + seed data). Follow PLAYBOOK.md workflow.
 
-### Best Practices Overhaul Completed (This Session)
+### Phase 1 Progress
+
+| Issue | Title | Status |
+|-------|-------|--------|
+| #1 | Project initialization (Flutter + Bun scaffolds) | DONE |
+| #2 | PostgreSQL + Drizzle schema + seed data | **NEXT** |
+| #3 | Firebase Auth setup + server middleware | Pending |
+| #4 | M3 Light theme + go_router + auth guards | Pending |
+| #5 | Splash screen | Pending |
+| #6 | Login page | Pending |
+| #7 | OTP verification page | Pending |
+| #8 | Profile setup page | Pending |
+| #9 | Home page (dashboard) | Pending |
+| #10 | Bottom navigation shell | Pending |
+| #11 | Match history page (empty state) | Pending |
+
+### Issue #1 Completion Summary
+
+Both projects scaffolded with full folder structure from `.claude/rules.md`:
+
+**Flutter (apps/mobile/):**
+- 7 feature modules (auth, scoring, analytics, player_profile, teams, tournaments, home)
+- Clean architecture per feature (data/domain/presentation layers)
+- M3 light theme (seed #1976D2), semantic scoring colors
+- Core: validators, cricket_utils, app/cricket constants, exceptions
+- Dependencies: Riverpod 3.1, Freezed 3.1, Drift 2.31, go_router 17.1, Firebase Auth 6.1
+- minSdkVersion=23, flutter analyze clean, smoke test passing
+
+**Bun server (apps/server/):**
+- ElysiaJS 1.4 + Drizzle ORM 0.38 + postgres.js 3.4
+- Directory structure: config/, db/, routes/v1/, services/, websocket/, middleware/, types/, utils/
+- Environment validation (12 env vars), database config, health endpoint
+- TypeScript strict mode, tsc --noEmit passes
+
+**Bun installed** at `C:\Users\Administrator\.bun\bin\bun.exe` (v1.3.9). Must set PATH: `export PATH="$PATH:/c/Users/Administrator/.bun/bin"`
+
+**Per-directory CLAUDE.md files** could not be created — deny rule in settings.json blocks any file named `CLAUDE.md`. These can be created manually later.
+
+**CI validators** both pass (flutter-validator.js + server-validator.js). Updated server-validator.js to recognize `config/` directory.
+
+### Review & Quality Feedback System Improvements
+7. **Commit-draft pre-verification** — Advisory step warns if tests haven't been run before drafting commit message.
+8. **CLAUDE_CODE_CONFIG.md** — Updated: 14 agents, 10 hooks, 16 skills. Added missing hooks 8-10 documentation.
+
+### Best Practices Overhaul Completed (Previous Session)
 
 Infrastructure improvements applied before implementation begins:
 
