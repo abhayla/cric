@@ -39,6 +39,10 @@ apps/server/bun.lock
 .env.*
 !.env.example
 
+# Firebase credentials
+**/google-services.json
+**/firebase-service-account.json
+
 # Generated
 *.g.dart
 *.freezed.dart

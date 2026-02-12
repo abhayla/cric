@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 1 in progress — Issues #1-#2 complete, Issue #3 next
+**Status:** Phase 1 in progress — Issues #1-#3 complete, Issue #4 next
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Continue Phase 1: Start Issue #3** (Firebase Auth setup + server middleware). Follow PLAYBOOK.md workflow.
+**Continue Phase 1: Start Issue #4** (M3 Light theme + go_router + auth guards). Follow PLAYBOOK.md workflow.
 
 ### Phase 1 Progress
 
@@ -24,8 +24,8 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 |-------|-------|--------|
 | #1 | Project initialization (Flutter + Bun scaffolds) | DONE |
 | #2 | PostgreSQL + Drizzle schema + seed data | DONE |
-| #3 | Firebase Auth setup + server middleware | **NEXT** |
-| #4 | M3 Light theme + go_router + auth guards | Pending |
+| #3 | Firebase Auth setup + server middleware | DONE |
+| #4 | M3 Light theme + go_router + auth guards | **NEXT** |
 | #5 | Splash screen | Pending |
 | #6 | Login page | Pending |
 | #7 | OTP verification page | Pending |
@@ -33,6 +33,36 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #9 | Home page (dashboard) | Pending |
 | #10 | Bottom navigation shell | Pending |
 | #11 | Match history page (empty state) | Pending |
+
+### Issue #3 Completion Summary
+
+Firebase Auth (Phone OTP) + server middleware:
+
+**Server (apps/server/):**
+- `src/config/firebase.ts` — Firebase Admin SDK init (lazy, from service account JSON)
+- `src/middleware/auth.ts` — JWT verification middleware (derives `firebaseUser` from Bearer token)
+- `src/middleware/error-handler.ts` — Global error handler (`AppError` class, `.as('global')` for Elysia propagation)
+- `src/middleware/cors.ts` — CORS middleware (allow * for MVP, OPTIONS preflight)
+- `src/services/auth.service.ts` — User CRUD (`verifyAndGetUser`, `updateProfile`, `getUserByFirebaseUid`)
+- `src/routes/v1/auth.ts` — `POST /auth/verify` (token verify + user upsert), `PUT /auth/profile` (with TypeBox validation)
+- `src/routes/v1/health.ts` — Updated with version, uptime, database connectivity check
+- `src/types/auth.ts` — Shared `FirebaseUser` interface
+- `src/index.ts` — Wired all middleware and routes, calls `initFirebase()`
+
+**Flutter (apps/mobile/):**
+- `lib/main.dart` — Added `Firebase.initializeApp()` before runApp
+- `lib/src/features/auth/data/datasources/firebase_auth_datasource.dart` — Phone OTP methods: `sendOtp()`, `verifyOtp()`, `signOut()`, `getIdToken()`, `authStateChanges` stream, `SmartAuth` SMS auto-read integration
+- `android/settings.gradle.kts` — Added Google Services plugin
+- `android/app/build.gradle.kts` — Applied Google Services plugin
+
+**Firebase project:** `cricapp-7403d`, package `com.cricapp.cricapp`
+- `google-services.json` at `apps/mobile/android/app/` (gitignored)
+- `firebase-service-account.json` at `apps/server/` (gitignored)
+- Both credential files added to `.gitignore`
+
+**Tests:** 54 server tests pass (14 new: error handler, CORS, auth service), 8 Flutter tests pass (7 new: auth datasource)
+
+**Elysia error handler note:** `.as('global')` is required on the error handler plugin to propagate `onError` to routes defined on the parent Elysia instance. Without it, errors thrown in route handlers bypass the plugin's `onError`.
 
 ### Issue #2 Completion Summary
 
