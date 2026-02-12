@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 1 in progress — Issues #1-#4 complete, Issue #5 next
+**Status:** Phase 1 COMPLETE — All 11 issues closed
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,23 +16,61 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Continue Phase 1: Start Issue #5** (Splash screen). Follow PLAYBOOK.md workflow.
+**Phase 1 is COMPLETE.** Start Phase 2 (Teams & Match Setup) — create GitHub issues from IMPLEMENTATION_PLAN.md Phase 2, then follow PLAYBOOK.md workflow.
 
-### Phase 1 Progress
+### Phase 1 Progress (COMPLETE)
 
-| Issue | Title | Status |
-|-------|-------|--------|
-| #1 | Project initialization (Flutter + Bun scaffolds) | DONE |
-| #2 | PostgreSQL + Drizzle schema + seed data | DONE |
-| #3 | Firebase Auth setup + server middleware | DONE |
-| #4 | M3 Light theme + go_router + auth guards | DONE |
-| #5 | Splash screen | Pending |
-| #6 | Login page | Pending |
-| #7 | OTP verification page | Pending |
-| #8 | Profile setup page | Pending |
-| #9 | Home page (dashboard) | Pending |
-| #10 | Bottom navigation shell | Pending |
-| #11 | Match history page (empty state) | Pending |
+| Issue | Title | Status | Commit |
+|-------|-------|--------|--------|
+| #1 | Project initialization (Flutter + Bun scaffolds) | DONE | `3614d8e` |
+| #2 | PostgreSQL + Drizzle schema + seed data | DONE | `cd3bdb1` |
+| #3 | Firebase Auth setup + server middleware | DONE | `5cd261f` |
+| #4 | M3 Light theme + go_router + auth guards | DONE | `0771dbb` |
+| #5 | Splash screen | DONE | `fd21c7d` |
+| #6 | Login page | DONE | `eeeeb64` |
+| #7 | OTP verification page | DONE | `981f71b` |
+| #8 | Profile setup page | DONE | `3e14ca0` |
+| #9 | Home page (dashboard) | DONE | `24c3a40` |
+| #10 | Bottom navigation shell | DONE | (part of #4) |
+| #11 | Match history page (empty state) | DONE | `3ae9da9` |
+
+**Phase 1 stats:** 65 Flutter tests pass, 54 server tests pass. 11 issues closed.
+
+### Issues #5-#11 Completion Summary (Auth + Home Screens)
+
+All presentation-layer screens built with TDD (RED tests first, then GREEN implementation):
+
+**Issue #5 — Splash screen (`splash_page.dart`):**
+- Cricket ball icon (`CricketBallIcon` custom painter), two-tone "CricApp" title (`Text.rich`), tagline, loading spinner
+- 4 tests pass
+
+**Issue #6 — Login page (`login_page.dart`):**
+- Phone input with country code picker (20 cricket nations), Indian phone validation (`^[6-9]\d{9}$`), Send OTP button
+- `CricketBallIcon` extracted to `shared/widgets/` (DRY — second use case from splash)
+- 10 tests pass
+
+**Issue #7 — OTP verification (`otp_page.dart`):**
+- 6-digit OTP input with auto-advance, 30s countdown timer, masked phone display, auto-verify on completion
+- 8 tests pass
+
+**Issue #8 — Profile setup (`profile_setup_page.dart` + `app_user.dart`):**
+- Domain entity: `AppUser` with `PlayerRole` (4), `BattingStyle` (2), `BowlingStyle` (9) enums
+- Form: display name, playing role dropdown, batting style choice chips, bowling style dropdown, location
+- CircleAvatar with dynamic initials, validation (name 2-50 chars + role required)
+- 21 tests pass (11 domain + 10 presentation)
+
+**Issue #9 — Home dashboard (`home_page.dart`):**
+- SliverAppBar with two-tone title + search, quick actions (Start Match, Create Team, Tournament), Recent Matches section with empty state card, pull-to-refresh
+- 5 tests pass
+
+**Issue #10 — Bottom navigation shell:** Already implemented in Issue #4 (`_AppShell` in `router.dart`)
+
+**Issue #11 — Match history (`match_history_page.dart`):**
+- AppBar "Matches", empty state (cricket icon, "No matches yet", "Start a Match" CTA), pull-to-refresh
+- Router updated: `_PlaceholderPage('Matches')` → `MatchHistoryPage()`
+- 5 tests pass
+
+**Router state after Phase 1:** Real pages for splash, login, otp, profileSetup, home, matches. Remaining placeholders: tournaments, teams, profile (Phase 2+).
 
 ### Issue #4 Completion Summary
 
