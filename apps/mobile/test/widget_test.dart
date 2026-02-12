@@ -4,13 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cricapp/src/app/app.dart';
 
 void main() {
-  testWidgets('CricApp renders', (WidgetTester tester) async {
+  testWidgets('CricApp renders with router', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: CricApp(),
       ),
     );
 
-    expect(find.text('CricApp'), findsOneWidget);
+    // Initial route is splash — 'Splash' appears in both AppBar and body
+    expect(find.text('Splash'), findsNWidgets(2));
   });
 }

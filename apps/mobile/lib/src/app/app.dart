@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_theme.dart';
+import 'router.dart';
 
 /// Root widget for CricApp.
 class CricApp extends ConsumerWidget {
@@ -9,15 +10,13 @@ class CricApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
       title: 'CricApp',
       theme: AppTheme.light,
       debugShowCheckedModeBanner: false,
-      home: const Scaffold(
-        body: Center(
-          child: Text('CricApp'),
-        ),
-      ),
+      routerConfig: router,
     );
   }
 }

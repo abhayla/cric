@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 1 in progress — Issues #1-#3 complete, Issue #4 next
+**Status:** Phase 1 in progress — Issues #1-#4 complete, Issue #5 next
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Continue Phase 1: Start Issue #4** (M3 Light theme + go_router + auth guards). Follow PLAYBOOK.md workflow.
+**Continue Phase 1: Start Issue #5** (Splash screen). Follow PLAYBOOK.md workflow.
 
 ### Phase 1 Progress
 
@@ -25,7 +25,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #1 | Project initialization (Flutter + Bun scaffolds) | DONE |
 | #2 | PostgreSQL + Drizzle schema + seed data | DONE |
 | #3 | Firebase Auth setup + server middleware | DONE |
-| #4 | M3 Light theme + go_router + auth guards | **NEXT** |
+| #4 | M3 Light theme + go_router + auth guards | DONE |
 | #5 | Splash screen | Pending |
 | #6 | Login page | Pending |
 | #7 | OTP verification page | Pending |
@@ -33,6 +33,29 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #9 | Home page (dashboard) | Pending |
 | #10 | Bottom navigation shell | Pending |
 | #11 | Match history page (empty state) | Pending |
+
+### Issue #4 Completion Summary
+
+M3 Light theme + go_router + auth guards:
+
+**Theme:** Already complete from Issue #1 — `app_theme.dart` (M3 light, seed #1976D2, Roboto), `app_colors.dart` (9 semantic scoring colors), 8dp spacing in `app_constants.dart`, portrait lock in `main.dart`.
+
+**Router (`app/router.dart`):**
+- `GoRouter` with auth-based redirect logic
+- 9 routes: splash, login, otp, profile-setup + 5 shell tabs (home, matches, tournaments, teams, profile)
+- `ShellRoute` with `NavigationBar` (5 destinations: Home, Matches, Tourneys, Teams, Profile)
+- Auth guard: loading → splash, unauthenticated → login, authenticated on auth route → home
+- `AppRoutes` class with all route path constants
+- `NoTransitionPage` for tab switches (no animation between tabs)
+- Placeholder pages for all routes (replaced in later issues)
+
+**Providers (`app/providers.dart`):**
+- `firebaseAuthDatasourceProvider` — singleton instance
+- `authStateProvider` — `StreamProvider<User?>` wrapping Firebase auth state
+
+**App (`app/app.dart`):** Switched from `MaterialApp` to `MaterialApp.router` with `routerConfig`.
+
+**Tests:** 12 Flutter tests pass (4 new router tests + 7 auth + 1 widget).
 
 ### Issue #3 Completion Summary
 

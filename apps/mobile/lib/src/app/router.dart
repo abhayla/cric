@@ -1,1 +1,189 @@
-// go_router configuration — created in Issue #4
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'providers.dart';
+
+/// Route paths.
+abstract final class AppRoutes {
+  static const String splash = '/';
+  static const String login = '/login';
+  static const String otp = '/otp';
+  static const String profileSetup = '/profile-setup';
+  static const String home = '/home';
+  static const String matches = '/matches';
+  static const String tournaments = '/tournaments';
+  static const String teams = '/teams';
+  static const String profile = '/profile';
+}
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+/// go_router provider with auth-based redirect.
+final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authStateProvider);
+
+  return GoRouter(
+    navigatorKey: _rootNavigatorKey,
+    initialLocation: AppRoutes.splash,
+    redirect: (context, state) {
+      final isLoggedIn = authState.value != null;
+      final isLoading = authState.isLoading;
+      final currentPath = state.matchedLocation;
+
+      // While auth state is loading, stay on splash
+      if (isLoading) {
+        return currentPath == AppRoutes.splash ? null : AppRoutes.splash;
+      }
+
+      final isAuthRoute = currentPath == AppRoutes.login ||
+          currentPath == AppRoutes.otp ||
+          currentPath == AppRoutes.splash;
+
+      // Not logged in → go to login (unless already on auth route)
+      if (!isLoggedIn) {
+        return isAuthRoute ? null : AppRoutes.login;
+      }
+
+      // Logged in but on auth route → go to home
+      if (isAuthRoute) {
+        return AppRoutes.home;
+      }
+
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: AppRoutes.splash,
+        builder: (context, state) => const _PlaceholderPage('Splash'),
+      ),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const _PlaceholderPage('Login'),
+      ),
+      GoRoute(
+        path: AppRoutes.otp,
+        builder: (context, state) => const _PlaceholderPage('OTP'),
+      ),
+      GoRoute(
+        path: AppRoutes.profileSetup,
+        builder: (context, state) => const _PlaceholderPage('Profile Setup'),
+      ),
+      ShellRoute(
+        navigatorKey: _shellNavigatorKey,
+        builder: (context, state, child) => _AppShell(child: child),
+        routes: [
+          GoRoute(
+            path: AppRoutes.home,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: _PlaceholderPage('Home'),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.matches,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: _PlaceholderPage('Matches'),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.tournaments,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: _PlaceholderPage('Tournaments'),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.teams,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: _PlaceholderPage('Teams'),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.profile,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: _PlaceholderPage('Profile'),
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+});
+
+/// Bottom navigation shell with 5 tabs.
+class _AppShell extends StatelessWidget {
+  const _AppShell({required this.child});
+
+  final Widget child;
+
+  static const _tabs = [
+    AppRoutes.home,
+    AppRoutes.matches,
+    AppRoutes.tournaments,
+    AppRoutes.teams,
+    AppRoutes.profile,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final location = GoRouterState.of(context).matchedLocation;
+    final currentIndex = _tabs.indexOf(location).clamp(0, _tabs.length - 1);
+
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: (index) {
+          GoRouter.of(context).go(_tabs[index]);
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.sports_cricket_outlined),
+            selectedIcon: Icon(Icons.sports_cricket),
+            label: 'Matches',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.emoji_events_outlined),
+            selectedIcon: Icon(Icons.emoji_events),
+            label: 'Tourneys',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups),
+            label: 'Teams',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Temporary placeholder pages until real screens are built.
+class _PlaceholderPage extends StatelessWidget {
+  const _PlaceholderPage(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
+      ),
+    );
+  }
+}
