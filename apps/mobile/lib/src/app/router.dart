@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/otp_page.dart';
+import '../features/auth/presentation/pages/profile_setup_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
 import 'providers.dart';
 
@@ -91,7 +92,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.profileSetup,
-        builder: (context, state) => const _PlaceholderPage('Profile Setup'),
+        builder: (context, state) => ProfileSetupPage(
+          onSave: (data) {
+            // Profile saved → navigate to home (auth redirect handles this)
+            GoRouter.of(context).go(AppRoutes.home);
+          },
+        ),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
