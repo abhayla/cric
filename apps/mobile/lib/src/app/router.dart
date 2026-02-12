@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/pages/login_page.dart';
+import '../features/auth/presentation/pages/otp_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
 import 'providers.dart';
 
@@ -73,7 +74,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.otp,
-        builder: (context, state) => const _PlaceholderPage('OTP'),
+        builder: (context, state) {
+          final phoneNumber = state.extra as String? ?? '';
+          return OtpPage(
+            phoneNumber: phoneNumber,
+            onVerify: (otp) {
+              // After OTP verification, navigate to profile setup or home
+              // This will be handled by auth state change via redirect
+              GoRouter.of(context).go(AppRoutes.profileSetup);
+            },
+            onResend: () {
+              // Re-trigger OTP send via datasource (wired in later phases)
+            },
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.profileSetup,
