@@ -22,7 +22,13 @@ void main() {
       expect(AppRoutes.profile, '/profile');
     });
 
-    test('all 10 routes defined', () {
+    test('team detail route paths', () {
+      expect(AppRoutes.createTeam, '/teams/create');
+      expect(AppRoutes.teamDetail, '/teams/:teamId');
+      expect(AppRoutes.teamDetailPath('abc-123'), '/teams/abc-123');
+    });
+
+    test('all 11 routes defined', () {
       final routes = [
         AppRoutes.splash,
         AppRoutes.login,
@@ -33,10 +39,11 @@ void main() {
         AppRoutes.tournaments,
         AppRoutes.teams,
         AppRoutes.createTeam,
+        AppRoutes.teamDetail,
         AppRoutes.profile,
       ];
-      expect(routes.length, 10);
-      expect(routes.toSet().length, 10); // All unique
+      expect(routes.length, 11);
+      expect(routes.toSet().length, 11); // All unique
     });
   });
 }

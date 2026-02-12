@@ -22,6 +22,13 @@ final teamRepositoryProvider = Provider<TeamRepository>((ref) {
   );
 });
 
+/// Team detail state (fetches team + roster by ID).
+final teamDetailProvider =
+    FutureProvider.family<TeamDetail, String>((ref, teamId) {
+  final repository = ref.read(teamRepositoryProvider);
+  return repository.getTeam(teamId);
+});
+
 /// Teams list state.
 final teamsListProvider =
     AsyncNotifierProvider<TeamsListNotifier, TeamListResult>(
