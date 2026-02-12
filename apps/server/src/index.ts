@@ -5,6 +5,8 @@ import { corsMiddleware } from './middleware/cors.ts';
 import { errorHandler } from './middleware/error-handler.ts';
 import { healthRoutes } from './routes/v1/health.ts';
 import { authRoutes } from './routes/v1/auth.ts';
+import { teamRoutes } from './routes/v1/teams.ts';
+import { playerRoutes } from './routes/v1/players.ts';
 
 initFirebase();
 
@@ -13,6 +15,8 @@ const app = new Elysia()
   .use(errorHandler)
   .use(healthRoutes)
   .use(authRoutes)
+  .use(teamRoutes)
+  .use(playerRoutes)
   .listen(env.PORT);
 
 console.log(
