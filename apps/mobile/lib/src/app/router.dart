@@ -8,6 +8,7 @@ import '../features/auth/presentation/pages/profile_setup_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/home/presentation/pages/match_history_page.dart';
+import '../features/teams/presentation/pages/teams_list_page.dart';
 import 'providers.dart';
 
 /// Route paths.
@@ -126,7 +127,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.teams,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: _PlaceholderPage('Teams'),
+              child: TeamsListPage(),
             ),
           ),
           GoRoute(
