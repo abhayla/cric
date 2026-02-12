@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../domain/entities/team.dart';
 import '../../domain/repositories/team_repository.dart';
@@ -63,6 +65,7 @@ class _TeamDetailView extends StatelessWidget {
                   _PlayersTab(
                     roster: detail.roster,
                     team: detail.team,
+                    teamId: detail.team.id,
                   ),
                 ],
               ),
@@ -204,15 +207,20 @@ class _MatchesTab extends StatelessWidget {
 }
 
 class _PlayersTab extends StatelessWidget {
-  const _PlayersTab({required this.roster, required this.team});
+  const _PlayersTab({
+    required this.roster,
+    required this.team,
+    required this.teamId,
+  });
 
   final List<RosterEntry> roster;
   final Team team;
+  final String teamId;
 
   @override
   Widget build(BuildContext context) {
     if (roster.isEmpty) {
-      return _EmptyPlayersState();
+      return _EmptyPlayersState(teamId: teamId);
     }
 
     final theme = Theme.of(context);
@@ -250,7 +258,7 @@ class _PlayersTab extends StatelessWidget {
                   team.role == TeamMemberRole.captain)
                 OutlinedButton(
                   onPressed: () {
-                    // TODO: Navigate to manage roster
+                    context.push(AppRoutes.manageRosterPath(teamId));
                   },
                   child: const Text('Manage'),
                 ),
@@ -299,6 +307,10 @@ class _RoleGroupHeader extends StatelessWidget {
 }
 
 class _EmptyPlayersState extends StatelessWidget {
+  const _EmptyPlayersState({required this.teamId});
+
+  final String teamId;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -329,7 +341,7 @@ class _EmptyPlayersState extends StatelessWidget {
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: () {
-              // TODO: Navigate to add player
+              context.push(AppRoutes.addPlayerPath(teamId));
             },
             icon: const Icon(Icons.add),
             label: const Text('Add Player'),

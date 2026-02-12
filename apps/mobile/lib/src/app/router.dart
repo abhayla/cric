@@ -8,7 +8,9 @@ import '../features/auth/presentation/pages/profile_setup_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/home/presentation/pages/match_history_page.dart';
+import '../features/teams/presentation/pages/add_player_page.dart';
 import '../features/teams/presentation/pages/create_team_page.dart';
+import '../features/teams/presentation/pages/manage_roster_page.dart';
 import '../features/teams/presentation/pages/team_detail_page.dart';
 import '../features/teams/presentation/pages/teams_list_page.dart';
 import 'providers.dart';
@@ -26,9 +28,17 @@ abstract final class AppRoutes {
   static const String profile = '/profile';
   static const String createTeam = '/teams/create';
   static const String teamDetail = '/teams/:teamId';
+  static const String manageRoster = '/teams/:teamId/roster';
+  static const String addPlayer = '/teams/:teamId/roster/add';
 
   /// Build team detail path with actual ID.
   static String teamDetailPath(String teamId) => '/teams/$teamId';
+
+  /// Build manage roster path with actual ID.
+  static String manageRosterPath(String teamId) => '/teams/$teamId/roster';
+
+  /// Build add player path with actual ID.
+  static String addPlayerPath(String teamId) => '/teams/$teamId/roster/add';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -123,6 +133,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final teamId = state.pathParameters['teamId']!;
           return TeamDetailPage(teamId: teamId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.manageRoster,
+        builder: (context, state) {
+          final teamId = state.pathParameters['teamId']!;
+          return ManageRosterPage(teamId: teamId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.addPlayer,
+        builder: (context, state) {
+          final teamId = state.pathParameters['teamId']!;
+          return AddPlayerPage(
+            teamId: teamId,
+            onCreatePlayer: (name, phone, role, batting, bowling) {
+              // TODO: Call API to create player and add to team
+              GoRouter.of(context).pop();
+            },
+            onAddExisting: (playerId) {
+              // TODO: Call API to add existing player to team
+              GoRouter.of(context).pop();
+            },
+          );
         },
       ),
       ShellRoute(

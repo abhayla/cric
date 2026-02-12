@@ -28,7 +28,20 @@ void main() {
       expect(AppRoutes.teamDetailPath('abc-123'), '/teams/abc-123');
     });
 
-    test('all 11 routes defined', () {
+    test('manage roster and add player route paths', () {
+      expect(AppRoutes.manageRoster, '/teams/:teamId/roster');
+      expect(AppRoutes.addPlayer, '/teams/:teamId/roster/add');
+      expect(
+        AppRoutes.manageRosterPath('abc-123'),
+        '/teams/abc-123/roster',
+      );
+      expect(
+        AppRoutes.addPlayerPath('abc-123'),
+        '/teams/abc-123/roster/add',
+      );
+    });
+
+    test('all 13 routes defined', () {
       final routes = [
         AppRoutes.splash,
         AppRoutes.login,
@@ -40,10 +53,12 @@ void main() {
         AppRoutes.teams,
         AppRoutes.createTeam,
         AppRoutes.teamDetail,
+        AppRoutes.manageRoster,
+        AppRoutes.addPlayer,
         AppRoutes.profile,
       ];
-      expect(routes.length, 11);
-      expect(routes.toSet().length, 11); // All unique
+      expect(routes.length, 13);
+      expect(routes.toSet().length, 13); // All unique
     });
   });
 }
