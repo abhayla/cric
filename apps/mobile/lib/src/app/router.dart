@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
 import 'providers.dart';
 
@@ -61,7 +62,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const _PlaceholderPage('Login'),
+        builder: (context, state) => LoginPage(
+          onSendOtp: (fullPhone) {
+            GoRouter.of(context).go(
+              AppRoutes.otp,
+              extra: fullPhone,
+            );
+          },
+        ),
       ),
       GoRoute(
         path: AppRoutes.otp,
