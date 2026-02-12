@@ -11,6 +11,22 @@ Analyze staged changes and draft a conventional commit message.
 
 ## Steps
 
+### Pre-Draft Verification
+
+Before drafting the commit message:
+
+1. Identify which test suites are affected by staged changes:
+   - `apps/mobile/lib/src/features/<X>/` → `flutter test test/src/features/<X>/`
+   - `apps/server/src/` → `bun test`
+
+2. Check if tests were run recently (within this session):
+   - If YES and all passed → continue to draft
+   - If NO or tests failed → warn: "**Tests not verified.** Run tests before committing."
+
+3. This is a WARNING, not a blocker — the developer can proceed.
+
+### Draft Steps
+
 1. Check for staged changes:
    ```bash
    git diff --cached --name-only

@@ -26,7 +26,7 @@ All skills use `disable-model-invocation: true`. This means Claude Code will nev
 
 ---
 
-## Sub-Agents (13)
+## Sub-Agents (14)
 
 > **Implementation:** Config files in `.claude/agents/*.md`
 
@@ -268,7 +268,31 @@ All skills use `disable-model-invocation: true`. This means Claude Code will nev
 
 ---
 
-## Hooks (7)
+### 14. Reviewer — `reviewer`
+
+**Purpose:** Requirements verification and comprehensive review agent. Compares implementation against acceptance criteria, planning docs, wireframes, and domain rules. Produces requirements traceability matrix with PASS/WARN/BLOCK verdict. Runs at PLAYBOOK Step 11 (Stage 3).
+
+**Config file:** `.claude/agents/reviewer.md`
+
+**Context files read before every task:**
+- GitHub issue acceptance criteria (via `gh issue view`)
+- Relevant planning docs (DATABASE.md, API.md, SCORING_RULES.md)
+- Wireframe HTML (if UI feature)
+- `.claude/skills/cricket-domain/SKILL.md` — cricket rules reference
+
+**Domain expertise:**
+- Requirements traceability (acceptance criteria → code + test)
+- Spec-to-code comparison (planning docs → implementation)
+- Cross-domain consistency (schema parity, API-schema alignment, domain rule compliance)
+- Unified PASS/WARN/BLOCK verdict with actionable BLOCK items
+
+**When invoked:**
+- PLAYBOOK Step 11 Stage 3 (after code-reviewer + tester + domain agents)
+- Before any merge or milestone completion
+
+---
+
+## Hooks (10)
 
 > **Implementation:** PowerShell scripts in `.claude/hooks/*.ps1`
 >
@@ -343,6 +367,33 @@ Blocks destructive commands: `rm -rf`, `rm -fr`, `git push --force`, `git push -
 
 ---
 
+### Hook 8: CricHeroes Comparator Auto-Invoke
+
+**File:** `.claude/hooks/auto-invoke-cricheroes-comparator.ps1`
+**Event:** PreToolUse on `Write`
+
+Auto-invokes CricHeroes comparison when creating new feature files in `apps/mobile/lib/src/features/`. Non-blocking reminder.
+
+---
+
+### Hook 9: Auto-Format
+
+**File:** `.claude/hooks/auto-format.ps1`
+**Event:** PostToolUse on `Edit|Write`
+
+Formats `.dart` files with `dart format --fix` and `.ts` files with `npx prettier --write` after every Edit/Write. Skips generated files (`*.g.dart`, `*.freezed.dart`, `*.gr.dart`). Never blocks.
+
+---
+
+### Hook 10: Schema Parity Reminder
+
+**File:** `.claude/hooks/remind-schema-parity.ps1`
+**Event:** PostToolUse on `Edit|Write`
+
+Non-blocking reminder when Drizzle schema files (`apps/server/src/db/schema/*.ts`) or Drift table files (`apps/mobile/lib/src/shared/data/database/tables/*.dart`) are modified. Reminds to run `/schema-parity` and relevant code generation commands. Never blocks.
+
+---
+
 ## MCP Servers (2)
 
 ### PostgreSQL MCP (project-scope)
@@ -361,7 +412,7 @@ Blocks destructive commands: `rm -rf`, `rm -fr`, `git push --force`, `git push -
 
 ---
 
-## Skills (12)
+## Skills (16)
 
 > **Implementation:** Config files in `.claude/skills/<skill-name>/SKILL.md`
 >

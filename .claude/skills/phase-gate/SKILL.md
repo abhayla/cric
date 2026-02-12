@@ -56,6 +56,19 @@ cd apps/server && bunx tsc --noEmit
 - PASS if both exit code 0 (no warnings or errors).
 - FAIL if any issues found.
 
+### Criterion 6: Test Coverage
+```bash
+cd apps/mobile && flutter test --coverage
+cd apps/server && bun test --coverage
+```
+- PASS if overall coverage >= phase threshold:
+  - Phase 1: 40%
+  - Phase 2: 50%
+  - Phase 2.5+: 60%
+  - Phase 3 (Scoring Engine): 80%
+- PASS if scoring feature files (`features/scoring/`) >= 90% (when Phase 4+ exists)
+- FAIL if below threshold — list files with lowest coverage
+
 3. **Report results:**
 
 ```
@@ -68,6 +81,7 @@ cd apps/server && bunx tsc --noEmit
 | Screenshot comparisons | PASS/FAIL | X/Y screens verified |
 | CI green | PASS/FAIL | Run #NNN status |
 | Code quality | PASS/FAIL | Warnings/errors count |
+| Test coverage | PASS/FAIL | X% (threshold: Y%) |
 
 **Overall: PASS / FAIL**
 ```

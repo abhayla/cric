@@ -141,6 +141,59 @@ Refactoring changes: [brief summary]
 - Run: `cd apps/mobile && flutter test --coverage test/src/features/<feature>/`
 ```
 
+## Async Provider Testing Patterns
+
+For Riverpod notifiers that use async operations (Dio, Drift):
+
+### Notifier test — async state transitions
+
+```dart
+test('transitions loading → data on fetch', () async {
+  when(() => mockRepo.getMatches()).thenAnswer(
+    (_) async => [Match(id: '1', name: 'Test')],
+  );
+
+  final container = ProviderContainer(overrides: [
+    matchRepoProvider.overrideWithValue(mockRepo),
+  ]);
+
+  // Trigger fetch
+  final notifier = container.read(matchListProvider.notifier);
+
+  // Verify loading → data transition
+  await container.read(matchListProvider.future);
+  expect(container.read(matchListProvider).value, hasLength(1));
+});
+```
+
+### Widget test — loading and data states
+
+```dart
+testWidgets('shows loading then data', (tester) async {
+  when(() => mockRepo.getMatches()).thenAnswer(
+    (_) async => [Match(id: '1', name: 'Test')],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [matchRepoProvider.overrideWithValue(mockRepo)],
+      child: const MaterialApp(home: MatchListPage()),
+    ),
+  );
+
+  // Loading state
+  expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+  // Wait for async
+  await tester.pumpAndSettle();
+
+  // Data state
+  expect(find.text('Test'), findsOneWidget);
+});
+```
+
+**Always test both success and error paths for async operations.**
+
 ## TDD Exceptions
 
 Skip TDD for:

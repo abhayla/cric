@@ -128,6 +128,10 @@
           {
             "type": "command",
             "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/auto-format.ps1"
+          },
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/remind-schema-parity.ps1"
           }
         ]
       }

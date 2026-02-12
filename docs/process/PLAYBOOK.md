@@ -53,6 +53,18 @@ Write tests BEFORE implementation. Tests should be written against interfaces an
 
 **Context isolation:** In RED phase, do NOT read existing implementation files — write tests against INTERFACES and SPECS only.
 
+### Step 3.5: Tester Pre-Implementation Review (Scoring/Complex Features Only)
+
+For features involving scoring, deliveries, match state, or innings:
+
+```
+Task(tester, "Review RED phase test files for <feature>. Compare test scenarios against SCORING_RULES.md and IMPLEMENTATION_PRACTICES.md Section 13 (Scoring Engine — Exhaustive Tests). Identify 3-5 missing test cases.")
+```
+
+Add any missing test cases identified. Re-run to confirm still RED.
+
+**Skip this step** for simple CRUD features (teams, tournaments, profile).
+
 ### Step 4: Implement Domain Layer (GREEN + REFACTOR)
 
 1. Entity classes in `features/<feature>/domain/entities/`
@@ -113,14 +125,37 @@ Fix all analysis issues before proceeding.
 
 Follow the protocol in **Section 3** below. Run `/screenshot-verify XX` where XX is the screen number.
 
-### Step 11: Post-Implementation Review (2 Agents)
+### Step 11: Post-Implementation Review (3 Stages)
 
+**Stage 1 — Specialized agents (in parallel):**
 ```
 Task(code-reviewer, "Review <feature> implementation for quality, YAGNI/KISS/DRY compliance")
 Task(tester, "Check <feature> test coverage and identify gaps — tests should already exist from TDD steps")
 ```
 
-Focus: The tester agent now verifies coverage GAPS rather than generating tests from scratch — tests already exist from Steps 3/5/7.
+Focus: The tester agent verifies coverage GAPS rather than generating tests from scratch — tests already exist from Steps 3/5/7.
+
+**Stage 2 — Domain agents (in parallel, based on feature type):**
+
+If feature touches scoring/deliveries/match-state/innings:
+```
+Task(scoring-researcher, "Audit <feature> against SCORING_RULES.md. Verify delivery pipeline steps, strike rotation, undo completeness.")
+```
+
+If feature touches database schema or sync:
+```
+Task(database-researcher, "Verify schema correctness against DATABASE.md. Check Drift/Drizzle alignment.")
+```
+
+**Stage 3 — Requirements verification + unified verdict:**
+```
+Task(reviewer, "Verify implementation of issue #<N>. Read acceptance criteria, trace each to code + test, check schema parity and domain compliance, produce traceability matrix with PASS/WARN/BLOCK verdict.")
+```
+
+**Verdict handling:**
+- **PASS** → Proceed to Step 12
+- **PASS WITH WARNINGS** → Fix WARN items if quick (<15 min), otherwise log and proceed
+- **BLOCK** → Fix all BLOCK items, then re-run Stage 3 only
 
 ### Step 12: Fix Loop (Test Failures)
 
