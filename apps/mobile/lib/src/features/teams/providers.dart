@@ -1,1 +1,46 @@
-// Teams feature providers — created in Phase 2
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'data/datasources/team_remote_datasource.dart';
+import 'data/repositories/team_repository_impl.dart';
+import 'domain/repositories/team_repository.dart';
+
+/// Dio instance for teams feature.
+final _dioProvider = Provider<Dio>((ref) {
+  return Dio();
+});
+
+/// Teams remote datasource.
+final teamRemoteDatasourceProvider = Provider<TeamRemoteDatasource>((ref) {
+  return TeamRemoteDatasource(dio: ref.watch(_dioProvider));
+});
+
+/// Teams repository.
+final teamRepositoryProvider = Provider<TeamRepository>((ref) {
+  return TeamRepositoryImpl(
+    remoteDatasource: ref.watch(teamRemoteDatasourceProvider),
+  );
+});
+
+/// Teams list state.
+final teamsListProvider =
+    AsyncNotifierProvider<TeamsListNotifier, TeamListResult>(
+  TeamsListNotifier.new,
+);
+
+class TeamsListNotifier extends AsyncNotifier<TeamListResult> {
+  @override
+  Future<TeamListResult> build() async {
+    return _fetchTeams();
+  }
+
+  Future<TeamListResult> _fetchTeams({int page = 1}) async {
+    final repository = ref.read(teamRepositoryProvider);
+    return repository.getTeams(page: page);
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => _fetchTeams());
+  }
+}
