@@ -22,7 +22,7 @@ void main() {
       expect(AppRoutes.profile, '/profile');
     });
 
-    test('all 9 routes defined', () {
+    test('all 10 routes defined', () {
       final routes = [
         AppRoutes.splash,
         AppRoutes.login,
@@ -32,10 +32,11 @@ void main() {
         AppRoutes.matches,
         AppRoutes.tournaments,
         AppRoutes.teams,
+        AppRoutes.createTeam,
         AppRoutes.profile,
       ];
-      expect(routes.length, 9);
-      expect(routes.toSet().length, 9); // All unique
+      expect(routes.length, 10);
+      expect(routes.toSet().length, 10); // All unique
     });
   });
 }
