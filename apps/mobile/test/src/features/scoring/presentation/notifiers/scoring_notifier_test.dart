@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/batter_innings.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/bowler_spell.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
+import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
 import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
 
 void main() {
@@ -1091,6 +1092,434 @@ void main() {
       );
       expect(n.state.isInningsComplete, true);
       expect(n.state.completionReason, InningsCompletionReason.allOut);
+    });
+  });
+
+  // ── BowlerOption ────────────────────────────────────────────────────
+
+  group('BowlerOption', () {
+    test('constructs eligible bowler', () {
+      const option = BowlerOption(
+        playerId: 'b-1',
+        displayName: 'Bumrah',
+        isEligible: true,
+      );
+      expect(option.playerId, 'b-1');
+      expect(option.displayName, 'Bumrah');
+      expect(option.isEligible, true);
+      expect(option.ineligibleReason, isNull);
+      expect(option.spell, isNull);
+    });
+
+    test('constructs ineligible bowler with reason', () {
+      const option = BowlerOption(
+        playerId: 'b-1',
+        displayName: 'Bumrah',
+        isEligible: false,
+        ineligibleReason: 'Bowled last over',
+      );
+      expect(option.isEligible, false);
+      expect(option.ineligibleReason, 'Bowled last over');
+    });
+
+    test('constructs with spell stats', () {
+      const spell = BowlerSpell(
+        playerId: 'b-1',
+        displayName: 'Bumrah',
+        ballsBowled: 24,
+        maidens: 2,
+        runsConceded: 30,
+        wicketsTaken: 3,
+      );
+      const option = BowlerOption(
+        playerId: 'b-1',
+        displayName: 'Bumrah',
+        isEligible: true,
+        spell: spell,
+      );
+      expect(option.spell?.figures, '3-30');
+    });
+  });
+
+  // ── ScoringState: Playing XI fields ─────────────────────────────────
+
+  group('ScoringState: Playing XI fields', () {
+    List<PlayingXIPlayer> makeBattingXI() {
+      return List.generate(11, (i) => PlayingXIPlayer(
+        playerId: 'bat-${i + 1}',
+        displayName: 'Batter ${i + 1}',
+        playerRole: i < 4 ? 'batter' : 'all_rounder',
+        battingStyle: i.isEven ? 'RHB' : 'LHB',
+      ));
+    }
+
+    List<PlayingXIPlayer> makeBowlingXI() {
+      return List.generate(11, (i) => PlayingXIPlayer(
+        playerId: 'bowl-${i + 1}',
+        displayName: 'Bowler ${i + 1}',
+        playerRole: i < 5 ? 'bowler' : 'all_rounder',
+        bowlingStyle: i < 5 ? 'RF' : 'SLA',
+      ));
+    }
+
+    test('battingTeamPlayers defaults to empty', () {
+      final s = makeState();
+      expect(s.battingTeamPlayers, isEmpty);
+    });
+
+    test('bowlingTeamPlayers defaults to empty', () {
+      final s = makeState();
+      expect(s.bowlingTeamPlayers, isEmpty);
+    });
+
+    test('maxOversPerBowler defaults to null', () {
+      final s = makeState();
+      expect(s.maxOversPerBowler, isNull);
+    });
+
+    test('battingTeamPlayers populated via constructor', () {
+      final players = makeBattingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        battingTeamPlayers: players,
+      );
+      expect(s.battingTeamPlayers.length, 11);
+    });
+
+    test('copyWith preserves battingTeamPlayers', () {
+      final players = makeBattingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        battingTeamPlayers: players,
+      );
+      final copy = s.copyWith(totalRuns: 50);
+      expect(copy.battingTeamPlayers.length, 11);
+    });
+
+    // -- yetToBatPlayers --
+
+    test('yetToBatPlayers returns players not in batterStats', () {
+      final players = makeBattingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        battingTeamPlayers: players,
+        strikerId: 'bat-1',
+        nonStrikerId: 'bat-2',
+        batterStats: {
+          'bat-1': const BatterInnings(
+            playerId: 'bat-1',
+            displayName: 'Batter 1',
+            isOnStrike: true,
+          ),
+          'bat-2': const BatterInnings(
+            playerId: 'bat-2',
+            displayName: 'Batter 2',
+          ),
+        },
+      );
+      expect(s.yetToBatPlayers.length, 9);
+      expect(s.yetToBatPlayers.every((p) => p.playerId != 'bat-1'), true);
+      expect(s.yetToBatPlayers.every((p) => p.playerId != 'bat-2'), true);
+    });
+
+    test('yetToBatPlayers excludes dismissed batters', () {
+      final players = makeBattingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        battingTeamPlayers: players,
+        strikerId: 'bat-2',
+        batterStats: {
+          'bat-1': const BatterInnings(
+            playerId: 'bat-1',
+            displayName: 'Batter 1',
+            isNotOut: false,
+            dismissalType: DismissalType.bowled,
+          ),
+          'bat-2': const BatterInnings(
+            playerId: 'bat-2',
+            displayName: 'Batter 2',
+            isOnStrike: true,
+          ),
+        },
+      );
+      // bat-1 is dismissed, bat-2 is active — both in batterStats
+      expect(s.yetToBatPlayers.length, 9);
+    });
+
+    // -- retiredHurtBatters --
+
+    test('retiredHurtBatters returns retired hurt players', () {
+      final players = makeBattingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        battingTeamPlayers: players,
+        batterStats: {
+          'bat-1': const BatterInnings(
+            playerId: 'bat-1',
+            displayName: 'Batter 1',
+            isRetiredHurt: true,
+            isNotOut: true,
+            runsScored: 25,
+          ),
+          'bat-2': const BatterInnings(
+            playerId: 'bat-2',
+            displayName: 'Batter 2',
+            isOnStrike: true,
+          ),
+        },
+      );
+      expect(s.retiredHurtBatters.length, 1);
+      expect(s.retiredHurtBatters.first.playerId, 'bat-1');
+    });
+
+    test('retiredHurtBatters empty when no retired hurt', () {
+      final s = makeState(
+        batterStats: {
+          'bat-1': const BatterInnings(
+            playerId: 'bat-1',
+            displayName: 'Batter 1',
+            isOnStrike: true,
+          ),
+        },
+      );
+      expect(s.retiredHurtBatters, isEmpty);
+    });
+
+    // -- availableBatterCount --
+
+    test('availableBatterCount sums yetToBat and retiredHurt', () {
+      final players = makeBattingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        battingTeamPlayers: players,
+        batterStats: {
+          'bat-1': const BatterInnings(
+            playerId: 'bat-1',
+            displayName: 'Batter 1',
+            isRetiredHurt: true,
+            isNotOut: true,
+          ),
+          'bat-2': const BatterInnings(
+            playerId: 'bat-2',
+            displayName: 'Batter 2',
+            isOnStrike: true,
+          ),
+          'bat-3': const BatterInnings(
+            playerId: 'bat-3',
+            displayName: 'Batter 3',
+          ),
+        },
+      );
+      // 11 total - 3 in batterStats = 8 yetToBat + 1 retiredHurt = 9
+      expect(s.availableBatterCount, 9);
+    });
+
+    // -- bowlerOptions --
+
+    test('bowlerOptions marks last bowler as ineligible', () {
+      final bowlingXI = makeBowlingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        bowlingTeamPlayers: bowlingXI,
+        lastBowlerId: 'bowl-1',
+        bowlerStats: {
+          'bowl-1': const BowlerSpell(
+            playerId: 'bowl-1',
+            displayName: 'Bowler 1',
+            ballsBowled: 6,
+          ),
+        },
+      );
+      final options = s.bowlerOptions;
+      final lastBowler = options.firstWhere((o) => o.playerId == 'bowl-1');
+      expect(lastBowler.isEligible, false);
+      expect(lastBowler.ineligibleReason, 'Bowled last over');
+    });
+
+    test('bowlerOptions marks bowler at max overs as ineligible', () {
+      final bowlingXI = makeBowlingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        bowlingTeamPlayers: bowlingXI,
+        maxOversPerBowler: 4,
+        bowlerStats: {
+          'bowl-2': const BowlerSpell(
+            playerId: 'bowl-2',
+            displayName: 'Bowler 2',
+            ballsBowled: 24, // 4 overs
+          ),
+        },
+      );
+      final options = s.bowlerOptions;
+      final maxedBowler = options.firstWhere((o) => o.playerId == 'bowl-2');
+      expect(maxedBowler.isEligible, false);
+      expect(maxedBowler.ineligibleReason, 'Max overs reached');
+    });
+
+    test('bowlerOptions uses ceil(totalOvers/5) as default max', () {
+      final bowlingXI = makeBowlingXI();
+      // 20 overs → ceil(20/5) = 4 max per bowler
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        bowlingTeamPlayers: bowlingXI,
+        bowlerStats: {
+          'bowl-1': const BowlerSpell(
+            playerId: 'bowl-1',
+            displayName: 'Bowler 1',
+            ballsBowled: 24, // 4 overs = max
+          ),
+        },
+      );
+      final options = s.bowlerOptions;
+      final maxed = options.firstWhere((o) => o.playerId == 'bowl-1');
+      expect(maxed.isEligible, false);
+      expect(maxed.ineligibleReason, 'Max overs reached');
+    });
+
+    test('bowlerOptions all eligible when no restrictions', () {
+      final bowlingXI = makeBowlingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        bowlingTeamPlayers: bowlingXI,
+      );
+      final options = s.bowlerOptions;
+      expect(options.length, 11);
+      expect(options.every((o) => o.isEligible), true);
+    });
+
+    test('bowlerOptions attaches spell when bowler has bowled', () {
+      final bowlingXI = makeBowlingXI();
+      const spell = BowlerSpell(
+        playerId: 'bowl-1',
+        displayName: 'Bowler 1',
+        ballsBowled: 12,
+        runsConceded: 25,
+        wicketsTaken: 2,
+      );
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        bowlingTeamPlayers: bowlingXI,
+        bowlerStats: {'bowl-1': spell},
+      );
+      final option = s.bowlerOptions.firstWhere((o) => o.playerId == 'bowl-1');
+      expect(option.spell, isNotNull);
+      expect(option.spell!.wicketsTaken, 2);
+    });
+
+    // -- eligibleBowlerCount --
+
+    test('eligibleBowlerCount counts only eligible bowlers', () {
+      final bowlingXI = makeBowlingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        bowlingTeamPlayers: bowlingXI,
+        lastBowlerId: 'bowl-1',
+      );
+      expect(s.eligibleBowlerCount, 10); // 11 - 1 (last bowler)
+    });
+
+    test('bowlerOptions combined ineligibility: last bowler + max overs', () {
+      final bowlingXI = makeBowlingXI();
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        bowlingTeamPlayers: bowlingXI,
+        lastBowlerId: 'bowl-1',
+        maxOversPerBowler: 4,
+        bowlerStats: {
+          'bowl-1': const BowlerSpell(
+            playerId: 'bowl-1',
+            displayName: 'Bowler 1',
+            ballsBowled: 24,
+          ),
+          'bowl-2': const BowlerSpell(
+            playerId: 'bowl-2',
+            displayName: 'Bowler 2',
+            ballsBowled: 24,
+          ),
+        },
+      );
+      // bowl-1: last bowler + max overs → ineligible (shows "Bowled last over" since checked first)
+      // bowl-2: max overs → ineligible
+      // remaining 9: eligible
+      expect(s.eligibleBowlerCount, 9);
     });
   });
 }

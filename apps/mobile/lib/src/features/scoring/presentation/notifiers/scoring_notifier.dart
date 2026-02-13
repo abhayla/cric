@@ -5,7 +5,52 @@ import '../../domain/entities/batter_innings.dart';
 import '../../domain/entities/bowler_spell.dart';
 import '../../domain/entities/delivery.dart';
 import '../../domain/entities/over.dart';
+import '../../domain/entities/playing_xi_player.dart';
 import '../../domain/entities/wicket_info.dart';
+
+/// A bowler option for the Select Bowler bottom sheet.
+///
+/// Wraps a bowler's identity with eligibility status and optional spell stats.
+class BowlerOption {
+  const BowlerOption({
+    required this.playerId,
+    required this.displayName,
+    required this.isEligible,
+    this.ineligibleReason,
+    this.spell,
+    this.playerRole,
+    this.bowlingStyle,
+    this.isCaptain = false,
+    this.isKeeper = false,
+  });
+
+  final String playerId;
+  final String displayName;
+  final bool isEligible;
+  final String? ineligibleReason;
+  final BowlerSpell? spell;
+  final String? playerRole;
+  final String? bowlingStyle;
+  final bool isCaptain;
+  final bool isKeeper;
+
+  /// Initials from display name.
+  String get initials {
+    final parts = displayName.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
+    }
+    return parts.first[0].toUpperCase();
+  }
+
+  /// Badge text: "(C)", "(WK)", "(C & WK)", or null.
+  String? get badge {
+    if (isCaptain && isKeeper) return '(C & WK)';
+    if (isCaptain) return '(C)';
+    if (isKeeper) return '(WK)';
+    return null;
+  }
+}
 
 /// Sentinel for [ScoringState.copyWith] to distinguish "not provided" from "set to null".
 const _unset = Object();
@@ -28,6 +73,10 @@ class ScoringState {
     this.noBallRunsPenalty = CricketConstants.defaultNoBallRuns,
     this.battingTeamName = '',
     this.bowlingTeamName = '',
+    // Playing XI rosters
+    this.battingTeamPlayers = const [],
+    this.bowlingTeamPlayers = const [],
+    this.maxOversPerBowler,
     // Current players
     this.strikerId,
     this.nonStrikerId,
@@ -76,6 +125,12 @@ class ScoringState {
   final int noBallRunsPenalty;
   final String battingTeamName;
   final String bowlingTeamName;
+
+  // ── Playing XI rosters ──
+
+  final List<PlayingXIPlayer> battingTeamPlayers;
+  final List<PlayingXIPlayer> bowlingTeamPlayers;
+  final int? maxOversPerBowler;
 
   // ── Current players ──
 
@@ -175,6 +230,56 @@ class ScoringState {
   /// Whether a new bowler needs to be selected.
   bool get needsNewBowler => bowlerId == null;
 
+  /// Players from the batting team who haven't batted yet.
+  List<PlayingXIPlayer> get yetToBatPlayers => battingTeamPlayers
+      .where((p) => !batterStats.containsKey(p.playerId))
+      .toList();
+
+  /// Batters who retired hurt and can return.
+  List<BatterInnings> get retiredHurtBatters => batterStats.values
+      .where((b) => b.canReturn)
+      .toList();
+
+  /// Count of available batters (yet to bat + retired hurt).
+  int get availableBatterCount =>
+      yetToBatPlayers.length + retiredHurtBatters.length;
+
+  /// Bowler options with eligibility for the Select Bowler sheet.
+  List<BowlerOption> get bowlerOptions {
+    final effectiveMax = maxOversPerBowler ??
+        (totalOvers / 5).ceil();
+
+    return bowlingTeamPlayers.map((p) {
+      final spell = bowlerStats[p.playerId];
+      final oversCompleted = spell != null
+          ? spell.ballsBowled ~/ CricketConstants.ballsPerOver
+          : 0;
+
+      String? reason;
+      if (p.playerId == lastBowlerId) {
+        reason = 'Bowled last over';
+      } else if (oversCompleted >= effectiveMax) {
+        reason = 'Max overs reached';
+      }
+
+      return BowlerOption(
+        playerId: p.playerId,
+        displayName: p.displayName,
+        isEligible: reason == null,
+        ineligibleReason: reason,
+        spell: spell,
+        playerRole: p.playerRole,
+        bowlingStyle: p.bowlingStyle,
+        isCaptain: p.isCaptain,
+        isKeeper: p.isKeeper,
+      );
+    }).toList();
+  }
+
+  /// Count of eligible bowlers.
+  int get eligibleBowlerCount =>
+      bowlerOptions.where((o) => o.isEligible).length;
+
   /// Score display: "185/6" format.
   String get scoreDisplay => '$totalRuns/$totalWickets';
 
@@ -183,6 +288,9 @@ class ScoringState {
 
   /// Sentinel-based copyWith for nullable fields.
   ScoringState copyWith({
+    List<PlayingXIPlayer>? battingTeamPlayers,
+    List<PlayingXIPlayer>? bowlingTeamPlayers,
+    Object? maxOversPerBowler = _unset,
     Object? strikerId = _unset,
     Object? nonStrikerId = _unset,
     Object? bowlerId = _unset,
@@ -221,6 +329,13 @@ class ScoringState {
       noBallRunsPenalty: noBallRunsPenalty,
       battingTeamName: battingTeamName,
       bowlingTeamName: bowlingTeamName,
+      battingTeamPlayers:
+          battingTeamPlayers ?? this.battingTeamPlayers,
+      bowlingTeamPlayers:
+          bowlingTeamPlayers ?? this.bowlingTeamPlayers,
+      maxOversPerBowler: identical(maxOversPerBowler, _unset)
+          ? this.maxOversPerBowler
+          : maxOversPerBowler as int?,
       strikerId: identical(strikerId, _unset)
           ? this.strikerId
           : strikerId as String?,

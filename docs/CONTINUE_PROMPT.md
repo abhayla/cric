@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE. 955 Flutter tests, 170 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE. 1018 Flutter tests, 170 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36 (server scoring pipeline) and Issue #26 (Flutter scoring domain) complete. Next: Issue #27 (Select new batter + select bowler bottom sheets).
+**Phase 3 is IN PROGRESS.** Issue #36, #26, and #27 complete. Next: Issue #28 (Scoring page UI).
 
 ### Phase 3 Progress (IN PROGRESS)
 
@@ -24,7 +24,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 |-------|-------|--------|-------|
 | #36 | Scoring service: delivery recording pipeline (server) | DONE | 48 |
 | #26 | Scoring domain entities + state machine notifier (Flutter) | DONE | 333 |
-| #27 | Select new batter + select bowler bottom sheets | TODO | - |
+| #27 | Select new batter + select bowler bottom sheets | DONE | 43 |
 | #28 | Scoring page UI | TODO | - |
 | #29 | Extras panel | TODO | - |
 | #30 | Wicket dialog | TODO | - |
@@ -42,6 +42,15 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - `apps/server/test/services/scoring.service.test.ts` — 48 tests (basic deliveries, extras, wickets, free hit, stats updates, over completion, innings completion, validation, undo, getDeliveries, abandonMatch, declareInnings, reopenInnings, reopenMatch, configurable rules)
 - Pre-transaction validation pattern for fail-fast error handling
 - Bun test workaround: `.rejects.toThrow()` hangs with async DB functions; use `expectToReject()` helper with try-catch instead
+
+**Issue #27 completion details:**
+- 4 source files + 3 test files = 7 files, 43 new tests (1018 total Flutter tests)
+- **New entity:** `playing_xi_player.dart` — PlayingXIPlayer (playerId, displayName, playerRole, battingStyle, bowlingStyle, isCaptain, isKeeper + computed: initials, badge, battingStyleShort, roleLabel). 15 tests.
+- **ScoringState additions:** `BowlerOption` class (playerId, displayName, isEligible, ineligibleReason, spell), 3 new fields (`battingTeamPlayers`, `bowlingTeamPlayers`, `maxOversPerBowler`), 5 computed getters (`yetToBatPlayers`, `retiredHurtBatters`, `availableBatterCount`, `bowlerOptions`, `eligibleBowlerCount`). 20 tests.
+- **SelectBatterSheet widget:** Shows yet-to-bat + retired hurt players. Single-tap selection. Auto-select + SnackBar when 1 option. Dismissed batter subtitle in AppColors.wicket. 14 tests.
+- **SelectBowlerSheet widget:** Shows eligible bowlers (O-M-R-W + Ec) and ineligible greyed out with reason ("Bowled last over", "Max overs reached"). Single-tap. Auto-select + SnackBar when 1 eligible. 14 tests.
+- **Bowler eligibility:** Consecutive-over check (lastBowlerId) + max overs (`maxOversPerBowler` or `ceil(totalOvers/5)`)
+- **TDD followed:** RED → GREEN → REFACTOR for all 4 steps (entity → state → batter widget → bowler widget)
 
 **Issue #26 completion details:**
 - 8 source files + 8 test files = 16 files, 333 new tests (955 total Flutter tests)
