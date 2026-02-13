@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:cricapp/src/app/router.dart';
 
 /// Home dashboard page.
 ///
@@ -59,7 +62,9 @@ class HomePage extends StatelessWidget {
                   children: [
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          context.push(AppRoutes.matchSetup);
+                        },
                         icon: const Icon(Icons.add, size: 18),
                         label: const Text('Start Match'),
                       ),
@@ -67,14 +72,18 @@ class HomePage extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          context.push(AppRoutes.createTeam);
+                        },
                         child: const Text('Create Team'),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          context.go(AppRoutes.tournaments);
+                        },
                         child: const Text('Tournament'),
                       ),
                     ),

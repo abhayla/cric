@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 2 is IN PROGRESS.** Teams CRUD (#12-#18), Match API (#19), Match entities/data (#20), Match Setup (#21), Toss page (#22), and Drift local DB (#23) are complete. Continue with remaining Phase 2 issue (#24 Routing integration).
+**Phase 2 is COMPLETE.** All 13 issues (#12-#24) done. Proceed to Phase 2.5 (Tournament Management) or Phase 3 (Scoring Engine).
 
 ### Phase 2 Progress (IN PROGRESS)
 
@@ -33,9 +33,32 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #20 | Match domain entities and data layer | DONE | `6fcee62` |
 | #21 | Match Setup page | DONE | `4848b68` |
 | #22 | Toss page with 5-step wizard | DONE | `fc8f3b7` |
-| #23 | Drift local DB + offline caching | DONE | (pending PR) |
+| #23 | Drift local DB + offline caching | DONE | `25b93b5` |
+| #24 | Phase 2 routing integration | DONE | (pending PR) |
 
-**Phase 2 remaining:** #24 Routing integration.
+**Phase 2 COMPLETE.** Next: Phase 2.5 (Tournaments) or Phase 3 (Scoring Engine).
+
+### Issue #24 Completion Summary
+
+Phase 2 routing and navigation integration (2 new tests, 408 total passing):
+
+**Router changes (router.dart):**
+- Added `matchSetup` (`/match-setup`) and `toss` (`/toss/:matchId`) routes with `AppRoutes` constants
+- Added `tossPath(String matchId)` helper method
+- MatchSetupPage: wired `onMatchCreated` → navigate to toss, `onNavigateToCreateTeam` → push create team
+- TossPage: receives match/team data via `extra` map, `onStartMatch` → navigate to home (scoring placeholder for Phase 3)
+- 15 total routes (was 13)
+
+**Home page wiring (home_page.dart):**
+- "Start Match" → `context.push(AppRoutes.matchSetup)`
+- "Create Team" → `context.push(AppRoutes.createTeam)`
+- "Tournament" → `context.go(AppRoutes.tournaments)` (switches to Tournaments tab)
+
+**Navigation flows verified:**
+- Home → Start Match → Match Setup → Toss → Home (scoring placeholder)
+- Home → Create Team → Create Team page (pop back)
+- Home → Tournament → Tournaments tab (bottom nav switch)
+- Teams tab → Team Detail → Manage Roster → Add Player (pre-existing)
 
 ### Issue #23 Completion Summary
 
