@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 1 COMPLETE — All 11 issues closed
+**Status:** Phase 2 IN PROGRESS — Teams CRUD done (#12-#18), Match API (#19) done
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,22 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 1 is COMPLETE.** Start Phase 2 (Teams & Match Setup) — create GitHub issues from IMPLEMENTATION_PLAN.md Phase 2, then follow PLAYBOOK.md workflow.
+**Phase 2 is IN PROGRESS.** Teams CRUD (#12-#18) and Match API (#19) are complete. Continue with remaining Phase 2 issues.
+
+### Phase 2 Progress (IN PROGRESS)
+
+| Issue | Title | Status | Commit |
+|-------|-------|--------|--------|
+| #12 | Teams list page | DONE | (in #30) |
+| #13 | Team detail page | DONE | (in #29) |
+| #14 | Create team page | DONE | (in #28) |
+| #15 | Team service + API endpoints | DONE | (earlier) |
+| #16 | Create Team page | DONE | `84eb7aa` |
+| #17 | Team Detail page | DONE | `2184582` |
+| #18 | Manage Roster + Add Player pages | DONE | `3ec6696` |
+| #19 | Match API: creation, toss, playing XI | DONE | (pending commit) |
+
+**Phase 2 remaining:** Match setup Flutter UI, toss flow Flutter UI, Drift local DB, offline caching.
 
 ### Phase 1 Progress (COMPLETE)
 
