@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 2 is IN PROGRESS.** Teams CRUD (#12-#18), Match API (#19), and Match entities/data (#20) are complete. Continue with remaining Phase 2 issues (#21-#24).
+**Phase 2 is IN PROGRESS.** Teams CRUD (#12-#18), Match API (#19), Match entities/data (#20), Match Setup (#21), Toss page (#22), and Drift local DB (#23) are complete. Continue with remaining Phase 2 issue (#24 Routing integration).
 
 ### Phase 2 Progress (IN PROGRESS)
 
@@ -31,8 +31,51 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #18 | Manage Roster + Add Player pages | DONE | `3ec6696` |
 | #19 | Match API: creation, toss, playing XI | DONE | `1b60372` |
 | #20 | Match domain entities and data layer | DONE | `6fcee62` |
+| #21 | Match Setup page | DONE | `4848b68` |
+| #22 | Toss page with 5-step wizard | DONE | `fc8f3b7` |
+| #23 | Drift local DB + offline caching | DONE | (pending PR) |
 
-**Phase 2 remaining:** #21 Match Setup page, #22 Toss page, #23 Drift local DB, #24 Routing integration.
+**Phase 2 remaining:** #24 Routing integration.
+
+### Issue #23 Completion Summary
+
+Drift local database setup + basic offline caching (70 new tests, 406 total passing):
+
+**Database infrastructure (shared/data/database/):**
+- 8 Drift tables mirroring PostgreSQL: users, teams, team_rosters, matches, match_players, ball_types + 2 local-only: sync_queue, local_preferences
+- `AppDatabase` with ball_types seeding (leather, tennis, tape, other) via `InsertMode.insertOrIgnore`
+- `TeamsDao` with upsert, batch insert, get-by-id, roster join queries, roster delete
+- `database_provider.dart` exposing `databaseProvider` + `teamsDaoProvider`
+
+**Offline caching (teams feature):**
+- `TeamLocalDatasource`: cacheTeams, cacheTeamDetail (with roster + user profiles), getCachedTeams, getCachedTeamDetail (with join)
+- `TeamRepositoryImpl` modified: optional `localDatasource`, cache-on-fetch, fallback-on-failure pattern
+- `providers.dart`: teamLocalDatasourceProvider (nullable, null if DB not initialized)
+
+**DRY improvement:**
+- Added `apiValue` + `fromApiValue()` to `PlayerRole`, `BattingStyle`, `BowlingStyle` enums in `app_user.dart` (matches existing `RosterRole` pattern)
+- Removed 4 duplicate parse functions from `team_model.dart` and `team_local_datasource.dart`
+
+**Tests:** 35 database + 14 DAO + 11 local datasource + 8 repository caching = 68 new tests (+ 2 existing = 70 delta)
+
+### Issue #22 Completion Summary
+
+Toss page with 5-step wizard (85 tests, TDD workflow):
+
+**Domain layer (toss_notifier.dart):**
+- TossStep enum (5 steps: tossWinner, decision, xiTeamA, xiTeamB, openers)
+- RosterPlayer lightweight class (playerId, displayName, playerRole, isCaptain, isKeeper + initials/badge getters)
+- TossState class: step navigation, canProceed validation per step, team derivation (4 toss combinations), battingXI/fieldingXI computed lists, auto-pre-selection (roster.length == playersPerSide), sentinel-based copyWith for nullable fields, toRecordTossInput/toSetPlayingXIInput API conversions
+
+**Presentation (toss_page.dart):**
+- StatefulWidget with 5-step toss wizard: compact stepper (24px circles), team card selection, Bat/Field toggle, Playing XI checkbox lists, opener selection with striker radio, bowler selection
+- Back/Next/Start Match button navigation
+
+**Tests:** 68 notifier + 17 page = 85 tests. 336 total tests passing.
+
+### Issue #21 Completion Summary
+
+Match Setup page (48 tests, TDD workflow) — form for creating new matches with team selection, format/overs/ball type, venue, date, players per side, advanced settings. Connected to match repository for creation.
 
 ### Issue #20 Completion Summary
 

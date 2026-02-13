@@ -1,12 +1,17 @@
 import '../../domain/entities/team.dart';
 import '../../domain/repositories/team_repository.dart';
+import '../datasources/team_local_datasource.dart';
 import '../datasources/team_remote_datasource.dart';
 import '../models/team_model.dart';
 
 class TeamRepositoryImpl implements TeamRepository {
-  TeamRepositoryImpl({required this.remoteDatasource});
+  TeamRepositoryImpl({
+    required this.remoteDatasource,
+    this.localDatasource,
+  });
 
   final TeamRemoteDatasource remoteDatasource;
+  final TeamLocalDatasource? localDatasource;
 
   @override
   Future<Team> createTeam({
@@ -24,30 +29,68 @@ class TeamRepositoryImpl implements TeamRepository {
 
   @override
   Future<TeamListResult> getTeams({int page = 1, int limit = 20}) async {
-    final data = await remoteDatasource.getTeams(page: page, limit: limit);
-    final teamModels = (data['teams'] as List)
-        .map((t) => TeamModel.fromJson(t as Map<String, dynamic>))
-        .toList();
+    try {
+      final data = await remoteDatasource.getTeams(page: page, limit: limit);
+      final teamModels = (data['teams'] as List)
+          .map((t) => TeamModel.fromJson(t as Map<String, dynamic>))
+          .toList();
 
-    return TeamListResult(
-      teams: teamModels.map((m) => m.toEntity()).toList(),
-      total: data['total'] as int,
-      page: data['page'] as int,
-    );
+      // Cache teams locally
+      if (localDatasource != null) {
+        await localDatasource!.cacheTeams(
+          (data['teams'] as List).cast<Map<String, dynamic>>(),
+        );
+      }
+
+      return TeamListResult(
+        teams: teamModels.map((m) => m.toEntity()).toList(),
+        total: data['total'] as int,
+        page: data['page'] as int,
+      );
+    } catch (e) {
+      // Fallback to local cache on failure
+      if (localDatasource != null) {
+        final cachedTeams = await localDatasource!.getCachedTeams();
+        if (cachedTeams.isNotEmpty) {
+          return TeamListResult(
+            teams: cachedTeams,
+            total: cachedTeams.length,
+            page: 1,
+          );
+        }
+      }
+      rethrow;
+    }
   }
 
   @override
   Future<TeamDetail> getTeam(String teamId) async {
-    final data = await remoteDatasource.getTeam(teamId);
-    final teamModel = TeamModel.fromJson(data);
-    final rosterModels = (data['roster'] as List)
-        .map((r) => RosterEntryModel.fromJson(r as Map<String, dynamic>))
-        .toList();
+    try {
+      final data = await remoteDatasource.getTeam(teamId);
+      final teamModel = TeamModel.fromJson(data);
+      final rosterModels = (data['roster'] as List)
+          .map((r) => RosterEntryModel.fromJson(r as Map<String, dynamic>))
+          .toList();
 
-    return TeamDetail(
-      team: teamModel.toEntity(),
-      roster: rosterModels.map((m) => m.toEntity()).toList(),
-    );
+      // Cache team detail + roster locally
+      if (localDatasource != null) {
+        await localDatasource!.cacheTeamDetail(data);
+      }
+
+      return TeamDetail(
+        team: teamModel.toEntity(),
+        roster: rosterModels.map((m) => m.toEntity()).toList(),
+      );
+    } catch (e) {
+      // Fallback to local cache on failure
+      if (localDatasource != null) {
+        final cached = await localDatasource!.getCachedTeamDetail(teamId);
+        if (cached != null) {
+          return cached;
+        }
+      }
+      rethrow;
+    }
   }
 
   @override

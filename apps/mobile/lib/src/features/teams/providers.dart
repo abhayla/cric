@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:cricapp/src/shared/providers/database_provider.dart';
+
+import 'data/datasources/team_local_datasource.dart';
 import 'data/datasources/team_remote_datasource.dart';
 import 'data/repositories/team_repository_impl.dart';
 import 'domain/repositories/team_repository.dart';
@@ -15,10 +18,22 @@ final teamRemoteDatasourceProvider = Provider<TeamRemoteDatasource>((ref) {
   return TeamRemoteDatasource(dio: ref.watch(_dioProvider));
 });
 
+/// Teams local datasource (optional — null if DB not initialized).
+final teamLocalDatasourceProvider = Provider<TeamLocalDatasource?>((ref) {
+  try {
+    final dao = ref.watch(teamsDaoProvider);
+    return TeamLocalDatasource(teamsDao: dao);
+  } catch (_) {
+    // Database not yet initialized
+    return null;
+  }
+});
+
 /// Teams repository.
 final teamRepositoryProvider = Provider<TeamRepository>((ref) {
   return TeamRepositoryImpl(
     remoteDatasource: ref.watch(teamRemoteDatasourceProvider),
+    localDatasource: ref.watch(teamLocalDatasourceProvider),
   );
 });
 
