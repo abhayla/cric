@@ -84,48 +84,12 @@ extension RosterEntryModelX on RosterEntryModel {
         joinedAt:
             joinedAt != null ? DateTime.parse(joinedAt!) : DateTime.now(),
         jerseyNumber: jerseyNumber,
-        playerRole: _parsePlayerRole(playerRole),
-        battingStyle: _parseBattingStyle(battingStyle),
-        bowlingStyle: _parseBowlingStyle(bowlingStyle),
+        playerRole: PlayerRole.fromApiValue(playerRole),
+        battingStyle: BattingStyle.fromApiValue(battingStyle),
+        bowlingStyle: BowlingStyle.fromApiValue(bowlingStyle),
         phone: phone,
         avatarUrl: avatarUrl,
       );
-}
-
-PlayerRole? _parsePlayerRole(String? value) {
-  if (value == null) return null;
-  return switch (value) {
-    'batter' => PlayerRole.batter,
-    'bowler' => PlayerRole.bowler,
-    'all_rounder' => PlayerRole.allRounder,
-    'wk_batter' => PlayerRole.wkBatter,
-    _ => null,
-  };
-}
-
-BattingStyle? _parseBattingStyle(String? value) {
-  if (value == null) return null;
-  return switch (value) {
-    'right_hand' => BattingStyle.rightHand,
-    'left_hand' => BattingStyle.leftHand,
-    _ => null,
-  };
-}
-
-BowlingStyle? _parseBowlingStyle(String? value) {
-  if (value == null) return null;
-  return switch (value) {
-    'right_arm_fast' => BowlingStyle.rightArmFast,
-    'right_arm_medium' => BowlingStyle.rightArmMedium,
-    'right_arm_off_spin' => BowlingStyle.rightArmOffSpin,
-    'right_arm_leg_spin' => BowlingStyle.rightArmLegSpin,
-    'left_arm_fast' => BowlingStyle.leftArmFast,
-    'left_arm_medium' => BowlingStyle.leftArmMedium,
-    'left_arm_orthodox' => BowlingStyle.leftArmOrthodox,
-    'left_arm_chinaman' => BowlingStyle.leftArmChinaman,
-    'none' => BowlingStyle.none,
-    _ => null,
-  };
 }
 
 @freezed
