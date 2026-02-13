@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE. 1168 Flutter tests, 170 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE. 1215 Flutter tests, 170 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, and #30 complete. Next: Issue #31 (Innings transition modal).
+**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, and #31 complete. Next: Issue #32 (Match complete modal).
 
 **Recent housekeeping:** Updated root CLAUDE.md (current status, removed stale TO MOVE comments). Created `apps/mobile/lib/src/features/scoring/CLAUDE.md` with delivery pipeline, state machine, and scoring domain reference.
 
@@ -30,7 +30,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #28 | Scoring page UI | DONE | 67 |
 | #29 | Extras panel | DONE | 36 |
 | #30 | Wicket dialog | DONE | 47 |
-| #31 | Innings transition modal | TODO | - |
+| #31 | Innings transition modal | DONE | 47 |
 | #32 | Match complete modal | TODO | - |
 | #33 | Undo functionality | TODO | - |
 | #34 | Scorecard page | TODO | - |
@@ -81,6 +81,15 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - **Tests (43 widget + 4 integration):** Header (3), step 1 grid (9), button text per type (6), free hit (3), step 2 fielder (8), step 3 run out (7), confirm callbacks (5), scoring page integration (4: W opens dialog, Bowled→0/1, auto-select batter, W disabled when innings complete, Caught+fielder→0/1).
 - **TDD followed:** RED (wrote all 43 tests first) → GREEN (implemented widget until all pass) → wire into ScoringPage → integration tests
 - **Deferred:** Wide+wicket combination, direct hit toggle (YAGNI — no `recordWicket()` param)
+
+**Issue #31 completion details:**
+- 1 new source file + 1 new test file + 2 modified = 4 files, 47 net new tests (1215 total Flutter tests)
+- **InningsTransitionModal** (`presentation/widgets/innings_transition_modal.dart`): 3-step StatefulWidget wizard. Step 1: Innings summary (score, team/overs, extras breakdown, run rate, FOW list, top 2 batters + top bowler, target + RRR). Step 2: Select 2 opening batters from chasing team (checkbox rows, max 2, auto-deselect oldest on 3rd pick) + striker designation (radio when 2 selected, auto-first). Step 3: Select opening bowler from bowling team (radio rows). Primary-container header with stepper indicators (1-Summary, 2-Openers, 3-Bowler). Footer: Back (disabled step 1) + Next/Start Innings.
+- **InningsTransitionResult** data class: strikerId, strikerName, nonStrikerId, nonStrikerName, bowlerId, bowlerName.
+- **ScoringNotifier additions:** `FallOfWicket` class (wicketNumber, scoreAtFall, oversAtFall, dismissedPlayerName). `fallOfWickets` computed getter on ScoringState (iterates deliveryHistory). `declareInnings()` (1st innings only, guards). `startSecondInnings()` (creates fresh ScoringState with swapped teams, target, resets, calls selectNewBatter/selectNewBowler).
+- **ScoringPage wiring:** `_checkSideEffects` now takes `prevIsInningsComplete` param. Early return on innings completion: 1st innings → `_showInningsTransitionModal()`, 2nd innings → match complete SnackBar stub. `_showInningsTransitionModal()` computes top performers, shows non-dismissible dialog. `_handleInningsTransition()` calls `startSecondInnings()`.
+- **Tests (17 notifier + 25 widget + 5 integration):** declareInnings (3), fallOfWickets (4), startSecondInnings (10), modal header (2), step 1 summary (9), step navigation (4), step 2 openers (6), step 3 bowler (4), scoring page integration (5: all-out modal, overs-exhausted modal, completing modal transitions, target shown, match complete snackbar).
+- **TDD followed:** RED → GREEN → REFACTOR for notifier layer, widget layer, then integration wiring.
 
 **Issue #26 completion details:**
 - 8 source files + 8 test files = 16 files, 333 new tests (955 total Flutter tests)

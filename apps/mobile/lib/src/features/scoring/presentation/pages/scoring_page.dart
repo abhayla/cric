@@ -10,6 +10,7 @@ import '../widgets/scoring_controls.dart';
 import '../widgets/select_batter_sheet.dart';
 import '../widgets/select_bowler_sheet.dart';
 import '../widgets/this_over_display.dart';
+import '../widgets/innings_transition_modal.dart';
 import '../widgets/wicket_dialog.dart';
 
 /// Arguments for initializing the scoring page.
@@ -114,6 +115,7 @@ class _ScoringPageState extends State<ScoringPage> {
   void _onRunTap(int runs) {
     final prevNeedsBowler = _state.needsNewBowler;
     final prevNeedsBatter = _state.needsNewBatter;
+    final prevIsInningsComplete = _state.isInningsComplete;
 
     _notifier.recordDelivery(
       runsFromBat: runs,
@@ -122,7 +124,7 @@ class _ScoringPageState extends State<ScoringPage> {
     );
     setState(() {});
 
-    _checkSideEffects(prevNeedsBatter, prevNeedsBowler);
+    _checkSideEffects(prevNeedsBatter, prevNeedsBowler, prevIsInningsComplete);
   }
 
   void _onUndo() {
@@ -155,6 +157,7 @@ class _ScoringPageState extends State<ScoringPage> {
   void _recordExtra(ExtraType type, int runs) {
     final prevNeedsBowler = _state.needsNewBowler;
     final prevNeedsBatter = _state.needsNewBatter;
+    final prevIsInningsComplete = _state.isInningsComplete;
     switch (type) {
       case ExtraType.wide:
         _notifier.recordWide(additionalRuns: runs);
@@ -166,16 +169,88 @@ class _ScoringPageState extends State<ScoringPage> {
         _notifier.recordLegBye(legByeRuns: runs);
     }
     setState(() {});
-    _checkSideEffects(prevNeedsBatter, prevNeedsBowler);
+    _checkSideEffects(prevNeedsBatter, prevNeedsBowler, prevIsInningsComplete);
   }
 
-  void _checkSideEffects(bool prevNeedsBatter, bool prevNeedsBowler) {
+  void _checkSideEffects(
+    bool prevNeedsBatter,
+    bool prevNeedsBowler,
+    bool prevIsInningsComplete,
+  ) {
+    // Innings just completed — show transition modal or match complete
+    if (!prevIsInningsComplete && _state.isInningsComplete) {
+      if (_state.inningsNumber == 1) {
+        _showInningsTransitionModal();
+      } else if (_state.isMatchComplete) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Match complete! — coming in Issue #32'),
+          ),
+        );
+      }
+      return; // Skip batter/bowler sheets when innings is complete
+    }
+
     if (!prevNeedsBowler && _state.needsNewBowler) {
       _showSelectBowlerSheet();
     }
     if (!prevNeedsBatter && _state.needsNewBatter) {
       _showSelectBatterSheet();
     }
+  }
+
+  void _showInningsTransitionModal() {
+    // Compute top performers
+    final allBatters = _state.batterStats.values.toList()
+      ..sort((a, b) => b.runsScored.compareTo(a.runsScored));
+    final topBatters = allBatters.take(2).toList();
+
+    final allBowlers = _state.bowlerStats.values.toList()
+      ..sort((a, b) => b.wicketsTaken.compareTo(a.wicketsTaken));
+    final topBowler = allBowlers.isNotEmpty ? allBowlers.first : null;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Center(
+        child: InningsTransitionModal(
+          battingTeamName: _state.battingTeamName,
+          chasingTeamName: _state.bowlingTeamName,
+          totalRuns: _state.totalRuns,
+          totalWickets: _state.totalWickets,
+          oversDisplay: _state.oversDisplay,
+          totalExtras: _state.totalExtras,
+          totalWides: _state.totalWides,
+          totalNoBalls: _state.totalNoBalls,
+          totalByes: _state.totalByes,
+          totalLegByes: _state.totalLegByes,
+          runRate: _state.runRate,
+          target: _state.totalRuns + 1,
+          totalOvers: _state.totalOvers,
+          fallOfWickets: _state.fallOfWickets,
+          topBatters: topBatters,
+          topBowler: topBowler,
+          chasingTeamPlayers: _state.bowlingTeamPlayers,
+          bowlingTeamPlayers: _state.battingTeamPlayers,
+          onConfirm: (result) {
+            Navigator.of(ctx).pop();
+            _handleInningsTransition(result);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _handleInningsTransition(InningsTransitionResult result) {
+    _notifier.startSecondInnings(
+      strikerId: result.strikerId,
+      strikerName: result.strikerName,
+      nonStrikerId: result.nonStrikerId,
+      nonStrikerName: result.nonStrikerName,
+      bowlerId: result.bowlerId,
+      bowlerName: result.bowlerName,
+    );
+    setState(() {});
   }
 
   void _showSelectBatterSheet() {
@@ -317,6 +392,7 @@ class _ScoringPageState extends State<ScoringPage> {
   void _recordWicket(WicketDialogResult result) {
     final prevNeedsBowler = _state.needsNewBowler;
     final prevNeedsBatter = _state.needsNewBatter;
+    final prevIsInningsComplete = _state.isInningsComplete;
 
     _notifier.recordWicket(
       dismissalType: result.dismissalType,
@@ -328,7 +404,7 @@ class _ScoringPageState extends State<ScoringPage> {
     );
     setState(() {});
 
-    _checkSideEffects(prevNeedsBatter, prevNeedsBowler);
+    _checkSideEffects(prevNeedsBatter, prevNeedsBowler, prevIsInningsComplete);
   }
 
   @override

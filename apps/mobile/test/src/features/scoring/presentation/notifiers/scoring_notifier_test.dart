@@ -1522,4 +1522,340 @@ void main() {
       expect(s.eligibleBowlerCount, 9);
     });
   });
+
+  // ── ScoringNotifier: declareInnings ──────────────────────────────────
+
+  group('ScoringNotifier.declareInnings', () {
+    test('sets isInningsComplete to true and completionReason to declared', () {
+      final n = makeNotifier();
+      n.declareInnings();
+
+      expect(n.state.isInningsComplete, true);
+      expect(n.state.completionReason, InningsCompletionReason.declared);
+    });
+
+    test('no-op if already innings complete', () {
+      final n = makeNotifier(playersPerSide: 2);
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'bat-1',
+      );
+      expect(n.state.isInningsComplete, true);
+      expect(n.state.completionReason, InningsCompletionReason.allOut);
+
+      n.declareInnings();
+      // Should still be allOut, not declared
+      expect(n.state.completionReason, InningsCompletionReason.allOut);
+    });
+
+    test('no-op in 2nd innings', () {
+      final n = makeNotifier(inningsNumber: 2, target: 150);
+      n.declareInnings();
+
+      expect(n.state.isInningsComplete, false);
+      expect(n.state.completionReason, isNull);
+    });
+  });
+
+  // ── ScoringState: fallOfWickets ──────────────────────────────────────
+
+  group('ScoringState.fallOfWickets', () {
+    test('returns empty list when no wickets', () {
+      final n = makeNotifier();
+      n.recordDelivery(runsFromBat: 4);
+      n.recordDelivery(runsFromBat: 2);
+
+      expect(n.state.fallOfWickets, isEmpty);
+    });
+
+    test('computes single wicket correctly', () {
+      final n = makeNotifier();
+      n.recordDelivery(runsFromBat: 4);
+      n.recordDelivery(runsFromBat: 2);
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'bat-1',
+      );
+
+      final fow = n.state.fallOfWickets;
+      expect(fow.length, 1);
+      expect(fow[0].wicketNumber, 1);
+      expect(fow[0].scoreAtFall, 6);
+      expect(fow[0].oversAtFall, '0.3');
+      expect(fow[0].dismissedPlayerName, 'Batter 1');
+    });
+
+    test('computes multiple wickets with correct running totals', () {
+      final n = makeNotifier(playersPerSide: 4);
+      // 4 runs then wicket
+      n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'bat-1',
+      );
+      n.selectNewBatter(playerId: 'bat-3', displayName: 'Batter 3');
+      // 2 more runs then second wicket
+      n.recordDelivery(runsFromBat: 2);
+      n.recordWicket(
+        dismissalType: DismissalType.caught,
+        dismissedPlayerId: 'bat-3',
+        fielderId: 'fielder-1',
+      );
+
+      final fow = n.state.fallOfWickets;
+      expect(fow.length, 2);
+      expect(fow[0].wicketNumber, 1);
+      expect(fow[0].scoreAtFall, 4);
+      expect(fow[0].oversAtFall, '0.2');
+      expect(fow[1].wicketNumber, 2);
+      expect(fow[1].scoreAtFall, 6);
+      expect(fow[1].oversAtFall, '0.4');
+    });
+
+    test('includes extras in running total', () {
+      final n = makeNotifier();
+      n.recordWide(); // 1 run (wide)
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'bat-1',
+      );
+
+      final fow = n.state.fallOfWickets;
+      expect(fow.length, 1);
+      // Wide contributed 1 run, then wicket ball is 0 runs = total 1 at fall
+      expect(fow[0].scoreAtFall, 1);
+      // Wide is not legal, wicket is legal → 0.1 overs
+      expect(fow[0].oversAtFall, '0.1');
+    });
+  });
+
+  // ── ScoringNotifier: startSecondInnings ──────────────────────────────
+
+  group('ScoringNotifier.startSecondInnings', () {
+    List<PlayingXIPlayer> makeBattingPlayers() {
+      return List.generate(
+        11,
+        (i) => PlayingXIPlayer(
+          playerId: 'bat-${i + 1}',
+          displayName: 'Bat Player ${i + 1}',
+        ),
+      );
+    }
+
+    List<PlayingXIPlayer> makeBowlingPlayers() {
+      return List.generate(
+        11,
+        (i) => PlayingXIPlayer(
+          playerId: 'bowl-${i + 1}',
+          displayName: 'Bowl Player ${i + 1}',
+        ),
+      );
+    }
+
+    ScoringNotifier makeInningsCompleteNotifier() {
+      final state = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        battingTeamName: 'Team Alpha',
+        bowlingTeamName: 'Team Beta',
+        battingTeamPlayers: makeBattingPlayers(),
+        bowlingTeamPlayers: makeBowlingPlayers(),
+        strikerId: 'bat-1',
+        nonStrikerId: 'bat-2',
+        bowlerId: 'bowl-1',
+        batterStats: {
+          'bat-1': const BatterInnings(
+            playerId: 'bat-1',
+            displayName: 'Bat Player 1',
+            runsScored: 50,
+            isOnStrike: true,
+          ),
+          'bat-2': const BatterInnings(
+            playerId: 'bat-2',
+            displayName: 'Bat Player 2',
+            runsScored: 30,
+          ),
+        },
+        bowlerStats: {
+          'bowl-1': const BowlerSpell(
+            playerId: 'bowl-1',
+            displayName: 'Bowl Player 1',
+          ),
+        },
+        totalRuns: 150,
+        totalWickets: 5,
+        totalBalls: 60,
+        isInningsComplete: true,
+        completionReason: InningsCompletionReason.oversExhausted,
+      );
+      return ScoringNotifier(state);
+    }
+
+    test('swaps battingTeamId and bowlingTeamId', () {
+      final n = makeInningsCompleteNotifier();
+      n.startSecondInnings(
+        strikerId: 'bowl-1',
+        strikerName: 'Bowl Player 1',
+        nonStrikerId: 'bowl-2',
+        nonStrikerName: 'Bowl Player 2',
+        bowlerId: 'bat-1',
+        bowlerName: 'Bat Player 1',
+      );
+
+      expect(n.state.battingTeamId, 'team-b');
+      expect(n.state.bowlingTeamId, 'team-a');
+    });
+
+    test('swaps battingTeamName and bowlingTeamName', () {
+      final n = makeInningsCompleteNotifier();
+      n.startSecondInnings(
+        strikerId: 'bowl-1',
+        strikerName: 'Bowl Player 1',
+        nonStrikerId: 'bowl-2',
+        nonStrikerName: 'Bowl Player 2',
+        bowlerId: 'bat-1',
+        bowlerName: 'Bat Player 1',
+      );
+
+      expect(n.state.battingTeamName, 'Team Beta');
+      expect(n.state.bowlingTeamName, 'Team Alpha');
+    });
+
+    test('swaps battingTeamPlayers and bowlingTeamPlayers', () {
+      final n = makeInningsCompleteNotifier();
+      n.startSecondInnings(
+        strikerId: 'bowl-1',
+        strikerName: 'Bowl Player 1',
+        nonStrikerId: 'bowl-2',
+        nonStrikerName: 'Bowl Player 2',
+        bowlerId: 'bat-1',
+        bowlerName: 'Bat Player 1',
+      );
+
+      // Bowling team (Team Beta's players) should now be batting
+      expect(n.state.battingTeamPlayers.first.playerId, 'bowl-1');
+      // Batting team (Team Alpha's players) should now be bowling
+      expect(n.state.bowlingTeamPlayers.first.playerId, 'bat-1');
+    });
+
+    test('sets inningsNumber to 2', () {
+      final n = makeInningsCompleteNotifier();
+      n.startSecondInnings(
+        strikerId: 'bowl-1',
+        strikerName: 'Bowl Player 1',
+        nonStrikerId: 'bowl-2',
+        nonStrikerName: 'Bowl Player 2',
+        bowlerId: 'bat-1',
+        bowlerName: 'Bat Player 1',
+      );
+
+      expect(n.state.inningsNumber, 2);
+    });
+
+    test('sets target to 1st innings totalRuns + 1', () {
+      final n = makeInningsCompleteNotifier();
+      n.startSecondInnings(
+        strikerId: 'bowl-1',
+        strikerName: 'Bowl Player 1',
+        nonStrikerId: 'bowl-2',
+        nonStrikerName: 'Bowl Player 2',
+        bowlerId: 'bat-1',
+        bowlerName: 'Bat Player 1',
+      );
+
+      expect(n.state.target, 151); // 150 + 1
+    });
+
+    test('resets all innings totals to 0', () {
+      final n = makeInningsCompleteNotifier();
+      n.startSecondInnings(
+        strikerId: 'bowl-1',
+        strikerName: 'Bowl Player 1',
+        nonStrikerId: 'bowl-2',
+        nonStrikerName: 'Bowl Player 2',
+        bowlerId: 'bat-1',
+        bowlerName: 'Bat Player 1',
+      );
+
+      expect(n.state.totalRuns, 0);
+      expect(n.state.totalWickets, 0);
+      expect(n.state.totalBalls, 0);
+      expect(n.state.totalExtras, 0);
+      expect(n.state.totalWides, 0);
+      expect(n.state.totalNoBalls, 0);
+      expect(n.state.totalByes, 0);
+      expect(n.state.totalLegByes, 0);
+    });
+
+    test('sets up opening batters and bowler', () {
+      final n = makeInningsCompleteNotifier();
+      n.startSecondInnings(
+        strikerId: 'bowl-1',
+        strikerName: 'Bowl Player 1',
+        nonStrikerId: 'bowl-2',
+        nonStrikerName: 'Bowl Player 2',
+        bowlerId: 'bat-1',
+        bowlerName: 'Bat Player 1',
+      );
+
+      expect(n.state.strikerId, 'bowl-1');
+      expect(n.state.nonStrikerId, 'bowl-2');
+      expect(n.state.bowlerId, 'bat-1');
+      expect(n.state.batterStats['bowl-1']?.displayName, 'Bowl Player 1');
+      expect(n.state.batterStats['bowl-2']?.displayName, 'Bowl Player 2');
+      expect(n.state.bowlerStats['bat-1']?.displayName, 'Bat Player 1');
+    });
+
+    test('preserves match-level settings', () {
+      final n = makeInningsCompleteNotifier();
+      n.startSecondInnings(
+        strikerId: 'bowl-1',
+        strikerName: 'Bowl Player 1',
+        nonStrikerId: 'bowl-2',
+        nonStrikerName: 'Bowl Player 2',
+        bowlerId: 'bat-1',
+        bowlerName: 'Bat Player 1',
+      );
+
+      expect(n.state.matchId, 'match-1');
+      expect(n.state.totalOvers, 20);
+      expect(n.state.playersPerSide, 11);
+    });
+
+    test('no-op if 1st innings not complete', () {
+      final n = makeNotifier();
+      final prevState = n.state;
+      n.startSecondInnings(
+        strikerId: 'x',
+        strikerName: 'X',
+        nonStrikerId: 'y',
+        nonStrikerName: 'Y',
+        bowlerId: 'z',
+        bowlerName: 'Z',
+      );
+
+      expect(n.state.inningsNumber, prevState.inningsNumber);
+      expect(n.state.totalRuns, prevState.totalRuns);
+    });
+
+    test('no-op if already in 2nd innings', () {
+      final n = makeNotifier(inningsNumber: 2, target: 150);
+      final prevState = n.state;
+      n.startSecondInnings(
+        strikerId: 'x',
+        strikerName: 'X',
+        nonStrikerId: 'y',
+        nonStrikerName: 'Y',
+        bowlerId: 'z',
+        bowlerName: 'Z',
+      );
+
+      expect(n.state.inningsNumber, prevState.inningsNumber);
+    });
+  });
 }

@@ -8,6 +8,21 @@ import '../../domain/entities/over.dart';
 import '../../domain/entities/playing_xi_player.dart';
 import '../../domain/entities/wicket_info.dart';
 
+/// A fall-of-wicket entry for the innings summary.
+class FallOfWicket {
+  const FallOfWicket({
+    required this.wicketNumber,
+    required this.scoreAtFall,
+    required this.oversAtFall,
+    required this.dismissedPlayerName,
+  });
+
+  final int wicketNumber;
+  final int scoreAtFall;
+  final String oversAtFall;
+  final String dismissedPlayerName;
+}
+
 /// A bowler option for the Select Bowler bottom sheet.
 ///
 /// Wraps a bowler's identity with eligibility status and optional spell stats.
@@ -285,6 +300,34 @@ class ScoringState {
 
   /// Current over number (1-based, in progress).
   int get currentOverNumber => (totalBalls ~/ CricketConstants.ballsPerOver) + 1;
+
+  /// Fall of wickets computed from delivery history.
+  List<FallOfWicket> get fallOfWickets {
+    final result = <FallOfWicket>[];
+    int runningTotal = 0;
+    int legalBalls = 0;
+    int wicketCount = 0;
+
+    for (final del in deliveryHistory) {
+      runningTotal += del.totalRuns;
+      if (del.isLegal) legalBalls++;
+
+      if (del.isWicket) {
+        wicketCount++;
+        final dismissedId = del.wicketInfo?.dismissedPlayerId ?? del.strikerId;
+        final dismissedName =
+            batterStats[dismissedId]?.displayName ?? dismissedId;
+        result.add(FallOfWicket(
+          wicketNumber: wicketCount,
+          scoreAtFall: runningTotal,
+          oversAtFall: CricketUtils.formatOvers(legalBalls),
+          dismissedPlayerName: dismissedName,
+        ));
+      }
+    }
+
+    return result;
+  }
 
   /// Sentinel-based copyWith for nullable fields.
   ScoringState copyWith({
@@ -618,6 +661,58 @@ class ScoringNotifier {
       isFreeHitPending: newFreeHitPending,
       deliveryHistory: history,
     );
+  }
+
+  /// Declare the current innings (1st innings only).
+  void declareInnings() {
+    if (_state.isInningsComplete) return;
+    if (_state.inningsNumber != 1) return;
+
+    _state = _state.copyWith(
+      isInningsComplete: true,
+      completionReason: InningsCompletionReason.declared,
+    );
+  }
+
+  /// Start the 2nd innings after 1st innings completion.
+  ///
+  /// Creates a fresh state with swapped teams, target set, and opening
+  /// players initialized.
+  void startSecondInnings({
+    required String strikerId,
+    required String strikerName,
+    required String nonStrikerId,
+    required String nonStrikerName,
+    required String bowlerId,
+    required String bowlerName,
+  }) {
+    if (!_state.isInningsComplete) return;
+    if (_state.inningsNumber >= 2) return;
+
+    final target = _state.totalRuns + 1;
+
+    _state = ScoringState(
+      matchId: _state.matchId,
+      inningsId: '${_state.inningsId}-2',
+      battingTeamId: _state.bowlingTeamId,
+      bowlingTeamId: _state.battingTeamId,
+      battingTeamName: _state.bowlingTeamName,
+      bowlingTeamName: _state.battingTeamName,
+      battingTeamPlayers: _state.bowlingTeamPlayers,
+      bowlingTeamPlayers: _state.battingTeamPlayers,
+      inningsNumber: 2,
+      totalOvers: _state.totalOvers,
+      playersPerSide: _state.playersPerSide,
+      wideRunsPenalty: _state.wideRunsPenalty,
+      noBallRunsPenalty: _state.noBallRunsPenalty,
+      maxOversPerBowler: _state.maxOversPerBowler,
+      target: target,
+    );
+
+    // Set up opening players
+    selectNewBatter(playerId: strikerId, displayName: strikerName);
+    selectNewBatter(playerId: nonStrikerId, displayName: nonStrikerName);
+    selectNewBowler(playerId: bowlerId, displayName: bowlerName);
   }
 
   /// Manually swap strike (UI button).

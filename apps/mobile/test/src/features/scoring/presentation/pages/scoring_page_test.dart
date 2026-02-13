@@ -6,6 +6,7 @@ import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.d
 import 'package:cricapp/src/features/scoring/presentation/pages/scoring_page.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/extras_panel.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
+import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/wicket_dialog.dart';
 
 void main() {
@@ -356,6 +357,144 @@ void main() {
       await tester.pumpAndSettle();
       // Score should be 0/1
       expect(find.text('0/1'), findsOneWidget);
+    });
+  });
+
+  group('ScoringPage innings transition', () {
+    testWidgets('all-out in 1st innings shows innings transition modal',
+        (tester) async {
+      // 2 players per side: 1 wicket = all out
+      await tester.pumpWidget(buildPage(playersPerSide: 2));
+      // Record Bowled wicket
+      await tester.tap(findRunButton('W'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bowled'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm Wicket'));
+      await tester.pumpAndSettle();
+      // Innings transition modal should appear
+      expect(find.byType(InningsTransitionModal), findsOneWidget);
+      expect(find.text('Innings Transition'), findsOneWidget);
+    });
+
+    testWidgets('overs exhausted in 1st innings shows modal', (tester) async {
+      await tester.pumpWidget(buildPage(totalOvers: 1));
+      // Bowl 6 dot balls = 1 over exhausted
+      for (var i = 0; i < 6; i++) {
+        await tester.tap(findRunButton('0'));
+        await tester.pump();
+        // After over complete, bowler sheet appears — select new bowler
+        // Actually only shows at end of over (ball 6)
+      }
+      await tester.pumpAndSettle();
+      // Innings transition modal should appear
+      expect(find.byType(InningsTransitionModal), findsOneWidget);
+    });
+
+    testWidgets('completing modal transitions to 2nd innings state',
+        (tester) async {
+      // 2 players per side for quick all-out
+      await tester.pumpWidget(buildPage(playersPerSide: 2));
+      // Record Bowled wicket → all-out → modal appears
+      await tester.tap(findRunButton('W'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bowled'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm Wicket'));
+      await tester.pumpAndSettle();
+      expect(find.byType(InningsTransitionModal), findsOneWidget);
+
+      // Step 1 → 2
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      // Select 2 batters — scope to modal to avoid ambiguity
+      final modal = find.byType(InningsTransitionModal);
+      await tester.tap(find.descendant(
+        of: modal,
+        matching: find.text('BOWL Player 1'),
+      ));
+      await tester.pump();
+      await tester.tap(find.descendant(
+        of: modal,
+        matching: find.text('BOWL Player 2'),
+      ));
+      await tester.pump();
+      // Step 2 → 3
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      // Select bowler (batting team players)
+      await tester.tap(find.descendant(
+        of: modal,
+        matching: find.text('BAT Player 1'),
+      ));
+      await tester.pump();
+      // Start Innings
+      await tester.tap(find.widgetWithText(FilledButton, 'Start Innings'));
+      await tester.pumpAndSettle();
+
+      // Modal should be dismissed
+      expect(find.byType(InningsTransitionModal), findsNothing);
+      // Should now show 2nd innings
+      expect(find.text('2nd Innings'), findsOneWidget);
+    });
+
+    testWidgets('after transition, score header shows target and RRR',
+        (tester) async {
+      // Score some runs then all-out
+      await tester.pumpWidget(buildPage(playersPerSide: 2));
+      // Score a four first
+      await tester.tap(findRunButton('4'));
+      await tester.pump();
+      // Then wicket → all-out
+      await tester.tap(findRunButton('W'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bowled'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm Wicket'));
+      await tester.pumpAndSettle();
+
+      // Complete the modal — scope to modal for ambiguous names
+      final modal = find.byType(InningsTransitionModal);
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: modal,
+        matching: find.text('BOWL Player 1'),
+      ));
+      await tester.pump();
+      await tester.tap(find.descendant(
+        of: modal,
+        matching: find.text('BOWL Player 2'),
+      ));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: modal,
+        matching: find.text('BAT Player 1'),
+      ));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Start Innings'));
+      await tester.pumpAndSettle();
+
+      // Score was 4 → target = 5
+      // Should show target in header
+      expect(find.textContaining('5'), findsWidgets);
+    });
+
+    testWidgets('2nd innings completion shows match complete snackbar',
+        (tester) async {
+      // Set up 2nd innings directly with target
+      await tester.pumpWidget(buildPage(
+        inningsNumber: 2,
+        target: 5,
+        playersPerSide: 11,
+      ));
+      // Score a six to chase down target
+      await tester.tap(findRunButton('6'));
+      await tester.pumpAndSettle();
+      // Should show match complete snackbar
+      expect(find.textContaining('Match complete'), findsOneWidget);
     });
   });
 }
