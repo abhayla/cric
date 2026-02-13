@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE. 1085 Flutter tests, 170 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE. 1121 Flutter tests, 170 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, and #28 complete. Next: Issue #29 (Extras panel).
+**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, and #29 complete. Next: Issue #30 (Wicket dialog).
 
 ### Phase 3 Progress (IN PROGRESS)
 
@@ -26,7 +26,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #26 | Scoring domain entities + state machine notifier (Flutter) | DONE | 333 |
 | #27 | Select new batter + select bowler bottom sheets | DONE | 43 |
 | #28 | Scoring page UI | DONE | 67 |
-| #29 | Extras panel | TODO | - |
+| #29 | Extras panel | DONE | 36 |
 | #30 | Wicket dialog | TODO | - |
 | #31 | Innings transition modal | TODO | - |
 | #32 | Match complete modal | TODO | - |
@@ -61,8 +61,15 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - **ThisOverDisplay** (`presentation/widgets/this_over_display.dart`): Ball indicators (colored circles per delivery using notation). Free hit badge. Color mapping: wicket→red, four→blue, six→purple, dot→grey outline. 11 tests.
 - **ScoringControls** (`presentation/widgets/scoring_controls.dart`): Run buttons (0,1,2,3,4,6 + "..." overthrow), extras row (WD,NB,B,LB,W), action bar (undo + swap). 16 tests.
 - **Router** (`app/router.dart`): Added `/scoring/:matchId` route, `scoringPath()` helper, wired toss `onStartMatch` to navigate to scoring page.
-- **Stubs:** WD/NB/B/LB → SnackBar "Extras panel — coming in Issue #29", W → "Wicket dialog — coming in Issue #30"
+- **Stubs:** W → "Wicket dialog — coming in Issue #30" (extras stubs removed by #29)
 - **TDD followed:** RED → GREEN → REFACTOR for all widgets (bottom-up: batter_card → bowler_card → this_over_display → score_header → scoring_controls → scoring_page → router)
+
+**Issue #29 completion details:**
+- 1 source file + 1 test file + 2 modified = 4 files, 36 net new tests (1121 total Flutter tests)
+- **ExtrasPanel** (`presentation/widgets/extras_panel.dart`): StatefulWidget bottom sheet for extras. ExtraType enum (wide/noBall/bye/legBye) with displayName, color, runsLabel, runOptions, defaultRuns. Configurable penalties (wideRunsPenalty, noBallRunsPenalty). Run buttons: Wide [0,1,2,3,4,...], NoBall [0,1,2,3,4,6,...], Bye/LegBye [1,2,3,4,...]. Selected button = FilledButton in type color, unselected = OutlinedButton. Custom picker ("...") opens AlertDialog with ActionChip Wrap [5-12]. Total row shows computed total (penalty + runs for wide/noBall, just runs for bye/legBye). Full-width Confirm button in type color. 29 tests.
+- **ScoringPage wiring**: Replaced 4 SnackBar stubs with `_showExtrasPanel(ExtraType)` → opens bottom sheet → on confirm calls `_recordExtra` which delegates to notifier's `recordWide/NoBall/Bye/LegBye`. Checks side effects (needsNewBowler/Batter) after recording. 8 integration tests (4 open + 4 confirm with score verification).
+- **Deferred:** Wicket-on-extras toggle (depends on Issue #30 Wicket Dialog). No-ball + bye combination (notifier limitation).
+- **TDD followed:** RED (tests fail at compile) → GREEN (implementation passes all tests)
 
 **Issue #26 completion details:**
 - 8 source files + 8 test files = 16 files, 333 new tests (955 total Flutter tests)

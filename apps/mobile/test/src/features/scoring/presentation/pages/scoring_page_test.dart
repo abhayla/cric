@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cricapp/src/core/theme/app_colors.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
 import 'package:cricapp/src/features/scoring/presentation/pages/scoring_page.dart';
+import 'package:cricapp/src/features/scoring/presentation/widgets/extras_panel.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
 
 void main() {
@@ -169,13 +170,6 @@ void main() {
       expect(find.text('1st Innings'), findsOneWidget);
     });
 
-    testWidgets('extras button shows snackbar stub', (tester) async {
-      await tester.pumpWidget(buildPage());
-      await tester.tap(findRunButton('WD'));
-      await tester.pump();
-      expect(find.textContaining('Extras panel'), findsOneWidget);
-    });
-
     testWidgets('wicket button shows snackbar stub', (tester) async {
       await tester.pumpWidget(buildPage());
       await tester.tap(findRunButton('W'));
@@ -186,6 +180,103 @@ void main() {
     testWidgets('This Over label is rendered', (tester) async {
       await tester.pumpWidget(buildPage());
       expect(find.text('This Over'), findsOneWidget);
+    });
+  });
+
+  group('ScoringPage extras integration', () {
+    testWidgets('WD button opens ExtrasPanel with wide type', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.tap(findRunButton('WD'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ExtrasPanel), findsOneWidget);
+      expect(find.text('Wide'), findsOneWidget);
+    });
+
+    testWidgets('NB button opens ExtrasPanel with no-ball type',
+        (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.tap(findRunButton('NB'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ExtrasPanel), findsOneWidget);
+      expect(find.text('No Ball'), findsOneWidget);
+    });
+
+    testWidgets('B button opens ExtrasPanel with bye type', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.tap(findRunButton('B'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ExtrasPanel), findsOneWidget);
+      expect(find.text('Bye'), findsOneWidget);
+    });
+
+    testWidgets('LB button opens ExtrasPanel with leg-bye type',
+        (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.tap(findRunButton('LB'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ExtrasPanel), findsOneWidget);
+      expect(find.text('Leg Bye'), findsOneWidget);
+    });
+
+    testWidgets('Wide confirm with 0 additional updates score to 1/0',
+        (tester) async {
+      await tester.pumpWidget(buildPage());
+      // Open Wide panel
+      await tester.tap(findRunButton('WD'));
+      await tester.pumpAndSettle();
+      // Default is 0 additional runs, confirm
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+      // Score should be 1/0 (1 wide penalty), overs still 0.0 (wide not legal)
+      expect(find.text('1/0'), findsOneWidget);
+      expect(find.text('(0.0)'), findsOneWidget);
+    });
+
+    testWidgets('NoBall confirm with 2 bat runs updates score to 3/0',
+        (tester) async {
+      await tester.pumpWidget(buildPage());
+      // Open No Ball panel
+      await tester.tap(findRunButton('NB'));
+      await tester.pumpAndSettle();
+      // Select 2 runs from bat
+      await tester.tap(find.ancestor(
+        of: find.text('2'),
+        matching: find.byType(OutlinedButton),
+      ));
+      await tester.pump();
+      // Confirm
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+      // Score: 1 (no-ball penalty) + 2 (bat) = 3/0, overs 0.0 (no-ball not legal)
+      expect(find.text('3/0'), findsOneWidget);
+      expect(find.text('(0.0)'), findsOneWidget);
+    });
+
+    testWidgets('Bye confirm with default 1 updates score to 1/0 and overs',
+        (tester) async {
+      await tester.pumpWidget(buildPage());
+      // Open Bye panel
+      await tester.tap(findRunButton('B'));
+      await tester.pumpAndSettle();
+      // Default is 1 bye run, confirm
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+      // Score 1/0, overs 0.1 (bye is a legal delivery)
+      expect(find.text('1/0'), findsOneWidget);
+      expect(find.text('(0.1)'), findsOneWidget);
+    });
+
+    testWidgets('after no-ball confirm, free hit badge appears in this over',
+        (tester) async {
+      await tester.pumpWidget(buildPage());
+      // Open No Ball panel
+      await tester.tap(findRunButton('NB'));
+      await tester.pumpAndSettle();
+      // Confirm with 0 runs from bat
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+      // Free hit indicator should appear
+      expect(find.text('FREE HIT'), findsOneWidget);
     });
   });
 }

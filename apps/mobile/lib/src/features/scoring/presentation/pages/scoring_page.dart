@@ -4,6 +4,7 @@ import '../../domain/entities/playing_xi_player.dart';
 import '../notifiers/scoring_notifier.dart';
 import '../widgets/batter_card.dart';
 import '../widgets/bowler_card.dart';
+import '../widgets/extras_panel.dart';
 import '../widgets/score_header.dart';
 import '../widgets/scoring_controls.dart';
 import '../widgets/select_batter_sheet.dart';
@@ -131,6 +132,40 @@ class _ScoringPageState extends State<ScoringPage> {
   void _onSwapStrike() {
     _notifier.swapStrike();
     setState(() {});
+  }
+
+  void _showExtrasPanel(ExtraType extraType) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => ExtrasPanel(
+        extraType: extraType,
+        wideRunsPenalty: _state.wideRunsPenalty,
+        noBallRunsPenalty: _state.noBallRunsPenalty,
+        onConfirm: (runs) {
+          Navigator.of(ctx).pop();
+          _recordExtra(extraType, runs);
+        },
+        onClose: () => Navigator.of(ctx).pop(),
+      ),
+    );
+  }
+
+  void _recordExtra(ExtraType type, int runs) {
+    final prevNeedsBowler = _state.needsNewBowler;
+    final prevNeedsBatter = _state.needsNewBatter;
+    switch (type) {
+      case ExtraType.wide:
+        _notifier.recordWide(additionalRuns: runs);
+      case ExtraType.noBall:
+        _notifier.recordNoBall(runsFromBat: runs);
+      case ExtraType.bye:
+        _notifier.recordBye(byeRuns: runs);
+      case ExtraType.legBye:
+        _notifier.recordLegBye(legByeRuns: runs);
+    }
+    setState(() {});
+    _checkSideEffects(prevNeedsBatter, prevNeedsBowler);
   }
 
   void _checkSideEffects(bool prevNeedsBatter, bool prevNeedsBowler) {
@@ -332,14 +367,10 @@ class _ScoringPageState extends State<ScoringPage> {
             // Scoring controls (fixed)
             ScoringControls(
               onRunTap: _onRunTap,
-              onWideTap: () =>
-                  _showStubSnackBar('Extras panel \u2014 coming in Issue #29'),
-              onNoBallTap: () =>
-                  _showStubSnackBar('Extras panel \u2014 coming in Issue #29'),
-              onByeTap: () =>
-                  _showStubSnackBar('Extras panel \u2014 coming in Issue #29'),
-              onLegByeTap: () =>
-                  _showStubSnackBar('Extras panel \u2014 coming in Issue #29'),
+              onWideTap: () => _showExtrasPanel(ExtraType.wide),
+              onNoBallTap: () => _showExtrasPanel(ExtraType.noBall),
+              onByeTap: () => _showExtrasPanel(ExtraType.bye),
+              onLegByeTap: () => _showExtrasPanel(ExtraType.legBye),
               onWicketTap: () => _showStubSnackBar(
                   'Wicket dialog \u2014 coming in Issue #30'),
               onUndoTap: _onUndo,
