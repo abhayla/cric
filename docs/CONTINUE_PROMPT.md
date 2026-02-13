@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE. 1018 Flutter tests, 170 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE. 1085 Flutter tests, 170 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36, #26, and #27 complete. Next: Issue #28 (Scoring page UI).
+**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, and #28 complete. Next: Issue #29 (Extras panel).
 
 ### Phase 3 Progress (IN PROGRESS)
 
@@ -25,7 +25,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #36 | Scoring service: delivery recording pipeline (server) | DONE | 48 |
 | #26 | Scoring domain entities + state machine notifier (Flutter) | DONE | 333 |
 | #27 | Select new batter + select bowler bottom sheets | DONE | 43 |
-| #28 | Scoring page UI | TODO | - |
+| #28 | Scoring page UI | DONE | 67 |
 | #29 | Extras panel | TODO | - |
 | #30 | Wicket dialog | TODO | - |
 | #31 | Innings transition modal | TODO | - |
@@ -51,6 +51,18 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - **SelectBowlerSheet widget:** Shows eligible bowlers (O-M-R-W + Ec) and ineligible greyed out with reason ("Bowled last over", "Max overs reached"). Single-tap. Auto-select + SnackBar when 1 eligible. 14 tests.
 - **Bowler eligibility:** Consecutive-over check (lastBowlerId) + max overs (`maxOversPerBowler` or `ceil(totalOvers/5)`)
 - **TDD followed:** RED → GREEN → REFACTOR for all 4 steps (entity → state → batter widget → bowler widget)
+
+**Issue #28 completion details:**
+- 6 source files + 6 test files + 1 modified = 13 files, 67 new tests (1085 total Flutter tests)
+- **ScoringPage** (`presentation/pages/scoring_page.dart`): StatefulWidget holding ScoringNotifier. ScoringPageArgs plain class with all init fields. Layout: Column [ScoreHeader (fixed), Expanded(ScrollView with batter cards + bowler card + this-over), ScoringControls (fixed)]. PopScope for exit dialog. Auto-triggers SelectBatterSheet/SelectBowlerSheet on state change. 16 tests.
+- **ScoreHeader** (`presentation/widgets/score_header.dart`): Primary-colored container with team name, innings label, score/overs, CRR. Shows RRR/Target/Need for 2nd innings only. 11 tests.
+- **BatterCard** (`presentation/widgets/batter_card.dart`): Striker highlight (primary left border + asterisk) vs non-striker. Row: name, R, B, 4s, 6s, SR. 8 tests.
+- **BowlerCard** (`presentation/widgets/bowler_card.dart`): Wicket-red left border. Row: name, O, M, R, W, Ec. 5 tests.
+- **ThisOverDisplay** (`presentation/widgets/this_over_display.dart`): Ball indicators (colored circles per delivery using notation). Free hit badge. Color mapping: wicket→red, four→blue, six→purple, dot→grey outline. 11 tests.
+- **ScoringControls** (`presentation/widgets/scoring_controls.dart`): Run buttons (0,1,2,3,4,6 + "..." overthrow), extras row (WD,NB,B,LB,W), action bar (undo + swap). 16 tests.
+- **Router** (`app/router.dart`): Added `/scoring/:matchId` route, `scoringPath()` helper, wired toss `onStartMatch` to navigate to scoring page.
+- **Stubs:** WD/NB/B/LB → SnackBar "Extras panel — coming in Issue #29", W → "Wicket dialog — coming in Issue #30"
+- **TDD followed:** RED → GREEN → REFACTOR for all widgets (bottom-up: batter_card → bowler_card → this_over_display → score_header → scoring_controls → scoring_page → router)
 
 **Issue #26 completion details:**
 - 8 source files + 8 test files = 16 files, 333 new tests (955 total Flutter tests)

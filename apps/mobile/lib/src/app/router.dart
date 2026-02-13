@@ -14,6 +14,7 @@ import '../features/teams/presentation/pages/manage_roster_page.dart';
 import '../features/teams/presentation/pages/team_detail_page.dart';
 import '../features/scoring/presentation/notifiers/toss_notifier.dart';
 import '../features/scoring/presentation/pages/match_setup_page.dart';
+import '../features/scoring/presentation/pages/scoring_page.dart';
 import '../features/scoring/presentation/pages/toss_page.dart';
 import '../features/teams/presentation/pages/teams_list_page.dart';
 import '../features/tournaments/presentation/pages/create_tournament_page.dart';
@@ -41,6 +42,7 @@ abstract final class AppRoutes {
   static const String addPlayer = '/teams/:teamId/roster/add';
   static const String matchSetup = '/match-setup';
   static const String toss = '/toss/:matchId';
+  static const String scoring = '/scoring/:matchId';
   static const String createTournament = '/tournaments/create';
   static const String tournamentDetail = '/tournaments/:tournamentId';
   static const String tournamentStandings =
@@ -61,6 +63,9 @@ abstract final class AppRoutes {
 
   /// Build toss path with actual match ID.
   static String tossPath(String matchId) => '/toss/$matchId';
+
+  /// Build scoring path with actual match ID.
+  static String scoringPath(String matchId) => '/scoring/$matchId';
 
   /// Build tournament detail path.
   static String tournamentDetailPath(String id) => '/tournaments/$id';
@@ -228,10 +233,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             homeRoster: data['homeRoster'] as List<RosterPlayer>? ?? [],
             awayRoster: data['awayRoster'] as List<RosterPlayer>? ?? [],
             onStartMatch: () {
-              // Navigate to scoring page (placeholder for Phase 3)
-              GoRouter.of(context).go(AppRoutes.home);
+              // Navigate to scoring page with args passed via extra
+              final args = state.extra as Map<String, dynamic>? ?? {};
+              GoRouter.of(context).go(
+                AppRoutes.scoringPath(matchId),
+                extra: args,
+              );
             },
           );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.scoring,
+        builder: (context, state) {
+          final matchId = state.pathParameters['matchId']!;
+          final args = state.extra as ScoringPageArgs?;
+          if (args != null) {
+            return ScoringPage(args: args);
+          }
+          // Fallback: navigate home if no args (shouldn't happen in normal flow)
+          return const SizedBox.shrink();
         },
       ),
       GoRoute(
