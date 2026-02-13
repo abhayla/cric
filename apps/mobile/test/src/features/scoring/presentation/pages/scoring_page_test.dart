@@ -6,6 +6,7 @@ import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.d
 import 'package:cricapp/src/features/scoring/presentation/pages/scoring_page.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/extras_panel.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
+import 'package:cricapp/src/features/scoring/presentation/widgets/wicket_dialog.dart';
 
 void main() {
   List<PlayingXIPlayer> makePlayers({
@@ -170,11 +171,12 @@ void main() {
       expect(find.text('1st Innings'), findsOneWidget);
     });
 
-    testWidgets('wicket button shows snackbar stub', (tester) async {
+    testWidgets('W button opens WicketDialog', (tester) async {
       await tester.pumpWidget(buildPage());
       await tester.tap(findRunButton('W'));
-      await tester.pump();
-      expect(find.textContaining('Wicket dialog'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.byType(WicketDialog), findsOneWidget);
+      expect(find.text('Wicket!'), findsOneWidget);
     });
 
     testWidgets('This Over label is rendered', (tester) async {
@@ -277,6 +279,83 @@ void main() {
       await tester.pumpAndSettle();
       // Free hit indicator should appear
       expect(find.text('FREE HIT'), findsOneWidget);
+    });
+  });
+
+  group('ScoringPage wicket integration', () {
+    testWidgets('Bowled wicket updates score to 0/1', (tester) async {
+      await tester.pumpWidget(buildPage());
+      // Open wicket dialog
+      await tester.tap(findRunButton('W'));
+      await tester.pumpAndSettle();
+      // Select Bowled
+      await tester.tap(find.text('Bowled'));
+      await tester.pump();
+      // Confirm
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm Wicket'));
+      await tester.pumpAndSettle();
+      // Score should be 0/1
+      expect(find.text('0/1'), findsOneWidget);
+    });
+
+    testWidgets('select batter sheet auto-shows after wicket', (tester) async {
+      await tester.pumpWidget(buildPage());
+      // Record a Bowled wicket
+      await tester.tap(findRunButton('W'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bowled'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm Wicket'));
+      await tester.pumpAndSettle();
+      // Select batter sheet should auto-show
+      expect(find.text('Select New Batter'), findsOneWidget);
+    });
+
+    testWidgets('W button is disabled when innings complete', (tester) async {
+      // Use 2 players per side so 1 wicket = all out
+      await tester.pumpWidget(buildPage(playersPerSide: 2));
+      // Record Bowled wicket
+      await tester.tap(findRunButton('W'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Bowled'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm Wicket'));
+      await tester.pumpAndSettle();
+      // Innings complete (1 wicket = all out for 2 players/side)
+      // The W button (OutlinedButton) should have null onPressed
+      final wButton = find.descendant(
+        of: find.byType(ScoringControls),
+        matching: find.widgetWithText(OutlinedButton, 'W'),
+      );
+      expect(
+        tester.widget<OutlinedButton>(wButton).onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('Caught wicket with fielder updates score to 0/1',
+        (tester) async {
+      await tester.pumpWidget(buildPage());
+      // Open wicket dialog
+      await tester.tap(findRunButton('W'));
+      await tester.pumpAndSettle();
+      // Select Caught
+      await tester.tap(find.text('Caught'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      // Select fielder — use descendant of WicketDialog to avoid bowler card match
+      final fielderInDialog = find.descendant(
+        of: find.byType(WicketDialog),
+        matching: find.text('BOWL Player 1'),
+      );
+      await tester.tap(fielderInDialog);
+      await tester.pump();
+      // Confirm
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm Wicket'));
+      await tester.pumpAndSettle();
+      // Score should be 0/1
+      expect(find.text('0/1'), findsOneWidget);
     });
   });
 }

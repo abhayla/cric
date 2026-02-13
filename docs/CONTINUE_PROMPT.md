@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE. 1121 Flutter tests, 170 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE. 1168 Flutter tests, 170 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, and #29 complete. Next: Issue #30 (Wicket dialog).
+**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, and #30 complete. Next: Issue #31 (Innings transition modal).
 
 **Recent housekeeping:** Updated root CLAUDE.md (current status, removed stale TO MOVE comments). Created `apps/mobile/lib/src/features/scoring/CLAUDE.md` with delivery pipeline, state machine, and scoring domain reference.
 
@@ -29,7 +29,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #27 | Select new batter + select bowler bottom sheets | DONE | 43 |
 | #28 | Scoring page UI | DONE | 67 |
 | #29 | Extras panel | DONE | 36 |
-| #30 | Wicket dialog | TODO | - |
+| #30 | Wicket dialog | DONE | 47 |
 | #31 | Innings transition modal | TODO | - |
 | #32 | Match complete modal | TODO | - |
 | #33 | Undo functionality | TODO | - |
@@ -72,6 +72,15 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - **ScoringPage wiring**: Replaced 4 SnackBar stubs with `_showExtrasPanel(ExtraType)` → opens bottom sheet → on confirm calls `_recordExtra` which delegates to notifier's `recordWide/NoBall/Bye/LegBye`. Checks side effects (needsNewBowler/Batter) after recording. 8 integration tests (4 open + 4 confirm with score verification).
 - **Deferred:** Wicket-on-extras toggle (depends on Issue #30 Wicket Dialog). No-ball + bye combination (notifier limitation).
 - **TDD followed:** RED (tests fail at compile) → GREEN (implementation passes all tests)
+
+**Issue #30 completion details:**
+- 1 new source file + 1 new test file + 2 modified = 4 files, 47 net new tests (1168 total Flutter tests)
+- **WicketDialog** (`presentation/widgets/wicket_dialog.dart`): 3-step wizard dialog for recording dismissals. Step 1: Dismissal type grid (11 DismissalType values as chips — Timed Out/Obstruct. disabled at 0.35 opacity). Step 2: Fielder selection with search TextField + ListView (for caught/stumped/run out). Step 3: Run out details — batter toggle (striker/non-striker), batters crossed Switch, runs 0-3 ChoiceChips. Pink header (#FFEBEE) with "Wicket!" in red, close X button. Footer: Back (disabled step 1) + Next/Confirm Wicket (red FilledButton, disabled without selection). Free hit mode: only Run Out enabled.
+- **WicketDialogResult** data class: dismissalType, dismissedPlayerId, fielderId?, fielderName?, runsFromBat, battersCrossed.
+- **ScoringPage wiring**: Replaced W button stub snackbar with `_showWicketDialog()` → `showDialog` with `barrierDismissible: false` → on confirm calls `_recordWicket()` which delegates to notifier's `recordWicket()` then checks side effects (auto-shows SelectBatterSheet). Removed unused `_showStubSnackBar` method.
+- **Tests (43 widget + 4 integration):** Header (3), step 1 grid (9), button text per type (6), free hit (3), step 2 fielder (8), step 3 run out (7), confirm callbacks (5), scoring page integration (4: W opens dialog, Bowled→0/1, auto-select batter, W disabled when innings complete, Caught+fielder→0/1).
+- **TDD followed:** RED (wrote all 43 tests first) → GREEN (implemented widget until all pass) → wire into ScoringPage → integration tests
+- **Deferred:** Wide+wicket combination, direct hit toggle (YAGNI — no `recordWicket()` param)
 
 **Issue #26 completion details:**
 - 8 source files + 8 test files = 16 files, 333 new tests (955 total Flutter tests)

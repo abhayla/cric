@@ -10,6 +10,7 @@ import '../widgets/scoring_controls.dart';
 import '../widgets/select_batter_sheet.dart';
 import '../widgets/select_bowler_sheet.dart';
 import '../widgets/this_over_display.dart';
+import '../widgets/wicket_dialog.dart';
 
 /// Arguments for initializing the scoring page.
 class ScoringPageArgs {
@@ -294,10 +295,40 @@ class _ScoringPageState extends State<ScoringPage> {
     });
   }
 
-  void _showStubSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+  void _showWicketDialog() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => WicketDialog(
+        bowlingTeamPlayers: _state.bowlingTeamPlayers,
+        strikerName: _state.striker?.displayName ?? '',
+        strikerId: _state.strikerId ?? '',
+        nonStrikerName: _state.nonStriker?.displayName ?? '',
+        nonStrikerId: _state.nonStrikerId ?? '',
+        isFreeHitPending: _state.isFreeHitPending,
+        onConfirm: (result) {
+          Navigator.of(ctx).pop();
+          _recordWicket(result);
+        },
+      ),
     );
+  }
+
+  void _recordWicket(WicketDialogResult result) {
+    final prevNeedsBowler = _state.needsNewBowler;
+    final prevNeedsBatter = _state.needsNewBatter;
+
+    _notifier.recordWicket(
+      dismissalType: result.dismissalType,
+      dismissedPlayerId: result.dismissedPlayerId,
+      fielderId: result.fielderId,
+      fielderName: result.fielderName,
+      runsFromBat: result.runsFromBat,
+      battersCrossed: result.battersCrossed,
+    );
+    setState(() {});
+
+    _checkSideEffects(prevNeedsBatter, prevNeedsBowler);
   }
 
   @override
@@ -371,8 +402,7 @@ class _ScoringPageState extends State<ScoringPage> {
               onNoBallTap: () => _showExtrasPanel(ExtraType.noBall),
               onByeTap: () => _showExtrasPanel(ExtraType.bye),
               onLegByeTap: () => _showExtrasPanel(ExtraType.legBye),
-              onWicketTap: () => _showStubSnackBar(
-                  'Wicket dialog \u2014 coming in Issue #30'),
+              onWicketTap: _showWicketDialog,
               onUndoTap: _onUndo,
               onSwapStrike: _onSwapStrike,
               onOverthrowTap: _showOverthrowPicker,
