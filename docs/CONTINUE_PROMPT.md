@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE. 622 Flutter tests, 170 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE. 955 Flutter tests, 170 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,14 +16,14 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36 (server-side scoring pipeline) complete with 48 tests. Next: Issue #26 (Flutter scoring domain entities + state machine notifier).
+**Phase 3 is IN PROGRESS.** Issue #36 (server scoring pipeline) and Issue #26 (Flutter scoring domain) complete. Next: Issue #27 (Select new batter + select bowler bottom sheets).
 
 ### Phase 3 Progress (IN PROGRESS)
 
 | Issue | Title | Status | Tests |
 |-------|-------|--------|-------|
 | #36 | Scoring service: delivery recording pipeline (server) | DONE | 48 |
-| #26 | Scoring domain entities + state machine notifier (Flutter) | TODO | - |
+| #26 | Scoring domain entities + state machine notifier (Flutter) | DONE | 333 |
 | #27 | Select new batter + select bowler bottom sheets | TODO | - |
 | #28 | Scoring page UI | TODO | - |
 | #29 | Extras panel | TODO | - |
@@ -42,6 +42,22 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - `apps/server/test/services/scoring.service.test.ts` — 48 tests (basic deliveries, extras, wickets, free hit, stats updates, over completion, innings completion, validation, undo, getDeliveries, abandonMatch, declareInnings, reopenInnings, reopenMatch, configurable rules)
 - Pre-transaction validation pattern for fail-fast error handling
 - Bun test workaround: `.rejects.toThrow()` hangs with async DB functions; use `expectToReject()` helper with try-catch instead
+
+**Issue #26 completion details:**
+- 8 source files + 8 test files = 16 files, 333 new tests (955 total Flutter tests)
+- **Domain entities (6 files in `features/scoring/domain/entities/`):**
+  - `delivery.dart` — DismissalType enum (11 values with id/label/code/requiresFielder/bowlerCredited), InningsCompletionReason enum, Delivery entity (26 fields + computed: isLegal, totalRuns, isExtra, isDotBall, bowlerRunsConceded, notation)
+  - `wicket_info.dart` — WicketInfo (dismissedPlayerId, dismissalType, bowlerCredited, fielderId?, battersCrossed?)
+  - `innings.dart` — Innings entity (totals, completion state, target, super over) with computed oversDisplay, runRate, runsNeeded
+  - `batter_innings.dart` — BatterInnings (runs, balls, fours, sixes, isNotOut, isOnStrike, dismissalType) with computed strikeRate, isActive, canReturn, dismissalDescription
+  - `bowler_spell.dart` — BowlerSpell (ballsBowled, maidens, runsConceded, wicketsTaken) with computed oversDisplay, economyRate, figures
+  - `over.dart` — Over (overNumber, bowlerId, runsConceded, isMaiden, deliveries) with computed legalBalls, notation
+- **Core utility (`core/utils/scoring_utils.dart`):**
+  - Pure functions: isLegalDelivery, calculateTotalRuns, shouldSwapStrike, isOverComplete, checkInningsCompletion, isMaidenOver, isNextFreeHit, validateExtras, validateBatterPair
+- **Presentation (`features/scoring/presentation/notifiers/scoring_notifier.dart`):**
+  - ScoringState: ~30 fields covering match context, players, innings totals, over state, player stats maps, completion, UI state, undo history + 15+ computed getters
+  - ScoringNotifier: 10-step _processDelivery pipeline mirroring server, recordDelivery/Wide/NoBall/Bye/LegBye/Wicket, undoLastDelivery, swapStrike, selectNewBatter/Bowler
+- **Test breakdown:** delivery 66, wicket_info 9, innings 23, batter_innings 33, bowler_spell 20, over 12, scoring_utils 66, scoring_notifier 104
 
 ### Phase 2.5 Progress (COMPLETE)
 

@@ -1,0 +1,846 @@
+import '../../../../core/constants/cricket_constants.dart';
+import '../../../../core/utils/cricket_utils.dart';
+import '../../../../core/utils/scoring_utils.dart';
+import '../../domain/entities/batter_innings.dart';
+import '../../domain/entities/bowler_spell.dart';
+import '../../domain/entities/delivery.dart';
+import '../../domain/entities/over.dart';
+import '../../domain/entities/wicket_info.dart';
+
+/// Sentinel for [ScoringState.copyWith] to distinguish "not provided" from "set to null".
+const _unset = Object();
+
+/// Complete state for the scoring page.
+///
+/// Contains all match context, player state, innings totals, and undo history.
+/// Uses sentinel-based copyWith for nullable fields.
+class ScoringState {
+  ScoringState({
+    // Match context (immutable per innings)
+    required this.matchId,
+    required this.inningsId,
+    required this.battingTeamId,
+    required this.bowlingTeamId,
+    required this.inningsNumber,
+    required this.totalOvers,
+    required this.playersPerSide,
+    this.wideRunsPenalty = CricketConstants.defaultWideRuns,
+    this.noBallRunsPenalty = CricketConstants.defaultNoBallRuns,
+    this.battingTeamName = '',
+    this.bowlingTeamName = '',
+    // Current players
+    this.strikerId,
+    this.nonStrikerId,
+    this.bowlerId,
+    // Innings totals
+    this.totalRuns = 0,
+    this.totalWickets = 0,
+    this.totalBalls = 0,
+    this.totalExtras = 0,
+    this.totalWides = 0,
+    this.totalNoBalls = 0,
+    this.totalByes = 0,
+    this.totalLegByes = 0,
+    this.target,
+    // Over state
+    this.isFreeHitPending = false,
+    this.currentOverBalls = 0,
+    this.currentOverDeliveries = const [],
+    this.completedOvers = const [],
+    // Player stats
+    Map<String, BatterInnings>? batterStats,
+    Map<String, BowlerSpell>? bowlerStats,
+    this.lastBowlerId,
+    // Completion
+    this.isInningsComplete = false,
+    this.isMatchComplete = false,
+    this.completionReason,
+    // UI state
+    this.isProcessing = false,
+    this.error,
+    // Undo
+    this.deliveryHistory = const [],
+  })  : batterStats = batterStats ?? const {},
+        bowlerStats = bowlerStats ?? const {};
+
+  // ── Match context ──
+
+  final String matchId;
+  final String inningsId;
+  final String battingTeamId;
+  final String bowlingTeamId;
+  final int inningsNumber;
+  final int totalOvers;
+  final int playersPerSide;
+  final int wideRunsPenalty;
+  final int noBallRunsPenalty;
+  final String battingTeamName;
+  final String bowlingTeamName;
+
+  // ── Current players ──
+
+  final String? strikerId;
+  final String? nonStrikerId;
+  final String? bowlerId;
+
+  // ── Innings totals ──
+
+  final int totalRuns;
+  final int totalWickets;
+  final int totalBalls;
+  final int totalExtras;
+  final int totalWides;
+  final int totalNoBalls;
+  final int totalByes;
+  final int totalLegByes;
+  final int? target;
+
+  // ── Over state ──
+
+  final bool isFreeHitPending;
+  final int currentOverBalls;
+  final List<Delivery> currentOverDeliveries;
+  final List<Over> completedOvers;
+
+  // ── Player stats ──
+
+  final Map<String, BatterInnings> batterStats;
+  final Map<String, BowlerSpell> bowlerStats;
+  final String? lastBowlerId;
+
+  // ── Completion ──
+
+  final bool isInningsComplete;
+  final bool isMatchComplete;
+  final InningsCompletionReason? completionReason;
+
+  // ── UI state ──
+
+  final bool isProcessing;
+  final String? error;
+
+  // ── Undo ──
+
+  final List<Delivery> deliveryHistory;
+
+  // ── Computed properties ──
+
+  /// Overs display: "12.3" format.
+  String get oversDisplay => CricketUtils.formatOvers(totalBalls);
+
+  /// Current run rate.
+  double get runRate => CricketUtils.currentRunRate(totalRuns, totalBalls);
+
+  /// Runs needed to win (2nd innings chase).
+  int? get runsNeeded {
+    if (target == null) return null;
+    final needed = target! - totalRuns;
+    return needed > 0 ? needed : 0;
+  }
+
+  /// Balls remaining in the innings.
+  int get ballsRemaining => (totalOvers * CricketConstants.ballsPerOver) - totalBalls;
+
+  /// Required run rate for 2nd innings.
+  double? get requiredRunRate {
+    if (target == null) return null;
+    final needed = runsNeeded;
+    if (needed == null || needed == 0) return null;
+    return CricketUtils.requiredRunRate(needed, ballsRemaining);
+  }
+
+  /// Current striker's batting stats.
+  BatterInnings? get striker =>
+      strikerId != null ? batterStats[strikerId] : null;
+
+  /// Current non-striker's batting stats.
+  BatterInnings? get nonStriker =>
+      nonStrikerId != null ? batterStats[nonStrikerId] : null;
+
+  /// Current bowler's spell stats.
+  BowlerSpell? get currentBowler =>
+      bowlerId != null ? bowlerStats[bowlerId] : null;
+
+  /// Whether undo is available.
+  bool get canUndo => deliveryHistory.isNotEmpty && !isInningsComplete;
+
+  /// Last delivery in history.
+  Delivery? get lastDelivery =>
+      deliveryHistory.isNotEmpty ? deliveryHistory.last : null;
+
+  /// Whether a new batter needs to be selected.
+  bool get needsNewBatter =>
+      strikerId == null || nonStrikerId == null;
+
+  /// Whether a new bowler needs to be selected.
+  bool get needsNewBowler => bowlerId == null;
+
+  /// Score display: "185/6" format.
+  String get scoreDisplay => '$totalRuns/$totalWickets';
+
+  /// Current over number (1-based, in progress).
+  int get currentOverNumber => (totalBalls ~/ CricketConstants.ballsPerOver) + 1;
+
+  /// Sentinel-based copyWith for nullable fields.
+  ScoringState copyWith({
+    Object? strikerId = _unset,
+    Object? nonStrikerId = _unset,
+    Object? bowlerId = _unset,
+    int? totalRuns,
+    int? totalWickets,
+    int? totalBalls,
+    int? totalExtras,
+    int? totalWides,
+    int? totalNoBalls,
+    int? totalByes,
+    int? totalLegByes,
+    Object? target = _unset,
+    bool? isFreeHitPending,
+    int? currentOverBalls,
+    List<Delivery>? currentOverDeliveries,
+    List<Over>? completedOvers,
+    Map<String, BatterInnings>? batterStats,
+    Map<String, BowlerSpell>? bowlerStats,
+    Object? lastBowlerId = _unset,
+    bool? isInningsComplete,
+    bool? isMatchComplete,
+    Object? completionReason = _unset,
+    bool? isProcessing,
+    Object? error = _unset,
+    List<Delivery>? deliveryHistory,
+  }) {
+    return ScoringState(
+      matchId: matchId,
+      inningsId: inningsId,
+      battingTeamId: battingTeamId,
+      bowlingTeamId: bowlingTeamId,
+      inningsNumber: inningsNumber,
+      totalOvers: totalOvers,
+      playersPerSide: playersPerSide,
+      wideRunsPenalty: wideRunsPenalty,
+      noBallRunsPenalty: noBallRunsPenalty,
+      battingTeamName: battingTeamName,
+      bowlingTeamName: bowlingTeamName,
+      strikerId: identical(strikerId, _unset)
+          ? this.strikerId
+          : strikerId as String?,
+      nonStrikerId: identical(nonStrikerId, _unset)
+          ? this.nonStrikerId
+          : nonStrikerId as String?,
+      bowlerId: identical(bowlerId, _unset)
+          ? this.bowlerId
+          : bowlerId as String?,
+      totalRuns: totalRuns ?? this.totalRuns,
+      totalWickets: totalWickets ?? this.totalWickets,
+      totalBalls: totalBalls ?? this.totalBalls,
+      totalExtras: totalExtras ?? this.totalExtras,
+      totalWides: totalWides ?? this.totalWides,
+      totalNoBalls: totalNoBalls ?? this.totalNoBalls,
+      totalByes: totalByes ?? this.totalByes,
+      totalLegByes: totalLegByes ?? this.totalLegByes,
+      target: identical(target, _unset) ? this.target : target as int?,
+      isFreeHitPending: isFreeHitPending ?? this.isFreeHitPending,
+      currentOverBalls: currentOverBalls ?? this.currentOverBalls,
+      currentOverDeliveries:
+          currentOverDeliveries ?? this.currentOverDeliveries,
+      completedOvers: completedOvers ?? this.completedOvers,
+      batterStats: batterStats ?? this.batterStats,
+      bowlerStats: bowlerStats ?? this.bowlerStats,
+      lastBowlerId: identical(lastBowlerId, _unset)
+          ? this.lastBowlerId
+          : lastBowlerId as String?,
+      isInningsComplete: isInningsComplete ?? this.isInningsComplete,
+      isMatchComplete: isMatchComplete ?? this.isMatchComplete,
+      completionReason: identical(completionReason, _unset)
+          ? this.completionReason
+          : completionReason as InningsCompletionReason?,
+      isProcessing: isProcessing ?? this.isProcessing,
+      error: identical(error, _unset) ? this.error : error as String?,
+      deliveryHistory: deliveryHistory ?? this.deliveryHistory,
+    );
+  }
+}
+
+/// Scoring notifier — manages all scoring state transitions.
+///
+/// This notifier implements the client-side delivery pipeline, mirroring
+/// the server's 10-step process on pure in-memory state.
+///
+/// Will be wired to a Riverpod provider in a later issue. Tests initialize
+/// state directly.
+class ScoringNotifier {
+  ScoringNotifier(this._state);
+
+  ScoringState _state;
+  ScoringState get state => _state;
+
+  // ── Public operations ──
+
+  /// Record a normal delivery (runs from bat).
+  void recordDelivery({
+    required int runsFromBat,
+    bool isBoundaryFour = false,
+    bool isBoundarySix = false,
+  }) {
+    _processDelivery(
+      runsFromBat: runsFromBat,
+      isBoundaryFour: isBoundaryFour,
+      isBoundarySix: isBoundarySix,
+    );
+  }
+
+  /// Record a wide delivery.
+  void recordWide({int additionalRuns = 0}) {
+    _processDelivery(
+      isWide: true,
+      wideRuns: _state.wideRunsPenalty + additionalRuns,
+    );
+  }
+
+  /// Record a no-ball delivery.
+  void recordNoBall({int runsFromBat = 0}) {
+    _processDelivery(
+      isNoBall: true,
+      noBallRuns: _state.noBallRunsPenalty,
+      runsFromBat: runsFromBat,
+    );
+  }
+
+  /// Record a bye delivery.
+  void recordBye({required int byeRuns}) {
+    _processDelivery(isBye: true, byeRuns: byeRuns);
+  }
+
+  /// Record a leg-bye delivery.
+  void recordLegBye({required int legByeRuns}) {
+    _processDelivery(isLegBye: true, legByeRuns: legByeRuns);
+  }
+
+  /// Record a wicket delivery.
+  void recordWicket({
+    required DismissalType dismissalType,
+    required String dismissedPlayerId,
+    String? fielderId,
+    String? fielderName,
+    int runsFromBat = 0,
+    bool isWide = false,
+    int wideRuns = 0,
+    bool battersCrossed = false,
+  }) {
+    final wicketInfo = WicketInfo(
+      dismissedPlayerId: dismissedPlayerId,
+      dismissalType: dismissalType,
+      bowlerCredited: dismissalType.bowlerCredited,
+      fielderId: fielderId,
+      battersCrossed: battersCrossed,
+    );
+
+    _processDelivery(
+      runsFromBat: runsFromBat,
+      isWide: isWide,
+      wideRuns: isWide ? (_state.wideRunsPenalty + wideRuns) : 0,
+      isWicket: true,
+      wicketInfo: wicketInfo,
+    );
+  }
+
+  /// Undo the last delivery.
+  void undoLastDelivery() {
+    if (!_state.canUndo) return;
+
+    final lastDel = _state.deliveryHistory.last;
+    final history = List<Delivery>.from(_state.deliveryHistory)..removeLast();
+
+    // Reverse innings totals
+    final newTotalRuns = _state.totalRuns - lastDel.totalRuns;
+    var newTotalBalls = _state.totalBalls;
+    var newTotalExtras = _state.totalExtras;
+    var newTotalWides = _state.totalWides;
+    var newTotalNoBalls = _state.totalNoBalls;
+    var newTotalByes = _state.totalByes;
+    var newTotalLegByes = _state.totalLegByes;
+    var newTotalWickets = _state.totalWickets;
+
+    if (lastDel.isLegal) newTotalBalls--;
+    if (lastDel.isWide) {
+      newTotalExtras -= lastDel.wideRuns;
+      newTotalWides -= lastDel.wideRuns;
+    }
+    if (lastDel.isNoBall) {
+      newTotalExtras -= lastDel.noBallRuns;
+      newTotalNoBalls -= lastDel.noBallRuns;
+    }
+    if (lastDel.isBye) {
+      newTotalExtras -= lastDel.byeRuns;
+      newTotalByes -= lastDel.byeRuns;
+    }
+    if (lastDel.isLegBye) {
+      newTotalExtras -= lastDel.legByeRuns;
+      newTotalLegByes -= lastDel.legByeRuns;
+    }
+    if (lastDel.isWicket) newTotalWickets--;
+
+    // Reverse batter stats
+    final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
+    final strikerStats = newBatterStats[lastDel.strikerId];
+    if (strikerStats != null && !lastDel.isWide) {
+      var updatedBatter = strikerStats.copyWith(
+        ballsFaced: strikerStats.ballsFaced - (lastDel.isLegal ? 1 : 0),
+      );
+      if (!lastDel.isBye && !lastDel.isLegBye) {
+        updatedBatter = updatedBatter.copyWith(
+          runsScored: strikerStats.runsScored - lastDel.runsFromBat,
+          fours: strikerStats.fours - (lastDel.isBoundaryFour ? 1 : 0),
+          sixes: strikerStats.sixes - (lastDel.isBoundarySix ? 1 : 0),
+        );
+      }
+      if (lastDel.isWicket &&
+          lastDel.wicketInfo?.dismissedPlayerId == lastDel.strikerId) {
+        updatedBatter = updatedBatter.copyWith(isNotOut: true);
+      }
+      newBatterStats[lastDel.strikerId] = updatedBatter;
+    }
+
+    // Reverse bowler stats
+    final newBowlerStats = Map<String, BowlerSpell>.from(_state.bowlerStats);
+    final bowlerStat = newBowlerStats[lastDel.bowlerId];
+    if (bowlerStat != null) {
+      newBowlerStats[lastDel.bowlerId] = bowlerStat.copyWith(
+        ballsBowled: bowlerStat.ballsBowled - (lastDel.isLegal ? 1 : 0),
+        runsConceded: bowlerStat.runsConceded - lastDel.bowlerRunsConceded,
+        wicketsTaken: bowlerStat.wicketsTaken -
+            (lastDel.isWicket && (lastDel.wicketInfo?.bowlerCredited ?? false)
+                ? 1
+                : 0),
+        wides: bowlerStat.wides - (lastDel.isWide ? 1 : 0),
+        noBalls: bowlerStat.noBalls - (lastDel.isNoBall ? 1 : 0),
+        dotBalls: bowlerStat.dotBalls - (lastDel.isDotBall ? 1 : 0),
+      );
+    }
+
+    // Reverse strike change
+    final shouldHaveSwapped = ScoringUtils.shouldSwapStrike(
+      runsFromBat: lastDel.runsFromBat,
+      isWide: lastDel.isWide,
+      wideRuns: lastDel.wideRuns,
+      isBye: lastDel.isBye,
+      byeRuns: lastDel.byeRuns,
+      isLegBye: lastDel.isLegBye,
+      legByeRuns: lastDel.legByeRuns,
+    );
+
+    String? newStrikerId = lastDel.strikerId;
+    String? newNonStrikerId = lastDel.nonStrikerId;
+
+    if (lastDel.isWicket &&
+        lastDel.wicketInfo?.dismissedPlayerId == lastDel.strikerId) {
+      // Restore dismissed striker
+      newStrikerId = lastDel.strikerId;
+      newNonStrikerId = lastDel.nonStrikerId;
+    } else if (shouldHaveSwapped) {
+      // Reverse the swap that occurred
+      newStrikerId = lastDel.strikerId;
+      newNonStrikerId = lastDel.nonStrikerId;
+    }
+
+    // Update on-strike markers in batter stats
+    for (final key in newBatterStats.keys) {
+      newBatterStats[key] = newBatterStats[key]!.copyWith(
+        isOnStrike: key == newStrikerId,
+      );
+    }
+
+    // Reverse over state
+    var newCurrentOverBalls = _state.currentOverBalls;
+    var newCurrentOverDeliveries =
+        List<Delivery>.from(_state.currentOverDeliveries);
+    final newCompletedOvers = List<Over>.from(_state.completedOvers);
+
+    if (newCurrentOverDeliveries.isNotEmpty &&
+        newCurrentOverDeliveries.last.id == lastDel.id) {
+      newCurrentOverDeliveries.removeLast();
+    }
+    if (lastDel.isLegal) newCurrentOverBalls--;
+
+    // If we're undoing the first ball of a new over, reopen previous over
+    if (newCurrentOverBalls < 0 && newCompletedOvers.isNotEmpty) {
+      final previousOver = newCompletedOvers.removeLast();
+      newCurrentOverDeliveries =
+          List<Delivery>.from(previousOver.deliveries);
+      newCurrentOverBalls = previousOver.legalBalls - 1;
+      if (newCurrentOverDeliveries.isNotEmpty) {
+        newCurrentOverDeliveries.removeLast();
+      }
+    }
+
+    // Determine free hit state from previous delivery in history
+    bool newFreeHitPending = false;
+    if (history.isNotEmpty) {
+      final prevDel = history.last;
+      newFreeHitPending = ScoringUtils.isNextFreeHit(
+        previousWasNoBall: prevDel.isNoBall,
+        previousWasFreeHit: prevDel.isFreeHit,
+        previousWasLegal: prevDel.isLegal,
+      );
+    }
+
+    _state = _state.copyWith(
+      totalRuns: newTotalRuns,
+      totalBalls: newTotalBalls,
+      totalWickets: newTotalWickets,
+      totalExtras: newTotalExtras,
+      totalWides: newTotalWides,
+      totalNoBalls: newTotalNoBalls,
+      totalByes: newTotalByes,
+      totalLegByes: newTotalLegByes,
+      strikerId: newStrikerId,
+      nonStrikerId: newNonStrikerId,
+      batterStats: newBatterStats,
+      bowlerStats: newBowlerStats,
+      currentOverBalls: newCurrentOverBalls,
+      currentOverDeliveries: newCurrentOverDeliveries,
+      completedOvers: newCompletedOvers,
+      isFreeHitPending: newFreeHitPending,
+      deliveryHistory: history,
+    );
+  }
+
+  /// Manually swap strike (UI button).
+  void swapStrike() {
+    if (_state.strikerId == null || _state.nonStrikerId == null) return;
+
+    final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
+    final oldStrikerId = _state.strikerId!;
+    final oldNonStrikerId = _state.nonStrikerId!;
+
+    if (newBatterStats.containsKey(oldStrikerId)) {
+      newBatterStats[oldStrikerId] =
+          newBatterStats[oldStrikerId]!.copyWith(isOnStrike: false);
+    }
+    if (newBatterStats.containsKey(oldNonStrikerId)) {
+      newBatterStats[oldNonStrikerId] =
+          newBatterStats[oldNonStrikerId]!.copyWith(isOnStrike: true);
+    }
+
+    _state = _state.copyWith(
+      strikerId: oldNonStrikerId,
+      nonStrikerId: oldStrikerId,
+      batterStats: newBatterStats,
+    );
+  }
+
+  /// Select a new batter (after wicket or to start).
+  void selectNewBatter({
+    required String playerId,
+    required String displayName,
+  }) {
+    final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
+    newBatterStats[playerId] = BatterInnings(
+      playerId: playerId,
+      displayName: displayName,
+      isOnStrike: _state.strikerId == null,
+    );
+
+    if (_state.strikerId == null) {
+      _state = _state.copyWith(
+        strikerId: playerId,
+        batterStats: newBatterStats,
+      );
+    } else {
+      _state = _state.copyWith(
+        nonStrikerId: playerId,
+        batterStats: newBatterStats,
+      );
+    }
+  }
+
+  /// Select a new bowler (at start of over or after wicket).
+  void selectNewBowler({
+    required String playerId,
+    required String displayName,
+  }) {
+    final newBowlerStats = Map<String, BowlerSpell>.from(_state.bowlerStats);
+    if (!newBowlerStats.containsKey(playerId)) {
+      newBowlerStats[playerId] = BowlerSpell(
+        playerId: playerId,
+        displayName: displayName,
+      );
+    }
+
+    _state = _state.copyWith(
+      bowlerId: playerId,
+      bowlerStats: newBowlerStats,
+    );
+  }
+
+  // ── Internal pipeline ──
+
+  void _processDelivery({
+    int runsFromBat = 0,
+    bool isWide = false,
+    int wideRuns = 0,
+    bool isNoBall = false,
+    int noBallRuns = 0,
+    bool isBye = false,
+    int byeRuns = 0,
+    bool isLegBye = false,
+    int legByeRuns = 0,
+    bool isWicket = false,
+    bool isBoundaryFour = false,
+    bool isBoundarySix = false,
+    bool isPenalty = false,
+    WicketInfo? wicketInfo,
+  }) {
+    if (_state.isInningsComplete) return;
+
+    // Step 1: Determine legal status
+    final isLegal = ScoringUtils.isLegalDelivery(
+      isWide: isWide,
+      isNoBall: isNoBall,
+      isPenalty: isPenalty,
+    );
+
+    // Step 2: Calculate total runs
+    final totalDeliveryRuns = ScoringUtils.calculateTotalRuns(
+      runsFromBat: runsFromBat,
+      wideRuns: wideRuns,
+      noBallRuns: noBallRuns,
+      byeRuns: byeRuns,
+      legByeRuns: legByeRuns,
+    );
+
+    // Step 3: Create delivery record
+    final delivery = Delivery(
+      id: 'del-${_state.deliveryHistory.length + 1}',
+      inningsId: _state.inningsId,
+      overNumber: _state.currentOverNumber,
+      ballNumber: _state.currentOverBalls + 1,
+      sequenceNumber: _state.deliveryHistory.length + 1,
+      strikerId: _state.strikerId ?? '',
+      nonStrikerId: _state.nonStrikerId ?? '',
+      bowlerId: _state.bowlerId ?? '',
+      runsFromBat: runsFromBat,
+      isWide: isWide,
+      wideRuns: wideRuns,
+      isNoBall: isNoBall,
+      noBallRuns: noBallRuns,
+      isBye: isBye,
+      byeRuns: byeRuns,
+      isLegBye: isLegBye,
+      legByeRuns: legByeRuns,
+      isWicket: isWicket,
+      isBoundaryFour: isBoundaryFour,
+      isBoundarySix: isBoundarySix,
+      isFreeHit: _state.isFreeHitPending,
+      isPenalty: isPenalty,
+      wicketInfo: wicketInfo,
+    );
+
+    // Step 4: Update innings totals
+    final newTotalRuns = _state.totalRuns + totalDeliveryRuns;
+    final newTotalBalls = _state.totalBalls + (isLegal ? 1 : 0);
+    var newTotalExtras = _state.totalExtras;
+    var newTotalWides = _state.totalWides;
+    var newTotalNoBalls = _state.totalNoBalls;
+    var newTotalByes = _state.totalByes;
+    var newTotalLegByes = _state.totalLegByes;
+    var newTotalWickets = _state.totalWickets;
+
+    if (isWide) {
+      newTotalExtras += wideRuns;
+      newTotalWides += wideRuns;
+    }
+    if (isNoBall) {
+      newTotalExtras += noBallRuns;
+      newTotalNoBalls += noBallRuns;
+    }
+    if (isBye) {
+      newTotalExtras += byeRuns;
+      newTotalByes += byeRuns;
+    }
+    if (isLegBye) {
+      newTotalExtras += legByeRuns;
+      newTotalLegByes += legByeRuns;
+    }
+    if (isWicket) newTotalWickets++;
+
+    // Step 5: Update batter stats
+    final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
+    if (_state.strikerId != null && !isWide) {
+      final currentBatter = newBatterStats[_state.strikerId!];
+      if (currentBatter != null) {
+        var updatedBatter = currentBatter;
+        if (isLegal) {
+          updatedBatter = updatedBatter.copyWith(
+            ballsFaced: currentBatter.ballsFaced + 1,
+          );
+        }
+        if (!isBye && !isLegBye) {
+          updatedBatter = updatedBatter.copyWith(
+            runsScored: currentBatter.runsScored + runsFromBat,
+            fours: currentBatter.fours + (isBoundaryFour ? 1 : 0),
+            sixes: currentBatter.sixes + (isBoundarySix ? 1 : 0),
+          );
+        }
+        if (isWicket &&
+            wicketInfo?.dismissedPlayerId == _state.strikerId) {
+          updatedBatter = updatedBatter.copyWith(
+            isNotOut: false,
+            dismissalType: wicketInfo?.dismissalType,
+          );
+        }
+        newBatterStats[_state.strikerId!] = updatedBatter;
+      }
+    }
+
+    // Step 6: Update bowler stats
+    final newBowlerStats = Map<String, BowlerSpell>.from(_state.bowlerStats);
+    if (_state.bowlerId != null) {
+      final currentBowler = newBowlerStats[_state.bowlerId!];
+      if (currentBowler != null) {
+        final bowlerRunsConceded = runsFromBat + wideRuns + noBallRuns;
+        newBowlerStats[_state.bowlerId!] = currentBowler.copyWith(
+          ballsBowled: currentBowler.ballsBowled + (isLegal ? 1 : 0),
+          runsConceded: currentBowler.runsConceded + bowlerRunsConceded,
+          wicketsTaken: currentBowler.wicketsTaken +
+              (isWicket && (wicketInfo?.bowlerCredited ?? false) ? 1 : 0),
+          wides: currentBowler.wides + (isWide ? 1 : 0),
+          noBalls: currentBowler.noBalls + (isNoBall ? 1 : 0),
+          dotBalls: currentBowler.dotBalls +
+              (totalDeliveryRuns == 0 && isLegal ? 1 : 0),
+        );
+      }
+    }
+
+    // Step 7: Calculate strike change
+    final shouldSwap = ScoringUtils.shouldSwapStrike(
+      runsFromBat: runsFromBat,
+      isWide: isWide,
+      wideRuns: wideRuns,
+      isBye: isBye,
+      byeRuns: byeRuns,
+      isLegBye: isLegBye,
+      legByeRuns: legByeRuns,
+    );
+
+    String? newStrikerId = _state.strikerId;
+    String? newNonStrikerId = _state.nonStrikerId;
+
+    if (isWicket && wicketInfo != null) {
+      // Wicket: mark dismissed, need new batter at striker end
+      newStrikerId = null; // Needs new batter selection
+      // Keep non-striker as is
+    } else if (shouldSwap) {
+      final temp = newStrikerId;
+      newStrikerId = newNonStrikerId;
+      newNonStrikerId = temp;
+    }
+
+    // Update on-strike markers
+    for (final key in newBatterStats.keys) {
+      newBatterStats[key] = newBatterStats[key]!.copyWith(
+        isOnStrike: key == newStrikerId,
+      );
+    }
+
+    // Step 8: Check over completion
+    var newCurrentOverBalls = _state.currentOverBalls + (isLegal ? 1 : 0);
+    var newCurrentOverDeliveries =
+        List<Delivery>.from(_state.currentOverDeliveries)..add(delivery);
+    final newCompletedOvers = List<Over>.from(_state.completedOvers);
+    String? newLastBowlerId = _state.lastBowlerId;
+
+    final overComplete = ScoringUtils.isOverComplete(newCurrentOverBalls);
+    if (overComplete) {
+      final isMaiden = ScoringUtils.isMaidenOver(newCurrentOverDeliveries);
+      newCompletedOvers.add(Over(
+        overNumber: _state.currentOverNumber,
+        bowlerId: _state.bowlerId ?? '',
+        bowlerName: newBowlerStats[_state.bowlerId]?.displayName ?? '',
+        runsConceded: newCurrentOverDeliveries.fold(
+          0,
+          (sum, d) => sum + d.bowlerRunsConceded,
+        ),
+        wicketsTaken: newCurrentOverDeliveries.where((d) => d.isWicket).length,
+        isMaiden: isMaiden,
+        deliveries: List.unmodifiable(newCurrentOverDeliveries),
+      ));
+
+      // Update bowler maiden count
+      if (isMaiden && _state.bowlerId != null) {
+        final bowler = newBowlerStats[_state.bowlerId!];
+        if (bowler != null) {
+          newBowlerStats[_state.bowlerId!] = bowler.copyWith(
+            maidens: bowler.maidens + 1,
+          );
+        }
+      }
+
+      newLastBowlerId = _state.bowlerId;
+      newCurrentOverBalls = 0;
+      newCurrentOverDeliveries = [];
+
+      // End of over: swap strike (unless wicket already caused null striker)
+      if (newStrikerId != null && newNonStrikerId != null) {
+        final temp = newStrikerId;
+        newStrikerId = newNonStrikerId;
+        newNonStrikerId = temp;
+
+        for (final key in newBatterStats.keys) {
+          newBatterStats[key] = newBatterStats[key]!.copyWith(
+            isOnStrike: key == newStrikerId,
+          );
+        }
+      }
+
+      // Need new bowler
+    }
+
+    // Step 9: Determine free hit state
+    final newFreeHitPending = ScoringUtils.isNextFreeHit(
+      previousWasNoBall: isNoBall,
+      previousWasFreeHit: _state.isFreeHitPending,
+      previousWasLegal: isLegal,
+    );
+
+    // Step 10: Check innings completion
+    final completionReason = ScoringUtils.checkInningsCompletion(
+      totalWickets: newTotalWickets,
+      playersPerSide: _state.playersPerSide,
+      totalBalls: newTotalBalls,
+      totalOvers: _state.totalOvers,
+      totalRuns: newTotalRuns,
+      target: _state.target,
+      inningsNumber: _state.inningsNumber,
+    );
+
+    final isInningsComplete = completionReason != null;
+    final isMatchComplete = isInningsComplete && _state.inningsNumber >= 2;
+
+    // Commit state
+    _state = _state.copyWith(
+      totalRuns: newTotalRuns,
+      totalBalls: newTotalBalls,
+      totalWickets: newTotalWickets,
+      totalExtras: newTotalExtras,
+      totalWides: newTotalWides,
+      totalNoBalls: newTotalNoBalls,
+      totalByes: newTotalByes,
+      totalLegByes: newTotalLegByes,
+      strikerId: newStrikerId,
+      nonStrikerId: newNonStrikerId,
+      bowlerId: overComplete ? null : _state.bowlerId,
+      batterStats: newBatterStats,
+      bowlerStats: newBowlerStats,
+      currentOverBalls: newCurrentOverBalls,
+      currentOverDeliveries: newCurrentOverDeliveries,
+      completedOvers: newCompletedOvers,
+      lastBowlerId: newLastBowlerId,
+      isFreeHitPending: newFreeHitPending,
+      isInningsComplete: isInningsComplete,
+      isMatchComplete: isMatchComplete,
+      completionReason: completionReason,
+      deliveryHistory: [..._state.deliveryHistory, delivery],
+    );
+  }
+}
