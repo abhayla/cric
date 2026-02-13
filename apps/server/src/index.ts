@@ -8,6 +8,7 @@ import { authRoutes } from './routes/v1/auth.ts';
 import { teamRoutes } from './routes/v1/teams.ts';
 import { playerRoutes } from './routes/v1/players.ts';
 import { matchRoutes } from './routes/v1/matches.ts';
+import { tournamentRoutes } from './routes/v1/tournaments.ts';
 
 initFirebase();
 
@@ -19,6 +20,7 @@ const app = new Elysia()
   .use(teamRoutes)
   .use(playerRoutes)
   .use(matchRoutes)
+  .use(tournamentRoutes)
   .listen(env.PORT);
 
 console.log(

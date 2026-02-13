@@ -16,6 +16,12 @@ import '../features/scoring/presentation/notifiers/toss_notifier.dart';
 import '../features/scoring/presentation/pages/match_setup_page.dart';
 import '../features/scoring/presentation/pages/toss_page.dart';
 import '../features/teams/presentation/pages/teams_list_page.dart';
+import '../features/tournaments/presentation/pages/create_tournament_page.dart';
+import '../features/tournaments/presentation/pages/knockout_bracket_page.dart';
+import '../features/tournaments/presentation/pages/standings_page.dart';
+import '../features/tournaments/presentation/pages/tournament_detail_page.dart';
+import '../features/tournaments/presentation/pages/tournament_leaderboard_page.dart';
+import '../features/tournaments/presentation/pages/tournaments_list_page.dart';
 import 'providers.dart';
 
 /// Route paths.
@@ -35,6 +41,14 @@ abstract final class AppRoutes {
   static const String addPlayer = '/teams/:teamId/roster/add';
   static const String matchSetup = '/match-setup';
   static const String toss = '/toss/:matchId';
+  static const String createTournament = '/tournaments/create';
+  static const String tournamentDetail = '/tournaments/:tournamentId';
+  static const String tournamentStandings =
+      '/tournaments/:tournamentId/standings';
+  static const String tournamentBracket =
+      '/tournaments/:tournamentId/bracket';
+  static const String tournamentLeaderboard =
+      '/tournaments/:tournamentId/leaderboard';
 
   /// Build team detail path with actual ID.
   static String teamDetailPath(String teamId) => '/teams/$teamId';
@@ -47,6 +61,21 @@ abstract final class AppRoutes {
 
   /// Build toss path with actual match ID.
   static String tossPath(String matchId) => '/toss/$matchId';
+
+  /// Build tournament detail path.
+  static String tournamentDetailPath(String id) => '/tournaments/$id';
+
+  /// Build tournament standings path.
+  static String tournamentStandingsPath(String id) =>
+      '/tournaments/$id/standings';
+
+  /// Build tournament bracket path.
+  static String tournamentBracketPath(String id) =>
+      '/tournaments/$id/bracket';
+
+  /// Build tournament leaderboard path.
+  static String tournamentLeaderboardPath(String id) =>
+      '/tournaments/$id/leaderboard';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -205,6 +234,44 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      GoRoute(
+        path: AppRoutes.createTournament,
+        builder: (context, state) => CreateTournamentPage(
+          onCreated: (tournamentId) {
+            GoRouter.of(context).go(
+              AppRoutes.tournamentDetailPath(tournamentId),
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.tournamentDetail,
+        builder: (context, state) {
+          final id = state.pathParameters['tournamentId']!;
+          return TournamentDetailPage(tournamentId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.tournamentStandings,
+        builder: (context, state) {
+          final id = state.pathParameters['tournamentId']!;
+          return StandingsPage(tournamentId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.tournamentBracket,
+        builder: (context, state) {
+          final id = state.pathParameters['tournamentId']!;
+          return KnockoutBracketPage(tournamentId: id);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.tournamentLeaderboard,
+        builder: (context, state) {
+          final id = state.pathParameters['tournamentId']!;
+          return TournamentLeaderboardPage(tournamentId: id);
+        },
+      ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => _AppShell(child: child),
@@ -224,7 +291,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.tournaments,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: _PlaceholderPage('Tournaments'),
+              child: TournamentsListPage(),
             ),
           ),
           GoRoute(

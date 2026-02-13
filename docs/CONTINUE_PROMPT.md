@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 2 IN PROGRESS — Teams CRUD done (#12-#18), Match API (#19) done, Match entities/data (#20) done
+**Status:** Phase 2.5 COMPLETE — All 10 issues (#25-#34) done. 622 Flutter tests, 122 server tests. Next: Phase 3 (Scoring Engine).
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,9 +16,32 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 2 is COMPLETE.** All 13 issues (#12-#24) done. Proceed to Phase 2.5 (Tournament Management) or Phase 3 (Scoring Engine).
+**Phase 2.5 is COMPLETE.** All 10 issues (#25-#34) done. Proceed to Phase 3 (Scoring Engine).
 
-### Phase 2 Progress (IN PROGRESS)
+### Phase 2.5 Progress (COMPLETE)
+
+| Issue | Title | Status | Tests |
+|-------|-------|--------|-------|
+| #25 | Tournament domain entities + repository interface | DONE | 108 |
+| #26 | Tournament API — CRUD, registration, fixtures, standings | DONE | 122 (server) |
+| #27 | Tournament data layer (models, datasource, repository) | DONE | 42 |
+| #28 | Tournaments List page | DONE | 12 |
+| #29 | Create Tournament page | DONE | 14 |
+| #30 | Tournament Detail page (3 tabs) | DONE | 12 |
+| #31 | Standings page | DONE | 6 |
+| #32 | Knockout Bracket page | DONE | 6 |
+| #33 | Tournament Leaderboard page | DONE | 6 |
+| #34 | Routing integration | DONE | 0 (routing) |
+
+**Total:** 622 Flutter tests passing, 122 server tests passing. All 6 tournament screens implemented with TDD.
+
+**Deferred from Phase 2.5 (to Phase 3):**
+- Super over (requires scoring engine)
+- Standings update on match completion (requires match completion flow)
+- Tournament leaderboard data (requires completed matches with stats)
+- Drift tournament tables for offline caching (YAGNI — no current code needs them)
+
+### Phase 2 Progress (COMPLETE)
 
 | Issue | Title | Status | Commit |
 |-------|-------|--------|--------|
@@ -34,9 +57,9 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #21 | Match Setup page | DONE | `4848b68` |
 | #22 | Toss page with 5-step wizard | DONE | `fc8f3b7` |
 | #23 | Drift local DB + offline caching | DONE | `25b93b5` |
-| #24 | Phase 2 routing integration | DONE | (pending PR) |
+| #24 | Phase 2 routing integration | DONE | `5286469` |
 
-**Phase 2 COMPLETE.** Next: Phase 2.5 (Tournaments) or Phase 3 (Scoring Engine).
+**Phase 2 COMPLETE.** Phase 2.5 (Tournaments) also COMPLETE. Next: Phase 3 (Scoring Engine).
 
 ### Issue #24 Completion Summary
 
