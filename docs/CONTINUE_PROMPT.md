@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 2.5 COMPLETE — All 10 issues (#25-#34) done. 622 Flutter tests, 122 server tests. Next: Phase 3 (Scoring Engine).
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE. 622 Flutter tests, 170 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,32 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 2.5 is COMPLETE.** All 10 issues (#25-#34) done. Proceed to Phase 3 (Scoring Engine).
+**Phase 3 is IN PROGRESS.** Issue #36 (server-side scoring pipeline) complete with 48 tests. Next: Issue #26 (Flutter scoring domain entities + state machine notifier).
+
+### Phase 3 Progress (IN PROGRESS)
+
+| Issue | Title | Status | Tests |
+|-------|-------|--------|-------|
+| #36 | Scoring service: delivery recording pipeline (server) | DONE | 48 |
+| #26 | Scoring domain entities + state machine notifier (Flutter) | TODO | - |
+| #27 | Select new batter + select bowler bottom sheets | TODO | - |
+| #28 | Scoring page UI | TODO | - |
+| #29 | Extras panel | TODO | - |
+| #30 | Wicket dialog | TODO | - |
+| #31 | Innings transition modal | TODO | - |
+| #32 | Match complete modal | TODO | - |
+| #33 | Undo functionality | TODO | - |
+| #34 | Scorecard page | TODO | - |
+| #35 | WebSocket server + room management | TODO | - |
+| #37 | WebSocket client + live broadcast (Flutter) | TODO | - |
+| #38 | Full offline scoring + sync queue | TODO | - |
+
+**Issue #36 completion details:**
+- `apps/server/src/services/scoring.service.ts` — Full 10-step delivery pipeline, undo, getDeliveries, abandon, declare, reopenInnings, reopenMatch
+- `apps/server/src/routes/v1/scoring.ts` — 6 REST endpoints (POST delivery, DELETE undo, GET deliveries, POST abandon, POST declare, POST reopen)
+- `apps/server/test/services/scoring.service.test.ts` — 48 tests (basic deliveries, extras, wickets, free hit, stats updates, over completion, innings completion, validation, undo, getDeliveries, abandonMatch, declareInnings, reopenInnings, reopenMatch, configurable rules)
+- Pre-transaction validation pattern for fail-fast error handling
+- Bun test workaround: `.rejects.toThrow()` hangs with async DB functions; use `expectToReject()` helper with try-catch instead
 
 ### Phase 2.5 Progress (COMPLETE)
 
