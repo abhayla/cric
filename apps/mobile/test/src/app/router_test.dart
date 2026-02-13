@@ -41,7 +41,16 @@ void main() {
       );
     });
 
-    test('all 13 routes defined', () {
+    test('match setup route path', () {
+      expect(AppRoutes.matchSetup, '/match-setup');
+    });
+
+    test('toss route path', () {
+      expect(AppRoutes.toss, '/toss/:matchId');
+      expect(AppRoutes.tossPath('match-456'), '/toss/match-456');
+    });
+
+    test('all 15 routes defined', () {
       final routes = [
         AppRoutes.splash,
         AppRoutes.login,
@@ -56,9 +65,11 @@ void main() {
         AppRoutes.manageRoster,
         AppRoutes.addPlayer,
         AppRoutes.profile,
+        AppRoutes.matchSetup,
+        AppRoutes.toss,
       ];
-      expect(routes.length, 13);
-      expect(routes.toSet().length, 13); // All unique
+      expect(routes.length, 15);
+      expect(routes.toSet().length, 15); // All unique
     });
   });
 }

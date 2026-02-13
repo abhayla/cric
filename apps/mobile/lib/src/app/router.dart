@@ -12,6 +12,9 @@ import '../features/teams/presentation/pages/add_player_page.dart';
 import '../features/teams/presentation/pages/create_team_page.dart';
 import '../features/teams/presentation/pages/manage_roster_page.dart';
 import '../features/teams/presentation/pages/team_detail_page.dart';
+import '../features/scoring/presentation/notifiers/toss_notifier.dart';
+import '../features/scoring/presentation/pages/match_setup_page.dart';
+import '../features/scoring/presentation/pages/toss_page.dart';
 import '../features/teams/presentation/pages/teams_list_page.dart';
 import 'providers.dart';
 
@@ -30,6 +33,8 @@ abstract final class AppRoutes {
   static const String teamDetail = '/teams/:teamId';
   static const String manageRoster = '/teams/:teamId/roster';
   static const String addPlayer = '/teams/:teamId/roster/add';
+  static const String matchSetup = '/match-setup';
+  static const String toss = '/toss/:matchId';
 
   /// Build team detail path with actual ID.
   static String teamDetailPath(String teamId) => '/teams/$teamId';
@@ -39,6 +44,9 @@ abstract final class AppRoutes {
 
   /// Build add player path with actual ID.
   static String addPlayerPath(String teamId) => '/teams/$teamId/roster/add';
+
+  /// Build toss path with actual match ID.
+  static String tossPath(String matchId) => '/toss/$matchId';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -155,6 +163,44 @@ final routerProvider = Provider<GoRouter>((ref) {
             onAddExisting: (playerId) {
               // TODO: Call API to add existing player to team
               GoRouter.of(context).pop();
+            },
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.matchSetup,
+        builder: (context, state) => MatchSetupPage(
+          onMatchCreated: (matchId) {
+            // After match created, navigate to toss page
+            // Toss page data will be passed via extra
+            final tossData = state.extra as Map<String, dynamic>?;
+            GoRouter.of(context).go(
+              AppRoutes.tossPath(matchId),
+              extra: tossData,
+            );
+          },
+          onNavigateToCreateTeam: () {
+            GoRouter.of(context).push(AppRoutes.createTeam);
+          },
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.toss,
+        builder: (context, state) {
+          final matchId = state.pathParameters['matchId']!;
+          final data = state.extra as Map<String, dynamic>? ?? {};
+          return TossPage(
+            matchId: matchId,
+            homeTeamId: data['homeTeamId'] as String? ?? '',
+            homeTeamName: data['homeTeamName'] as String? ?? '',
+            awayTeamId: data['awayTeamId'] as String? ?? '',
+            awayTeamName: data['awayTeamName'] as String? ?? '',
+            playersPerSide: data['playersPerSide'] as int? ?? 11,
+            homeRoster: data['homeRoster'] as List<RosterPlayer>? ?? [],
+            awayRoster: data['awayRoster'] as List<RosterPlayer>? ?? [],
+            onStartMatch: () {
+              // Navigate to scoring page (placeholder for Phase 3)
+              GoRouter.of(context).go(AppRoutes.home);
             },
           );
         },
