@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 2 IN PROGRESS — Teams CRUD done (#12-#18), Match API (#19) done
+**Status:** Phase 2 IN PROGRESS — Teams CRUD done (#12-#18), Match API (#19) done, Match entities/data (#20) done
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 2 is IN PROGRESS.** Teams CRUD (#12-#18) and Match API (#19) are complete. Continue with remaining Phase 2 issues.
+**Phase 2 is IN PROGRESS.** Teams CRUD (#12-#18), Match API (#19), and Match entities/data (#20) are complete. Continue with remaining Phase 2 issues (#21-#24).
 
 ### Phase 2 Progress (IN PROGRESS)
 
@@ -29,9 +29,24 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #16 | Create Team page | DONE | `84eb7aa` |
 | #17 | Team Detail page | DONE | `2184582` |
 | #18 | Manage Roster + Add Player pages | DONE | `3ec6696` |
-| #19 | Match API: creation, toss, playing XI | DONE | (pending commit) |
+| #19 | Match API: creation, toss, playing XI | DONE | `1b60372` |
+| #20 | Match domain entities and data layer | DONE | `6fcee62` |
 
-**Phase 2 remaining:** Match setup Flutter UI, toss flow Flutter UI, Drift local DB, offline caching.
+**Phase 2 remaining:** #21 Match Setup page, #22 Toss page, #23 Drift local DB, #24 Routing integration.
+
+### Issue #20 Completion Summary
+
+Match domain entities and data layer (62 tests, TDD workflow):
+
+**Domain layer:**
+- `match.dart`: MatchStatus (6 states), TossDecision (bat/field with bowl API mapping), MatchFormat (t20/odi/test/custom), Match entity (22 fields, computed: title, effectiveMaxOversPerBowler, formatLabel, isLive, isCompleted, isTournamentMatch), PlayingXIEntry (with badge: C/WK/C&WK), Match validation (overs 1-50, players 2-11, different teams)
+- `match_repository.dart`: MatchListResult, CreateMatchInput, RecordTossInput, SetPlayingXIInput DTOs + abstract MatchRepository (5 methods)
+
+**Data layer:**
+- `match_model.dart`: Freezed MatchModel/PlayingXIModel with toEntity() extensions
+- `match_remote_datasource.dart`: Dio HTTP for all 5 match endpoints (create, list, detail, playing XI, toss)
+- `match_repository_impl.dart`: Converts domain types (MatchFormat.apiValue, TossDecision.apiValue)
+- `providers.dart`: Riverpod providers (datasource, repository, matchDetail, matchesList)
 
 ### Phase 1 Progress (COMPLETE)
 
