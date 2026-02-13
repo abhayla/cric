@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE. 1215 Flutter tests, 170 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE, Issue #32 (Match complete modal) DONE. 1255 Flutter tests, 170 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, and #31 complete. Next: Issue #32 (Match complete modal).
+**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, #31, and #32 complete. Next: Issue #33 (Undo functionality).
 
 **Recent housekeeping:** Updated root CLAUDE.md (current status, removed stale TO MOVE comments). Created `apps/mobile/lib/src/features/scoring/CLAUDE.md` with delivery pipeline, state machine, and scoring domain reference.
 
@@ -31,7 +31,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #29 | Extras panel | DONE | 36 |
 | #30 | Wicket dialog | DONE | 47 |
 | #31 | Innings transition modal | DONE | 47 |
-| #32 | Match complete modal | TODO | - |
+| #32 | Match complete modal | DONE | 40 |
 | #33 | Undo functionality | TODO | - |
 | #34 | Scorecard page | TODO | - |
 | #35 | WebSocket server + room management | TODO | - |
@@ -89,6 +89,18 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - **ScoringNotifier additions:** `FallOfWicket` class (wicketNumber, scoreAtFall, oversAtFall, dismissedPlayerName). `fallOfWickets` computed getter on ScoringState (iterates deliveryHistory). `declareInnings()` (1st innings only, guards). `startSecondInnings()` (creates fresh ScoringState with swapped teams, target, resets, calls selectNewBatter/selectNewBowler).
 - **ScoringPage wiring:** `_checkSideEffects` now takes `prevIsInningsComplete` param. Early return on innings completion: 1st innings → `_showInningsTransitionModal()`, 2nd innings → match complete SnackBar stub. `_showInningsTransitionModal()` computes top performers, shows non-dismissible dialog. `_handleInningsTransition()` calls `startSecondInnings()`.
 - **Tests (17 notifier + 25 widget + 5 integration):** declareInnings (3), fallOfWickets (4), startSecondInnings (10), modal header (2), step 1 summary (9), step navigation (4), step 2 openers (6), step 3 bowler (4), scoring page integration (5: all-out modal, overs-exhausted modal, completing modal transitions, target shown, match complete snackbar).
+- **TDD followed:** RED → GREEN → REFACTOR for notifier layer, widget layer, then integration wiring.
+
+**Issue #32 completion details:**
+- 2 new source files + 2 new test files + 2 modified = 6 files, 40 net new tests (1255 total Flutter tests)
+- **FirstInningsSummary** class in `scoring_notifier.dart`: Captures 1st innings snapshot (teamName, teamId, totalRuns, totalWickets, totalBalls, oversDisplay) with `scoreDisplay` computed getter. Stored in `ScoringState.firstInningsSummary` (nullable), populated by `startSecondInnings()` before state replacement.
+- **MatchResultType** enum (runs, wickets, tie) + **MatchResult** class (winnerTeamId?, winnerTeamName?, resultType, margin?, resultDescription). Mirrors server `completeMatch()` logic at `scoring.service.ts:1204-1222`.
+- **ScoringState.matchResult** computed getter: Returns null if match not complete or no firstInningsSummary. Computes: 1st > 2nd → runs victory (margin = difference), 2nd > 1st → wickets victory (margin = playersPerSide - 1 - wickets), equal → tie.
+- **MatchCompleteModal** (`presentation/widgets/match_complete_modal.dart`): StatelessWidget. Layout: ConstrainedBox(400) → Material(rounded) → Column [header(primaryContainer), scoreComparison(primary bg with team avatars/initials/scores/overs + VS), resultText(headlineSmall bold primary), footer(FilledButton View Scorecard + OutlinedButton Back to Home)].
+- **MatchCompleteAction** enum (viewScorecard, backToHome).
+- **ScoringPage wiring:** Replaced SnackBar stub with `_showMatchCompleteModal()` (non-dismissible dialog). `_handleMatchCompleteAction()`: viewScorecard → stub SnackBar (Issue #34), backToHome → Navigator.pop. Added optional `firstInningsSummary` to ScoringPageArgs for test injection.
+- **Tests (30 notifier + 17 widget + 4 integration - 1 updated):** FirstInningsSummary (3), MatchResult (4), ScoringState.firstInningsSummary (3), ScoringState.matchResult (7), startSecondInnings captures (3), notifier sub-total = 20 new; widget header (2), score comparison (8), result text (3), footer actions (4), widget sub-total = 17; integration: modal appears (1 updated), correct result (1), back to home (1), view scorecard stub (1) = 4 new.
+- **Deferred:** Super Over button (no tournament/knockout context), Man of the Match (Phase 5+), View Scorecard navigation (Issue #34).
 - **TDD followed:** RED → GREEN → REFACTOR for notifier layer, widget layer, then integration wiring.
 
 **Issue #26 completion details:**

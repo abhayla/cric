@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cricapp/src/core/theme/app_colors.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
 import 'package:cricapp/src/features/scoring/presentation/pages/scoring_page.dart';
+import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/extras_panel.dart';
+import 'package:cricapp/src/features/scoring/presentation/widgets/match_complete_modal.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/wicket_dialog.dart';
@@ -45,6 +47,7 @@ void main() {
     String openingNonStrikerName = 'BAT Player 2',
     String openingBowlerId = 'bowl-0',
     String openingBowlerName = 'BOWL Player 1',
+    FirstInningsSummary? firstInningsSummary,
   }) {
     return MaterialApp(
       theme: ThemeData(
@@ -74,6 +77,7 @@ void main() {
           openingNonStrikerName: openingNonStrikerName,
           openingBowlerId: openingBowlerId,
           openingBowlerName: openingBowlerName,
+          firstInningsSummary: firstInningsSummary,
         ),
       ),
     );
@@ -482,19 +486,155 @@ void main() {
       expect(find.textContaining('5'), findsWidgets);
     });
 
-    testWidgets('2nd innings completion shows match complete snackbar',
+    testWidgets('2nd innings completion shows match complete modal',
         (tester) async {
-      // Set up 2nd innings directly with target
+      // Set up 2nd innings directly with target and firstInningsSummary
       await tester.pumpWidget(buildPage(
         inningsNumber: 2,
         target: 5,
+        battingTeamName: 'Delhi Strikers',
+        bowlingTeamName: 'Mumbai Warriors',
         playersPerSide: 11,
+        firstInningsSummary: const FirstInningsSummary(
+          teamName: 'Mumbai Warriors',
+          teamId: 'team-mw',
+          totalRuns: 4,
+          totalWickets: 10,
+          totalBalls: 30,
+          oversDisplay: '5.0',
+        ),
       ));
       // Score a six to chase down target
       await tester.tap(findRunButton('6'));
       await tester.pumpAndSettle();
-      // Should show match complete snackbar
-      expect(find.textContaining('Match complete'), findsOneWidget);
+      // Should show match complete modal
+      expect(find.byType(MatchCompleteModal), findsOneWidget);
+      expect(find.text('Match Complete!'), findsOneWidget);
+    });
+
+    testWidgets('match complete modal shows correct result text',
+        (tester) async {
+      await tester.pumpWidget(buildPage(
+        inningsNumber: 2,
+        target: 5,
+        battingTeamName: 'Delhi Strikers',
+        bowlingTeamName: 'Mumbai Warriors',
+        playersPerSide: 11,
+        firstInningsSummary: const FirstInningsSummary(
+          teamName: 'Mumbai Warriors',
+          teamId: 'team-mw',
+          totalRuns: 4,
+          totalWickets: 10,
+          totalBalls: 30,
+          oversDisplay: '5.0',
+        ),
+      ));
+      // Score a six to chase target of 5
+      await tester.tap(findRunButton('6'));
+      await tester.pumpAndSettle();
+      // Delhi Strikers chased successfully → won by wickets
+      expect(find.text('Delhi Strikers won by 10 wickets'), findsOneWidget);
+    });
+
+    testWidgets('Back to Home dismisses modal and pops page', (tester) async {
+      // Wrap in Navigator to test pop
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.seed,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+        ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ScoringPage(
+                      args: ScoringPageArgs(
+                        matchId: 'match-1',
+                        inningsId: 'inn-2',
+                        battingTeamId: 'bat-team',
+                        bowlingTeamId: 'bowl-team',
+                        battingTeamName: 'Delhi Strikers',
+                        bowlingTeamName: 'Mumbai Warriors',
+                        inningsNumber: 2,
+                        totalOvers: 20,
+                        playersPerSide: 11,
+                        target: 5,
+                        battingTeamPlayers: makePlayers(prefix: 'bat'),
+                        bowlingTeamPlayers: makePlayers(prefix: 'bowl'),
+                        openingStrikerId: 'bat-0',
+                        openingStrikerName: 'BAT Player 1',
+                        openingNonStrikerId: 'bat-1',
+                        openingNonStrikerName: 'BAT Player 2',
+                        openingBowlerId: 'bowl-0',
+                        openingBowlerName: 'BOWL Player 1',
+                        firstInningsSummary: const FirstInningsSummary(
+                          teamName: 'Mumbai Warriors',
+                          teamId: 'team-mw',
+                          totalRuns: 4,
+                          totalWickets: 10,
+                          totalBalls: 30,
+                          oversDisplay: '5.0',
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Go'),
+            ),
+          ),
+        ),
+      ));
+
+      // Navigate to scoring page
+      await tester.tap(find.text('Go'));
+      await tester.pumpAndSettle();
+
+      // Score a six to complete the match
+      await tester.tap(findRunButton('6'));
+      await tester.pumpAndSettle();
+
+      // Modal should be visible
+      expect(find.byType(MatchCompleteModal), findsOneWidget);
+
+      // Tap Back to Home
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Back to Home'));
+      await tester.pumpAndSettle();
+
+      // Modal should be dismissed and page popped (back to home)
+      expect(find.byType(MatchCompleteModal), findsNothing);
+      expect(find.byType(ScoringPage), findsNothing);
+    });
+
+    testWidgets('View Scorecard shows stub snackbar', (tester) async {
+      await tester.pumpWidget(buildPage(
+        inningsNumber: 2,
+        target: 5,
+        battingTeamName: 'Delhi Strikers',
+        bowlingTeamName: 'Mumbai Warriors',
+        playersPerSide: 11,
+        firstInningsSummary: const FirstInningsSummary(
+          teamName: 'Mumbai Warriors',
+          teamId: 'team-mw',
+          totalRuns: 4,
+          totalWickets: 10,
+          totalBalls: 30,
+          oversDisplay: '5.0',
+        ),
+      ));
+      // Score a six to complete match
+      await tester.tap(findRunButton('6'));
+      await tester.pumpAndSettle();
+      // Tap View Scorecard
+      await tester.tap(find.widgetWithText(FilledButton, 'View Scorecard'));
+      await tester.pumpAndSettle();
+      // Should show stub snackbar
+      expect(find.textContaining('Issue #34'), findsOneWidget);
     });
   });
 }

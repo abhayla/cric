@@ -67,6 +67,51 @@ class BowlerOption {
   }
 }
 
+/// Snapshot of the 1st innings score, captured before 2nd innings transition.
+///
+/// Since [ScoringState] is entirely replaced when starting the 2nd innings,
+/// this preserves the 1st innings data needed for the match complete modal.
+class FirstInningsSummary {
+  const FirstInningsSummary({
+    required this.teamName,
+    required this.teamId,
+    required this.totalRuns,
+    required this.totalWickets,
+    required this.totalBalls,
+    required this.oversDisplay,
+  });
+
+  final String teamName;
+  final String teamId;
+  final int totalRuns;
+  final int totalWickets;
+  final int totalBalls;
+  final String oversDisplay;
+
+  /// Score display: "187/6" format.
+  String get scoreDisplay => '$totalRuns/$totalWickets';
+}
+
+/// Result type for a completed match.
+enum MatchResultType { runs, wickets, tie }
+
+/// Computed match result after both innings are complete.
+class MatchResult {
+  const MatchResult({
+    this.winnerTeamId,
+    this.winnerTeamName,
+    required this.resultType,
+    this.margin,
+    required this.resultDescription,
+  });
+
+  final String? winnerTeamId;
+  final String? winnerTeamName;
+  final MatchResultType resultType;
+  final int? margin;
+  final String resultDescription;
+}
+
 /// Sentinel for [ScoringState.copyWith] to distinguish "not provided" from "set to null".
 const _unset = Object();
 
@@ -124,6 +169,8 @@ class ScoringState {
     this.error,
     // Undo
     this.deliveryHistory = const [],
+    // 1st innings snapshot (populated after startSecondInnings)
+    this.firstInningsSummary,
   })  : batterStats = batterStats ?? const {},
         bowlerStats = bowlerStats ?? const {};
 
@@ -192,6 +239,10 @@ class ScoringState {
   // ── Undo ──
 
   final List<Delivery> deliveryHistory;
+
+  // ── 1st innings snapshot ──
+
+  final FirstInningsSummary? firstInningsSummary;
 
   // ── Computed properties ──
 
@@ -329,6 +380,49 @@ class ScoringState {
     return result;
   }
 
+  /// Computed match result — mirrors server's `completeMatch()` logic.
+  ///
+  /// Returns null if the match is not complete or first innings summary is missing.
+  MatchResult? get matchResult {
+    if (!isMatchComplete) return null;
+    if (firstInningsSummary == null) return null;
+
+    final firstRuns = firstInningsSummary!.totalRuns;
+    final secondRuns = totalRuns;
+
+    if (firstRuns > secondRuns) {
+      // 1st batting team wins by runs
+      final margin = firstRuns - secondRuns;
+      return MatchResult(
+        winnerTeamId: firstInningsSummary!.teamId,
+        winnerTeamName: firstInningsSummary!.teamName,
+        resultType: MatchResultType.runs,
+        margin: margin,
+        resultDescription:
+            '${firstInningsSummary!.teamName} won by $margin runs',
+      );
+    } else if (secondRuns > firstRuns) {
+      // 2nd batting team wins by wickets
+      final margin = playersPerSide - 1 - totalWickets;
+      return MatchResult(
+        winnerTeamId: battingTeamId,
+        winnerTeamName: battingTeamName,
+        resultType: MatchResultType.wickets,
+        margin: margin,
+        resultDescription: '$battingTeamName won by $margin wickets',
+      );
+    } else {
+      // Tie
+      return const MatchResult(
+        winnerTeamId: null,
+        winnerTeamName: null,
+        resultType: MatchResultType.tie,
+        margin: null,
+        resultDescription: 'Match Tied',
+      );
+    }
+  }
+
   /// Sentinel-based copyWith for nullable fields.
   ScoringState copyWith({
     List<PlayingXIPlayer>? battingTeamPlayers,
@@ -359,6 +453,7 @@ class ScoringState {
     bool? isProcessing,
     Object? error = _unset,
     List<Delivery>? deliveryHistory,
+    Object? firstInningsSummary = _unset,
   }) {
     return ScoringState(
       matchId: matchId,
@@ -415,6 +510,9 @@ class ScoringState {
       isProcessing: isProcessing ?? this.isProcessing,
       error: identical(error, _unset) ? this.error : error as String?,
       deliveryHistory: deliveryHistory ?? this.deliveryHistory,
+      firstInningsSummary: identical(firstInningsSummary, _unset)
+          ? this.firstInningsSummary
+          : firstInningsSummary as FirstInningsSummary?,
     );
   }
 }
@@ -691,6 +789,16 @@ class ScoringNotifier {
 
     final target = _state.totalRuns + 1;
 
+    // Capture 1st innings snapshot before replacing state
+    final firstSummary = FirstInningsSummary(
+      teamName: _state.battingTeamName,
+      teamId: _state.battingTeamId,
+      totalRuns: _state.totalRuns,
+      totalWickets: _state.totalWickets,
+      totalBalls: _state.totalBalls,
+      oversDisplay: _state.oversDisplay,
+    );
+
     _state = ScoringState(
       matchId: _state.matchId,
       inningsId: '${_state.inningsId}-2',
@@ -707,6 +815,7 @@ class ScoringNotifier {
       noBallRunsPenalty: _state.noBallRunsPenalty,
       maxOversPerBowler: _state.maxOversPerBowler,
       target: target,
+      firstInningsSummary: firstSummary,
     );
 
     // Set up opening players

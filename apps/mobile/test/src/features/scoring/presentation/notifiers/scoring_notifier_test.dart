@@ -1858,4 +1858,419 @@ void main() {
       expect(n.state.inningsNumber, prevState.inningsNumber);
     });
   });
+
+  // ── FirstInningsSummary ──────────────────────────────────────────────
+
+  group('FirstInningsSummary', () {
+    test('constructs with all fields', () {
+      const summary = FirstInningsSummary(
+        teamName: 'Mumbai Warriors',
+        teamId: 'team-mw',
+        totalRuns: 187,
+        totalWickets: 6,
+        totalBalls: 120,
+        oversDisplay: '20.0',
+      );
+
+      expect(summary.teamName, 'Mumbai Warriors');
+      expect(summary.teamId, 'team-mw');
+      expect(summary.totalRuns, 187);
+      expect(summary.totalWickets, 6);
+      expect(summary.totalBalls, 120);
+      expect(summary.oversDisplay, '20.0');
+    });
+
+    test('score display format', () {
+      const summary = FirstInningsSummary(
+        teamName: 'Team A',
+        teamId: 'ta',
+        totalRuns: 150,
+        totalWickets: 10,
+        totalBalls: 108,
+        oversDisplay: '18.0',
+      );
+
+      expect(summary.scoreDisplay, '150/10');
+    });
+
+    test('zero score', () {
+      const summary = FirstInningsSummary(
+        teamName: 'Team A',
+        teamId: 'ta',
+        totalRuns: 0,
+        totalWickets: 0,
+        totalBalls: 0,
+        oversDisplay: '0.0',
+      );
+
+      expect(summary.scoreDisplay, '0/0');
+      expect(summary.oversDisplay, '0.0');
+    });
+  });
+
+  // ── MatchResult ──────────────────────────────────────────────────────
+
+  group('MatchResult', () {
+    test('constructs for runs victory', () {
+      const result = MatchResult(
+        winnerTeamId: 'team-mw',
+        winnerTeamName: 'Mumbai Warriors',
+        resultType: MatchResultType.runs,
+        margin: 15,
+        resultDescription: 'Mumbai Warriors won by 15 runs',
+      );
+
+      expect(result.winnerTeamId, 'team-mw');
+      expect(result.winnerTeamName, 'Mumbai Warriors');
+      expect(result.resultType, MatchResultType.runs);
+      expect(result.margin, 15);
+      expect(result.resultDescription, 'Mumbai Warriors won by 15 runs');
+    });
+
+    test('constructs for wickets victory', () {
+      const result = MatchResult(
+        winnerTeamId: 'team-ds',
+        winnerTeamName: 'Delhi Strikers',
+        resultType: MatchResultType.wickets,
+        margin: 5,
+        resultDescription: 'Delhi Strikers won by 5 wickets',
+      );
+
+      expect(result.resultType, MatchResultType.wickets);
+      expect(result.margin, 5);
+    });
+
+    test('constructs for tie', () {
+      const result = MatchResult(
+        winnerTeamId: null,
+        winnerTeamName: null,
+        resultType: MatchResultType.tie,
+        margin: null,
+        resultDescription: 'Match Tied',
+      );
+
+      expect(result.winnerTeamId, isNull);
+      expect(result.winnerTeamName, isNull);
+      expect(result.margin, isNull);
+      expect(result.resultDescription, 'Match Tied');
+    });
+
+    test('MatchResultType enum values', () {
+      expect(MatchResultType.values, hasLength(3));
+      expect(MatchResultType.values, contains(MatchResultType.runs));
+      expect(MatchResultType.values, contains(MatchResultType.wickets));
+      expect(MatchResultType.values, contains(MatchResultType.tie));
+    });
+  });
+
+  // ── ScoringState.firstInningsSummary ─────────────────────────────────
+
+  group('ScoringState.firstInningsSummary', () {
+    test('defaults to null', () {
+      final s = makeState();
+      expect(s.firstInningsSummary, isNull);
+    });
+
+    test('copyWith preserves when not provided', () {
+      const summary = FirstInningsSummary(
+        teamName: 'Team A',
+        teamId: 'ta',
+        totalRuns: 100,
+        totalWickets: 5,
+        totalBalls: 60,
+        oversDisplay: '10.0',
+      );
+      final s = makeState().copyWith(firstInningsSummary: summary);
+      final s2 = s.copyWith(totalRuns: 50);
+      expect(s2.firstInningsSummary, isNotNull);
+      expect(s2.firstInningsSummary!.totalRuns, 100);
+    });
+
+    test('copyWith can set value', () {
+      const summary = FirstInningsSummary(
+        teamName: 'Team A',
+        teamId: 'ta',
+        totalRuns: 200,
+        totalWickets: 8,
+        totalBalls: 120,
+        oversDisplay: '20.0',
+      );
+      final s = makeState().copyWith(firstInningsSummary: summary);
+      expect(s.firstInningsSummary, isNotNull);
+      expect(s.firstInningsSummary!.teamName, 'Team A');
+      expect(s.firstInningsSummary!.totalRuns, 200);
+    });
+  });
+
+  // ── ScoringState.matchResult getter ──────────────────────────────────
+
+  group('ScoringState.matchResult', () {
+    ScoringState makeSecondInningsState({
+      required int firstInningsRuns,
+      required String firstTeamName,
+      required String firstTeamId,
+      required int secondInningsRuns,
+      required int secondInningsWickets,
+      required String secondTeamName,
+      required String secondTeamId,
+      int playersPerSide = 11,
+      bool isMatchComplete = true,
+    }) {
+      final summary = FirstInningsSummary(
+        teamName: firstTeamName,
+        teamId: firstTeamId,
+        totalRuns: firstInningsRuns,
+        totalWickets: 5,
+        totalBalls: 120,
+        oversDisplay: '20.0',
+      );
+      return ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-2',
+        battingTeamId: secondTeamId,
+        bowlingTeamId: firstTeamId,
+        battingTeamName: secondTeamName,
+        bowlingTeamName: firstTeamName,
+        inningsNumber: 2,
+        totalOvers: 20,
+        playersPerSide: playersPerSide,
+        totalRuns: secondInningsRuns,
+        totalWickets: secondInningsWickets,
+        target: firstInningsRuns + 1,
+        isInningsComplete: isMatchComplete,
+        isMatchComplete: isMatchComplete,
+        firstInningsSummary: summary,
+      );
+    }
+
+    test('returns null when match not complete', () {
+      final s = makeState();
+      expect(s.matchResult, isNull);
+    });
+
+    test('returns null when firstInningsSummary is null', () {
+      final s = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-2',
+        battingTeamId: 'team-b',
+        bowlingTeamId: 'team-a',
+        inningsNumber: 2,
+        totalOvers: 20,
+        playersPerSide: 11,
+        isMatchComplete: true,
+        isInningsComplete: true,
+        totalRuns: 100,
+      );
+      expect(s.matchResult, isNull);
+    });
+
+    test('computes runs victory when 1st team scored more', () {
+      final s = makeSecondInningsState(
+        firstInningsRuns: 187,
+        firstTeamName: 'Mumbai Warriors',
+        firstTeamId: 'team-mw',
+        secondInningsRuns: 172,
+        secondInningsWickets: 9,
+        secondTeamName: 'Delhi Strikers',
+        secondTeamId: 'team-ds',
+      );
+
+      final result = s.matchResult!;
+      expect(result.resultType, MatchResultType.runs);
+      expect(result.winnerTeamId, 'team-mw');
+      expect(result.winnerTeamName, 'Mumbai Warriors');
+      expect(result.margin, 15);
+      expect(result.resultDescription, 'Mumbai Warriors won by 15 runs');
+    });
+
+    test('computes wickets victory when 2nd team scored more', () {
+      final s = makeSecondInningsState(
+        firstInningsRuns: 150,
+        firstTeamName: 'Team Alpha',
+        firstTeamId: 'team-a',
+        secondInningsRuns: 151,
+        secondInningsWickets: 5,
+        secondTeamName: 'Team Beta',
+        secondTeamId: 'team-b',
+      );
+
+      final result = s.matchResult!;
+      expect(result.resultType, MatchResultType.wickets);
+      expect(result.winnerTeamId, 'team-b');
+      expect(result.winnerTeamName, 'Team Beta');
+      expect(result.margin, 5); // 11 - 1 - 5 = 5
+      expect(result.resultDescription, 'Team Beta won by 5 wickets');
+    });
+
+    test('computes tie when scores equal', () {
+      final s = makeSecondInningsState(
+        firstInningsRuns: 150,
+        firstTeamName: 'Team Alpha',
+        firstTeamId: 'team-a',
+        secondInningsRuns: 150,
+        secondInningsWickets: 10,
+        secondTeamName: 'Team Beta',
+        secondTeamId: 'team-b',
+      );
+
+      final result = s.matchResult!;
+      expect(result.resultType, MatchResultType.tie);
+      expect(result.winnerTeamId, isNull);
+      expect(result.winnerTeamName, isNull);
+      expect(result.margin, isNull);
+      expect(result.resultDescription, 'Match Tied');
+    });
+
+    test('all-out still shows correct runs margin', () {
+      final s = makeSecondInningsState(
+        firstInningsRuns: 200,
+        firstTeamName: 'Team Alpha',
+        firstTeamId: 'team-a',
+        secondInningsRuns: 100,
+        secondInningsWickets: 10,
+        secondTeamName: 'Team Beta',
+        secondTeamId: 'team-b',
+      );
+
+      final result = s.matchResult!;
+      expect(result.resultType, MatchResultType.runs);
+      expect(result.margin, 100);
+    });
+
+    test('target chased with 0 wickets shows won by N wickets', () {
+      final s = makeSecondInningsState(
+        firstInningsRuns: 100,
+        firstTeamName: 'Team Alpha',
+        firstTeamId: 'team-a',
+        secondInningsRuns: 101,
+        secondInningsWickets: 0,
+        secondTeamName: 'Team Beta',
+        secondTeamId: 'team-b',
+      );
+
+      final result = s.matchResult!;
+      expect(result.resultType, MatchResultType.wickets);
+      expect(result.margin, 10); // 11 - 1 - 0 = 10
+      expect(result.resultDescription, 'Team Beta won by 10 wickets');
+    });
+  });
+
+  // ── startSecondInnings captures first innings ────────────────────────
+
+  group('startSecondInnings captures first innings summary', () {
+    List<PlayingXIPlayer> makeBattingPlayers() {
+      return List.generate(
+        11,
+        (i) => PlayingXIPlayer(
+          playerId: 'bat-${i + 1}',
+          displayName: 'Bat Player ${i + 1}',
+        ),
+      );
+    }
+
+    List<PlayingXIPlayer> makeBowlingPlayers() {
+      return List.generate(
+        11,
+        (i) => PlayingXIPlayer(
+          playerId: 'bowl-${i + 1}',
+          displayName: 'Bowl Player ${i + 1}',
+        ),
+      );
+    }
+
+    ScoringNotifier makeCompleteNotifier({
+      int totalRuns = 150,
+      int totalWickets = 5,
+      int totalBalls = 60,
+    }) {
+      final state = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-1',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        battingTeamName: 'Team Alpha',
+        bowlingTeamName: 'Team Beta',
+        battingTeamPlayers: makeBattingPlayers(),
+        bowlingTeamPlayers: makeBowlingPlayers(),
+        strikerId: 'bat-1',
+        nonStrikerId: 'bat-2',
+        bowlerId: 'bowl-1',
+        batterStats: {
+          'bat-1': const BatterInnings(
+            playerId: 'bat-1',
+            displayName: 'Bat Player 1',
+            runsScored: 80,
+            isOnStrike: true,
+          ),
+          'bat-2': const BatterInnings(
+            playerId: 'bat-2',
+            displayName: 'Bat Player 2',
+            runsScored: 40,
+          ),
+        },
+        bowlerStats: {
+          'bowl-1': const BowlerSpell(
+            playerId: 'bowl-1',
+            displayName: 'Bowl Player 1',
+          ),
+        },
+        totalRuns: totalRuns,
+        totalWickets: totalWickets,
+        totalBalls: totalBalls,
+        isInningsComplete: true,
+        completionReason: InningsCompletionReason.oversExhausted,
+      );
+      return ScoringNotifier(state);
+    }
+
+    void doTransition(ScoringNotifier n) {
+      n.startSecondInnings(
+        strikerId: 'bowl-1',
+        strikerName: 'Bowl Player 1',
+        nonStrikerId: 'bowl-2',
+        nonStrikerName: 'Bowl Player 2',
+        bowlerId: 'bat-1',
+        bowlerName: 'Bat Player 1',
+      );
+    }
+
+    test('firstInningsSummary is populated after transition', () {
+      final n = makeCompleteNotifier();
+      doTransition(n);
+      expect(n.state.firstInningsSummary, isNotNull);
+    });
+
+    test('summary has correct teamName, totalRuns, totalWickets, totalBalls, oversDisplay', () {
+      final n = makeCompleteNotifier(
+        totalRuns: 150,
+        totalWickets: 5,
+        totalBalls: 60,
+      );
+      doTransition(n);
+
+      final summary = n.state.firstInningsSummary!;
+      expect(summary.teamName, 'Team Alpha');
+      expect(summary.teamId, 'team-a');
+      expect(summary.totalRuns, 150);
+      expect(summary.totalWickets, 5);
+      expect(summary.totalBalls, 60);
+      expect(summary.oversDisplay, '10.0');
+    });
+
+    test('firstInningsSummary persists through 2nd innings deliveries', () {
+      final n = makeCompleteNotifier();
+      doTransition(n);
+
+      // Record some deliveries in 2nd innings
+      n.recordDelivery(runsFromBat: 4);
+      n.recordDelivery(runsFromBat: 1);
+
+      expect(n.state.firstInningsSummary, isNotNull);
+      expect(n.state.firstInningsSummary!.totalRuns, 150);
+      expect(n.state.totalRuns, 5); // 2nd innings runs
+    });
+  });
 }

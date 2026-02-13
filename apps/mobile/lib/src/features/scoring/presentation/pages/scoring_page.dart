@@ -11,6 +11,7 @@ import '../widgets/select_batter_sheet.dart';
 import '../widgets/select_bowler_sheet.dart';
 import '../widgets/this_over_display.dart';
 import '../widgets/innings_transition_modal.dart';
+import '../widgets/match_complete_modal.dart';
 import '../widgets/wicket_dialog.dart';
 
 /// Arguments for initializing the scoring page.
@@ -36,6 +37,7 @@ class ScoringPageArgs {
     required this.openingNonStrikerName,
     required this.openingBowlerId,
     required this.openingBowlerName,
+    this.firstInningsSummary,
   });
 
   final String matchId;
@@ -58,6 +60,7 @@ class ScoringPageArgs {
   final String openingNonStrikerName;
   final String openingBowlerId;
   final String openingBowlerName;
+  final FirstInningsSummary? firstInningsSummary;
 }
 
 /// Main scoring page where the scorer records deliveries ball-by-ball.
@@ -92,6 +95,7 @@ class _ScoringPageState extends State<ScoringPage> {
       noBallRunsPenalty: args.noBallRunsPenalty,
       battingTeamPlayers: args.battingTeamPlayers,
       bowlingTeamPlayers: args.bowlingTeamPlayers,
+      firstInningsSummary: args.firstInningsSummary,
     );
     _notifier = ScoringNotifier(state);
 
@@ -182,11 +186,7 @@ class _ScoringPageState extends State<ScoringPage> {
       if (_state.inningsNumber == 1) {
         _showInningsTransitionModal();
       } else if (_state.isMatchComplete) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Match complete! — coming in Issue #32'),
-          ),
-        );
+        _showMatchCompleteModal();
       }
       return; // Skip batter/bowler sheets when innings is complete
     }
@@ -251,6 +251,44 @@ class _ScoringPageState extends State<ScoringPage> {
       bowlerName: result.bowlerName,
     );
     setState(() {});
+  }
+
+  void _showMatchCompleteModal() {
+    final summary = _state.firstInningsSummary;
+    final result = _state.matchResult;
+    if (summary == null || result == null) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Center(
+        child: MatchCompleteModal(
+          firstInnings: summary,
+          secondTeamName: _state.battingTeamName,
+          secondTotalRuns: _state.totalRuns,
+          secondTotalWickets: _state.totalWickets,
+          secondOversDisplay: _state.oversDisplay,
+          matchResult: result,
+          onAction: (action) {
+            Navigator.of(ctx).pop();
+            _handleMatchCompleteAction(action);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _handleMatchCompleteAction(MatchCompleteAction action) {
+    switch (action) {
+      case MatchCompleteAction.viewScorecard:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Scorecard — coming in Issue #34'),
+          ),
+        );
+      case MatchCompleteAction.backToHome:
+        Navigator.of(context).pop();
+    }
   }
 
   void _showSelectBatterSheet() {
