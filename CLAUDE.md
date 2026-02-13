@@ -39,7 +39,7 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 
 ## Current Status
 
-Planning is 100% complete. **No code has been implemented yet** — `apps/mobile/` and `apps/server/` directories do not exist. Start implementation from Phase 1 in the implementation plan.
+**Phase 3 (Scoring Engine) IN PROGRESS.** Issues #36, #26, #27, #28, #29 complete. Next: Issue #30 (Wicket dialog). 1121 Flutter tests, 170 server tests. See [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) for detailed progress and next steps.
 
 ## Implementation Phases
 
@@ -178,10 +178,6 @@ During Phase 1 project init, split platform-specific rules into per-directory CL
 - `apps/mobile/CLAUDE.md` — Flutter naming, Riverpod, Drift, feature architecture (~80 lines)
 - `apps/server/CLAUDE.md` — TypeScript naming, ElysiaJS, Drizzle (~60 lines)
 - `apps/mobile/lib/src/features/scoring/CLAUDE.md` — delivery pipeline, state machine, strike rotation (~100 lines)
-
-<!-- TO MOVE: apps/mobile/CLAUDE.md — "Feature Architecture Pattern" section + Dart naming conventions -->
-<!-- TO MOVE: apps/server/CLAUDE.md — TypeScript naming conventions + Drizzle patterns -->
-<!-- TO MOVE: apps/mobile/lib/src/features/scoring/CLAUDE.md — "Cricket Domain Rules" section -->
 
 ## Feature Architecture Pattern
 

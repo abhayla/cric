@@ -18,6 +18,8 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 **Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, and #29 complete. Next: Issue #30 (Wicket dialog).
 
+**Recent housekeeping:** Updated root CLAUDE.md (current status, removed stale TO MOVE comments). Created `apps/mobile/lib/src/features/scoring/CLAUDE.md` with delivery pipeline, state machine, and scoring domain reference.
+
 ### Phase 3 Progress (IN PROGRESS)
 
 | Issue | Title | Status | Tests |
