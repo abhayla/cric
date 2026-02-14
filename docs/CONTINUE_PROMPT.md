@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE, Issue #32 (Match complete modal) DONE, Issue #33 (Undo functionality) DONE, Issue #37 (Scorecard page) DONE. 1332 Flutter tests, 170 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE, Issue #32 (Match complete modal) DONE, Issue #33 (Undo functionality) DONE, Issue #37 (Scorecard page) DONE, Issue #38 (WebSocket server + room management) DONE. 1332 Flutter tests, 202 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, #31, #32, #33, and #37 complete. Next: Issue #35 (WebSocket server + room management).
+**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, #31, #32, #33, #37, and #38 complete. Next: WebSocket client + live broadcast (Flutter), then Full offline scoring + sync queue.
 
 **Recent housekeeping:** Updated root CLAUDE.md (current status, removed stale TO MOVE comments). Created `apps/mobile/lib/src/features/scoring/CLAUDE.md` with delivery pipeline, state machine, and scoring domain reference.
 
@@ -34,9 +34,9 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #32 | Match complete modal | DONE | 40 |
 | #33 | Undo functionality | DONE | 15 |
 | #37 | Scorecard page | DONE | 62 |
-| #35 | WebSocket server + room management | TODO | - |
-| #37 | WebSocket client + live broadcast (Flutter) | TODO | - |
-| #38 | Full offline scoring + sync queue | TODO | - |
+| #38 | WebSocket server + room management | DONE | 32 |
+| - | WebSocket client + live broadcast (Flutter) | TODO | - |
+| - | Full offline scoring + sync queue | TODO | - |
 
 **Issue #36 completion details:**
 - `apps/server/src/services/scoring.service.ts` — Full 10-step delivery pipeline, undo, getDeliveries, abandon, declare, reopenInnings, reopenMatch
@@ -124,6 +124,16 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - **ScoringPage wiring:** `_handleMatchCompleteAction(viewScorecard)` creates `ScorecardData` from state and navigates via `Navigator.pushReplacement` to ScorecardPage.
 - **Router:** Added `/scorecard/:matchId` route with `ScorecardData` extra, `scorecardPath()` helper.
 - **TDD followed:** RED → GREEN → REFACTOR for entities, utility, then widget. All 1332 tests pass, flutter analyze clean.
+
+**Issue #38 completion details:**
+- 4 new source files + 3 new test files + 2 modified = 9 files, 32 net new tests (202 total server tests)
+- **WebSocket types** (`src/types/websocket.ts`): ClientMessage (join_match/leave_match), ServerMessage (7 types: match_state/score_update/wicket/innings_complete/match_complete/delivery_undone/error). Shared sub-types: PlayerBattingSnapshot, PlayerBowlingSnapshot, OverBallDisplay, LastDeliveryInfo.
+- **Room state** (`src/websocket/rooms.ts`): `getMatchState(matchId)` queries DB for full match snapshot (innings, batting/bowling stats, current over, recent deliveries). 6 `build*Message()` pure functions for each broadcast type. `matchTopic()` helper returns `match:<matchId>`. 17 tests.
+- **Broadcaster** (`src/websocket/broadcaster.ts`): Stores Bun server reference via `initBroadcaster(server)`. 6 typed broadcast functions that call `server.publish(topic, JSON.stringify(message))`. Fire-and-forget pattern.
+- **WebSocket handler** (`src/websocket/handler.ts`): Elysia plugin with `.ws('/ws', {...})`. Anonymous viewers allowed (no auth required). `join_match` → subscribe to topic + send match_state snapshot. `leave_match` → unsubscribe. Invalid messages → error response. `idleTimeout: 120`. 9 tests.
+- **Scoring route integration** (`src/routes/v1/scoring.ts`): After `recordDelivery` → broadcasts score_update (+ wicket/innings_complete/match_complete if applicable). After `undoDelivery` → broadcasts delivery_undone. After `abandonMatch` → broadcasts match_complete. After `declareInnings` → broadcasts innings_complete. After `reopen*` → broadcasts match_state (full refresh). All broadcast errors caught and logged (don't block HTTP response).
+- **Index wiring** (`src/index.ts`): `.use(websocketHandler)` before routes, `initBroadcaster(app.server!)` after `.listen()`.
+- 6 integration tests verify end-to-end: service call → build message → broadcaster → WS subscriber receives correct message type.
 
 **Issue #26 completion details:**
 - 8 source files + 8 test files = 16 files, 333 new tests (955 total Flutter tests)

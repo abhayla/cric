@@ -10,12 +10,15 @@ import { playerRoutes } from './routes/v1/players.ts';
 import { matchRoutes } from './routes/v1/matches.ts';
 import { tournamentRoutes } from './routes/v1/tournaments.ts';
 import { scoringRoutes } from './routes/v1/scoring.ts';
+import { websocketHandler } from './websocket/handler.ts';
+import { initBroadcaster } from './websocket/broadcaster.ts';
 
 initFirebase();
 
 const app = new Elysia()
   .use(corsMiddleware)
   .use(errorHandler)
+  .use(websocketHandler)
   .use(healthRoutes)
   .use(authRoutes)
   .use(teamRoutes)
@@ -24,6 +27,8 @@ const app = new Elysia()
   .use(tournamentRoutes)
   .use(scoringRoutes)
   .listen(env.PORT);
+
+initBroadcaster(app.server!);
 
 console.log(
   `CricApp server running at ${app.server?.hostname}:${app.server?.port}`,
