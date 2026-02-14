@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/data/sync/sync_service.dart';
+import 'sync_status_indicator.dart';
+
 /// Score header showing team name, innings, score, overs, and run rates.
 ///
 /// Uses primary color background. Shows RRR/target/need only for 2nd innings.
+/// Optionally displays a sync status indicator next to the team name.
 class ScoreHeader extends StatelessWidget {
   const ScoreHeader({
     super.key,
@@ -16,6 +20,8 @@ class ScoreHeader extends StatelessWidget {
     this.target,
     this.runsNeeded,
     required this.onBack,
+    this.syncStatus,
+    this.pendingCount = 0,
   });
 
   final String battingTeamName;
@@ -28,6 +34,8 @@ class ScoreHeader extends StatelessWidget {
   final int? target;
   final int? runsNeeded;
   final VoidCallback onBack;
+  final SyncStatus? syncStatus;
+  final int pendingCount;
 
   String get _inningsLabel =>
       inningsNumber == 1 ? '1st Innings' : '2nd Innings';
@@ -58,13 +66,26 @@ class ScoreHeader extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        battingTeamName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: onPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              battingTeamName,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: onPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (syncStatus != null) ...[
+                            const SizedBox(width: 8),
+                            SyncStatusIndicator(
+                              syncStatus: syncStatus!,
+                              pendingCount: pendingCount,
+                            ),
+                          ],
+                        ],
                       ),
                       Text(
                         _inningsLabel,
