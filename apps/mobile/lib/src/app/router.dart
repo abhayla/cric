@@ -26,6 +26,8 @@ import '../features/tournaments/presentation/pages/standings_page.dart';
 import '../features/tournaments/presentation/pages/tournament_detail_page.dart';
 import '../features/tournaments/presentation/pages/tournament_leaderboard_page.dart';
 import '../features/tournaments/presentation/pages/tournaments_list_page.dart';
+import '../features/player_profile/presentation/pages/player_profile_page.dart';
+import '../features/player_profile/presentation/pages/player_match_history_page.dart';
 import 'providers.dart';
 
 /// Route paths.
@@ -56,6 +58,8 @@ abstract final class AppRoutes {
       '/tournaments/:tournamentId/bracket';
   static const String tournamentLeaderboard =
       '/tournaments/:tournamentId/leaderboard';
+  static const String playerProfile = '/players/:playerId';
+  static const String playerMatchHistory = '/players/:playerId/matches';
 
   /// Build team detail path with actual ID.
   static String teamDetailPath(String teamId) => '/teams/$teamId';
@@ -92,6 +96,13 @@ abstract final class AppRoutes {
   /// Build tournament leaderboard path.
   static String tournamentLeaderboardPath(String id) =>
       '/tournaments/$id/leaderboard';
+
+  /// Build player profile path with actual ID.
+  static String playerProfilePath(String playerId) => '/players/$playerId';
+
+  /// Build player match history path with actual ID.
+  static String playerMatchHistoryPath(String playerId) =>
+      '/players/$playerId/matches';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -321,6 +332,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           return TournamentLeaderboardPage(tournamentId: id);
         },
       ),
+      GoRoute(
+        path: AppRoutes.playerProfile,
+        builder: (context, state) {
+          final playerId = state.pathParameters['playerId']!;
+          return PlayerProfilePage(playerId: playerId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.playerMatchHistory,
+        builder: (context, state) {
+          final playerId = state.pathParameters['playerId']!;
+          return PlayerMatchHistoryPage(playerId: playerId);
+        },
+      ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => _AppShell(child: child),
@@ -352,7 +377,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.profile,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: _PlaceholderPage('Profile'),
+              child: _CurrentUserProfilePage(),
             ),
           ),
         ],
@@ -419,22 +444,31 @@ class _AppShell extends StatelessWidget {
   }
 }
 
-/// Temporary placeholder pages until real screens are built.
-class _PlaceholderPage extends StatelessWidget {
-  const _PlaceholderPage(this.title);
-
-  final String title;
+/// Wraps PlayerProfilePage with current user's ID from Firebase Auth.
+class _CurrentUserProfilePage extends ConsumerWidget {
+  const _CurrentUserProfilePage();
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Text(
-          title,
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    return authState.when(
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: const Center(child: CircularProgressIndicator()),
       ),
+      error: (error, _) => Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: Center(child: Text('Error: $error')),
+      ),
+      data: (user) {
+        if (user == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Profile')),
+            body: const Center(child: Text('Not logged in')),
+          );
+        }
+        return PlayerProfilePage(playerId: user.uid);
+      },
     );
   }
 }

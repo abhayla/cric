@@ -6,6 +6,7 @@ import { deliveries, wicketsByDelivery, fallOfWickets } from '../db/schema/deliv
 import { battingStats, bowlingStats, fieldingStats } from '../db/schema/stats.ts';
 import { dismissalTypes } from '../db/schema/master-data.ts';
 import { AppError } from '../middleware/error-handler.ts';
+import { refreshMatchPlayerCareerStats } from './career-stats.service.ts';
 
 // ============================================================
 // Types
@@ -286,6 +287,7 @@ export async function recordDelivery(
       // Handle match state transition
       if (matchComplete) {
         await completeMatch(tx, matchId, txMatch!);
+        await refreshMatchPlayerCareerStats(tx, matchId);
       } else if (updatedInnings!.inningsNumber === 1) {
         // Transition to innings_break
         await tx

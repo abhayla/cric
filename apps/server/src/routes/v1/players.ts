@@ -4,6 +4,9 @@ import {
   searchPlayersByName,
   searchPlayerByPhone,
   createPlayer,
+  getPlayerProfile,
+  getPlayerStats,
+  getPlayerMatches,
 } from '../../services/player.service.ts';
 
 const BATTING_STYLES = ['right_hand', 'left_hand'] as const;
@@ -72,6 +75,51 @@ export const playerRoutes = new Elysia({ prefix: '/api/v1/players' })
         playerRole: t.Optional(t.Union(PLAYER_ROLES.map((r) => t.Literal(r)))),
         battingStyle: t.Optional(t.Union(BATTING_STYLES.map((s) => t.Literal(s)))),
         bowlingStyle: t.Optional(t.Union(BOWLING_STYLES.map((s) => t.Literal(s)))),
+      }),
+    },
+  )
+  .get(
+    '/:id',
+    async (ctx) => {
+      const profile = await getPlayerProfile(ctx.params.id);
+      return { player: profile };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+    },
+  )
+  .get(
+    '/:id/stats',
+    async (ctx) => {
+      const format = ctx.query.format || 'all';
+      const stats = await getPlayerStats(ctx.params.id, format);
+      return { stats };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      query: t.Object({
+        format: t.Optional(t.String()),
+      }),
+    },
+  )
+  .get(
+    '/:id/matches',
+    async (ctx) => {
+      const result = await getPlayerMatches(ctx.params.id, {
+        page: ctx.query.page ? Number(ctx.query.page) : undefined,
+        limit: ctx.query.limit ? Number(ctx.query.limit) : undefined,
+        format: ctx.query.format || undefined,
+        result: ctx.query.result as 'won' | 'lost' | 'tied' | 'no_result' | undefined,
+      });
+      return result;
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      query: t.Object({
+        page: t.Optional(t.String()),
+        limit: t.Optional(t.String()),
+        format: t.Optional(t.String()),
+        result: t.Optional(t.String()),
       }),
     },
   );
