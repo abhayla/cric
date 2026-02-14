@@ -169,6 +169,7 @@ class ScoringState {
     this.error,
     // Undo
     this.deliveryHistory = const [],
+    this.undoBlockedByTransition = false,
     // 1st innings snapshot (populated after startSecondInnings)
     this.firstInningsSummary,
   })  : batterStats = batterStats ?? const {},
@@ -239,6 +240,7 @@ class ScoringState {
   // ── Undo ──
 
   final List<Delivery> deliveryHistory;
+  final bool undoBlockedByTransition;
 
   // ── 1st innings snapshot ──
 
@@ -283,7 +285,8 @@ class ScoringState {
       bowlerId != null ? bowlerStats[bowlerId] : null;
 
   /// Whether undo is available.
-  bool get canUndo => deliveryHistory.isNotEmpty && !isInningsComplete;
+  bool get canUndo =>
+      deliveryHistory.isNotEmpty && !isInningsComplete && !undoBlockedByTransition;
 
   /// Last delivery in history.
   Delivery? get lastDelivery =>
@@ -453,6 +456,7 @@ class ScoringState {
     bool? isProcessing,
     Object? error = _unset,
     List<Delivery>? deliveryHistory,
+    bool? undoBlockedByTransition,
     Object? firstInningsSummary = _unset,
   }) {
     return ScoringState(
@@ -510,6 +514,8 @@ class ScoringState {
       isProcessing: isProcessing ?? this.isProcessing,
       error: identical(error, _unset) ? this.error : error as String?,
       deliveryHistory: deliveryHistory ?? this.deliveryHistory,
+      undoBlockedByTransition:
+          undoBlockedByTransition ?? this.undoBlockedByTransition,
       firstInningsSummary: identical(firstInningsSummary, _unset)
           ? this.firstInningsSummary
           : firstInningsSummary as FirstInningsSummary?,
@@ -719,6 +725,11 @@ class ScoringNotifier {
     if (lastDel.isLegal) newCurrentOverBalls--;
 
     // If we're undoing the first ball of a new over, reopen previous over
+    // Use sentinels to track whether we need to restore bowler state
+    String? restoredBowlerId;
+    String? restoredLastBowlerId;
+    bool overReopened = false;
+
     if (newCurrentOverBalls < 0 && newCompletedOvers.isNotEmpty) {
       final previousOver = newCompletedOvers.removeLast();
       newCurrentOverDeliveries =
@@ -726,6 +737,26 @@ class ScoringNotifier {
       newCurrentOverBalls = previousOver.legalBalls - 1;
       if (newCurrentOverDeliveries.isNotEmpty) {
         newCurrentOverDeliveries.removeLast();
+      }
+
+      overReopened = true;
+
+      // FIX 1: Restore bowlerId from reopened over
+      restoredBowlerId = previousOver.bowlerId;
+
+      // FIX 2: Restore lastBowlerId from the over before this one
+      restoredLastBowlerId = newCompletedOvers.isNotEmpty
+          ? newCompletedOvers.last.bowlerId
+          : null;
+
+      // FIX 3: Reverse maiden count if the reopened over was maiden
+      if (previousOver.isMaiden) {
+        final bowler = newBowlerStats[previousOver.bowlerId];
+        if (bowler != null) {
+          newBowlerStats[previousOver.bowlerId] = bowler.copyWith(
+            maidens: bowler.maidens - 1,
+          );
+        }
       }
     }
 
@@ -751,6 +782,8 @@ class ScoringNotifier {
       totalLegByes: newTotalLegByes,
       strikerId: newStrikerId,
       nonStrikerId: newNonStrikerId,
+      bowlerId: overReopened ? restoredBowlerId : _state.bowlerId,
+      lastBowlerId: overReopened ? restoredLastBowlerId : _state.lastBowlerId,
       batterStats: newBatterStats,
       bowlerStats: newBowlerStats,
       currentOverBalls: newCurrentOverBalls,
@@ -758,6 +791,7 @@ class ScoringNotifier {
       completedOvers: newCompletedOvers,
       isFreeHitPending: newFreeHitPending,
       deliveryHistory: history,
+      undoBlockedByTransition: false,
     );
   }
 
@@ -871,6 +905,10 @@ class ScoringNotifier {
         batterStats: newBatterStats,
       );
     }
+
+    if (_state.deliveryHistory.isNotEmpty) {
+      _state = _state.copyWith(undoBlockedByTransition: true);
+    }
   }
 
   /// Select a new bowler (at start of over or after wicket).
@@ -890,6 +928,10 @@ class ScoringNotifier {
       bowlerId: playerId,
       bowlerStats: newBowlerStats,
     );
+
+    if (_state.deliveryHistory.isNotEmpty) {
+      _state = _state.copyWith(undoBlockedByTransition: true);
+    }
   }
 
   // ── Internal pipeline ──
@@ -1160,6 +1202,7 @@ class ScoringNotifier {
       isMatchComplete: isMatchComplete,
       completionReason: completionReason,
       deliveryHistory: [..._state.deliveryHistory, delivery],
+      undoBlockedByTransition: false,
     );
   }
 }

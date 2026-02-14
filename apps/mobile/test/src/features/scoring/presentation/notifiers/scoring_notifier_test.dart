@@ -739,6 +739,218 @@ void main() {
       expect(n.state.totalRuns, 0);
       expect(n.state.totalBalls, 0);
     });
+
+    test('undo bye reverses bye extras only', () {
+      final n = makeNotifier();
+      n.recordBye(byeRuns: 2);
+      expect(n.state.totalByes, 2);
+      expect(n.state.totalRuns, 2);
+      expect(n.state.batterStats['bat-1']?.runsScored, 0);
+
+      n.undoLastDelivery();
+      expect(n.state.totalByes, 0);
+      expect(n.state.totalExtras, 0);
+      expect(n.state.totalRuns, 0);
+      expect(n.state.batterStats['bat-1']?.runsScored, 0);
+    });
+
+    test('undo leg-bye reverses leg-bye extras only', () {
+      final n = makeNotifier();
+      n.recordLegBye(legByeRuns: 3);
+      expect(n.state.totalLegByes, 3);
+      expect(n.state.totalRuns, 3);
+      expect(n.state.batterStats['bat-1']?.runsScored, 0);
+
+      n.undoLastDelivery();
+      expect(n.state.totalLegByes, 0);
+      expect(n.state.totalExtras, 0);
+      expect(n.state.totalRuns, 0);
+      expect(n.state.batterStats['bat-1']?.runsScored, 0);
+    });
+
+    test('undo wicket restores dismissed batter isNotOut', () {
+      final n = makeNotifier();
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'bat-1',
+      );
+      expect(n.state.batterStats['bat-1']?.isNotOut, false);
+
+      n.undoLastDelivery();
+      expect(n.state.batterStats['bat-1']?.isNotOut, true);
+      expect(n.state.totalWickets, 0);
+      expect(n.state.strikerId, 'bat-1');
+    });
+
+    test('undo free hit chain preserves free hit from previous no-ball', () {
+      final n = makeNotifier();
+      n.recordNoBall(); // triggers free hit
+      expect(n.state.isFreeHitPending, true);
+
+      n.recordWide(); // wide on free hit → free hit persists
+      expect(n.state.isFreeHitPending, true);
+
+      n.undoLastDelivery(); // undo the wide
+      // Free hit should still be pending (from the no-ball)
+      expect(n.state.isFreeHitPending, true);
+    });
+  });
+
+  // ── ScoringNotifier: undo blocked after transition ─────────────────
+
+  group('ScoringNotifier.undoLastDelivery — blocked after transition', () {
+    test('canUndo false after selectNewBatter following wicket', () {
+      final n = makeNotifier();
+      n.recordDelivery(runsFromBat: 4);
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'bat-1',
+      );
+      expect(n.state.canUndo, true);
+
+      n.selectNewBatter(playerId: 'bat-3', displayName: 'Batter 3');
+      expect(n.state.canUndo, false);
+    });
+
+    test('canUndo false after selectNewBowler following over', () {
+      final n = makeNotifier();
+      for (var i = 0; i < 6; i++) {
+        n.recordDelivery(runsFromBat: 0);
+      }
+      expect(n.state.bowlerId, isNull);
+      expect(n.state.canUndo, true);
+
+      n.selectNewBowler(playerId: 'bowl-2', displayName: 'Bowler 2');
+      expect(n.state.canUndo, false);
+    });
+
+    test('canUndo true before selectNewBatter', () {
+      final n = makeNotifier();
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'bat-1',
+      );
+      // Wicket recorded but new batter NOT yet selected
+      expect(n.state.canUndo, true);
+    });
+
+    test('canUndo true before selectNewBowler', () {
+      final n = makeNotifier();
+      for (var i = 0; i < 6; i++) {
+        n.recordDelivery(runsFromBat: 0);
+      }
+      // Over complete but new bowler NOT yet selected
+      expect(n.state.canUndo, true);
+    });
+
+    test('canUndo NOT blocked during initial setup', () {
+      final n = makeNotifier();
+      // After opening batters + bowler, deliveryHistory is empty
+      // canUndo should be false because of empty history, not the flag
+      expect(n.state.deliveryHistory, isEmpty);
+      expect(n.state.canUndo, false);
+    });
+
+    test('canUndo resets after new delivery', () {
+      final n = makeNotifier();
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'bat-1',
+      );
+      n.selectNewBatter(playerId: 'bat-3', displayName: 'Batter 3');
+      expect(n.state.canUndo, false);
+
+      n.recordDelivery(runsFromBat: 2);
+      expect(n.state.canUndo, true);
+    });
+
+    test('undo resets undoBlockedByTransition', () {
+      final n = makeNotifier();
+      n.recordDelivery(runsFromBat: 4);
+      n.recordDelivery(runsFromBat: 2);
+
+      n.undoLastDelivery();
+      // After undo, the flag should be false (can still undo more)
+      expect(n.state.undoBlockedByTransition, false);
+      expect(n.state.canUndo, true);
+    });
+  });
+
+  // ── ScoringNotifier: undo over boundary fixes ─────────────────────
+
+  group('ScoringNotifier.undoLastDelivery — over boundary fixes', () {
+    test('undo across over boundary restores bowlerId', () {
+      final n = makeNotifier();
+      // Record 6 dot balls to complete the over
+      for (var i = 0; i < 6; i++) {
+        n.recordDelivery(runsFromBat: 0);
+      }
+      expect(n.state.completedOvers.length, 1);
+      expect(n.state.bowlerId, isNull); // cleared after over
+
+      // Don't select a new bowler — undo the 6th ball
+      n.undoLastDelivery();
+
+      // bowlerId should be restored from the reopened over
+      expect(n.state.bowlerId, 'bowl-1');
+      expect(n.state.completedOvers, isEmpty);
+      expect(n.state.currentOverBalls, 5);
+    });
+
+    test('undo across over boundary restores lastBowlerId', () {
+      final n = makeNotifier();
+      // Over 1: bowl-1 bowls 6 dots
+      for (var i = 0; i < 6; i++) {
+        n.recordDelivery(runsFromBat: 0);
+      }
+      expect(n.state.lastBowlerId, 'bowl-1');
+
+      // Select bowl-2 for over 2
+      n.selectNewBowler(playerId: 'bowl-2', displayName: 'Bowler 2');
+
+      // Over 2: bowl-2 bowls 6 dots
+      for (var i = 0; i < 6; i++) {
+        n.recordDelivery(runsFromBat: 0);
+      }
+      expect(n.state.lastBowlerId, 'bowl-2');
+
+      // Undo the 6th ball of over 2 → reopens over 2
+      n.undoLastDelivery();
+
+      // lastBowlerId should be bowl-1 (the bowler of over 1, the one before)
+      expect(n.state.lastBowlerId, 'bowl-1');
+    });
+
+    test('undo across first over boundary sets lastBowlerId to null', () {
+      final n = makeNotifier();
+      // Over 1: bowl-1 bowls 6 dots
+      for (var i = 0; i < 6; i++) {
+        n.recordDelivery(runsFromBat: 0);
+      }
+      expect(n.state.lastBowlerId, 'bowl-1');
+
+      // Undo 6th ball → reopens over 1 (the first over)
+      n.undoLastDelivery();
+
+      // No completed overs before this one → lastBowlerId = null
+      expect(n.state.lastBowlerId, isNull);
+    });
+
+    test('undo maiden over decrements bowler maiden count', () {
+      final n = makeNotifier();
+      // Bowl a maiden over (6 dots)
+      for (var i = 0; i < 6; i++) {
+        n.recordDelivery(runsFromBat: 0);
+      }
+      expect(n.state.completedOvers.first.isMaiden, true);
+      expect(n.state.bowlerStats['bowl-1']?.maidens, 1);
+
+      // Undo 6th ball → reopens the maiden over
+      n.undoLastDelivery();
+
+      // Maiden count should be decremented
+      expect(n.state.bowlerStats['bowl-1']?.maidens, 0);
+    });
   });
 
   // ── ScoringNotifier: swapStrike ──────────────────────────────────────
