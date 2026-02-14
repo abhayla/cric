@@ -16,12 +16,12 @@ void main() {
   });
 
   group('AppDatabase', () {
-    test('schema version is 1', () {
-      expect(db.schemaVersion, 1);
+    test('schema version is 2', () {
+      expect(db.schemaVersion, 2);
     });
 
-    test('all 8 tables are registered', () {
-      expect(db.allTables.length, 8);
+    test('all 9 tables are registered', () {
+      expect(db.allTables.length, 9);
     });
 
     test('users table exists', () {
@@ -54,6 +54,10 @@ void main() {
 
     test('localPreferences table exists', () {
       expect(db.localPreferences, isNotNull);
+    });
+
+    test('scoringSnapshots table exists', () {
+      expect(db.scoringSnapshots, isNotNull);
     });
   });
 

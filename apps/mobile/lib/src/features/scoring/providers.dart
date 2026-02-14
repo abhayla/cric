@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/providers/database_provider.dart';
 import 'data/datasources/match_remote_datasource.dart';
+import 'data/datasources/scoring_local_datasource.dart';
 import 'data/repositories/match_repository_impl.dart';
 import 'domain/entities/match.dart';
 import 'domain/repositories/match_repository.dart';
@@ -10,6 +12,12 @@ import 'presentation/notifiers/match_live_notifier.dart';
 /// Dio instance for scoring feature.
 final _dioProvider = Provider<Dio>((ref) {
   return Dio();
+});
+
+/// Scoring local datasource for persistence.
+final scoringLocalDatasourceProvider =
+    Provider<ScoringLocalDatasource>((ref) {
+  return ScoringLocalDatasource(scoringDao: ref.watch(scoringDaoProvider));
 });
 
 /// Match remote datasource.

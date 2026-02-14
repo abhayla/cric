@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../data/datasources/scoring_local_datasource.dart';
 import '../../domain/entities/innings_data.dart';
 import '../../domain/entities/playing_xi_player.dart';
 import '../../domain/entities/scorecard_data.dart';
 import '../notifiers/scoring_notifier.dart';
+import '../notifiers/scoring_persistence_service.dart';
 import 'scorecard_page.dart';
 import '../widgets/batter_card.dart';
 import '../widgets/bowler_card.dart';
@@ -68,21 +70,69 @@ class ScoringPageArgs {
 
 /// Main scoring page where the scorer records deliveries ball-by-ball.
 class ScoringPage extends StatefulWidget {
-  const ScoringPage({super.key, required this.args});
+  const ScoringPage({
+    super.key,
+    required this.args,
+    this.datasource,
+  });
 
   final ScoringPageArgs args;
+
+  /// Optional local datasource for persistence. When provided, scoring state
+  /// is automatically saved after every mutation and can be resumed.
+  final ScoringLocalDatasource? datasource;
 
   @override
   State<ScoringPage> createState() => _ScoringPageState();
 }
 
 class _ScoringPageState extends State<ScoringPage> {
-  late ScoringNotifier _notifier;
+  ScoringNotifier? _notifier;
+  ScoringPersistenceService? _service;
+  bool _isReady = false;
 
   @override
   void initState() {
     super.initState();
+    _initScoring();
+  }
+
+  Future<void> _initScoring() async {
     final args = widget.args;
+    final datasource = widget.datasource;
+
+    if (datasource != null) {
+      // Try to resume from saved state first
+      final resumed = await ScoringPersistenceService.resume(
+        matchId: args.matchId,
+        datasource: datasource,
+      );
+
+      if (resumed != null) {
+        _service = resumed;
+        _notifier = resumed.notifier;
+      } else {
+        // Create new session with persistence
+        final notifier = _createNotifier(args);
+        _service = await ScoringPersistenceService.createNew(
+          notifier: notifier,
+          datasource: datasource,
+        );
+        _notifier = notifier;
+      }
+    } else {
+      // No persistence — direct notifier (backwards compatible)
+      _notifier = _createNotifier(args);
+    }
+
+    if (mounted) {
+      setState(() {
+        _isReady = true;
+      });
+    }
+  }
+
+  ScoringNotifier _createNotifier(ScoringPageArgs args) {
     final state = ScoringState(
       matchId: args.matchId,
       inningsId: args.inningsId,
@@ -100,47 +150,66 @@ class _ScoringPageState extends State<ScoringPage> {
       bowlingTeamPlayers: args.bowlingTeamPlayers,
       firstInningsSummary: args.firstInningsSummary,
     );
-    _notifier = ScoringNotifier(state);
+    final notifier = ScoringNotifier(state);
 
     // Set up opening players
-    _notifier.selectNewBatter(
+    notifier.selectNewBatter(
       playerId: args.openingStrikerId,
       displayName: args.openingStrikerName,
     );
-    _notifier.selectNewBatter(
+    notifier.selectNewBatter(
       playerId: args.openingNonStrikerId,
       displayName: args.openingNonStrikerName,
     );
-    _notifier.selectNewBowler(
+    notifier.selectNewBowler(
       playerId: args.openingBowlerId,
       displayName: args.openingBowlerName,
     );
+    return notifier;
   }
 
-  ScoringState get _state => _notifier.state;
+  ScoringState get _state => _notifier!.state;
+
+  bool get _hasPersistence => _service != null;
 
   void _onRunTap(int runs) {
     final prevNeedsBowler = _state.needsNewBowler;
     final prevNeedsBatter = _state.needsNewBatter;
     final prevIsInningsComplete = _state.isInningsComplete;
 
-    _notifier.recordDelivery(
-      runsFromBat: runs,
-      isBoundaryFour: runs == 4,
-      isBoundarySix: runs == 6,
-    );
+    if (_hasPersistence) {
+      _service!.recordDelivery(
+        runsFromBat: runs,
+        isBoundaryFour: runs == 4,
+        isBoundarySix: runs == 6,
+      );
+    } else {
+      _notifier!.recordDelivery(
+        runsFromBat: runs,
+        isBoundaryFour: runs == 4,
+        isBoundarySix: runs == 6,
+      );
+    }
     setState(() {});
 
     _checkSideEffects(prevNeedsBatter, prevNeedsBowler, prevIsInningsComplete);
   }
 
   void _onUndo() {
-    _notifier.undoLastDelivery();
+    if (_hasPersistence) {
+      _service!.undoLastDelivery();
+    } else {
+      _notifier!.undoLastDelivery();
+    }
     setState(() {});
   }
 
   void _onSwapStrike() {
-    _notifier.swapStrike();
+    if (_hasPersistence) {
+      _service!.swapStrike();
+    } else {
+      _notifier!.swapStrike();
+    }
     setState(() {});
   }
 
@@ -165,15 +234,28 @@ class _ScoringPageState extends State<ScoringPage> {
     final prevNeedsBowler = _state.needsNewBowler;
     final prevNeedsBatter = _state.needsNewBatter;
     final prevIsInningsComplete = _state.isInningsComplete;
-    switch (type) {
-      case ExtraType.wide:
-        _notifier.recordWide(additionalRuns: runs);
-      case ExtraType.noBall:
-        _notifier.recordNoBall(runsFromBat: runs);
-      case ExtraType.bye:
-        _notifier.recordBye(byeRuns: runs);
-      case ExtraType.legBye:
-        _notifier.recordLegBye(legByeRuns: runs);
+    if (_hasPersistence) {
+      switch (type) {
+        case ExtraType.wide:
+          _service!.recordWide(additionalRuns: runs);
+        case ExtraType.noBall:
+          _service!.recordNoBall(runsFromBat: runs);
+        case ExtraType.bye:
+          _service!.recordBye(byeRuns: runs);
+        case ExtraType.legBye:
+          _service!.recordLegBye(legByeRuns: runs);
+      }
+    } else {
+      switch (type) {
+        case ExtraType.wide:
+          _notifier!.recordWide(additionalRuns: runs);
+        case ExtraType.noBall:
+          _notifier!.recordNoBall(runsFromBat: runs);
+        case ExtraType.bye:
+          _notifier!.recordBye(byeRuns: runs);
+        case ExtraType.legBye:
+          _notifier!.recordLegBye(legByeRuns: runs);
+      }
     }
     setState(() {});
     _checkSideEffects(prevNeedsBatter, prevNeedsBowler, prevIsInningsComplete);
@@ -245,14 +327,25 @@ class _ScoringPageState extends State<ScoringPage> {
   }
 
   void _handleInningsTransition(InningsTransitionResult result) {
-    _notifier.startSecondInnings(
-      strikerId: result.strikerId,
-      strikerName: result.strikerName,
-      nonStrikerId: result.nonStrikerId,
-      nonStrikerName: result.nonStrikerName,
-      bowlerId: result.bowlerId,
-      bowlerName: result.bowlerName,
-    );
+    if (_hasPersistence) {
+      _service!.startSecondInnings(
+        strikerId: result.strikerId,
+        strikerName: result.strikerName,
+        nonStrikerId: result.nonStrikerId,
+        nonStrikerName: result.nonStrikerName,
+        bowlerId: result.bowlerId,
+        bowlerName: result.bowlerName,
+      );
+    } else {
+      _notifier!.startSecondInnings(
+        strikerId: result.strikerId,
+        strikerName: result.strikerName,
+        nonStrikerId: result.nonStrikerId,
+        nonStrikerName: result.nonStrikerName,
+        bowlerId: result.bowlerId,
+        bowlerName: result.bowlerName,
+      );
+    }
     setState(() {});
   }
 
@@ -282,6 +375,10 @@ class _ScoringPageState extends State<ScoringPage> {
   }
 
   void _handleMatchCompleteAction(MatchCompleteAction action) {
+    if (_hasPersistence) {
+      _service!.onMatchComplete();
+    }
+
     switch (action) {
       case MatchCompleteAction.viewScorecard:
         final firstInnings = _state.firstInnings;
@@ -321,10 +418,17 @@ class _ScoringPageState extends State<ScoringPage> {
             final player = _state.battingTeamPlayers.firstWhere(
               (p) => p.playerId == playerId,
             );
-            _notifier.selectNewBatter(
-              playerId: playerId,
-              displayName: player.displayName,
-            );
+            if (_hasPersistence) {
+              _service!.selectNewBatter(
+                playerId: playerId,
+                displayName: player.displayName,
+              );
+            } else {
+              _notifier!.selectNewBatter(
+                playerId: playerId,
+                displayName: player.displayName,
+              );
+            }
             setState(() {});
             Navigator.of(ctx).pop();
           },
@@ -348,10 +452,17 @@ class _ScoringPageState extends State<ScoringPage> {
             final player = _state.bowlingTeamPlayers.firstWhere(
               (p) => p.playerId == playerId,
             );
-            _notifier.selectNewBowler(
-              playerId: playerId,
-              displayName: player.displayName,
-            );
+            if (_hasPersistence) {
+              _service!.selectNewBowler(
+                playerId: playerId,
+                displayName: player.displayName,
+              );
+            } else {
+              _notifier!.selectNewBowler(
+                playerId: playerId,
+                displayName: player.displayName,
+              );
+            }
             setState(() {});
             Navigator.of(ctx).pop();
           },
@@ -391,7 +502,11 @@ class _ScoringPageState extends State<ScoringPage> {
       ),
     ).then((runs) {
       if (runs != null) {
-        _notifier.recordDelivery(runsFromBat: runs);
+        if (_hasPersistence) {
+          _service!.recordDelivery(runsFromBat: runs);
+        } else {
+          _notifier!.recordDelivery(runsFromBat: runs);
+        }
         setState(() {});
       }
     });
@@ -402,8 +517,10 @@ class _ScoringPageState extends State<ScoringPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Exit Scoring?'),
-        content: const Text(
-          'Are you sure you want to exit? Unsaved progress will be lost.',
+        content: Text(
+          _hasPersistence
+              ? 'Your progress is saved locally. You can resume this match later.'
+              : 'Are you sure you want to exit? Unsaved progress will be lost.',
         ),
         actions: [
           TextButton(
@@ -447,14 +564,25 @@ class _ScoringPageState extends State<ScoringPage> {
     final prevNeedsBatter = _state.needsNewBatter;
     final prevIsInningsComplete = _state.isInningsComplete;
 
-    _notifier.recordWicket(
-      dismissalType: result.dismissalType,
-      dismissedPlayerId: result.dismissedPlayerId,
-      fielderId: result.fielderId,
-      fielderName: result.fielderName,
-      runsFromBat: result.runsFromBat,
-      battersCrossed: result.battersCrossed,
-    );
+    if (_hasPersistence) {
+      _service!.recordWicket(
+        dismissalType: result.dismissalType,
+        dismissedPlayerId: result.dismissedPlayerId,
+        fielderId: result.fielderId,
+        fielderName: result.fielderName,
+        runsFromBat: result.runsFromBat,
+        battersCrossed: result.battersCrossed,
+      );
+    } else {
+      _notifier!.recordWicket(
+        dismissalType: result.dismissalType,
+        dismissedPlayerId: result.dismissedPlayerId,
+        fielderId: result.fielderId,
+        fielderName: result.fielderName,
+        runsFromBat: result.runsFromBat,
+        battersCrossed: result.battersCrossed,
+      );
+    }
     setState(() {});
 
     _checkSideEffects(prevNeedsBatter, prevNeedsBowler, prevIsInningsComplete);
@@ -462,6 +590,12 @@ class _ScoringPageState extends State<ScoringPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isReady) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
