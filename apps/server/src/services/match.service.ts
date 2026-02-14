@@ -1,6 +1,6 @@
 import { eq, and, sql, count, inArray, desc } from 'drizzle-orm';
 import { db } from '../db/index.ts';
-import { matches, matchPlayers } from '../db/schema/matches.ts';
+import { matches, matchPlayers, matchResult } from '../db/schema/matches.ts';
 import { innings } from '../db/schema/innings.ts';
 import { teams } from '../db/schema/teams.ts';
 import { teamRosters } from '../db/schema/teams.ts';
@@ -147,13 +147,91 @@ export async function getMatches(userId: string, options: GetMatchesOptions = {}
     .limit(limit)
     .offset(offset);
 
+  // Batch-fetch team names and innings for all matched IDs
+  const matchIds = result.map((m) => m.id);
+
+  if (matchIds.length === 0) {
+    const [countResult] = await db
+      .select({ total: count() })
+      .from(matches)
+      .where(whereClause);
+
+    return { matches: [], total: countResult!.total, page };
+  }
+
+  // Fetch team names for all home/away team IDs
+  const teamIds = [...new Set(result.flatMap((m) => [m.homeTeamId, m.awayTeamId]))];
+  const teamRows = await db
+    .select({ id: teams.id, name: teams.name })
+    .from(teams)
+    .where(inArray(teams.id, teamIds));
+  const teamNameMap = new Map(teamRows.map((t) => [t.id, t.name]));
+
+  // Fetch latest innings per match (ordered by innings_number desc, take first per match)
+  const inningsRows = await db
+    .select({
+      matchId: innings.matchId,
+      battingTeamId: innings.battingTeamId,
+      totalRuns: innings.totalRuns,
+      totalWickets: innings.totalWickets,
+      totalOvers: innings.totalOvers,
+      inningsNumber: innings.inningsNumber,
+    })
+    .from(innings)
+    .where(inArray(innings.matchId, matchIds))
+    .orderBy(desc(innings.inningsNumber));
+
+  // Build a map: matchId → latest innings data
+  const inningsMap = new Map<string, typeof inningsRows[0]>();
+  for (const row of inningsRows) {
+    if (!inningsMap.has(row.matchId)) {
+      inningsMap.set(row.matchId, row);
+    }
+  }
+
+  // Fetch match results for completed matches
+  const resultRows = await db
+    .select({
+      matchId: matchResult.matchId,
+      summary: matchResult.summary,
+    })
+    .from(matchResult)
+    .where(inArray(matchResult.matchId, matchIds));
+  const resultMap = new Map(resultRows.map((r) => [r.matchId, r.summary]));
+
+  // Assemble enriched response
+  const enrichedMatches = result.map((m) => {
+    const currentInnings = inningsMap.get(m.id);
+    return {
+      id: m.id,
+      homeTeam: { id: m.homeTeamId, name: teamNameMap.get(m.homeTeamId) ?? null },
+      awayTeam: { id: m.awayTeamId, name: teamNameMap.get(m.awayTeamId) ?? null },
+      format: m.format,
+      totalOvers: m.totalOvers,
+      status: m.status,
+      venue: m.venue,
+      matchDate: m.matchDate,
+      scorerId: m.scorerId,
+      createdAt: m.createdAt,
+      currentInnings: currentInnings
+        ? {
+            battingTeamId: currentInnings.battingTeamId,
+            totalRuns: currentInnings.totalRuns,
+            totalWickets: currentInnings.totalWickets,
+            overs: currentInnings.totalOvers,
+          }
+        : null,
+      result: resultMap.get(m.id) ?? null,
+    };
+  });
+
   const [countResult] = await db
     .select({ total: count() })
     .from(matches)
     .where(whereClause);
 
   return {
-    matches: result,
+    matches: enrichedMatches,
     total: countResult!.total,
     page,
   };

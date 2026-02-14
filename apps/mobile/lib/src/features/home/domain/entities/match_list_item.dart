@@ -1,0 +1,49 @@
+/// Lightweight match data for list cards (not the full scoring entity).
+class MatchListItem {
+  MatchListItem({
+    required this.id,
+    required this.homeTeamName,
+    required this.awayTeamName,
+    required this.format,
+    required this.totalOvers,
+    required this.status,
+    required this.matchDate,
+    this.venue,
+    this.currentInnings,
+    this.result,
+  });
+
+  final String id;
+  final String homeTeamName;
+  final String awayTeamName;
+  final String format;
+  final int totalOvers;
+  final String status;
+  final String matchDate;
+  final String? venue;
+  final InningsSnapshot? currentInnings;
+  final String? result;
+
+  String get title => '$homeTeamName vs $awayTeamName';
+
+  bool get isLive => status == 'live';
+
+  bool get isCompleted => status == 'completed';
+}
+
+/// Current innings snapshot for match cards.
+class InningsSnapshot {
+  const InningsSnapshot({
+    required this.battingTeamId,
+    required this.totalRuns,
+    required this.totalWickets,
+    required this.overs,
+  });
+
+  final String battingTeamId;
+  final int totalRuns;
+  final int totalWickets;
+  final String overs;
+
+  String get scoreDisplay => '$totalRuns/$totalWickets';
+}

@@ -3,7 +3,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../src/db/index.ts';
 import { users } from '../../src/db/schema/users.ts';
 import { teams, teamRosters } from '../../src/db/schema/teams.ts';
-import { matches, matchPlayers } from '../../src/db/schema/matches.ts';
+import { matches, matchPlayers, matchResult } from '../../src/db/schema/matches.ts';
 import { innings } from '../../src/db/schema/innings.ts';
 import {
   createMatch,
@@ -130,6 +130,7 @@ afterAll(async () => {
 
   if (matchIds.length > 0) {
     // Clean in reverse dependency order
+    await db.delete(matchResult).where(inArray(matchResult.matchId, matchIds));
     await db.delete(innings).where(inArray(innings.matchId, matchIds));
     await db.delete(matchPlayers).where(inArray(matchPlayers.matchId, matchIds));
     await db.delete(matches).where(inArray(matches.id, matchIds));
@@ -281,6 +282,26 @@ describe('Match Service', () => {
       const result = await getMatches(scorerUserId, { page: 1, limit: 1 });
       expect(result.matches.length).toBeLessThanOrEqual(1);
       expect(result.page).toBe(1);
+    });
+
+    it('returns team names in response', async () => {
+      const result = await getMatches(scorerUserId);
+      const found = result.matches.find((m) => m.id === testMatchId);
+      expect(found).toBeDefined();
+      expect(found!.homeTeam).toBeDefined();
+      expect(found!.homeTeam.id).toBe(homeTeamId);
+      expect(found!.homeTeam.name).toContain('Home Team');
+      expect(found!.awayTeam).toBeDefined();
+      expect(found!.awayTeam.id).toBe(awayTeamId);
+      expect(found!.awayTeam.name).toContain('Away Team');
+    });
+
+    it('returns null innings/result for setup match', async () => {
+      const result = await getMatches(scorerUserId, { status: 'setup' });
+      const setupMatch = result.matches.find((m) => m.id === testMatchId);
+      expect(setupMatch).toBeDefined();
+      expect(setupMatch!.currentInnings).toBeNull();
+      expect(setupMatch!.result).toBeNull();
     });
   });
 
@@ -513,6 +534,63 @@ describe('Match Service', () => {
           userId: scorerUserId,
         }),
       ).rejects.toThrow('Match must be in toss status');
+    });
+  });
+
+  describe('getMatches enriched response', () => {
+    let liveMatchId: string;
+
+    beforeAll(async () => {
+      // Create a live match (toss recorded → innings exists)
+      const match = await createTossReadyMatch();
+      liveMatchId = match.id;
+      await recordToss(liveMatchId, {
+        winnerId: homeTeamId,
+        decision: 'bat',
+        openingStrikerId: homePlayerIds[0]!,
+        openingNonStrikerId: homePlayerIds[1]!,
+        openingBowlerId: awayPlayerIds[0]!,
+        userId: scorerUserId,
+      });
+    });
+
+    it('returns innings data for live match', async () => {
+      const result = await getMatches(scorerUserId, { status: 'live' });
+      const found = result.matches.find((m) => m.id === liveMatchId);
+      expect(found).toBeDefined();
+      expect(found!.currentInnings).not.toBeNull();
+      expect(found!.currentInnings!.battingTeamId).toBe(homeTeamId);
+      expect(found!.currentInnings!.totalRuns).toBe(0);
+      expect(found!.currentInnings!.totalWickets).toBe(0);
+      expect(found!.currentInnings!.overs).toBe('0.0');
+    });
+
+    it('returns result for completed match', async () => {
+      // Insert a mock match_result for the live match to test result mapping
+      const { matchResult: matchResultTable } = await import('../../src/db/schema/matches.ts');
+      await db.insert(matchResultTable).values({
+        matchId: liveMatchId,
+        resultType: 'runs',
+        margin: 15,
+        summary: `Home Team ${TEST_SUFFIX} won by 15 runs`,
+      });
+
+      // Update match status to completed
+      await db
+        .update(matches)
+        .set({ status: 'completed' })
+        .where(eq(matches.id, liveMatchId));
+
+      const result = await getMatches(scorerUserId, { status: 'completed' });
+      const found = result.matches.find((m) => m.id === liveMatchId);
+      expect(found).toBeDefined();
+      expect(found!.result).toContain('won by 15 runs');
+
+      // Restore status for cleanup
+      await db
+        .update(matches)
+        .set({ status: 'live' })
+        .where(eq(matches.id, liveMatchId));
     });
   });
 });

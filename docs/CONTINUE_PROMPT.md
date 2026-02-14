@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 4 (Analytics) COMPLETE — Manhattan, Worm, Run Rate charts + MVP algorithm implemented. 1649 Flutter tests, 202 server tests.
+**Status:** Phase 6 (Polish & Testing) IN PROGRESS — Issue #60 (Home Page Dashboard) COMPLETE. 1950 Flutter tests, 298 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,9 +16,69 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 4 (Analytics) is COMPLETE.** Manhattan chart, Worm chart, Run Rate chart, and MVP rankings implemented. Next: Phase 5 (Player Profiles & Stats) or Phase 6 (Polish & Testing).
+**Issue #60 (Home Page Dashboard) is COMPLETE.** Next: remaining Phase 6 issues or Phase 7 (Deployment).
 
-**Recent completion:** Phase 4 Analytics (Issues #42/#43 scope). 8 new source files + 8 new test files + 3 modified files. 109 net new tests (1649 total Flutter tests). All analytics computed client-side from existing ScorecardData — no new server endpoints needed.
+**Recent completion:** Issue #60 — Home Page Dashboard. Wired home page to real data with live matches, recent matches, and user stats sections. Enhanced server `getMatches()` to return team names + innings data per API.md spec. 54 new Flutter tests (1950 total), 4 new server tests (298 total).
+
+### Issue #60 completion details:
+
+**Server Enhancement:**
+- Enhanced `getMatches()` in `match.service.ts` — LEFT JOINs teams table for homeTeam/awayTeam names, fetches latest innings data (runs/wickets/overs), fetches match_result summary for completed matches. Returns enriched response: `{homeTeam: {id, name}, awayTeam: {id, name}, currentInnings: {battingTeamId, totalRuns, totalWickets, overs}, result}`.
+- 4 new server tests: team names in response, innings data for live match, result for completed match, null innings/result for setup match.
+
+**Flutter Data Layer:**
+- Domain entity: `MatchListItem` + `InningsSnapshot` (lightweight match card data)
+- Freezed model: `MatchListItemModel`, `TeamRefModel`, `InningsSnapshotModel` with `toEntity()` extension
+- `HomeRemoteDatasource` — calls `GET /api/v1/matches` with status/page/limit params
+- `HomeRepository` interface + `HomeRepositoryImpl`
+- Providers: `liveMatchesProvider`, `recentMatchesProvider`, `allMatchesProvider` (family by page)
+
+**Flutter Presentation:**
+- `MatchCard` widget — team rows, score/overs, status badge (LIVE/Completed/Setup/Toss/Abandoned), result text, meta line (format + venue), tap callback
+- `MyStatsCard` widget — 4-column grid (Matches, Runs, Wickets, Avg) reusing `CareerStats` from player_profile
+- `HomePage` — converted to `ConsumerWidget`, sections: Quick Actions (full-width Start Match + row), Live Matches (hidden when empty), Recent Matches (View All → /matches), My Stats (View All → /profile), pull-to-refresh
+- `MatchHistoryPage` — converted to `ConsumerWidget`, uses `allMatchesProvider`, loading/error/empty states, match card list
+
+**Test breakdown (54 new):**
+- 7 entity tests (`match_list_item_test.dart`)
+- 7 model tests (`match_list_item_model_test.dart`)
+- 4 datasource tests (`home_remote_datasource_test.dart`)
+- 4 repository tests (`home_repository_impl_test.dart`)
+- 10 MatchCard widget tests (`match_card_test.dart`)
+- 5 MyStatsCard widget tests (`my_stats_card_test.dart`)
+- 10 HomePage tests (`home_page_test.dart`)
+- 7 MatchHistoryPage tests (`match_history_page_test.dart`)
+
+**Wireframe comparison:** Verified against `docs/ui/05-home.html`. Layout matches: full-width Start Match, Create Team/Tournament row, Live section, Recent Matches with View All, My Stats 4-column grid. Tournaments section deferred (not built yet). Team avatar initials circles not included (no avatar data in API response — cosmetic only).
+
+**Previous completion:** Phase 5 Player Profiles & Stats (Issues #44-#48). 5 sequential issues covering server stats aggregation, API endpoints, Flutter data layer, profile + match history UI, and E2E integration tests.
+
+### Phase 5 completion details:
+
+**Issue #44 — Career Stats Aggregation Service (Server):**
+- `apps/server/src/services/career-stats.service.ts` — SQL aggregation of batting/bowling/fielding stats from per-innings tables into `player_career_stats`. Handles format separation (T20/ODI/all), super over exclusion, computed fields (average, strike rate, economy, best bowling). Functions: `refreshPlayerCareerStats`, `refreshPlayerAllFormats`, `refreshMatchPlayerCareerStats`.
+- Wired into `completeMatch()` in scoring.service.ts — auto-refreshes stats for all match players.
+- 25 server tests.
+
+**Issue #45 — Player Profile API Endpoints (Server):**
+- `apps/server/src/services/player.service.ts` — `getPlayerProfile()` (player + team affiliations), `getPlayerStats()` (career stats by format), `getPlayerMatches()` (paginated match history with result filtering, personal performance stats).
+- `apps/server/src/routes/v1/players.ts` — 3 REST endpoints: `GET /api/v1/players/:id`, `GET /api/v1/players/:id/stats`, `GET /api/v1/players/:id/matches`.
+- 20 server tests.
+
+**Issue #46 — Player Profile Data Layer (Flutter):**
+- Domain entities: `PlayerProfile`, `TeamAffiliation`, `CareerStats` (batting/bowling/fielding), `MatchPerformance`, `TeamScore`, `PersonalBatting/Bowling/Fielding`.
+- Freezed models with `toEntity()` extensions. Remote datasource (Dio). Repository impl.
+- 65 Flutter tests.
+
+**Issue #47 — Player Profile + Match History UI (Flutter):**
+- Two pages: `PlayerProfilePage` (hero + quick stats + tabbed batting/bowling/fielding cards + match history button), `PlayerMatchHistoryPage` (filter chips + paginated match cards with personal stats).
+- Two ChangeNotifier-based notifiers, 6 widgets (hero, quick stats grid, 3 stat cards, match performance card).
+- Router: replaced `/profile` placeholder with current user's profile, added `/players/:playerId` and `/players/:playerId/matches` routes.
+- 78 Flutter tests.
+
+**Issue #48 — Integration & E2E Testing:**
+- Server E2E: 16 tests (match completion → career stats refresh, stats accumulation, format separation, profile/stats/matches API, super over exclusion, pagination, result filtering).
+- Flutter integration: 10 tests (full wiring: mock repo → notifier → page rendering + interaction for both profile and match history pages).
 
 ### Phase 4 completion details:
 - **Domain entities:** `chart_data.dart` (OverStats, WormDataPoint, RunRateDataPoint, InningsChartData, MatchChartData), `mvp_data.dart` (MvpPlayerScore, MatchMvpData)
