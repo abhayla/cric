@@ -200,14 +200,17 @@ void main() {
     });
 
     group('analytics tab', () {
-      testWidgets('shows placeholder link', (tester) async {
+      testWidgets('shows analytics sub-tabs', (tester) async {
         await tester.pumpWidget(buildWidget());
 
         // Tap analytics tab
         await tester.tap(find.text('Analytics'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Analytics coming soon'), findsOneWidget);
+        expect(find.text('Manhattan'), findsOneWidget);
+        expect(find.text('Worm'), findsOneWidget);
+        expect(find.text('Run Rate'), findsOneWidget);
+        expect(find.text('MVP'), findsOneWidget);
       });
     });
   });

@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 COMPLETE — All issues done. Offline scoring persistence + sync queue implemented. 1540 Flutter tests, 202 server tests.
+**Status:** Phase 4 (Analytics) COMPLETE — Manhattan, Worm, Run Rate charts + MVP algorithm implemented. 1649 Flutter tests, 202 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,9 +16,17 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is COMPLETE.** All issues done including offline scoring persistence + sync queue. Next: Phase 4 (Analytics) or Phase 5 (Player Profiles & Stats).
+**Phase 4 (Analytics) is COMPLETE.** Manhattan chart, Worm chart, Run Rate chart, and MVP rankings implemented. Next: Phase 5 (Player Profiles & Stats) or Phase 6 (Polish & Testing).
 
-**Recent completion:** Full offline scoring + sync queue (Issues #40/#41 scope). 8 new source files + 6 new test files + 5 modified source files + 1 modified test file. 127 net new tests (1540 total Flutter tests). Observer/Wrapper pattern preserves all 1413 existing tests.
+**Recent completion:** Phase 4 Analytics (Issues #42/#43 scope). 8 new source files + 8 new test files + 3 modified files. 109 net new tests (1649 total Flutter tests). All analytics computed client-side from existing ScorecardData — no new server endpoints needed.
+
+### Phase 4 completion details:
+- **Domain entities:** `chart_data.dart` (OverStats, WormDataPoint, RunRateDataPoint, InningsChartData, MatchChartData), `mvp_data.dart` (MvpPlayerScore, MatchMvpData)
+- **Computation utils:** `analytics_utils.dart` (computeManhattan, computeWorm, computeRunRate, computeMatchChartData), `mvp_utils.dart` (computeMvp implementing SCORING_RULES.md §5 — batting/bowling/fielding points with milestones, SR bonus, economy bonus, tiebreakers)
+- **Chart widgets:** ManhattanChart (fl_chart BarChart, wicket over coloring), WormChart (LineChart, solid+dashed lines), RunRateChart (LineChart, reference lines at 6/9/12), MvpRankingWidget (medal badges for top 3, card list)
+- **ScorecardPage integration:** Replaced "Analytics coming soon" with 4 nested sub-tabs (Manhattan, Worm, Run Rate, MVP). Manhattan has innings toggle chips.
+- **Dependency:** Added `fl_chart: ^0.69.0`
+- **MVP algorithm verified:** R. Sharma spec example = 10.2 pts, J. Bumrah spec example = 15.0 pts (exact match to SCORING_RULES.md §5)
 
 ### Phase 3 Progress (IN PROGRESS)
 

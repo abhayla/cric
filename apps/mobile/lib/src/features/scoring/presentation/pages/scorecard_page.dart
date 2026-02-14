@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/analytics_utils.dart';
 import '../../../../core/utils/commentary_generator.dart';
+import '../../../../core/utils/mvp_utils.dart';
+import '../../../analytics/domain/entities/chart_data.dart';
+import '../../../analytics/domain/entities/mvp_data.dart';
+import '../../../analytics/presentation/widgets/manhattan_chart.dart';
+import '../../../analytics/presentation/widgets/mvp_ranking_widget.dart';
+import '../../../analytics/presentation/widgets/run_rate_chart.dart';
+import '../../../analytics/presentation/widgets/worm_chart.dart';
 import '../../domain/entities/batter_innings.dart';
 import '../../domain/entities/bowler_spell.dart';
 import '../../domain/entities/delivery.dart';
@@ -554,8 +562,12 @@ class _ScorecardPageState extends State<ScorecardPage>
   }
 
   Widget _buildAnalyticsTab(BuildContext context) {
-    return const Center(
-      child: Text('Analytics coming soon'),
+    final chartData = computeMatchChartData(_data);
+    final mvpData = computeMvp(_data);
+
+    return _AnalyticsTabContent(
+      chartData: chartData,
+      mvpData: mvpData,
     );
   }
 
@@ -591,5 +603,130 @@ class _ScorecardPageState extends State<ScorecardPage>
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
     return parts[0].substring(0, parts[0].length.clamp(0, 2)).toUpperCase();
+  }
+}
+
+/// Analytics tab with 4 nested sub-tabs: Manhattan, Worm, Run Rate, MVP.
+class _AnalyticsTabContent extends StatefulWidget {
+  const _AnalyticsTabContent({
+    required this.chartData,
+    required this.mvpData,
+  });
+
+  final MatchChartData chartData;
+  final MatchMvpData mvpData;
+
+  @override
+  State<_AnalyticsTabContent> createState() => _AnalyticsTabContentState();
+}
+
+class _AnalyticsTabContentState extends State<_AnalyticsTabContent>
+    with SingleTickerProviderStateMixin {
+  late TabController _analyticsTabController;
+  int _manhattanInningsIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _analyticsTabController = TabController(length: 4, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _analyticsTabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      children: [
+        TabBar(
+          controller: _analyticsTabController,
+          labelStyle: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: theme.textTheme.labelSmall,
+          indicatorSize: TabBarIndicatorSize.label,
+          labelColor: colorScheme.primary,
+          unselectedLabelColor: colorScheme.onSurfaceVariant,
+          tabs: const [
+            Tab(text: 'Manhattan'),
+            Tab(text: 'Worm'),
+            Tab(text: 'Run Rate'),
+            Tab(text: 'MVP'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _analyticsTabController,
+            children: [
+              _buildManhattanTab(),
+              WormChart(data: widget.chartData),
+              RunRateChart(data: widget.chartData),
+              MvpRankingWidget(data: widget.mvpData),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildManhattanTab() {
+    final data = _manhattanInningsIndex == 0
+        ? widget.chartData.firstInnings
+        : widget.chartData.secondInnings;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              _buildInningsToggle(
+                label: '1st Innings',
+                isSelected: _manhattanInningsIndex == 0,
+                onTap: () => setState(() => _manhattanInningsIndex = 0),
+              ),
+              const SizedBox(width: 8),
+              _buildInningsToggle(
+                label: '2nd Innings',
+                isSelected: _manhattanInningsIndex == 1,
+                onTap: () => setState(() => _manhattanInningsIndex = 1),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ManhattanChart(data: data),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInningsToggle({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Chip(
+        label: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+            fontSize: 12,
+          ),
+        ),
+        backgroundColor: isSelected
+            ? colorScheme.primary
+            : colorScheme.surfaceContainerHighest,
+      ),
+    );
   }
 }
