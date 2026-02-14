@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE, Issue #32 (Match complete modal) DONE, Issue #33 (Undo functionality) DONE, Issue #37 (Scorecard page) DONE, Issue #38 (WebSocket server + room management) DONE. 1332 Flutter tests, 202 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE, Issue #32 (Match complete modal) DONE, Issue #33 (Undo functionality) DONE, Issue #37 (Scorecard page) DONE, Issue #38 (WebSocket server + room management) DONE, Issue #39 (WebSocket client + live broadcast) DONE. 1413 Flutter tests, 202 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, #31, #32, #33, #37, and #38 complete. Next: WebSocket client + live broadcast (Flutter), then Full offline scoring + sync queue.
+**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, #31, #32, #33, #37, #38, and #39 complete. Next: Full offline scoring + sync queue.
 
 **Recent housekeeping:** Updated root CLAUDE.md (current status, removed stale TO MOVE comments). Created `apps/mobile/lib/src/features/scoring/CLAUDE.md` with delivery pipeline, state machine, and scoring domain reference.
 
@@ -35,7 +35,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #33 | Undo functionality | DONE | 15 |
 | #37 | Scorecard page | DONE | 62 |
 | #38 | WebSocket server + room management | DONE | 32 |
-| - | WebSocket client + live broadcast (Flutter) | TODO | - |
+| #39 | WebSocket client + live broadcast (Flutter) | DONE | 81 |
 | - | Full offline scoring + sync queue | TODO | - |
 
 **Issue #36 completion details:**

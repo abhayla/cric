@@ -15,6 +15,7 @@ import '../features/teams/presentation/pages/team_detail_page.dart';
 import '../features/scoring/presentation/notifiers/toss_notifier.dart';
 import '../features/scoring/presentation/pages/match_setup_page.dart';
 import '../features/scoring/presentation/pages/scoring_page.dart';
+import '../features/scoring/presentation/pages/live_match_page.dart';
 import '../features/scoring/presentation/pages/scorecard_page.dart';
 import '../features/scoring/domain/entities/scorecard_data.dart';
 import '../features/scoring/presentation/pages/toss_page.dart';
@@ -46,6 +47,7 @@ abstract final class AppRoutes {
   static const String toss = '/toss/:matchId';
   static const String scoring = '/scoring/:matchId';
   static const String scorecard = '/scorecard/:matchId';
+  static const String liveMatch = '/live/:matchId';
   static const String createTournament = '/tournaments/create';
   static const String tournamentDetail = '/tournaments/:tournamentId';
   static const String tournamentStandings =
@@ -72,6 +74,9 @@ abstract final class AppRoutes {
 
   /// Build scorecard path with actual match ID.
   static String scorecardPath(String matchId) => '/scorecard/$matchId';
+
+  /// Build live match path with actual match ID.
+  static String liveMatchPath(String matchId) => '/live/$matchId';
 
   /// Build tournament detail path.
   static String tournamentDetailPath(String id) => '/tournaments/$id';
@@ -269,6 +274,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             return ScorecardPage(data: data);
           }
           return const SizedBox.shrink();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.liveMatch,
+        builder: (context, state) {
+          final matchId = state.pathParameters['matchId']!;
+          return LiveMatchPage(matchId: matchId);
         },
       ),
       GoRoute(

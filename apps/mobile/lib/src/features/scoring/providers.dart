@@ -5,6 +5,7 @@ import 'data/datasources/match_remote_datasource.dart';
 import 'data/repositories/match_repository_impl.dart';
 import 'domain/entities/match.dart';
 import 'domain/repositories/match_repository.dart';
+import 'presentation/notifiers/match_live_notifier.dart';
 
 /// Dio instance for scoring feature.
 final _dioProvider = Provider<Dio>((ref) {
@@ -52,3 +53,9 @@ class MatchesListNotifier extends AsyncNotifier<MatchListResult> {
     state = await AsyncValue.guard(() => _fetchMatches());
   }
 }
+
+/// Live match viewer state (WebSocket).
+final matchLiveNotifierProvider =
+    NotifierProvider<MatchLiveNotifier, LiveMatchState>(
+  MatchLiveNotifier.new,
+);

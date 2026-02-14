@@ -9,7 +9,7 @@ abstract final class AppConstants {
   /// WebSocket URL.
   static const String wsBaseUrl = String.fromEnvironment(
     'WS_BASE_URL',
-    defaultValue: 'ws://10.0.2.2:3001/ws',
+    defaultValue: 'ws://10.0.2.2:3000/ws',
   );
 
   /// Pagination default page size.
@@ -20,4 +20,13 @@ abstract final class AppConstants {
 
   /// 8dp grid spacing unit.
   static const double spacing = 8.0;
+
+  /// WebSocket reconnect: max attempts before giving up.
+  static const int wsReconnectMaxAttempts = 10;
+
+  /// WebSocket reconnect: initial delay in milliseconds.
+  static const int wsReconnectInitialDelayMs = 1000;
+
+  /// WebSocket reconnect: maximum delay in milliseconds.
+  static const int wsReconnectMaxDelayMs = 30000;
 }
