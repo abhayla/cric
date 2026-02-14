@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE, Issue #32 (Match complete modal) DONE, Issue #33 (Undo functionality) DONE, Issue #37 (Scorecard page) DONE, Issue #38 (WebSocket server + room management) DONE, Issue #39 (WebSocket client + live broadcast) DONE. 1413 Flutter tests, 202 server tests.
+**Status:** Phase 3 COMPLETE — All issues done. Offline scoring persistence + sync queue implemented. 1540 Flutter tests, 202 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,9 +16,9 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, #31, #32, #33, #37, #38, and #39 complete. Next: Full offline scoring + sync queue.
+**Phase 3 is COMPLETE.** All issues done including offline scoring persistence + sync queue. Next: Phase 4 (Analytics) or Phase 5 (Player Profiles & Stats).
 
-**Recent housekeeping:** Updated root CLAUDE.md (current status, removed stale TO MOVE comments). Created `apps/mobile/lib/src/features/scoring/CLAUDE.md` with delivery pipeline, state machine, and scoring domain reference.
+**Recent completion:** Full offline scoring + sync queue (Issues #40/#41 scope). 8 new source files + 6 new test files + 5 modified source files + 1 modified test file. 127 net new tests (1540 total Flutter tests). Observer/Wrapper pattern preserves all 1413 existing tests.
 
 ### Phase 3 Progress (IN PROGRESS)
 
@@ -36,7 +36,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #37 | Scorecard page | DONE | 62 |
 | #38 | WebSocket server + room management | DONE | 32 |
 | #39 | WebSocket client + live broadcast (Flutter) | DONE | 81 |
-| - | Full offline scoring + sync queue | TODO | - |
+| #40/#41 | Full offline scoring + sync queue | DONE | 127 |
 
 **Issue #36 completion details:**
 - `apps/server/src/services/scoring.service.ts` — Full 10-step delivery pipeline, undo, getDeliveries, abandon, declare, reopenInnings, reopenMatch
@@ -134,6 +134,20 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - **Scoring route integration** (`src/routes/v1/scoring.ts`): After `recordDelivery` → broadcasts score_update (+ wicket/innings_complete/match_complete if applicable). After `undoDelivery` → broadcasts delivery_undone. After `abandonMatch` → broadcasts match_complete. After `declareInnings` → broadcasts innings_complete. After `reopen*` → broadcasts match_state (full refresh). All broadcast errors caught and logged (don't block HTTP response).
 - **Index wiring** (`src/index.ts`): `.use(websocketHandler)` before routes, `initBroadcaster(app.server!)` after `.listen()`.
 - 6 integration tests verify end-to-end: service call → build message → broadcaster → WS subscriber receives correct message type.
+
+**Offline Scoring + Sync Queue completion details (Issues #40/#41 scope):**
+- 8 new source files + 6 new test files + 5 modified source + 1 modified test = 20 files, 127 net new tests (1540 total Flutter tests)
+- **Approach:** Observer/Wrapper pattern — `ScoringPersistenceService` wraps `ScoringNotifier` without modifying it (preserving all 1413 existing tests). JSON snapshot persistence: serialize full `ScoringState` to JSON and upsert into `ScoringSnapshots` Drift table.
+- **ScoringSnapshots table** (`shared/data/database/tables/scoring_tables.dart`): matchId (PK), inningsNumber, stateJson, isActive, updatedAt. Schema bumped to v2 with migration.
+- **ScoringDao** (`shared/data/database/daos/scoring_dao.dart`): `@DriftAccessor` with snapshot ops (save/load/getActive/deactivate/delete) + sync queue ops (enqueue/getPending/markSynced/incrementRetry/getUnsynced/cleanup). 18 tests.
+- **ScoringStateConverter** (`scoring/data/models/scoring_state_converter.dart`): Pure functions for JSON round-trip of entire ScoringState tree. Covers: PlayingXIPlayer, Delivery, WicketInfo, BatterInnings, BowlerSpell, Over, FirstInningsSummary, InningsData, FallOfWicket, ScoringState. 41 tests.
+- **ScoringLocalDatasource** (`scoring/data/datasources/scoring_local_datasource.dart`): Wraps DAO + converter. Methods: saveState, loadState, hasActiveSession, getResumableMatchIds, completeMatch, clearMatch. 10 tests.
+- **ScoringPersistenceService** (`scoring/presentation/notifiers/scoring_persistence_service.dart`): Wraps ScoringNotifier. Fire-and-forget `_persistState()` after each mutation. Static factories: `createNew()`, `resume()`. Delegates: recordDelivery/Wide/NoBall/Bye/LegBye/Wicket, undoLastDelivery, selectNewBatter/Bowler, swapStrike, declareInnings, startSecondInnings. `onMatchComplete()`. 19 tests.
+- **SyncService** (`shared/data/sync/sync_service.dart`): FIFO queue processor. `enqueueDelivery()`/`enqueueUndo()` + immediate sync attempt. `processSyncQueue()` stops on first failure. Periodic timer (10s). Max 5 retries then skip. `SyncStatus` enum (allSynced/pending/error). 17 tests.
+- **SyncStatusIndicator** (`scoring/presentation/widgets/sync_status_indicator.dart`): Compact widget with cloud icons (green synced, orange pending + count badge, red error). 15 tests (8 standalone + 7 ScoreHeader integration).
+- **ScoringPage integration:** Optional `datasource` param. Async `_initScoring()` with resume-or-create logic. Loading state. Exit dialog: "Progress saved locally" (with persistence) vs "Unsaved progress will be lost" (without). 6 persistence integration tests.
+- **Provider wiring:** `scoringDaoProvider`, `scoringLocalDatasourceProvider` added.
+- **TDD followed:** RED → GREEN → REFACTOR for all 8 implementation steps (table → DAO → converter → datasource → service → page integration → sync → UI).
 
 **Issue #26 completion details:**
 - 8 source files + 8 test files = 16 files, 333 new tests (955 total Flutter tests)
