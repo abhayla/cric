@@ -135,5 +135,52 @@ void main() {
           .pumpWidget(buildDisplay(deliveries: [], isFreeHitPending: false));
       expect(find.text('FREE HIT'), findsNothing);
     });
+
+    testWidgets('bye delivery shows correct notation', (tester) async {
+      final bye = makeDelivery(isBye: true, byeRuns: 2);
+      await tester.pumpWidget(buildDisplay(deliveries: [bye]));
+      // Bye notation: "${byeRuns}B"
+      expect(find.text('2B'), findsOneWidget);
+    });
+
+    testWidgets('leg-bye delivery shows correct notation', (tester) async {
+      final lb = makeDelivery(isLegBye: true, legByeRuns: 1);
+      await tester.pumpWidget(buildDisplay(deliveries: [lb]));
+      // Leg-bye notation: "${legByeRuns}Lb"
+      expect(find.text('1Lb'), findsOneWidget);
+    });
+
+    testWidgets('multiple deliveries render in sequence', (tester) async {
+      final deliveries = [
+        makeDelivery(runsFromBat: 0), // dot
+        makeDelivery(runsFromBat: 4, isBoundaryFour: true), // four
+        makeDelivery(runsFromBat: 1), // single
+        makeDelivery(isWide: true, wideRuns: 1), // wide
+      ];
+      await tester.pumpWidget(buildDisplay(deliveries: deliveries));
+      expect(find.text('.'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('Wd'), findsOneWidget);
+    });
+
+    testWidgets('wide with additional runs shows notation', (tester) async {
+      final wide3 = makeDelivery(isWide: true, wideRuns: 3);
+      await tester.pumpWidget(buildDisplay(deliveries: [wide3]));
+      // wideRuns=3, additional=2 → "2Wd"
+      expect(find.text('2Wd'), findsOneWidget);
+    });
+
+    testWidgets('no-ball with bat runs shows notation', (tester) async {
+      final nb4 = makeDelivery(
+        isNoBall: true,
+        noBallRuns: 1,
+        runsFromBat: 4,
+        isBoundaryFour: true,
+      );
+      await tester.pumpWidget(buildDisplay(deliveries: [nb4]));
+      // runsFromBat=4 → "4Nb"
+      expect(find.text('4Nb'), findsOneWidget);
+    });
   });
 }

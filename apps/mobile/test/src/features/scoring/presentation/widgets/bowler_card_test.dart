@@ -56,5 +56,51 @@ void main() {
       await tester.pumpWidget(buildCard(bowler: spell));
       expect(find.text('2'), findsOneWidget);
     });
+
+    testWidgets('renders economy rate', (tester) async {
+      await tester.pumpWidget(buildCard(bowler: spell));
+      // Economy = (25 / 18) * 6 = 8.3
+      expect(find.text('Ec 8.3'), findsOneWidget);
+    });
+
+    testWidgets('economy rate 0.0 when 0 balls bowled', (tester) async {
+      const freshSpell = BowlerSpell(
+        playerId: 'b-2',
+        displayName: 'New Bowler',
+        ballsBowled: 0,
+        maidens: 0,
+        runsConceded: 0,
+        wicketsTaken: 0,
+      );
+      await tester.pumpWidget(buildCard(bowler: freshSpell));
+      expect(find.text('Ec 0.0'), findsOneWidget);
+    });
+
+    testWidgets('renders overs display for partial over', (tester) async {
+      const partial = BowlerSpell(
+        playerId: 'b-3',
+        displayName: 'Partial Bowler',
+        ballsBowled: 8, // 1.2 overs
+        maidens: 0,
+        runsConceded: 12,
+        wicketsTaken: 0,
+      );
+      await tester.pumpWidget(buildCard(bowler: partial));
+      expect(find.text('1.2'), findsOneWidget);
+    });
+
+    testWidgets('renders expensive bowler stats', (tester) async {
+      const expensive = BowlerSpell(
+        playerId: 'b-4',
+        displayName: 'Expensive Bowler',
+        ballsBowled: 6, // 1 over
+        maidens: 0,
+        runsConceded: 24,
+        wicketsTaken: 0,
+      );
+      await tester.pumpWidget(buildCard(bowler: expensive));
+      // Economy = (24 / 6) * 6 = 24.0
+      expect(find.text('Ec 24.0'), findsOneWidget);
+    });
   });
 }

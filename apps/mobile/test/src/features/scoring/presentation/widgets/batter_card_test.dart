@@ -89,5 +89,44 @@ void main() {
       // SR = (45/32) * 100 = 140.63
       expect(find.text('SR 140.63'), findsOneWidget);
     });
+
+    testWidgets('strike rate 0.00 when 0 balls faced', (tester) async {
+      const fresh = BatterInnings(
+        playerId: 'p-3',
+        displayName: 'Fresh Batter',
+        runsScored: 0,
+        ballsFaced: 0,
+        fours: 0,
+        sixes: 0,
+        isOnStrike: true,
+      );
+      await tester.pumpWidget(buildCard(batter: fresh, isStriker: true));
+      expect(find.text('SR 0.00'), findsOneWidget);
+      expect(find.text('(0)'), findsOneWidget);
+    });
+
+    testWidgets('non-striker renders correct stats', (tester) async {
+      await tester.pumpWidget(buildCard(batter: nonStriker, isStriker: false));
+      expect(find.text('28'), findsOneWidget); // runs
+      expect(find.text('(20)'), findsOneWidget); // balls
+      expect(find.text('3'), findsOneWidget); // fours
+      // SR = (28/20) * 100 = 140.00
+      expect(find.text('SR 140.00'), findsOneWidget);
+    });
+
+    testWidgets('100+ strike rate renders correctly', (tester) async {
+      const bigHitter = BatterInnings(
+        playerId: 'p-4',
+        displayName: 'Big Hitter',
+        runsScored: 60,
+        ballsFaced: 20,
+        fours: 4,
+        sixes: 5,
+        isOnStrike: true,
+      );
+      await tester.pumpWidget(buildCard(batter: bigHitter, isStriker: true));
+      // SR = (60/20) * 100 = 300.00
+      expect(find.text('SR 300.00'), findsOneWidget);
+    });
   });
 }

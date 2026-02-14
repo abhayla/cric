@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricapp/src/core/theme/app_colors.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/score_header.dart';
+import 'package:cricapp/src/shared/data/sync/sync_service.dart';
 
 void main() {
   Widget buildHeader({
@@ -115,6 +116,103 @@ void main() {
       await tester.pumpWidget(buildHeader(onBack: () => called = true));
       await tester.tap(find.byIcon(Icons.arrow_back));
       expect(called, isTrue);
+    });
+
+    testWidgets('renders 0/0 score', (tester) async {
+      await tester.pumpWidget(buildHeader(
+        totalRuns: 0,
+        totalWickets: 0,
+        oversDisplay: '0.0',
+        runRate: 0.0,
+      ));
+      expect(find.text('0/0'), findsOneWidget);
+      expect(find.text('(0.0)'), findsOneWidget);
+      expect(find.text('CRR: 0.00'), findsOneWidget);
+    });
+
+    testWidgets('renders large score correctly', (tester) async {
+      await tester.pumpWidget(buildHeader(
+        totalRuns: 350,
+        totalWickets: 10,
+        oversDisplay: '50.0',
+        runRate: 7.0,
+      ));
+      expect(find.text('350/10'), findsOneWidget);
+      expect(find.text('(50.0)'), findsOneWidget);
+    });
+  });
+
+  group('ScoreHeader — sync status', () {
+    Widget buildHeaderWithSync({
+      SyncStatus? syncStatus,
+      int pendingCount = 0,
+    }) {
+      return MaterialApp(
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.seed,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+        ),
+        home: Scaffold(
+          body: ScoreHeader(
+            battingTeamName: 'Team A',
+            inningsNumber: 1,
+            totalRuns: 50,
+            totalWickets: 2,
+            oversDisplay: '8.3',
+            runRate: 6.0,
+            onBack: () {},
+            syncStatus: syncStatus,
+            pendingCount: pendingCount,
+          ),
+        ),
+      );
+    }
+
+    testWidgets('no sync indicator when syncStatus is null', (tester) async {
+      await tester.pumpWidget(buildHeaderWithSync(syncStatus: null));
+      expect(find.byIcon(Icons.cloud_done), findsNothing);
+      expect(find.byIcon(Icons.cloud_upload), findsNothing);
+      expect(find.byIcon(Icons.cloud_off), findsNothing);
+    });
+
+    testWidgets('shows cloud_done icon when allSynced', (tester) async {
+      await tester
+          .pumpWidget(buildHeaderWithSync(syncStatus: SyncStatus.allSynced));
+      expect(find.byIcon(Icons.cloud_done), findsOneWidget);
+    });
+
+    testWidgets('shows cloud_upload icon when pending', (tester) async {
+      await tester.pumpWidget(buildHeaderWithSync(
+        syncStatus: SyncStatus.pending,
+        pendingCount: 5,
+      ));
+      expect(find.byIcon(Icons.cloud_upload), findsOneWidget);
+    });
+
+    testWidgets('shows pending count badge', (tester) async {
+      await tester.pumpWidget(buildHeaderWithSync(
+        syncStatus: SyncStatus.pending,
+        pendingCount: 3,
+      ));
+      expect(find.text('3'), findsOneWidget);
+    });
+
+    testWidgets('shows cloud_off icon when error', (tester) async {
+      await tester
+          .pumpWidget(buildHeaderWithSync(syncStatus: SyncStatus.error));
+      expect(find.byIcon(Icons.cloud_off), findsOneWidget);
+    });
+
+    testWidgets('no count badge when allSynced', (tester) async {
+      await tester
+          .pumpWidget(buildHeaderWithSync(syncStatus: SyncStatus.allSynced));
+      // No count text should appear next to the cloud icon
+      expect(find.byIcon(Icons.cloud_done), findsOneWidget);
+      // Count badge should not be present
+      expect(find.text('0'), findsNothing);
     });
   });
 }

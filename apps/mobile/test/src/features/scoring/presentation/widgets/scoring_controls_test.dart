@@ -14,6 +14,7 @@ void main() {
     VoidCallback? onWicketTap,
     VoidCallback? onUndoTap,
     VoidCallback? onSwapStrike,
+    VoidCallback? onOverthrowTap,
     bool canUndo = true,
     bool isInningsComplete = false,
   }) {
@@ -35,6 +36,7 @@ void main() {
           onWicketTap: onWicketTap ?? () {},
           onUndoTap: onUndoTap ?? () {},
           onSwapStrike: onSwapStrike ?? () {},
+          onOverthrowTap: onOverthrowTap,
           canUndo: canUndo,
           isInningsComplete: isInningsComplete,
         ),
@@ -157,6 +159,109 @@ void main() {
     testWidgets('overthrow button "..." is rendered', (tester) async {
       await tester.pumpWidget(buildControls());
       expect(find.text('...'), findsOneWidget);
+    });
+
+    testWidgets('overthrow button calls onOverthrowTap', (tester) async {
+      var called = false;
+      await tester.pumpWidget(buildControls(
+        onOverthrowTap: () => called = true,
+      ));
+      await tester.tap(find.text('...'));
+      expect(called, isTrue);
+    });
+  });
+
+  group('ScoringControls — isInningsComplete', () {
+    testWidgets('run buttons disabled when innings complete', (tester) async {
+      int? tappedRuns;
+      await tester.pumpWidget(buildControls(
+        onRunTap: (runs) => tappedRuns = runs,
+        isInningsComplete: true,
+      ));
+      // Tap each run button — none should fire
+      await tester.tap(find.text('0'));
+      await tester.tap(find.text('1'));
+      await tester.tap(find.text('4'));
+      await tester.tap(find.text('6'));
+      expect(tappedRuns, isNull);
+    });
+
+    testWidgets('wide button disabled when innings complete', (tester) async {
+      var called = false;
+      await tester.pumpWidget(buildControls(
+        onWideTap: () => called = true,
+        isInningsComplete: true,
+      ));
+      // OutlinedButton has null onPressed — tap shouldn't fire
+      final wdButton = find.widgetWithText(OutlinedButton, 'WD');
+      expect(tester.widget<OutlinedButton>(wdButton).onPressed, isNull);
+      await tester.tap(wdButton);
+      expect(called, isFalse);
+    });
+
+    testWidgets('no-ball button disabled when innings complete',
+        (tester) async {
+      var called = false;
+      await tester.pumpWidget(buildControls(
+        onNoBallTap: () => called = true,
+        isInningsComplete: true,
+      ));
+      final nbButton = find.widgetWithText(OutlinedButton, 'NB');
+      expect(tester.widget<OutlinedButton>(nbButton).onPressed, isNull);
+    });
+
+    testWidgets('bye button disabled when innings complete', (tester) async {
+      var called = false;
+      await tester.pumpWidget(buildControls(
+        onByeTap: () => called = true,
+        isInningsComplete: true,
+      ));
+      final bButton = find.widgetWithText(OutlinedButton, 'B');
+      expect(tester.widget<OutlinedButton>(bButton).onPressed, isNull);
+    });
+
+    testWidgets('leg-bye button disabled when innings complete',
+        (tester) async {
+      var called = false;
+      await tester.pumpWidget(buildControls(
+        onLegByeTap: () => called = true,
+        isInningsComplete: true,
+      ));
+      final lbButton = find.widgetWithText(OutlinedButton, 'LB');
+      expect(tester.widget<OutlinedButton>(lbButton).onPressed, isNull);
+    });
+
+    testWidgets('wicket button disabled when innings complete',
+        (tester) async {
+      var called = false;
+      await tester.pumpWidget(buildControls(
+        onWicketTap: () => called = true,
+        isInningsComplete: true,
+      ));
+      final wButton = find.widgetWithText(OutlinedButton, 'W');
+      expect(tester.widget<OutlinedButton>(wButton).onPressed, isNull);
+    });
+
+    testWidgets('undo button disabled when innings complete', (tester) async {
+      var called = false;
+      await tester.pumpWidget(buildControls(
+        onUndoTap: () => called = true,
+        canUndo: true,
+        isInningsComplete: true,
+      ));
+      await tester.tap(find.byIcon(Icons.undo));
+      expect(called, isFalse);
+    });
+
+    testWidgets('swap strike button disabled when innings complete',
+        (tester) async {
+      var called = false;
+      await tester.pumpWidget(buildControls(
+        onSwapStrike: () => called = true,
+        isInningsComplete: true,
+      ));
+      await tester.tap(find.byIcon(Icons.swap_horiz));
+      expect(called, isFalse);
     });
   });
 }

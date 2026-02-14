@@ -6,7 +6,7 @@ import { teams, teamRosters } from '../../src/db/schema/teams.ts';
 import { matches, matchPlayers, matchResult } from '../../src/db/schema/matches.ts';
 import { innings, overs } from '../../src/db/schema/innings.ts';
 import { deliveries, wicketsByDelivery, fallOfWickets } from '../../src/db/schema/deliveries.ts';
-import { battingStats, bowlingStats, fieldingStats } from '../../src/db/schema/stats.ts';
+import { battingStats, bowlingStats, fieldingStats, playerCareerStats } from '../../src/db/schema/stats.ts';
 import {
   createMatch,
   setPlayingXI,
@@ -233,6 +233,11 @@ afterAll(async () => {
     // Delete in dependency order — cascades handle most, but be explicit
     await db.delete(matchResult).where(inArray(matchResult.matchId, matchIds));
     await db.delete(matches).where(inArray(matches.id, matchIds));
+  }
+
+  // Delete player career stats (created by completeMatch → refreshMatchPlayerCareerStats)
+  if (testUserIds.length > 0) {
+    await db.delete(playerCareerStats).where(inArray(playerCareerStats.playerId, testUserIds));
   }
 
   await db.delete(teamRosters).where(eq(teamRosters.teamId, homeTeamId));
@@ -2001,6 +2006,1383 @@ describe('Scoring Service', () => {
         .where(eq(matchResult.matchId, live.matchId));
 
       expect(results.length).toBe(0);
+    });
+  });
+
+  // ============================================================
+  // INNINGS COMPLETION — Overs exhaustion
+  // ============================================================
+  describe('recordDelivery — overs exhaustion', () => {
+    it('completes innings when all overs are bowled (2-over match)', async () => {
+      const live = await createLiveMatch({ totalOvers: 2 });
+
+      // Bowl 12 dot balls (2 overs × 6 legal deliveries)
+      for (let over = 0; over < 2; over++) {
+        for (let ball = 1; ball <= 6; ball++) {
+          const result = await recordDelivery(live.matchId, scorerUserId, {
+            inningsId: live.inningsId,
+            overNumber: over,
+            ballNumber: ball,
+            strikerId: homePlayerIds[0]!,
+            nonStrikerId: homePlayerIds[1]!,
+            bowlerId: awayPlayerIds[over % 2]!,
+            runsFromBat: 0,
+            isWide: false,
+            isNoBall: false,
+            isBye: false,
+            isLegBye: false,
+            wideRuns: 0,
+            noBallRuns: 0,
+            byeRuns: 0,
+            legByeRuns: 0,
+            isWicket: false,
+            isBoundaryFour: false,
+            isBoundarySix: false,
+          });
+
+          // On last ball of last over, innings should complete
+          if (over === 1 && ball === 6) {
+            expect(result.inningsComplete).toBe(true);
+          }
+        }
+      }
+
+      const [inn] = await db
+        .select()
+        .from(innings)
+        .where(eq(innings.id, live.inningsId));
+
+      expect(inn!.isCompleted).toBe(true);
+      expect(inn!.completedReason).toBe('overs_exhausted');
+    });
+  });
+
+  // ============================================================
+  // TARGET CHASE + MATCH COMPLETION
+  // ============================================================
+  describe('recordDelivery — target chase and match completion', () => {
+    it('completes match when 2nd innings target is chased', async () => {
+      const live = await createLiveMatch({ totalOvers: 20 });
+
+      // Complete first innings by declaring with some runs
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 6,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: true,
+      });
+
+      // Declare first innings (score = 6)
+      await declareInnings(live.matchId, scorerUserId);
+
+      // Create second innings manually (target = 7)
+      const [secondInnings] = await db
+        .insert(innings)
+        .values({
+          matchId: live.matchId,
+          inningsNumber: 2,
+          battingTeamId: live.bowlingTeamId,
+          bowlingTeamId: live.battingTeamId,
+          target: 7,
+        })
+        .returning();
+
+      // Set match back to live for 2nd innings
+      await db
+        .update(matches)
+        .set({ status: 'live' })
+        .where(eq(matches.id, live.matchId));
+
+      // Score enough to chase: hit a boundary six + single = 7
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: secondInnings!.id,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: awayPlayerIds[0]!,
+        nonStrikerId: awayPlayerIds[1]!,
+        bowlerId: homePlayerIds[0]!,
+        runsFromBat: 6,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: true,
+      });
+
+      // Chase the target with 1 more run
+      const result = await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: secondInnings!.id,
+        overNumber: 0,
+        ballNumber: 2,
+        strikerId: awayPlayerIds[1]!,
+        nonStrikerId: awayPlayerIds[0]!,
+        bowlerId: homePlayerIds[0]!,
+        runsFromBat: 1,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      expect(result.inningsComplete).toBe(true);
+      expect(result.matchComplete).toBe(true);
+
+      // Verify match result
+      const [mr] = await db
+        .select()
+        .from(matchResult)
+        .where(eq(matchResult.matchId, live.matchId));
+
+      expect(mr).toBeDefined();
+      expect(mr!.resultType).toBe('wickets');
+      expect(mr!.winnerTeamId).toBe(live.bowlingTeamId); // Away team batted 2nd
+    });
+
+    it('creates correct "won by runs" result when 2nd innings all-out below target', async () => {
+      const live = await createLiveMatch({ totalOvers: 20, playersPerSide: 6 });
+
+      // First innings: score 10 runs, then declare
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 4,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: true,
+        isBoundarySix: false,
+      });
+
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 2,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 6,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: true,
+      });
+
+      // Declare (10 runs)
+      await declareInnings(live.matchId, scorerUserId);
+
+      // Create second innings (target = 11)
+      const [secondInnings] = await db
+        .insert(innings)
+        .values({
+          matchId: live.matchId,
+          inningsNumber: 2,
+          battingTeamId: live.bowlingTeamId,
+          bowlingTeamId: live.battingTeamId,
+          target: 11,
+        })
+        .returning();
+
+      await db
+        .update(matches)
+        .set({ status: 'live' })
+        .where(eq(matches.id, live.matchId));
+
+      // Bowl out the second team (6-a-side = 5 wickets)
+      for (let w = 0; w < 5; w++) {
+        await recordDelivery(live.matchId, scorerUserId, {
+          inningsId: secondInnings!.id,
+          overNumber: w,
+          ballNumber: 1,
+          strikerId: awayPlayerIds[w]!,
+          nonStrikerId: awayPlayerIds[w + 1 < 6 ? w + 1 : w]!,
+          bowlerId: homePlayerIds[w % 3]!,
+          runsFromBat: 0,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: true,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+          wicket: {
+            dismissedPlayerId: awayPlayerIds[w]!,
+            dismissalTypeId: dismissalBowledId,
+            bowlerCredited: true,
+          },
+        });
+      }
+
+      // Verify match result: first team wins by 10 runs
+      const [mr] = await db
+        .select()
+        .from(matchResult)
+        .where(eq(matchResult.matchId, live.matchId));
+
+      expect(mr).toBeDefined();
+      expect(mr!.resultType).toBe('runs');
+      expect(mr!.margin).toBe(10);
+      expect(mr!.winnerTeamId).toBe(live.battingTeamId);
+    });
+
+    it('creates tie result when scores are equal', async () => {
+      const live = await createLiveMatch({ totalOvers: 20, playersPerSide: 6 });
+
+      // First innings: score 5 runs
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 4,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: true,
+        isBoundarySix: false,
+      });
+
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 2,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 1,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      // Declare (5 runs)
+      await declareInnings(live.matchId, scorerUserId);
+
+      // Create second innings (target = 6)
+      const [secondInnings] = await db
+        .insert(innings)
+        .values({
+          matchId: live.matchId,
+          inningsNumber: 2,
+          battingTeamId: live.bowlingTeamId,
+          bowlingTeamId: live.battingTeamId,
+          target: 6,
+        })
+        .returning();
+
+      await db
+        .update(matches)
+        .set({ status: 'live' })
+        .where(eq(matches.id, live.matchId));
+
+      // Score 5 runs (equal to first innings), then all-out
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: secondInnings!.id,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: awayPlayerIds[0]!,
+        nonStrikerId: awayPlayerIds[1]!,
+        bowlerId: homePlayerIds[0]!,
+        runsFromBat: 4,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: true,
+        isBoundarySix: false,
+      });
+
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: secondInnings!.id,
+        overNumber: 0,
+        ballNumber: 2,
+        strikerId: awayPlayerIds[0]!,
+        nonStrikerId: awayPlayerIds[1]!,
+        bowlerId: homePlayerIds[0]!,
+        runsFromBat: 1,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      // All out (5 wickets for 6-a-side) — tied at 5
+      for (let w = 0; w < 5; w++) {
+        await recordDelivery(live.matchId, scorerUserId, {
+          inningsId: secondInnings!.id,
+          overNumber: w + 1,
+          ballNumber: 1,
+          strikerId: awayPlayerIds[w]!,
+          nonStrikerId: awayPlayerIds[w + 1 < 6 ? w + 1 : w]!,
+          bowlerId: homePlayerIds[(w + 1) % 3]!,
+          runsFromBat: 0,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: true,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+          wicket: {
+            dismissedPlayerId: awayPlayerIds[w]!,
+            dismissalTypeId: dismissalBowledId,
+            bowlerCredited: true,
+          },
+        });
+      }
+
+      const [mr] = await db
+        .select()
+        .from(matchResult)
+        .where(eq(matchResult.matchId, live.matchId));
+
+      expect(mr).toBeDefined();
+      expect(mr!.resultType).toBe('tie');
+      expect(mr!.winnerTeamId).toBeNull();
+      expect(mr!.summary).toBe('Match Tied');
+    });
+  });
+
+  // ============================================================
+  // INNINGS TRANSITION
+  // ============================================================
+  describe('innings completion — state transitions', () => {
+    it('1st innings completion transitions match to innings_break', async () => {
+      const live = await createLiveMatch({ totalOvers: 20, playersPerSide: 6 });
+
+      // All-out 1st innings (5 wickets for 6-a-side)
+      for (let w = 0; w < 5; w++) {
+        await recordDelivery(live.matchId, scorerUserId, {
+          inningsId: live.inningsId,
+          overNumber: w,
+          ballNumber: 1,
+          strikerId: homePlayerIds[w]!,
+          nonStrikerId: homePlayerIds[w + 1 < 6 ? w + 1 : w]!,
+          bowlerId: awayPlayerIds[w % 3]!,
+          runsFromBat: 0,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: true,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+          wicket: {
+            dismissedPlayerId: homePlayerIds[w]!,
+            dismissalTypeId: dismissalBowledId,
+            bowlerCredited: true,
+          },
+        });
+      }
+
+      // Match should be in innings_break, not completed
+      const [match] = await db
+        .select()
+        .from(matches)
+        .where(eq(matches.id, live.matchId));
+
+      expect(match!.status).toBe('innings_break');
+    });
+  });
+
+  // ============================================================
+  // MAIDEN EDGE CASES
+  // ============================================================
+  describe('recordDelivery — maiden edge cases', () => {
+    it('leg-byes do NOT break maiden', async () => {
+      const live = await createLiveMatch();
+
+      // 5 dot balls + 1 leg-bye = maiden
+      for (let i = 1; i <= 5; i++) {
+        await recordDelivery(live.matchId, scorerUserId, {
+          ...dotBallInput(live.inningsId, 0, i, i),
+        });
+      }
+
+      // 6th ball: leg-bye
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 6,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: true,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 3,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      const [overRecord] = await db
+        .select()
+        .from(overs)
+        .where(
+          and(eq(overs.inningsId, live.inningsId), eq(overs.overNumber, 0)),
+        );
+
+      expect(overRecord!.isMaiden).toBe(true);
+    });
+
+    it('no-ball breaks maiden', async () => {
+      const live = await createLiveMatch();
+
+      // 5 dot balls + 1 no-ball = NOT maiden
+      for (let i = 1; i <= 5; i++) {
+        await recordDelivery(live.matchId, scorerUserId, {
+          ...dotBallInput(live.inningsId, 0, i, i),
+        });
+      }
+
+      // No-ball (not legal, so need another legal ball)
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 6,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: true,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 1,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      // 6th legal ball
+      await recordDelivery(live.matchId, scorerUserId, {
+        ...dotBallInput(live.inningsId, 0, 6, 7),
+      });
+
+      const [overRecord] = await db
+        .select()
+        .from(overs)
+        .where(
+          and(eq(overs.inningsId, live.inningsId), eq(overs.overNumber, 0)),
+        );
+
+      expect(overRecord!.isMaiden).toBe(false); // NB breaks maiden
+    });
+
+    it('bat runs break maiden', async () => {
+      const live = await createLiveMatch();
+
+      // 5 dot balls + 1 single = NOT maiden
+      for (let i = 1; i <= 5; i++) {
+        await recordDelivery(live.matchId, scorerUserId, {
+          ...dotBallInput(live.inningsId, 0, i, i),
+        });
+      }
+
+      // 1 run from bat
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 6,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 1,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      const [overRecord] = await db
+        .select()
+        .from(overs)
+        .where(
+          and(eq(overs.inningsId, live.inningsId), eq(overs.overNumber, 0)),
+        );
+
+      expect(overRecord!.isMaiden).toBe(false);
+    });
+  });
+
+  // ============================================================
+  // ADDITIONAL WICKET TYPES
+  // ============================================================
+  describe('recordDelivery — additional dismissals', () => {
+    it('records LBW dismissal', async () => {
+      const live = await createLiveMatch();
+
+      const result = await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[0]!,
+          dismissalTypeId: dismissalLbwId,
+          bowlerCredited: true,
+        },
+      });
+
+      expect(result.delivery.isWicket).toBe(true);
+
+      // Verify wicket_by_delivery record
+      const [wbd] = await db
+        .select()
+        .from(wicketsByDelivery)
+        .where(eq(wicketsByDelivery.deliveryId, result.delivery.id));
+
+      expect(wbd!.dismissalTypeId).toBe(dismissalLbwId);
+      expect(wbd!.bowlerCredited).toBe(true);
+    });
+
+    it('records hit-wicket dismissal', async () => {
+      const live = await createLiveMatch();
+
+      const result = await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[0]!,
+          dismissalTypeId: dismissalHitWicketId,
+          bowlerCredited: true,
+        },
+      });
+
+      expect(result.delivery.isWicket).toBe(true);
+    });
+
+    it('records retired hurt (no bowler credit)', async () => {
+      const live = await createLiveMatch();
+
+      const result = await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[0]!,
+          dismissalTypeId: dismissalRetiredHurtId,
+          bowlerCredited: false,
+        },
+      });
+
+      expect(result.delivery.isWicket).toBe(true);
+
+      // Verify bowler NOT credited
+      const [bowler] = await db
+        .select()
+        .from(bowlingStats)
+        .where(
+          and(
+            eq(bowlingStats.inningsId, live.inningsId),
+            eq(bowlingStats.playerId, awayPlayerIds[0]!),
+          ),
+        );
+
+      expect(bowler!.wicketsTaken).toBe(0);
+    });
+  });
+
+  // ============================================================
+  // STATS EDGE CASES
+  // ============================================================
+  describe('recordDelivery — stats edge cases', () => {
+    it('no-ball counts as ball faced (unlike wide)', async () => {
+      const live = await createLiveMatch();
+
+      // Record a no-ball with 2 bat runs
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 2,
+        isWide: false,
+        isNoBall: true,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 1,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      const [batter] = await db
+        .select()
+        .from(battingStats)
+        .where(
+          and(
+            eq(battingStats.inningsId, live.inningsId),
+            eq(battingStats.playerId, homePlayerIds[0]!),
+          ),
+        );
+
+      expect(batter!.runsScored).toBe(2);
+      // NB is not legal but batter still faces it (balls faced incremented only for legal deliveries)
+      expect(batter!.ballsFaced).toBe(0); // NB is not legal
+    });
+
+    it('updates sixes counter in bowling stats', async () => {
+      const live = await createLiveMatch();
+
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 6,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: true,
+      });
+
+      const [bowler] = await db
+        .select()
+        .from(bowlingStats)
+        .where(
+          and(
+            eq(bowlingStats.inningsId, live.inningsId),
+            eq(bowlingStats.playerId, awayPlayerIds[0]!),
+          ),
+        );
+
+      expect(bowler!.sixesConceded).toBe(1);
+      expect(bowler!.runsConceded).toBe(6);
+    });
+
+    it('run-out does NOT credit bowler with wicket', async () => {
+      const live = await createLiveMatch();
+
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 1,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[0]!,
+          dismissalTypeId: dismissalRunOutId,
+          fielderId: awayPlayerIds[1]!,
+          bowlerCredited: false,
+        },
+      });
+
+      const [bowler] = await db
+        .select()
+        .from(bowlingStats)
+        .where(
+          and(
+            eq(bowlingStats.inningsId, live.inningsId),
+            eq(bowlingStats.playerId, awayPlayerIds[0]!),
+          ),
+        );
+
+      expect(bowler!.wicketsTaken).toBe(0);
+    });
+
+    it('non-striker batting stat record is auto-created', async () => {
+      const live = await createLiveMatch();
+
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      // Non-striker should also have a batting stat entry
+      const [nonStriker] = await db
+        .select()
+        .from(battingStats)
+        .where(
+          and(
+            eq(battingStats.inningsId, live.inningsId),
+            eq(battingStats.playerId, homePlayerIds[1]!),
+          ),
+        );
+
+      expect(nonStriker).toBeDefined();
+      expect(nonStriker!.runsScored).toBe(0);
+      expect(nonStriker!.ballsFaced).toBe(0);
+      expect(nonStriker!.isNotOut).toBe(true);
+    });
+
+    it('batting positions auto-increment for each new batter', async () => {
+      const live = await createLiveMatch();
+
+      // First delivery: striker[0] + nonStriker[1]
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[0]!,
+          dismissalTypeId: dismissalBowledId,
+          bowlerCredited: true,
+        },
+      });
+
+      // Second delivery: new batter[2] + nonStriker[1]
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 2,
+        strikerId: homePlayerIds[2]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      // Check positions
+      const stats = await db
+        .select()
+        .from(battingStats)
+        .where(eq(battingStats.inningsId, live.inningsId))
+        .orderBy(battingStats.battingPosition);
+
+      expect(stats.length).toBe(3);
+      expect(stats[0]!.battingPosition).toBe(1); // opener 1
+      expect(stats[1]!.battingPosition).toBe(2); // opener 2
+      expect(stats[2]!.battingPosition).toBe(3); // new batter
+    });
+
+    it('multiple wickets in same over accumulates correctly', async () => {
+      const live = await createLiveMatch();
+
+      // Ball 1: wicket (bowled)
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[0]!,
+          dismissalTypeId: dismissalBowledId,
+          bowlerCredited: true,
+        },
+      });
+
+      // Ball 2: another wicket
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 2,
+        strikerId: homePlayerIds[2]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[2]!,
+          dismissalTypeId: dismissalCaughtId,
+          fielderId: awayPlayerIds[2]!,
+          bowlerCredited: true,
+        },
+      });
+
+      // Check bowler has 2 wickets
+      const [bowler] = await db
+        .select()
+        .from(bowlingStats)
+        .where(
+          and(
+            eq(bowlingStats.inningsId, live.inningsId),
+            eq(bowlingStats.playerId, awayPlayerIds[0]!),
+          ),
+        );
+
+      expect(bowler!.wicketsTaken).toBe(2);
+
+      // Check innings has 2 wickets
+      const [inn] = await db
+        .select()
+        .from(innings)
+        .where(eq(innings.id, live.inningsId));
+
+      expect(inn!.totalWickets).toBe(2);
+    });
+
+    it('stumping increments stumpings field in fielding stats', async () => {
+      const live = await createLiveMatch();
+
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[0]!,
+          dismissalTypeId: dismissalStumpedId,
+          fielderId: awayPlayerIds[1]!, // keeper
+          bowlerCredited: true,
+        },
+      });
+
+      const [fielder] = await db
+        .select()
+        .from(fieldingStats)
+        .where(
+          and(
+            eq(fieldingStats.inningsId, live.inningsId),
+            eq(fieldingStats.playerId, awayPlayerIds[1]!),
+          ),
+        );
+
+      expect(fielder).toBeDefined();
+      expect(fielder!.stumpings).toBe(1);
+      expect(fielder!.catches).toBe(0);
+    });
+
+    it('run-out increments runOuts field in fielding stats', async () => {
+      const live = await createLiveMatch();
+
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[0]!,
+          dismissalTypeId: dismissalRunOutId,
+          fielderId: awayPlayerIds[3]!,
+          bowlerCredited: false,
+        },
+      });
+
+      const [fielder] = await db
+        .select()
+        .from(fieldingStats)
+        .where(
+          and(
+            eq(fieldingStats.inningsId, live.inningsId),
+            eq(fieldingStats.playerId, awayPlayerIds[3]!),
+          ),
+        );
+
+      expect(fielder).toBeDefined();
+      expect(fielder!.runOuts).toBe(1);
+      expect(fielder!.catches).toBe(0);
+    });
+
+    it('fall of wickets tracks correct run and overs values', async () => {
+      const live = await createLiveMatch();
+
+      // Score 4 runs first
+      await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 4,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: true,
+        isBoundarySix: false,
+      });
+
+      // Wicket on ball 2 (runs at fall should be 4 + 0 = 4)
+      const result = await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 2,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: true,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+        wicket: {
+          dismissedPlayerId: homePlayerIds[0]!,
+          dismissalTypeId: dismissalBowledId,
+          bowlerCredited: true,
+        },
+      });
+
+      const [fow] = await db
+        .select()
+        .from(fallOfWickets)
+        .where(eq(fallOfWickets.deliveryId, result.delivery.id));
+
+      expect(fow).toBeDefined();
+      expect(fow!.wicketNumber).toBe(1);
+      expect(fow!.runsAtFall).toBe(4); // 4 runs from previous delivery + 0 from this
+      expect(fow!.oversAtFall).toBe('0.2'); // After 2nd legal ball
+    });
+  });
+
+  // ============================================================
+  // UNDO EDGE CASES
+  // ============================================================
+  describe('undoDelivery — edge cases', () => {
+    it('undo reverses wide-specific stats', async () => {
+      const live = await createLiveMatch();
+
+      const result = await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: true,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 1,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      await undoDelivery(live.matchId, result.delivery.id, scorerUserId);
+
+      // Innings totals should be back to 0
+      const [inn] = await db
+        .select()
+        .from(innings)
+        .where(eq(innings.id, live.inningsId));
+
+      expect(inn!.totalRuns).toBe(0);
+      expect(inn!.totalWides).toBe(0);
+      expect(inn!.totalExtras).toBe(0);
+    });
+
+    it('undo reverses no-ball-specific stats', async () => {
+      const live = await createLiveMatch();
+
+      const result = await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 2,
+        isWide: false,
+        isNoBall: true,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 1,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      await undoDelivery(live.matchId, result.delivery.id, scorerUserId);
+
+      const [inn] = await db
+        .select()
+        .from(innings)
+        .where(eq(innings.id, live.inningsId));
+
+      expect(inn!.totalRuns).toBe(0);
+      expect(inn!.totalNoBalls).toBe(0);
+      expect(inn!.totalExtras).toBe(0);
+
+      const [bowler] = await db
+        .select()
+        .from(bowlingStats)
+        .where(
+          and(
+            eq(bowlingStats.inningsId, live.inningsId),
+            eq(bowlingStats.playerId, awayPlayerIds[0]!),
+          ),
+        );
+
+      expect(bowler!.runsConceded).toBe(0);
+      expect(bowler!.noBalls).toBe(0);
+    });
+
+    it('undo last ball of completed over reopens the over', async () => {
+      const live = await createLiveMatch();
+
+      // Bowl 6 dot balls to complete the over
+      let lastDeliveryId = '';
+      for (let i = 1; i <= 6; i++) {
+        const result = await recordDelivery(live.matchId, scorerUserId, {
+          ...dotBallInput(live.inningsId, 0, i, i),
+        });
+        if (i === 6) {
+          lastDeliveryId = result.delivery.id;
+        }
+      }
+
+      // Verify over is completed
+      let [overRecord] = await db
+        .select()
+        .from(overs)
+        .where(
+          and(eq(overs.inningsId, live.inningsId), eq(overs.overNumber, 0)),
+        );
+
+      expect(overRecord!.isCompleted).toBe(true);
+
+      // Undo last delivery
+      await undoDelivery(live.matchId, lastDeliveryId, scorerUserId);
+
+      // Over should be reopened
+      [overRecord] = await db
+        .select()
+        .from(overs)
+        .where(
+          and(eq(overs.inningsId, live.inningsId), eq(overs.overNumber, 0)),
+        );
+
+      expect(overRecord!.isCompleted).toBe(false);
+    });
+  });
+
+  // ============================================================
+  // DECLARE / REOPEN EDGE CASES
+  // ============================================================
+  describe('declareInnings — edge cases', () => {
+    it('declare transitions match to innings_break when 1st innings', async () => {
+      const live = await createLiveMatch();
+
+      await declareInnings(live.matchId, scorerUserId);
+
+      const [match] = await db
+        .select()
+        .from(matches)
+        .where(eq(matches.id, live.matchId));
+
+      expect(match!.status).toBe('innings_break');
+    });
+
+    it('rejects declare when no active innings', async () => {
+      const live = await createLiveMatch();
+      await declareInnings(live.matchId, scorerUserId);
+
+      // Try to declare again — no active innings
+      await expectToReject(() =>
+        declareInnings(live.matchId, scorerUserId),
+        'No active innings',
+      );
+    });
+  });
+
+  describe('reopenInnings — edge cases', () => {
+    it('reopen from innings_break goes back to live', async () => {
+      const live = await createLiveMatch();
+      await declareInnings(live.matchId, scorerUserId);
+
+      // Match should be in innings_break
+      let [match] = await db
+        .select()
+        .from(matches)
+        .where(eq(matches.id, live.matchId));
+
+      expect(match!.status).toBe('innings_break');
+
+      // Reopen innings
+      await reopenInnings(live.matchId, scorerUserId);
+
+      [match] = await db
+        .select()
+        .from(matches)
+        .where(eq(matches.id, live.matchId));
+
+      expect(match!.status).toBe('live');
+    });
+  });
+
+  describe('reopenMatch — edge cases', () => {
+    it('rejects reopen when match is still live', async () => {
+      const live = await createLiveMatch();
+
+      await expectToReject(() =>
+        reopenMatch(live.matchId, scorerUserId),
+        'completed or abandoned',
+      );
     });
   });
 

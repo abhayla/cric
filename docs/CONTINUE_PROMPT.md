@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 6 (Polish & Testing) IN PROGRESS — Issue #60 (Home Page Dashboard) COMPLETE. 1950 Flutter tests, 298 server tests.
+**Status:** Phase 6 (Polish & Testing) IN PROGRESS — Issue #60 (Home Page Dashboard) COMPLETE. Also committed pre-existing scoring widget/integration/performance tests and expanded server scoring tests. 1950 Flutter tests, 298 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
