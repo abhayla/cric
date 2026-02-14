@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE, Issue #32 (Match complete modal) DONE. 1255 Flutter tests, 170 server tests.
+**Status:** Phase 3 IN PROGRESS — Issue #36 (server scoring pipeline) DONE, Issue #26 (Flutter scoring domain) DONE, Issue #27 (batter/bowler sheets) DONE, Issue #28 (Scoring page UI) DONE, Issue #29 (Extras panel) DONE, Issue #30 (Wicket dialog) DONE, Issue #31 (Innings transition modal) DONE, Issue #32 (Match complete modal) DONE, Issue #33 (Undo functionality) DONE, Issue #37 (Scorecard page) DONE. 1332 Flutter tests, 170 server tests.
 **Working Directory:** `C:\Abhay\VideCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, #31, and #32 complete. Next: Issue #33 (Undo functionality).
+**Phase 3 is IN PROGRESS.** Issue #36, #26, #27, #28, #29, #30, #31, #32, #33, and #37 complete. Next: Issue #35 (WebSocket server + room management).
 
 **Recent housekeeping:** Updated root CLAUDE.md (current status, removed stale TO MOVE comments). Created `apps/mobile/lib/src/features/scoring/CLAUDE.md` with delivery pipeline, state machine, and scoring domain reference.
 
@@ -32,8 +32,8 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 | #30 | Wicket dialog | DONE | 47 |
 | #31 | Innings transition modal | DONE | 47 |
 | #32 | Match complete modal | DONE | 40 |
-| #33 | Undo functionality | TODO | - |
-| #34 | Scorecard page | TODO | - |
+| #33 | Undo functionality | DONE | 15 |
+| #37 | Scorecard page | DONE | 62 |
 | #35 | WebSocket server + room management | TODO | - |
 | #37 | WebSocket client + live broadcast (Flutter) | TODO | - |
 | #38 | Full offline scoring + sync queue | TODO | - |
@@ -102,6 +102,28 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - **Tests (30 notifier + 17 widget + 4 integration - 1 updated):** FirstInningsSummary (3), MatchResult (4), ScoringState.firstInningsSummary (3), ScoringState.matchResult (7), startSecondInnings captures (3), notifier sub-total = 20 new; widget header (2), score comparison (8), result text (3), footer actions (4), widget sub-total = 17; integration: modal appears (1 updated), correct result (1), back to home (1), view scorecard stub (1) = 4 new.
 - **Deferred:** Super Over button (no tournament/knockout context), Man of the Match (Phase 5+), View Scorecard navigation (Issue #34).
 - **TDD followed:** RED → GREEN → REFACTOR for notifier layer, widget layer, then integration wiring.
+
+**Issue #33 completion details:**
+- 1 modified source file + 1 modified test file = 2 files, 15 net new tests (1270 total Flutter tests)
+- **Bug fixes in `undoLastDelivery()`:**
+  - FIX 1: `bowlerId` not restored on undo across over boundary — now restores from reopened `Over.bowlerId`
+  - FIX 2: `lastBowlerId` not restored on undo across over boundary — now set to bowler of the over before the reopened one (or null if first over)
+  - FIX 3: Maiden count not decremented on undo across over boundary — now checks `previousOver.isMaiden` and decrements bowler's maidens
+- **New constraint: `undoBlockedByTransition`** — New boolean field on `ScoringState` (default false). `canUndo` now checks `!undoBlockedByTransition`. Set to true by `selectNewBatter`/`selectNewBowler` (only when deliveryHistory is non-empty). Reset to false by `_processDelivery` and `undoLastDelivery`. Matches SCORING_RULES.md Section 4: undo blocked after scorer confirms new batter/bowler selection.
+- **Tests (15 new):** Blocked-after-transition group (7): canUndo false after selectNewBatter/selectNewBowler, true before selections, NOT blocked during initial setup, resets after delivery, undo resets flag. Over boundary fixes group (4): restores bowlerId, restores lastBowlerId, first over sets lastBowlerId null, decrements maiden count. Edge cases group (4): undo bye, undo leg-bye, undo wicket restores isNotOut, undo free hit chain preserves pending.
+- **No UI changes needed:** Undo button already exists in ScoringControls; `canUndo` getter propagates changes automatically.
+- **TDD followed:** RED (wrote 15 tests) → GREEN (implemented fixes) → REFACTOR (verified 1270 tests pass + flutter analyze clean).
+
+**Issue #37 completion details:**
+- 4 new source files + 4 new test files + 3 modified = 11 files, 62 net new tests (1332 total Flutter tests)
+- **InningsData** (`domain/entities/innings_data.dart`): Complete innings snapshot capturing all data needed for scorecard. Fields: teamName, teamId, headline stats, Map<String,BatterInnings>, Map<String,BowlerSpell>, extras breakdown, fallOfWickets, deliveryHistory, roster. Computed: scoreDisplay, oversDisplay, runRate, extrasDisplay, battingOrder (first-appearance from delivery history), yetToBatPlayers, bowlingOrder. Factory: `InningsData.fromScoringState(ScoringState)`. 14 tests.
+- **ScorecardData** (`domain/entities/scorecard_data.dart`): Container for both innings + matchResult + match metadata. Factory: `ScorecardData.fromScoringState(state)` with assertions. 5 tests.
+- **CommentaryGenerator** (`core/utils/commentary_generator.dart`): Pure top-level function generating ball-by-ball text from Delivery data. Handles: dot, runs, four, six, wide, no-ball, bye, leg-bye, all 11 dismissal types. 18 tests.
+- **ScorecardPage** (`presentation/pages/scorecard_page.dart`): 3-tab page (Scorecard, Commentary, Analytics). Score comparison header (primary bg with team avatars/scores/overs + VS). Result banner (primaryContainer). Scorecard tab: innings toggle chips, batting table (Batter/R/B/4s/6s/SR + dismissal), extras row, total row, yet-to-bat, FOW chips, bowling table (Bowler/O/M/R/W/Ec). Commentary tab: reverse-chrono ListView with auto-generated text. Analytics tab: placeholder. 25 tests.
+- **ScoringState additions:** `firstInnings: InningsData?` field (nullable), populated by `startSecondInnings()` alongside existing `firstInningsSummary`. Added to constructor, copyWith.
+- **ScoringPage wiring:** `_handleMatchCompleteAction(viewScorecard)` creates `ScorecardData` from state and navigates via `Navigator.pushReplacement` to ScorecardPage.
+- **Router:** Added `/scorecard/:matchId` route with `ScorecardData` extra, `scorecardPath()` helper.
+- **TDD followed:** RED → GREEN → REFACTOR for entities, utility, then widget. All 1332 tests pass, flutter analyze clean.
 
 **Issue #26 completion details:**
 - 8 source files + 8 test files = 16 files, 333 new tests (955 total Flutter tests)

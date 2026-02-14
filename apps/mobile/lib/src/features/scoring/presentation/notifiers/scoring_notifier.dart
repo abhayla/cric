@@ -4,6 +4,7 @@ import '../../../../core/utils/scoring_utils.dart';
 import '../../domain/entities/batter_innings.dart';
 import '../../domain/entities/bowler_spell.dart';
 import '../../domain/entities/delivery.dart';
+import '../../domain/entities/innings_data.dart';
 import '../../domain/entities/over.dart';
 import '../../domain/entities/playing_xi_player.dart';
 import '../../domain/entities/wicket_info.dart';
@@ -172,6 +173,7 @@ class ScoringState {
     this.undoBlockedByTransition = false,
     // 1st innings snapshot (populated after startSecondInnings)
     this.firstInningsSummary,
+    this.firstInnings,
   })  : batterStats = batterStats ?? const {},
         bowlerStats = bowlerStats ?? const {};
 
@@ -245,6 +247,9 @@ class ScoringState {
   // ── 1st innings snapshot ──
 
   final FirstInningsSummary? firstInningsSummary;
+
+  /// Full 1st innings data for scorecard (populated after startSecondInnings).
+  final InningsData? firstInnings;
 
   // ── Computed properties ──
 
@@ -458,6 +463,7 @@ class ScoringState {
     List<Delivery>? deliveryHistory,
     bool? undoBlockedByTransition,
     Object? firstInningsSummary = _unset,
+    Object? firstInnings = _unset,
   }) {
     return ScoringState(
       matchId: matchId,
@@ -519,6 +525,9 @@ class ScoringState {
       firstInningsSummary: identical(firstInningsSummary, _unset)
           ? this.firstInningsSummary
           : firstInningsSummary as FirstInningsSummary?,
+      firstInnings: identical(firstInnings, _unset)
+          ? this.firstInnings
+          : firstInnings as InningsData?,
     );
   }
 }
@@ -833,6 +842,9 @@ class ScoringNotifier {
       oversDisplay: _state.oversDisplay,
     );
 
+    // Capture full 1st innings data for scorecard
+    final firstInningsData = InningsData.fromScoringState(_state);
+
     _state = ScoringState(
       matchId: _state.matchId,
       inningsId: '${_state.inningsId}-2',
@@ -850,6 +862,7 @@ class ScoringNotifier {
       maxOversPerBowler: _state.maxOversPerBowler,
       target: target,
       firstInningsSummary: firstSummary,
+      firstInnings: firstInningsData,
     );
 
     // Set up opening players

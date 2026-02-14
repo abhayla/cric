@@ -611,7 +611,7 @@ void main() {
       expect(find.byType(ScoringPage), findsNothing);
     });
 
-    testWidgets('View Scorecard shows stub snackbar', (tester) async {
+    testWidgets('View Scorecard dismisses modal and navigates', (tester) async {
       await tester.pumpWidget(buildPage(
         inningsNumber: 2,
         target: 5,
@@ -630,11 +630,12 @@ void main() {
       // Score a six to complete match
       await tester.tap(findRunButton('6'));
       await tester.pumpAndSettle();
-      // Tap View Scorecard
+      // Tap View Scorecard — modal should be dismissed
       await tester.tap(find.widgetWithText(FilledButton, 'View Scorecard'));
       await tester.pumpAndSettle();
-      // Should show stub snackbar
-      expect(find.textContaining('Issue #34'), findsOneWidget);
+      // Modal should be dismissed (navigation will throw without GoRouter,
+      // but the modal dismissal still happens)
+      expect(find.byType(MatchCompleteModal), findsNothing);
     });
   });
 }

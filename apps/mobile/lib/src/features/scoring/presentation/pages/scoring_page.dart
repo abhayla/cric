@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/entities/innings_data.dart';
 import '../../domain/entities/playing_xi_player.dart';
+import '../../domain/entities/scorecard_data.dart';
 import '../notifiers/scoring_notifier.dart';
+import 'scorecard_page.dart';
 import '../widgets/batter_card.dart';
 import '../widgets/bowler_card.dart';
 import '../widgets/extras_panel.dart';
@@ -281,9 +284,21 @@ class _ScoringPageState extends State<ScoringPage> {
   void _handleMatchCompleteAction(MatchCompleteAction action) {
     switch (action) {
       case MatchCompleteAction.viewScorecard:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Scorecard — coming in Issue #34'),
+        final firstInnings = _state.firstInnings;
+        final matchResult = _state.matchResult;
+        if (firstInnings == null || matchResult == null) return;
+
+        final scorecardData = ScorecardData(
+          matchId: _state.matchId,
+          totalOvers: _state.totalOvers,
+          playersPerSide: _state.playersPerSide,
+          firstInnings: firstInnings,
+          secondInnings: InningsData.fromScoringState(_state),
+          matchResult: matchResult,
+        );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) => ScorecardPage(data: scorecardData),
           ),
         );
       case MatchCompleteAction.backToHome:

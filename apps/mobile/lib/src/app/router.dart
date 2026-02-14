@@ -15,6 +15,8 @@ import '../features/teams/presentation/pages/team_detail_page.dart';
 import '../features/scoring/presentation/notifiers/toss_notifier.dart';
 import '../features/scoring/presentation/pages/match_setup_page.dart';
 import '../features/scoring/presentation/pages/scoring_page.dart';
+import '../features/scoring/presentation/pages/scorecard_page.dart';
+import '../features/scoring/domain/entities/scorecard_data.dart';
 import '../features/scoring/presentation/pages/toss_page.dart';
 import '../features/teams/presentation/pages/teams_list_page.dart';
 import '../features/tournaments/presentation/pages/create_tournament_page.dart';
@@ -43,6 +45,7 @@ abstract final class AppRoutes {
   static const String matchSetup = '/match-setup';
   static const String toss = '/toss/:matchId';
   static const String scoring = '/scoring/:matchId';
+  static const String scorecard = '/scorecard/:matchId';
   static const String createTournament = '/tournaments/create';
   static const String tournamentDetail = '/tournaments/:tournamentId';
   static const String tournamentStandings =
@@ -66,6 +69,9 @@ abstract final class AppRoutes {
 
   /// Build scoring path with actual match ID.
   static String scoringPath(String matchId) => '/scoring/$matchId';
+
+  /// Build scorecard path with actual match ID.
+  static String scorecardPath(String matchId) => '/scorecard/$matchId';
 
   /// Build tournament detail path.
   static String tournamentDetailPath(String id) => '/tournaments/$id';
@@ -252,6 +258,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             return ScoringPage(args: args);
           }
           // Fallback: navigate home if no args (shouldn't happen in normal flow)
+          return const SizedBox.shrink();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.scorecard,
+        builder: (context, state) {
+          final data = state.extra as ScorecardData?;
+          if (data != null) {
+            return ScorecardPage(data: data);
+          }
           return const SizedBox.shrink();
         },
       ),
