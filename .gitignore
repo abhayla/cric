@@ -23,13 +23,10 @@ apps/mobile/.packages
 apps/mobile/build/
 apps/mobile/.flutter-plugins
 apps/mobile/.flutter-plugins-dependencies
-apps/mobile/pubspec.lock
 *.iml
 
 # Bun / Node
 apps/server/node_modules/
-apps/server/bun.lockb
-apps/server/bun.lock
 
 # MCP config (contains connection strings)
 .mcp.json

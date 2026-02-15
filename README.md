@@ -13,7 +13,7 @@ A cricket scoring mobile app targeting amateur/grassroots cricketers in India. B
 | Auth | Firebase Auth (Phone OTP only for MVP) |
 | Real-time | Bun Native WebSockets |
 | Target | Android only (MVP) |
-| UI Theme | Material 3 Dark |
+| UI Theme | Material 3 Light |
 
 ## Project Structure
 
@@ -44,9 +44,9 @@ cric/
 │   └── validate-structure/  # CI structure validation
 ├── .claude/
 │   ├── rules.md
-│   ├── hooks/           # Automated guardrails (7 hooks)
-│   ├── agents/          # Research-only sub-agents (13)
-│   └── skills/          # User-invocable skills (12)
+│   ├── hooks/           # Automated guardrails (10 hooks)
+│   ├── agents/          # Research-only sub-agents (14)
+│   └── skills/          # User-invocable skills (16)
 ├── .github/
 │   └── workflows/       # CI pipeline
 ├── CLAUDE.md
@@ -99,3 +99,45 @@ Runner: self-hosted (Windows Server 2022 VPS). Jobs skip automatically when thei
 4. **Match Analytics** - Wagon wheel, manhattan chart, worm graph, MVP rankings
 5. **Real-time Updates** - WebSocket broadcasting to all match viewers
 6. **Offline-First** - Score matches without internet, sync later
+
+## First-Time Setup
+
+### Prerequisites
+
+- [ ] Flutter SDK (stable channel)
+- [ ] Bun runtime
+- [ ] PostgreSQL (running instance)
+- [ ] Firebase project with Phone Auth enabled
+- [ ] Android SDK + emulator or physical device
+
+### Steps
+
+```bash
+# 1. Clone and install dependencies
+git clone <repo-url> cric && cd cric
+cd apps/mobile && flutter pub get && cd ../..
+cd apps/server && bun install && cd ../..
+
+# 2. Server environment
+cp apps/server/.env.example apps/server/.env
+# Edit .env with your PostgreSQL connection string and Firebase credentials
+
+# 3. Firebase setup
+# Place google-services.json in apps/mobile/android/app/
+# Place firebase-service-account.json in apps/server/
+
+# 4. Database setup
+cd apps/server
+bunx drizzle-kit generate   # Generate migrations
+bunx drizzle-kit migrate    # Apply migrations
+cd ../..
+
+# 5. Code generation (Drift, Freezed, Riverpod)
+cd apps/mobile
+dart run build_runner build --delete-conflicting-outputs
+cd ../..
+
+# 6. Run
+cd apps/mobile && flutter run          # Start the app
+cd apps/server && bun run src/index.ts  # Start the server (separate terminal)
+```
