@@ -213,18 +213,22 @@ class _ScorecardPageState extends State<ScorecardPage>
           // Innings toggle chips
           Row(
             children: [
-              _buildInningsChip(
-                context,
-                label: '${_data.firstInnings.teamName} — 1st Inn',
-                isSelected: _selectedInningsIndex == 0,
-                onTap: () => setState(() => _selectedInningsIndex = 0),
+              Expanded(
+                child: _buildInningsChip(
+                  context,
+                  label: '${_data.firstInnings.teamName} — 1st Inn',
+                  isSelected: _selectedInningsIndex == 0,
+                  onTap: () => setState(() => _selectedInningsIndex = 0),
+                ),
               ),
               const SizedBox(width: 8),
-              _buildInningsChip(
-                context,
-                label: '${_data.secondInnings.teamName} — 2nd Inn',
-                isSelected: _selectedInningsIndex == 1,
-                onTap: () => setState(() => _selectedInningsIndex = 1),
+              Expanded(
+                child: _buildInningsChip(
+                  context,
+                  label: '${_data.secondInnings.teamName} — 2nd Inn',
+                  isSelected: _selectedInningsIndex == 1,
+                  onTap: () => setState(() => _selectedInningsIndex = 1),
+                ),
               ),
             ],
           ),
@@ -288,6 +292,7 @@ class _ScorecardPageState extends State<ScorecardPage>
       child: Chip(
         label: Text(
           label,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
             fontSize: 12,
