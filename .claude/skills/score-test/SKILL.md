@@ -1,8 +1,10 @@
 ---
 name: score-test
-description: Run the scoring engine test suite to verify delivery processing, strike rotation, and undo logic.
+description: "Run the scoring engine test suite (delivery processing, strike rotation, extras, wickets, undo logic). Use when scoring code changes, user says 'test scoring', 'run score tests', or after modifying files in features/scoring/."
 disable-model-invocation: true
 allowed-tools: Bash, Read
+metadata:
+  version: 1.0.0
 ---
 
 # Score Test

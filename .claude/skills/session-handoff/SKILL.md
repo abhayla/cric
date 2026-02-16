@@ -1,8 +1,10 @@
 ---
 name: session-handoff
-description: Update docs/CONTINUE_PROMPT.md with current session progress, completed work, and next steps for seamless session resumption.
+description: "Update docs/CONTINUE_PROMPT.md with current session progress, completed work, and next steps. Use at end of session, when user says 'handoff', 'save progress', 'session end', or before stopping work."
 disable-model-invocation: true
 allowed-tools: Read, Edit, Write
+metadata:
+  version: 1.0.0
 ---
 
 # Session Handoff

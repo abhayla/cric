@@ -1,9 +1,11 @@
 ---
 name: screenshot-verify
-description: Take a screenshot of the running app and compare it against the HTML wireframe for the specified screen.
+description: "Take a screenshot of the running Flutter app and compare against the HTML wireframe (docs/ui/*.html). Use when UI implementation is complete, user says 'verify screenshot', 'compare wireframe', or 'check UI match'."
 disable-model-invocation: true
 context: fork
 allowed-tools: Bash, Read, Glob, mcp__playwright__browser_navigate, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_snapshot
+metadata:
+  version: 1.0.0
 ---
 
 # Screenshot Verify

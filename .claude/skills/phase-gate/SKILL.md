@@ -1,9 +1,11 @@
 ---
 name: phase-gate
-description: Run phase completion gate checks to verify all exit criteria are met before progressing to the next implementation phase.
+description: "Run phase completion gate checks (issues closed, tests pass, screenshots verified, CI green, code quality, coverage threshold). Use when a phase is complete, user says 'phase gate', 'ready for next phase', or 'check exit criteria'."
 disable-model-invocation: true
 context: fork
 allowed-tools: Bash, Read, Glob, Grep, mcp__playwright__browser_navigate, mcp__playwright__browser_take_screenshot
+metadata:
+  version: 1.0.0
 ---
 
 # Phase Gate

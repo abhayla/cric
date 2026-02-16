@@ -1,8 +1,10 @@
 ---
 name: schema-parity
-description: Compare Drift (Flutter) tables against Drizzle (server) schema. Read-only parity check with structured diff report.
+description: "Compare Drift (Flutter SQLite) tables against Drizzle (PostgreSQL) schema for column/type mismatches. Use when either schema is modified, user says 'check parity', 'schema diff', or after /db-migrate or /drift-migrate. Read-only."
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep
+metadata:
+  version: 1.0.0
 ---
 
 # Schema Parity

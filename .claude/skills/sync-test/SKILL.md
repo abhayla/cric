@@ -1,8 +1,10 @@
 ---
 name: sync-test
-description: Test offline sync round-trip by running server sync tests and Flutter sync tests.
+description: "Test offline sync round-trip by running server sync tests and Flutter sync engine tests. Use when sync logic changes, user says 'test sync', 'check offline', or after modifying sync queue or persistence code."
 disable-model-invocation: true
 allowed-tools: Bash, Read
+metadata:
+  version: 1.0.0
 ---
 
 # Sync Test

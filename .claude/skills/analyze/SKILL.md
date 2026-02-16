@@ -1,8 +1,10 @@
 ---
 name: analyze
-description: Run Flutter static analysis (flutter analyze) without code generation. Faster than /build-check when you only need lint checking.
+description: "Run Flutter static analysis (flutter analyze) without code generation. Use when you need a quick lint check, user says 'analyze', 'lint', or 'check warnings'. Faster than /build-check — skips build_runner."
 disable-model-invocation: true
 allowed-tools: Bash, Read
+metadata:
+  version: 1.0.0
 ---
 
 # Analyze

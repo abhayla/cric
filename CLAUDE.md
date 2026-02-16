@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CricApp is a cricket scoring mobile app (CricHeroes competitor) for amateur cricketers in India. Monorepo with a Flutter frontend and Bun backend. **Status: planning complete, implementation not yet started.**
+CricApp is a cricket scoring mobile app (CricHeroes competitor) for amateur cricketers in India. Monorepo with a Flutter frontend and Bun backend. **Status: Phases 1–6 complete, Phase 7 (Polish & Testing) in progress.**
 
 ## Tech Stack
 
@@ -39,19 +39,19 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 
 ## Current Status
 
-**Phase 3 (Scoring Engine) IN PROGRESS.** Issues #36, #26, #27, #28, #29 complete. Next: Issue #30 (Wicket dialog). 1121 Flutter tests, 170 server tests. See [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) for detailed progress and next steps.
+**Phases 1–6 COMPLETE.** Foundation, Teams & Match Setup, Tournaments, Scoring Engine (with offline sync + WebSocket broadcast), Analytics (charts + MVP), Player Profiles & Stats, Home Dashboard — all done. 1950 Flutter tests, 298 server tests. See [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) for detailed progress and next steps.
 
 ## Implementation Phases
 
 Phases from [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md) — build in order:
 
-1. **Foundation** — Project init, PostgreSQL + Drizzle, Firebase Auth, M3 light theme, go_router, auth screens
-2. **Teams & Match Setup** — Teams CRUD, match creation, Drift local DB, offline caching
-3. **Tournament Management** — Tournament CRUD, fixture generation, standings, knockout bracket, NRR, super over
-4. **Scoring Engine (CRITICAL)** — Delivery recording, scoring state machine, cricket rules, undo, WebSocket broadcast, innings/match completion, offline sync
-5. **Analytics** — Wagon wheel, Manhattan chart, Worm graph, MVP algorithm
-6. **Player Profiles & Stats** — Career stats aggregation, player profile, match history
-7. **Polish & Testing** — Scoring engine tests, integration tests, performance testing
+1. ~~**Foundation**~~ ✅ — Project init, PostgreSQL + Drizzle, Firebase Auth, M3 light theme, go_router, auth screens
+2. ~~**Teams & Match Setup**~~ ✅ — Teams CRUD, match creation, Drift local DB, offline caching
+3. ~~**Tournament Management**~~ ✅ — Tournament CRUD, fixture generation, standings, knockout bracket, NRR, super over
+4. ~~**Scoring Engine (CRITICAL)**~~ ✅ — Delivery recording, scoring state machine, cricket rules, undo, WebSocket broadcast, innings/match completion, offline sync
+5. ~~**Analytics**~~ ✅ — Wagon wheel, Manhattan chart, Worm graph, MVP algorithm
+6. ~~**Player Profiles & Stats**~~ ✅ — Career stats aggregation, player profile, match history
+7. **Polish & Testing** 🔧 — Scoring engine tests, integration tests, performance testing
 8. **Deployment** — VPS (Windows Server), PM2, Nginx, Cloudflare, `pg_dump` backups
 
 ## Key Documentation

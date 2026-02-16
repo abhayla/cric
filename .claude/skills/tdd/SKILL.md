@@ -1,13 +1,15 @@
 ---
 name: tdd
-description: Guided TDD workflow. Enforces Red-Green-Refactor cycle per layer. Write failing tests first, then implement.
+description: "Guided TDD workflow enforcing Red-Green-Refactor cycle per layer (domain, data, presentation). Use when implementing new features, user says 'tdd', 'test first', or 'red green refactor'. Write failing tests first, then implement."
 disable-model-invocation: true
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Skill, Task
+metadata:
+  version: 1.1.0
 ---
 
 # TDD — Test-Driven Development
 
-Guided Red-Green-Refactor workflow for a specific feature and layer.
+Guided Red-Green-Refactor workflow for a specific feature and layer, with enforcement gates and automated fix delegation.
 
 ## Arguments
 
@@ -16,6 +18,46 @@ Guided Red-Green-Refactor workflow for a specific feature and layer.
 - `<layer>` = `domain`, `data`, `presentation`, or `all` (runs all 3 in sequence)
 
 Examples: `/tdd auth domain`, `/tdd scoring all`, `/tdd teams data`
+
+---
+
+## Step 0: Initialize Workflow State
+
+```bash
+node -e "
+const fs = require('fs');
+const sf = '.claude/workflow-state.json';
+try {
+  const d = JSON.parse(fs.readFileSync(sf));
+  d.activeCommand = 'tdd';
+  d.steps = {};
+  d.fixesApplied = [];
+  d.filesChanged = [];
+  d.testResults = { lastRunPassed: null, failureCount: 0 };
+  fs.writeFileSync(sf, JSON.stringify(d, null, 2));
+} catch {}
+"
+```
+
+## Step 0b: Pre-Execution Knowledge Check
+
+Check failure index for known issues in this feature area:
+
+```bash
+node -e "
+const fs = require('fs');
+try {
+  const d = JSON.parse(fs.readFileSync('.claude/logs/learning/failure-index.json'));
+  for (const e of d.entries || []) {
+    if (e.known_workaround) console.log('KNOWN:', e.skill + '/' + e.issue_type, '->', e.known_workaround);
+  }
+} catch { console.log('No failure index found'); }
+"
+```
+
+If known workarounds exist for this feature → apply proactively.
+
+---
 
 ## Pre-Steps
 
@@ -36,26 +78,29 @@ Examples: `/tdd auth domain`, `/tdd scoring all`, `/tdd teams data`
    - Data: `apps/mobile/lib/src/features/<feature>/data/`
    - Presentation: `apps/mobile/lib/src/features/<feature>/presentation/`
 
+---
+
+## SELF-ENFORCEMENT GATE: Pre-Implementation
+
+Before writing any implementation code (Phase 2), answer:
+
+```
+Planning docs read?          -> [YES: list / NO - STOP]
+Test locations identified?   -> [YES: paths / NO - STOP]
+Source locations identified?  -> [YES: paths / NO - STOP]
+Issue/phase context?         -> [YES: Phase N, Issue #X / NO - STOP]
+```
+
+---
+
 ## Phase 1: RED — Write Failing Tests
 
 **Context isolation rule:** Do NOT read existing implementation files. Write tests against INTERFACES, SPECS, and PLANNING DOCS only.
 
-### Domain Layer Tests
-- Pure unit tests for entity behavior and validation
-- Test domain logic functions (strike rotation, delivery validation, etc.)
-- Test repository interface contracts (abstract method signatures)
-
-### Data Layer Tests
-- Mock datasources using `mocktail` or hand-written mocks
-- Test Freezed model serialization round-trips (toJson → fromJson)
-- Test repository implementations call correct datasource methods
-- Test error wrapping (datasource exceptions → domain exceptions)
-
-### Presentation Layer Tests
-- Notifier state transition tests with mocked repository
-- Test initial state, loading state, success state, error state
-- Widget tests: pump with `ProviderScope` overrides, tap buttons, verify UI
-- Test form validation, dialog interactions
+For layer-specific test patterns, see:
+- [references/domain-layer.md](references/domain-layer.md) — Domain entity TDD examples
+- [references/data-layer.md](references/data-layer.md) — Datasource/repository TDD examples
+- [references/presentation-layer.md](references/presentation-layer.md) — Notifier/widget TDD + async patterns
 
 ### Run Tests — Confirm FAIL
 ```bash
@@ -64,13 +109,9 @@ cd apps/mobile && flutter test test/src/features/<feature>/<layer>/
 
 All tests MUST FAIL. If any pass, the test is not testing new behavior — rewrite it.
 
-Output:
-```
-RED PHASE COMPLETE
-Tests written: X
-Tests failing: X (expected — all should fail)
-Test files: [list]
-```
+Output: `RED PHASE COMPLETE — Tests written: X, Tests failing: X (expected)`
+
+---
 
 ## Phase 2: GREEN — Implement to Pass
 
@@ -91,14 +132,32 @@ cd apps/mobile && dart run build_runner build --delete-conflicting-outputs
 cd apps/mobile && flutter test test/src/features/<feature>/<layer>/
 ```
 
-All tests MUST PASS. If any fail, fix implementation — NOT the tests (unless the test has a genuine bug).
+### On Failure — Delegate to /fix-loop
 
-Output:
+> **ENFORCEMENT GATE:** If tests fail, you MUST use the Skill tool to invoke `/fix-loop`. Do NOT fix failures inline without the skill.
+
+If any tests fail after implementation:
+
 ```
-GREEN PHASE COMPLETE
-Tests passing: X/X
-Source files created: [list]
+Skill("fix-loop") with arguments:
+  failure_output:         {raw test failure output}
+  failure_context:        "TDD GREEN phase: <feature>/<layer>"
+  files_of_interest:      {source files created in this phase}
+  build_command:          "cd apps/mobile && dart run build_runner build --delete-conflicting-outputs"
+  retest_command:         "cd apps/mobile && flutter test test/src/features/<feature>/<layer>/"
+  retest_timeout:         300
+  max_iterations:         6
+  max_attempts_per_issue: 3
+  prohibited_actions:     ["skip tests", "weaken assertions", "delete tests"]
+  fix_target:             "production"
+  log_dir:                ".claude/logs/fix-loop/"
 ```
+
+**CRITICAL:** Do NOT proceed to Phase 3 until all tests pass (fix-loop returns RESOLVED).
+
+Output: `GREEN PHASE COMPLETE — Tests passing: X/X`
+
+---
 
 ## Phase 3: REFACTOR — Clean Up
 
@@ -115,12 +174,58 @@ cd apps/mobile && flutter test test/src/features/<feature>/<layer>/
 
 If any test fails during refactor → revert the refactoring change and try a different approach.
 
-Output:
+Output: `REFACTOR PHASE COMPLETE — Tests still passing: X/X`
+
+---
+
+## SELF-ENFORCEMENT GATE: Pre-Commit
+
+Before producing the final report, answer:
+
 ```
-REFACTOR PHASE COMPLETE
-Tests still passing: X/X
-Refactoring changes: [brief summary]
+ALL tests passing?           -> [YES: X/X / NO - STOP]
+/fix-loop invoked for failures? -> [YES: RESOLVED / N/A (no failures) / NO - STOP]
+Files follow placement rules?   -> [YES / NO - STOP]
+No prohibited patterns?         -> [YES / NO - STOP]
 ```
+
+---
+
+## Post-Workflow: Verification & Commit Pipeline
+
+If any fixes were applied during the GREEN phase:
+
+> **ENFORCEMENT GATE:** You MUST invoke `/post-fix-pipeline` before committing.
+
+```
+Skill("post-fix-pipeline") with arguments:
+  fixes_applied:          {list from fix-loop}
+  files_changed:          {all source + test files created}
+  session_summary:        "TDD: <feature>/<layer> — N tests, M source files"
+  test_suite_commands:    [
+    { name: "feature-tests", command: "cd apps/mobile && flutter test test/src/features/<feature>/", timeout: 300 },
+    { name: "flutter-analyze", command: "cd apps/mobile && flutter analyze", timeout: 120 }
+  ]
+  test_suite_max_fix_attempts: 2
+  docs_instructions:      "Update docs/CONTINUE_PROMPT.md with TDD session summary."
+  commit_format:          "feat(<feature>): implement <layer> layer via TDD"
+  commit_scope:           "<feature>"
+  push:                   false
+```
+
+---
+
+## Post-Workflow: Learning Capture
+
+After the workflow completes (all phases done, or stopped due to failure):
+
+```
+Skill("reflect", args="session")
+```
+
+This captures the TDD session outcomes into structured learning logs.
+
+---
 
 ## Final Report
 
@@ -133,66 +238,20 @@ Refactoring changes: [brief summary]
 | GREEN | DONE | X tests passing, Y source files |
 | REFACTOR | DONE | Tests still green after cleanup |
 
+### Fix-Loop Activity (if invoked)
+- Iterations: X
+- Issues fixed: X
+- Debugger invocations: X
+
+### Pipeline Status
+- Post-fix-pipeline: COMPLETED | BLOCKED | NOT_NEEDED
+
 ### Files Created
 - Test files: [list]
 - Source files: [list]
-
-### Coverage
-- Run: `cd apps/mobile && flutter test --coverage test/src/features/<feature>/`
 ```
 
-## Async Provider Testing Patterns
-
-For Riverpod notifiers that use async operations (Dio, Drift):
-
-### Notifier test — async state transitions
-
-```dart
-test('transitions loading → data on fetch', () async {
-  when(() => mockRepo.getMatches()).thenAnswer(
-    (_) async => [Match(id: '1', name: 'Test')],
-  );
-
-  final container = ProviderContainer(overrides: [
-    matchRepoProvider.overrideWithValue(mockRepo),
-  ]);
-
-  // Trigger fetch
-  final notifier = container.read(matchListProvider.notifier);
-
-  // Verify loading → data transition
-  await container.read(matchListProvider.future);
-  expect(container.read(matchListProvider).value, hasLength(1));
-});
-```
-
-### Widget test — loading and data states
-
-```dart
-testWidgets('shows loading then data', (tester) async {
-  when(() => mockRepo.getMatches()).thenAnswer(
-    (_) async => [Match(id: '1', name: 'Test')],
-  );
-
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [matchRepoProvider.overrideWithValue(mockRepo)],
-      child: const MaterialApp(home: MatchListPage()),
-    ),
-  );
-
-  // Loading state
-  expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-  // Wait for async
-  await tester.pumpAndSettle();
-
-  // Data state
-  expect(find.text('Test'), findsOneWidget);
-});
-```
-
-**Always test both success and error paths for async operations.**
+---
 
 ## TDD Exceptions
 

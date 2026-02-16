@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:flutter/foundation.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/otp_page.dart';
 import '../features/auth/presentation/pages/profile_setup_page.dart';
@@ -116,21 +117,36 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     redirect: (context, state) {
+      // In debug mode, skip auth entirely for UI testing
+      if (kDebugMode) {
+        final currentPath = state.matchedLocation;
+        if (currentPath == AppRoutes.splash ||
+            currentPath == AppRoutes.login ||
+            currentPath == AppRoutes.otp) {
+          return AppRoutes.home;
+        }
+        return null;
+      }
+
       final isLoggedIn = authState.value != null;
       final isLoading = authState.isLoading;
+      final hasError = authState.hasError;
       final currentPath = state.matchedLocation;
 
       // While auth state is loading, stay on splash
-      if (isLoading) {
+      if (isLoading && !hasError) {
         return currentPath == AppRoutes.splash ? null : AppRoutes.splash;
       }
 
+      final isOnSplash = currentPath == AppRoutes.splash;
       final isAuthRoute = currentPath == AppRoutes.login ||
           currentPath == AppRoutes.otp ||
-          currentPath == AppRoutes.splash;
+          isOnSplash;
 
-      // Not logged in → go to login (unless already on auth route)
+      // Not logged in → go to login (unless already on login/otp)
       if (!isLoggedIn) {
+        // Always leave splash once auth is resolved
+        if (isOnSplash) return AppRoutes.login;
         return isAuthRoute ? null : AppRoutes.login;
       }
 

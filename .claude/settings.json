@@ -47,7 +47,14 @@
       "Bash(node scripts:*)",
       "Bash(mkdir:*)",
       "Bash(npx prettier:*)",
-      "Bash(cd apps/server && npx prettier:*)"
+      "Bash(cd apps/server && npx prettier:*)",
+      "Bash(psql:*)",
+      "Bash(pg_dump:*)",
+      "Bash(pm2:*)",
+      "Bash(curl:*)",
+      "Bash(tar:*)",
+      "Bash(node -e:*)",
+      "Bash(cd apps/server && bunx tsc --noEmit:*)"
     ],
     "deny": [
       "Edit(CLAUDE.md)",
@@ -98,6 +105,10 @@
           {
             "type": "command",
             "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/guard-bash-commands.ps1"
+          },
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/verify-evidence-artifacts.ps1"
           }
         ]
       }
@@ -109,6 +120,10 @@
           {
             "type": "command",
             "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/load-session-context.ps1"
+          },
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/workflow-state-init.ps1"
           }
         ]
       },

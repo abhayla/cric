@@ -1,8 +1,10 @@
 ---
 name: issue-create
-description: Create GitHub Issues for a phase from wireframe HTML files, cross-referenced with API.md, DATABASE.md, and SCORING_RULES.md.
+description: "Create GitHub Issues for all screens/features in an implementation phase. Use when starting a new phase, user says 'create issues', 'plan phase', or 'generate tickets'. Cross-references wireframes, API.md, DATABASE.md, and SCORING_RULES.md."
 disable-model-invocation: true
 allowed-tools: Bash, Read, Glob, Grep
+metadata:
+  version: 1.0.0
 ---
 
 # Issue Create
@@ -33,56 +35,7 @@ Create GitHub Issues for all screens/features in a given phase.
       - `docs/planning/SCORING_RULES.md` — cricket rules (if scoring-related)
    c. Extract acceptance criteria from the wireframe (components, fields, interactions)
 
-5. **Create each issue** using this template:
-
-   ```bash
-   gh issue create --title "<screen/feature name>" --milestone "Phase $ARGUMENTS" --label "type: feature" --label "P0: critical" --label "component: <area>" --body "$(cat <<'EOF'
-   ## User Story
-   As a [role], I want to [action] so that [benefit].
-
-   ## Acceptance Criteria
-
-   ### Domain Layer
-   - [ ] Entity classes created
-   - [ ] Repository interface defined
-
-   ### Data Layer
-   - [ ] Freezed models with JSON serialization
-   - [ ] Local datasource (Drift)
-   - [ ] Remote datasource (Dio)
-   - [ ] Repository implementation
-
-   ### Presentation Layer
-   - [ ] Notifier with Freezed state
-   - [ ] Page widget
-   - [ ] Feature-specific widgets
-   - [ ] providers.dart declarations
-
-   ### Tests
-   - [ ] Domain unit tests
-   - [ ] Repository unit tests (mocked datasources)
-   - [ ] Notifier unit tests (mocked repo)
-   - [ ] Widget tests
-
-   ### Wireframe Comparison
-   - [ ] Screenshot matches wireframe (`/screenshot-verify XX`)
-
-   ## Design Reference
-   Wireframe: `docs/ui/XX-name.html`
-
-   ## Technical Notes
-   **Tables:** `table1`, `table2`
-   **Endpoints:** `GET /api/v1/...`, `POST /api/v1/...`
-   **Rules:** (if applicable)
-
-   ## Agents to Invoke
-   - [ ] `cricheroes-comparator` (pre-implementation)
-   - [ ] `ui-researcher` (pre-implementation)
-   - [ ] `code-reviewer` (post-implementation)
-   - [ ] `tester` (post-implementation)
-   EOF
-   )"
-   ```
+5. **Create each issue** using the template in [references/issue-template.md](references/issue-template.md).
 
 6. **After creating all issues**, verify:
    ```bash

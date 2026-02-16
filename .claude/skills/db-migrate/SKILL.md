@@ -1,8 +1,10 @@
 ---
 name: db-migrate
-description: Generate and apply Drizzle database migrations after schema changes.
+description: "Generate and apply Drizzle (PostgreSQL) database migrations after schema changes. Use when Drizzle schema files in src/db/schema/ are modified, user says 'migrate', 'generate migration', or 'apply schema changes'."
 disable-model-invocation: true
 allowed-tools: Bash, Read
+metadata:
+  version: 1.0.0
 ---
 
 # DB Migrate

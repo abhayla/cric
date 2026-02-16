@@ -1,8 +1,10 @@
 ---
 name: drift-migrate
-description: Manage Drift schema version bumps and scaffold migration code. Default read-only; only writes with "apply" argument.
+description: "Manage Drift (Flutter SQLite) schema version bumps and scaffold migration code. Use when Drift table definitions change, user says 'drift migrate', 'bump schema version', or after adding/modifying tables in shared/data/database/. Default read-only; pass 'apply' to write."
 disable-model-invocation: true
 allowed-tools: Read, Write, Bash, Glob
+metadata:
+  version: 1.0.0
 ---
 
 # Drift Migrate

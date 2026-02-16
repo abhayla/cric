@@ -1,8 +1,10 @@
 ---
 name: debug-log
-description: Create or update a debug iteration log per CODE_FIXES.md workflow. Tracks hypothesis, fix, result, and finding per iteration.
+description: "Create or update a debug iteration log in docs/debug/. Use when debugging a persistent issue, user says 'track this bug', 'debug log', or iteration count exceeds 3 on same issue. Tracks hypothesis, fix, result per iteration."
 disable-model-invocation: true
 allowed-tools: Read, Write, Glob
+metadata:
+  version: 1.0.0
 ---
 
 # Debug Log

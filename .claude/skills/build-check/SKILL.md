@@ -1,8 +1,10 @@
 ---
 name: build-check
-description: Run code generation (build_runner) and static analysis (flutter analyze) to catch lint errors and regenerate Drift/Freezed/Riverpod files.
+description: "Run code generation (build_runner) and static analysis (flutter analyze). Use when generated files are stale, user says 'build check', 'regenerate', 'code gen', or after modifying Drift tables, Freezed models, or Riverpod providers."
 disable-model-invocation: true
 allowed-tools: Bash, Read
+metadata:
+  version: 1.0.0
 ---
 
 # Build Check

@@ -4,7 +4,7 @@
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
 **Status:** Phase 6 (Polish & Testing) IN PROGRESS — Issue #60 (Home Page Dashboard) COMPLETE. Also committed pre-existing scoring widget/integration/performance tests and expanded server scoring tests. 1950 Flutter tests, 298 server tests.
-**Working Directory:** `C:\Abhay\VideCoding\cric\`
+**Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
 ## Tech Stack
 
@@ -16,7 +16,35 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Issue #60 (Home Page Dashboard) is COMPLETE.** Next: remaining Phase 6 issues or Phase 7 (Deployment).
+**Issue #60 (Home Page Dashboard) is COMPLETE.** Fixed OTP page deprecated APIs (RawKeyboardListener → KeyboardListener) and enhanced auto-verify skill with Step 4b static analysis. Next: remaining Phase 6 issues or Phase 7 (Deployment).
+
+### Session Fixes (2026-02-16 — deprecation + tooling)
+
+**Fix 1: Deprecated Flutter APIs in OTP page**
+- **File:** `apps/mobile/lib/src/features/auth/presentation/pages/otp_page.dart`
+- **Root cause:** Used `RawKeyboardListener`, `RawKeyEvent`, `RawKeyDownEvent` — all deprecated since Flutter 3.18.
+- **Fix:** Replaced with `KeyboardListener`, `KeyEvent`, `KeyDownEvent` (+ `onKey:` → `onKeyEvent:`).
+- **Verification:** `flutter analyze` shows 0 issues, all 8 OTP page tests pass.
+
+**Fix 2: auto-verify skill missing static analysis**
+- **File:** `.claude/skills/auto-verify/SKILL.md`
+- **Root cause:** auto-verify only ran tests (Step 4) but never ran `flutter analyze` or `tsc --noEmit`. Deprecation warnings and lint issues went undetected.
+- **Fix:** Added Step 4b (Static Analysis) — runs `flutter analyze` on changed files after tests, classifies errors/warnings/info. Updated Step 7 report template with Analysis section.
+
+### Session Bug Fixes (2026-02-16 — new PC setup)
+
+**Bug 1: Splash screen stuck forever without network**
+- **Root cause:** `authStateChanges()` from Firebase Auth never emits on fresh install without internet. `StreamProvider` stays in `isLoading` state forever, router redirect keeps user on splash.
+- **Fix in `providers.dart`:** Added 5-second timeout to `authStateProvider`. If Firebase doesn't emit within 5s, emits `null` so the router can proceed.
+- **Fix in `router.dart`:** When auth resolves (not loading) and user is not logged in, splash now always redirects to login. Previously splash was treated as an "auth route" and the redirect returned `null` (no redirect), trapping the user.
+- **Files changed:** `apps/mobile/lib/src/app/providers.dart`, `apps/mobile/lib/src/app/router.dart`
+- **Tests:** 1950 Flutter tests still passing (8 router tests pass).
+
+**New PC setup notes:**
+- Must run `dart run build_runner build --delete-conflicting-outputs` after cloning (generated files not in git)
+- Must copy `google-services.json` to `apps/mobile/android/app/` and `firebase-service-account.json` + `.env` to `apps/server/`
+- Android emulator on Windows may have no internet (Hyper-V networking issue) — use physical device for full testing
+- Missing mipmap launcher icons were regenerated from default Flutter template
 
 **Recent completion:** Issue #60 — Home Page Dashboard. Wired home page to real data with live matches, recent matches, and user stats sections. Enhanced server `getMatches()` to return team names + innings data per API.md spec. 54 new Flutter tests (1950 total), 4 new server tests (298 total).
 

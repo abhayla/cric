@@ -1,8 +1,10 @@
 ---
 name: server-test
-description: Run Bun server test suite (all tests or a specific file).
+description: "Run Bun server test suite (all tests or a specific file). Use when server code changes, user says 'test server', 'run server tests', or after modifying files in apps/server/src/."
 disable-model-invocation: true
 allowed-tools: Bash, Read
+metadata:
+  version: 1.0.0
 ---
 
 # Server Test

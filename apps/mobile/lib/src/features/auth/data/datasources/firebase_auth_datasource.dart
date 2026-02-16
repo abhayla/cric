@@ -65,6 +65,15 @@ class FirebaseAuthDatasource {
     }
   }
 
+  /// Sign in anonymously (for testing/dev purposes).
+  Future<UserCredential> signInAnonymously() async {
+    try {
+      return await _firebaseAuth.signInAnonymously();
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(e.message ?? 'Anonymous sign-in failed');
+    }
+  }
+
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
     _verificationId = null;

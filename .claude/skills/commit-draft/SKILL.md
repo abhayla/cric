@@ -1,8 +1,10 @@
 ---
 name: commit-draft
-description: Analyze staged changes and draft a conventional commit message. Does NOT commit - only drafts for review.
+description: "Analyze staged changes and draft a conventional commit message (type(scope): description). Use when user says 'commit', 'draft commit', or 'prepare commit'. Does NOT commit — only drafts for review."
 disable-model-invocation: true
 allowed-tools: Bash, Read
+metadata:
+  version: 1.0.0
 ---
 
 # Commit Draft
