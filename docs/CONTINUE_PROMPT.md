@@ -18,6 +18,14 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 **Issue #60 (Home Page Dashboard) is COMPLETE.** Fixed OTP page deprecated APIs (RawKeyboardListener → KeyboardListener) and enhanced auto-verify skill with Step 4b static analysis. Next: remaining Phase 6 issues or Phase 7 (Deployment).
 
+### Session Fix (2026-02-16 — GlobalKey crash)
+
+**Fix: Multiple widgets used the same GlobalKey crash on startup**
+- **File:** `apps/mobile/lib/src/app/router.dart`
+- **Root cause:** `routerProvider` used `ref.watch(authStateProvider)` which recreated the entire `GoRouter` on every auth state change, but reused the same top-level `GlobalKey` instances (`_rootNavigatorKey`, `_shellNavigatorKey`). This caused duplicate `PopScope` navigators with the same key.
+- **Fix:** Replaced `ref.watch` with a `_AuthNotifier` (`ChangeNotifier`) that uses `ref.listen` + `refreshListenable` on `GoRouter`. The router instance is now created once and re-evaluates redirects via `refreshListenable` instead of being rebuilt.
+- **Verification:** App launches cleanly on emulator with no GlobalKey errors. Home page renders correctly.
+
 ### Session Fixes (2026-02-16 — deprecation + tooling)
 
 **Fix 1: Deprecated Flutter APIs in OTP page**
@@ -443,7 +451,7 @@ M3 Light theme + go_router + auth guards:
 **Router (`app/router.dart`):**
 - `GoRouter` with auth-based redirect logic
 - 9 routes: splash, login, otp, profile-setup + 5 shell tabs (home, matches, tournaments, teams, profile)
-- `ShellRoute` with `NavigationBar` (5 destinations: Home, Matches, Tourneys, Teams, Profile)
+- `ShellRoute` with `NavigationBar` (5 destinations: Home, Matches, Tournaments, Teams, Profile)
 - Auth guard: loading → splash, unauthenticated → login, authenticated on auth route → home
 - `AppRoutes` class with all route path constants
 - `NoTransitionPage` for tab switches (no animation between tabs)
@@ -764,7 +772,7 @@ For each screen:
 - **Pull-to-refresh**: ADOPT on all list screens (`RefreshIndicator` wrapper, trivial)
 - **Empty states**: Use per-section empty states on Home, not one generic full-page state
 - **My Stats on Home**: Show 0 values until Phase 5 career stats are built
-- **Bottom nav "Tourneys"**: Test label truncation on 320dp width devices during implementation
+- **Bottom nav "Tournaments"**: Test label truncation on 320dp width devices during implementation
 - **Live match card (2nd innings)**: Show "Need X from Y balls" + RRR (already planned per CH-29)
 - **Profile setup**: Reused for Edit Profile (pre-filled via route params)
 - **All match result types**: Implementation must handle: won by runs, won by wickets, Match Tied, No Result, Won in Super Over
