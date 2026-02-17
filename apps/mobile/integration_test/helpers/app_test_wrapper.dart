@@ -16,8 +16,12 @@ class AppTestWrapper {
         child: CricApp(),
       ),
     );
-    // Wait for initial navigation + splash redirect
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    // Use pump with fixed duration instead of pumpAndSettle to avoid
+    // timeout from continuous animations (loading spinners, shimmers).
+    // Give the app time to initialize, load route, and render home page.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
   }
 
   /// Build the full app widget for integration testing.

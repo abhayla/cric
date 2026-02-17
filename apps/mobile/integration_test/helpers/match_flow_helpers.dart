@@ -21,6 +21,18 @@ Future<void> visualPause(WidgetTester tester, [int ms = defaultPauseMs]) async {
   await tester.pump(Duration(milliseconds: ms));
 }
 
+/// Like pumpAndSettle but with a timeout — won't hang on infinite animations.
+Future<void> settle(WidgetTester tester, {int fallbackMs = 2000}) async {
+  try {
+    await tester.pumpAndSettle(const Duration(milliseconds: 100),
+        EnginePhase.sendSemanticsUpdate, const Duration(seconds: 5));
+  } catch (_) {
+    for (var i = 0; i < (fallbackMs ~/ 100); i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Basic Tap Helpers
 // ═══════════════════════════════════════════════════════════════════════════

@@ -33,6 +33,9 @@ import 'helpers/db_verifier.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  // Set to true when running with Bun server + PostgreSQL
+  const useServer = bool.fromEnvironment('USE_SERVER', defaultValue: false);
+
   final serverManager = ServerManager(port: 3001);
   final dbVerifier = DbVerifier(baseUrl: 'http://localhost:3001');
   final random = Random(42);
@@ -48,12 +51,16 @@ void main() {
   // ── Setup & Teardown ──
 
   setUpAll(() async {
-    await serverManager.startServer();
-    await serverManager.resetDatabase();
+    if (useServer) {
+      await serverManager.startServer();
+      await serverManager.resetDatabase();
+    }
   });
 
   tearDownAll(() async {
-    await serverManager.stopServer();
+    if (useServer) {
+      await serverManager.stopServer();
+    }
   });
 
   // ══════════════════════════════════════════════════════════════════════
@@ -171,14 +178,14 @@ void main() {
             print('    Result: $record');
 
             // Match complete — dismiss modal
-            await tester.pumpAndSettle();
+            await settle(tester);
             await visualPause(tester, 500);
 
             // Tap "Back to Home" or dismiss the match complete modal
             final backHome = find.text('Back to Home');
             if (backHome.evaluate().isNotEmpty) {
               await tester.tap(backHome.first);
-              await tester.pumpAndSettle();
+              await settle(tester);
             }
           }
         }
@@ -242,11 +249,11 @@ void main() {
             '    2nd innings: ${record.secondInningsRuns}/${record.secondInningsWickets}');
 
         // Dismiss match complete
-        await tester.pumpAndSettle();
+        await settle(tester);
         final backHome = find.text('Back to Home');
         if (backHome.evaluate().isNotEmpty) {
           await tester.tap(backHome.first);
-          await tester.pumpAndSettle();
+          await settle(tester);
         }
       }
       print('[PHASE 8] Semi-finals completed');
@@ -294,11 +301,11 @@ void main() {
           '  2nd innings: ${finalRecord.secondInningsRuns}/${finalRecord.secondInningsWickets}');
 
       // Dismiss match complete
-      await tester.pumpAndSettle();
+      await settle(tester);
       final backHome = find.text('Back to Home');
       if (backHome.evaluate().isNotEmpty) {
         await tester.tap(backHome.first);
-        await tester.pumpAndSettle();
+        await settle(tester);
       }
       print('[PHASE 9] Final completed');
 
@@ -318,32 +325,33 @@ void main() {
       print('╚══════════════════════════════════════╝\n');
 
       // ── 12. DB VERIFICATION ──
-      print('\n[PHASE 12] Database verification...');
+      if (useServer) {
+        print('\n[PHASE 12] Database verification...');
 
-      // Verify each match's deliveries and awards
-      for (final record in matchRecords) {
-        try {
-          final deliveryResult = await dbVerifier.verifyMatchDeliveries(
-            record.matchId,
-            record.allDeliveries,
-          );
-          print('  DB deliveries ${record.matchId}: $deliveryResult');
+        // Verify each match's deliveries and awards
+        for (final record in matchRecords) {
+          try {
+            final deliveryResult = await dbVerifier.verifyMatchDeliveries(
+              record.matchId,
+              record.allDeliveries,
+            );
+            print('  DB deliveries ${record.matchId}: $deliveryResult');
 
-          final awardsResult = await dbVerifier.verifyMatchAwards(
-            record.matchId,
-          );
-          print('  DB awards ${record.matchId}: $awardsResult');
-        } catch (e) {
-          print('  DB verify ${record.matchId}: SKIPPED ($e)');
+            final awardsResult = await dbVerifier.verifyMatchAwards(
+              record.matchId,
+            );
+            print('  DB awards ${record.matchId}: $awardsResult');
+          } catch (e) {
+            print('  DB verify ${record.matchId}: SKIPPED ($e)');
+          }
         }
-      }
 
-      // Verify tournament standings and leaderboard
-      try {
-        // Note: tournamentId would come from the create step in a real run
-        const tournamentId = 'mock-tour-1'; // placeholder
-        final standings = await dbVerifier.verifyStandings(tournamentId);
-        print('  DB standings: $standings');
+        // Verify tournament standings and leaderboard
+        try {
+          // Note: tournamentId would come from the create step in a real run
+          const tournamentId = 'mock-tour-1'; // placeholder
+          final standings = await dbVerifier.verifyStandings(tournamentId);
+          print('  DB standings: $standings');
 
         final runsLeader = await dbVerifier.verifyLeaderboard(
           tournamentId,
@@ -362,11 +370,14 @@ void main() {
         print('║ Bowler of Tournament: ${wicketsLeader.topPlayer} '
             '(${wicketsLeader.topValue?.toInt()} wickets)');
         print('╚══════════════════════════════════════╝\n');
-      } catch (e) {
-        print('  DB tournament verification: SKIPPED ($e)');
-      }
+        } catch (e) {
+          print('  DB tournament verification: SKIPPED ($e)');
+        }
 
-      print('[PHASE 12] Database verification complete');
+        print('[PHASE 12] Database verification complete');
+      } else {
+        print('\n[PHASE 12] DB verification SKIPPED (no server)');
+      }
     },
     timeout: const Timeout(Duration(hours: 3)),
   );
