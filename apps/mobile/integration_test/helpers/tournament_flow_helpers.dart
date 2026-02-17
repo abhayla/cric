@@ -33,14 +33,33 @@ Future<void> navigateToTournaments(WidgetTester tester) async {
   }
 }
 
-/// Navigate to the Teams tab from the Home page.
+/// Navigate to the Teams tab.
+///
+/// Works from inside the ShellRoute (bottom NavigationBar visible) AND from
+/// pages outside the ShellRoute (Team Detail, Add Player, etc.) by falling
+/// back to GoRouter.go('/teams').
 Future<void> navigateToTeams(WidgetTester tester) async {
-  // Use .last to prefer bottom nav bar label over any page title that says "Teams"
-  final teamsTab = find.text('Teams');
-  if (teamsTab.evaluate().isNotEmpty) {
-    await tester.tap(teamsTab.last);
+  // Check if the NavigationBar (ShellRoute shell) is visible
+  final navBar = find.byType(NavigationBar);
+  final teamsText = find.text('Teams');
+
+  if (navBar.evaluate().isNotEmpty && teamsText.evaluate().isNotEmpty) {
+    // Inside the shell — tap the Teams tab in the bottom nav
+    await tester.tap(teamsText.last);
     await settle(tester);
     await visualPause(tester);
+    return;
+  }
+
+  // Outside the ShellRoute (e.g., Team Detail reached via go()) — use GoRouter
+  try {
+    final ctx = tester.element(find.byType(Navigator).last);
+    GoRouter.of(ctx).go('/teams');
+    await settle(tester);
+    await visualPause(tester);
+    print('    [navigateToTeams] Used GoRouter.go(/teams) — was outside ShellRoute');
+  } catch (e) {
+    print('    [navigateToTeams] WARNING: GoRouter navigation failed: $e');
   }
 }
 
@@ -55,10 +74,9 @@ Future<void> createTeam(
   WidgetTester tester,
   TeamData team,
 ) async {
-  // Navigate to create team
+  // Navigate to create team page via button or FAB
   final createButton = find.text('Create Team');
   if (createButton.evaluate().isEmpty) {
-    // Try FAB
     final fab = find.byType(FloatingActionButton);
     if (fab.evaluate().isNotEmpty) {
       await tester.tap(fab.first);
@@ -70,26 +88,41 @@ Future<void> createTeam(
   }
   await visualPause(tester);
 
-  // Fill team name
-  final nameField = find.byType(TextFormField);
+  // Fill team name using Key for reliable targeting (not TextFormField.first)
+  final nameField = find.byKey(const Key('teamNameField'));
   if (nameField.evaluate().isNotEmpty) {
+    await tester.tap(nameField.first);
+    await tester.pumpAndSettle();
     await tester.enterText(nameField.first, team.name);
     await settle(tester);
+    print('    [createTeam] Entered team name: ${team.name}');
+  } else {
+    // If key not found, dump page to diagnose
+    dumpVisibleTexts(tester, 'createTeam-noNameField', 30);
+    print('    [createTeam] ERROR: teamNameField key not found! Aborting.');
+    return;
   }
 
-  // Submit — button text is "Create Team" inside the form
-  final submitButtons = find.text('Create Team');
-  if (submitButtons.evaluate().length > 1) {
-    // Last one is the submit button (first is the AppBar title)
-    await tester.tap(submitButtons.last);
-  } else if (submitButtons.evaluate().isNotEmpty) {
-    await tester.tap(submitButtons.first);
+  // Submit via FilledButton (more reliable than text-based finding)
+  final submitBtn = find.byType(FilledButton);
+  if (submitBtn.evaluate().isNotEmpty) {
+    await tester.ensureVisible(submitBtn.first);
+    await tester.pumpAndSettle();
+    await tester.tap(submitBtn.first);
+    print('    [createTeam] Tapped submit FilledButton');
   }
   await settle(tester);
-  await visualPause(tester, 1000);
+  await visualPause(tester, 2000);
 
-  // After creation, app navigates to Team Detail page.
-  // We're now on the team detail page.
+  // Verify we navigated to team detail (the team name appears in AppBar)
+  final teamNameInTitle = find.text(team.name);
+  if (teamNameInTitle.evaluate().isNotEmpty) {
+    print('    [createTeam] ✓ Navigated to team detail for: ${team.name}');
+  } else {
+    dumpVisibleTexts(tester, 'createTeam-afterSubmit', 25);
+    print('    [createTeam] WARNING: Team name not found after submit. '
+        'Team creation may have failed (check auth/server).');
+  }
 }
 
 /// Add players to a team's roster through the UI.
@@ -121,48 +154,97 @@ Future<void> addPlayersToRoster(
   if (addPlayerBtn.evaluate().isNotEmpty) {
     await tester.tap(addPlayerBtn.first);
     await settle(tester);
+    await visualPause(tester, 500);
+    print('    [addPlayers] Navigated to AddPlayerPage for player[0]');
+  } else {
+    dumpVisibleTexts(tester, 'addPlayers-noAddButton', 25);
+    print('    [addPlayers] WARNING: "Add Player" button not found. '
+        'Are we on the Players tab of TeamDetailPage?');
   }
   await _fillAndSubmitPlayer(tester, players[0]);
   // After submit, we pop back to TeamDetailPage (Players tab)
   await settle(tester);
   await visualPause(tester, 500);
 
-  // For remaining players, go through ManageRosterPage
+  // For remaining players: use "Add Player" from wherever we are (Team Detail
+  // empty state or ManageRosterPage). The teamDetailProvider is not refreshed
+  // after each player add, so the page still shows the empty state — that's
+  // fine because the empty state "Add Player" button is always available.
   if (players.length > 1) {
-    // Wait for provider refresh to show the "Manage" button
     await settle(tester);
 
+    // Try ManageRosterPage first (only available if provider refreshed)
     final manageBtn = find.text('Manage');
-    if (manageBtn.evaluate().isNotEmpty) {
+    final wentToManage = manageBtn.evaluate().isNotEmpty;
+    if (wentToManage) {
       await tester.tap(manageBtn.first);
       await settle(tester);
       await visualPause(tester);
+      print('    [addPlayers] Using ManageRosterPage for remaining players');
+    } else {
+      print('    [addPlayers] Manage button not found — '
+          'using empty state "Add Player" for remaining players');
     }
 
-    // Now on ManageRosterPage — add remaining players in a loop
+    // Add remaining players in a loop
     for (var i = 1; i < players.length; i++) {
-      final addBtn = find.text('Add Player');
-      if (addBtn.evaluate().isNotEmpty) {
-        await tester.tap(addBtn.first);
-        await settle(tester);
+      // Wait for "Add Player" button to appear (we should be on TeamDetail
+      // or ManageRoster after the previous player's pop completed).
+      var foundAddBtn = false;
+      for (var wait = 0; wait < 15; wait++) {
+        final addBtn = find.text('Add Player');
+        if (addBtn.evaluate().isNotEmpty) {
+          await tester.tap(addBtn.first);
+          await settle(tester);
+          await visualPause(tester, 300);
+          foundAddBtn = true;
+          break;
+        }
+        await tester.pump(const Duration(milliseconds: 200));
       }
+      if (!foundAddBtn) {
+        dumpVisibleTexts(tester, 'addPlayers-noBtn-player$i', 20);
+        print('    [addPlayers] WARNING: "Add Player" not found for player[$i]');
+      }
+
+      // Wait for AddPlayerPage to actually appear (playerNameField or Create New tab)
+      for (var wait = 0; wait < 10; wait++) {
+        if (find.text('Create New').evaluate().isNotEmpty ||
+            find.byKey(const Key('playerNameField')).evaluate().isNotEmpty) {
+          break;
+        }
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+
       await _fillAndSubmitPlayer(tester, players[i]);
-      // After submit, pops back to ManageRosterPage
       await settle(tester);
-      await visualPause(tester, 300);
     }
 
-    // Go back from ManageRosterPage to TeamDetailPage
-    await goBack(tester);
+    // Only go back if we navigated to ManageRosterPage
+    if (wentToManage) {
+      await goBack(tester);
+    }
+    // Otherwise, we're already on Team Detail — the outer goBack in the
+    // test will navigate from Team Detail → Teams List.
   }
 }
 
 /// Fill in the AddPlayerPage form and submit.
-/// Expects to be on the AddPlayerPage.
+/// Expects to be on the AddPlayerPage. If not, logs a warning and returns.
 Future<void> _fillAndSubmitPlayer(
   WidgetTester tester,
   PlayerData player,
 ) async {
+  // Guard: verify we're actually on AddPlayerPage before doing anything.
+  // AddPlayerPage has "Add Player" in the AppBar title and "Create New" tab.
+  final addPlayerTitle = find.text('Add Player');
+  final createNewTabCheck = find.text('Create New');
+  if (addPlayerTitle.evaluate().isEmpty && createNewTabCheck.evaluate().isEmpty) {
+    dumpVisibleTexts(tester, 'fillPlayer-notOnAddPage', 20);
+    print('    [fillPlayer] WARNING: Not on AddPlayerPage! Skipping ${player.name}.');
+    return;
+  }
+
   // Switch to "Create New" tab
   final createNewTab = find.text('Create New');
   if (createNewTab.evaluate().isNotEmpty) {
@@ -170,11 +252,30 @@ Future<void> _fillAndSubmitPlayer(
     await settle(tester);
   }
 
-  // Fill player name
-  final nameField = find.byType(TextFormField);
+  // Fill player name using Key for unambiguous targeting.
+  // Key 'playerNameField' is set on the player name TextFormField in _CreateTab.
+  final nameField = find.byKey(const Key('playerNameField'));
   if (nameField.evaluate().isNotEmpty) {
+    await tester.tap(nameField.first);
+    await tester.pumpAndSettle();
     await tester.enterText(nameField.first, player.name);
     await settle(tester);
+    print('    [fillPlayer] Entered player name: ${player.name}');
+  } else {
+    dumpVisibleTexts(tester, 'fillPlayer-noNameField', 25);
+    print('    [fillPlayer] ERROR: playerNameField key not found! Cannot add ${player.name}.');
+    return;
+  }
+
+  // Fill phone number (required field) — generate a unique valid Indian mobile number
+  final phoneField = find.byKey(const Key('playerPhoneField'));
+  if (phoneField.evaluate().isNotEmpty) {
+    // Generate a unique 10-digit phone starting with 9 based on player name hash
+    final phoneHash = player.name.hashCode.abs() % 900000000 + 100000000;
+    final phone = '9$phoneHash';
+    await tester.enterText(phoneField.first, phone);
+    await settle(tester);
+    print('    [fillPlayer] Entered phone: $phone');
   }
 
   // Select role chip based on player.role
@@ -191,12 +292,38 @@ Future<void> _fillAndSubmitPlayer(
     await settle(tester);
   }
 
-  // Submit - "Add to Team" button
+  // Submit - "Add to Team" FilledButton (enabled only when name + phone are valid)
+  // On a real emulator the software keyboard may push the layout up,
+  // so we scroll to make the button visible before tapping.
   final submitButton = find.text('Add to Team');
   if (submitButton.evaluate().isNotEmpty) {
-    await tester.tap(submitButton.first);
+    await tester.ensureVisible(submitButton.first);
+    await tester.pumpAndSettle();
+    await tester.tap(submitButton.first, warnIfMissed: false);
+
+    // The onCreatePlayer callback makes 2 sequential API calls to a remote DB
+    // (createPlayer + addPlayer) then pops the page. We must wait for the pop
+    // to complete before returning, otherwise the next iteration enters text
+    // into this still-open AddPlayerPage, causing a race condition where
+    // alternating players are lost.
+    // Wait until the playerNameField disappears (page was popped).
+    var popped = false;
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+      if (find.byKey(const Key('playerNameField')).evaluate().isEmpty) {
+        popped = true;
+        break;
+      }
+    }
     await settle(tester);
-    await visualPause(tester, 500);
+
+    if (popped) {
+      print('    [fillPlayer] ✓ Added player: ${player.name}');
+    } else {
+      print('    [fillPlayer] WARNING: Page did not pop after adding ${player.name} (API may be slow)');
+    }
+  } else {
+    print('    [fillPlayer] WARNING: "Add to Team" not found for ${player.name}');
   }
 }
 
