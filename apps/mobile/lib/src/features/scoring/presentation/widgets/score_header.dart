@@ -22,6 +22,8 @@ class ScoreHeader extends StatelessWidget {
     required this.onBack,
     this.syncStatus,
     this.pendingCount = 0,
+    this.isMagicOver = false,
+    this.isFreeHitPending = false,
   });
 
   final String battingTeamName;
@@ -36,6 +38,8 @@ class ScoreHeader extends StatelessWidget {
   final VoidCallback onBack;
   final SyncStatus? syncStatus;
   final int pendingCount;
+  final bool isMagicOver;
+  final bool isFreeHitPending;
 
   String get _inningsLabel =>
       inningsNumber == 1 ? '1st Innings' : '2nd Innings';
@@ -116,6 +120,47 @@ class ScoreHeader extends StatelessWidget {
                 ),
               ],
             ),
+            // Indicators row: Magic Over / Free Hit
+            if (isMagicOver || isFreeHitPending)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
+                child: Row(
+                  children: [
+                    if (isMagicOver)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.amber,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'MAGIC OVER 2x',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    if (isMagicOver && isFreeHitPending)
+                      const SizedBox(width: 8),
+                    if (isFreeHitPending)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'FREE HIT',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 4),
             // Row 2: CRR + (RRR + Target + Need for 2nd innings)
             Padding(

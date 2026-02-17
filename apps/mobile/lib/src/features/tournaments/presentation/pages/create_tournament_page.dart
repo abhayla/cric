@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/tournament.dart';
+import '../../domain/repositories/tournament_repository.dart';
+import '../../providers.dart';
 
-class CreateTournamentPage extends StatefulWidget {
+class CreateTournamentPage extends ConsumerStatefulWidget {
   const CreateTournamentPage({
     super.key,
     required this.onCreated,
@@ -11,10 +14,11 @@ class CreateTournamentPage extends StatefulWidget {
   final void Function(String tournamentId) onCreated;
 
   @override
-  State<CreateTournamentPage> createState() => _CreateTournamentPageState();
+  ConsumerState<CreateTournamentPage> createState() =>
+      _CreateTournamentPageState();
 }
 
-class _CreateTournamentPageState extends State<CreateTournamentPage> {
+class _CreateTournamentPageState extends ConsumerState<CreateTournamentPage> {
   final _nameController = TextEditingController();
   final _oversController = TextEditingController(text: '20');
   final _formKey = GlobalKey<FormState>();
@@ -104,8 +108,14 @@ class _CreateTournamentPageState extends State<CreateTournamentPage> {
                 width: double.infinity,
                 height: 52,
                 child: FilledButton(
-                  onPressed: _handleCreate,
-                  child: const Text('Create Tournament'),
+                  onPressed: _isSubmitting ? null : _handleCreate,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Create Tournament'),
                 ),
               ),
             ),
@@ -367,11 +377,47 @@ class _CreateTournamentPageState extends State<CreateTournamentPage> {
 
   // -- Submit --
 
-  void _handleCreate() {
+  bool _isSubmitting = false;
+
+  Future<void> _handleCreate() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    // TODO: Call repository to create tournament, then callback
-    // For now, just trigger the callback
-    widget.onCreated('new-tournament-id');
+    if (_isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final repository = ref.read(tournamentRepositoryProvider);
+      final tournament = await repository.createTournament(
+        CreateTournamentInput(
+          name: _nameController.text.trim(),
+          format: _format,
+          oversPerMatch: _overs,
+          ballTypeId: _ballTypeId,
+          playersPerSide: _playersPerSide,
+          maxOversPerBowler: _maxOversPerBowler,
+          wideRuns: _wideRuns,
+          noBallRuns: _noBallRuns,
+          powerplayOvers: _powerplayOvers,
+          pointsWin: _pointsWin,
+          pointsTie: _pointsTie,
+          pointsNoResult: _pointsNoResult,
+          pointsLoss: _pointsLoss,
+          numGroups: _numGroups,
+          qualifyPerGroup: _qualifyPerGroup,
+          startDate: _startDate,
+          endDate: _endDate,
+        ),
+      );
+      widget.onCreated(tournament.id);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create tournament: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 }
 

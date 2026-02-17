@@ -5,6 +5,7 @@ import { innings, overs } from '../db/schema/innings.ts';
 import { deliveries, wicketsByDelivery, fallOfWickets } from '../db/schema/deliveries.ts';
 import { battingStats, bowlingStats, fieldingStats } from '../db/schema/stats.ts';
 import { dismissalTypes } from '../db/schema/master-data.ts';
+import { tournamentStandings } from '../db/schema/tournaments.ts';
 import { AppError } from '../middleware/error-handler.ts';
 import { refreshMatchPlayerCareerStats } from './career-stats.service.ts';
 
@@ -1235,6 +1236,113 @@ async function completeMatch(
     .update(matches)
     .set({ status: 'completed' })
     .where(eq(matches.id, matchId));
+
+  // Update tournament standings if this is a tournament match
+  if (match.tournamentId) {
+    await updateTournamentStandings(
+      tx,
+      match.tournamentId,
+      firstInnings,
+      secondInnings,
+      winnerTeamId,
+      resultType,
+      match,
+    );
+  }
+}
+
+/**
+ * Update tournament_standings rows for both teams after a match completes.
+ * Increments played/won/lost/tied, recalculates points, and updates NRR components.
+ */
+async function updateTournamentStandings(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  tournamentId: string,
+  firstInnings: typeof innings.$inferSelect,
+  secondInnings: typeof innings.$inferSelect,
+  winnerTeamId: string | null,
+  resultType: string,
+  match: typeof matches.$inferSelect,
+): Promise<void> {
+  const teamIds = [match.homeTeamId, match.awayTeamId];
+
+  for (const teamId of teamIds) {
+    // Determine if this team won, lost, or tied
+    const isWinner = winnerTeamId === teamId;
+    const isTie = resultType === 'tie';
+
+    // Determine which innings this team batted/bowled
+    const battingInnings = firstInnings.battingTeamId === teamId
+        ? firstInnings
+        : secondInnings;
+    const bowlingInnings = firstInnings.bowlingTeamId === teamId
+        ? firstInnings
+        : secondInnings;
+
+    // Parse overs to numeric: "3.2" → 3.333...
+    const parseOvers = (oversStr: string | number): number => {
+      const str = String(oversStr);
+      const parts = str.split('.');
+      const completedOvers = parseInt(parts[0]!, 10);
+      const balls = parseInt(parts[1] || '0', 10);
+      return completedOvers + balls / 6;
+    };
+
+    const runsScored = battingInnings.totalRuns;
+    const oversFaced = parseOvers(battingInnings.totalOvers);
+    const runsConceded = bowlingInnings.totalRuns;
+    const oversBowled = parseOvers(bowlingInnings.totalOvers);
+
+    // Get points config from tournament
+    const [tournament] = await tx
+      .select({
+        pointsWin: sql<number>`coalesce((SELECT points_win FROM tournaments WHERE id = ${tournamentId}), 2)`,
+        pointsTie: sql<number>`coalesce((SELECT points_tie FROM tournaments WHERE id = ${tournamentId}), 1)`,
+        pointsLoss: sql<number>`coalesce((SELECT points_loss FROM tournaments WHERE id = ${tournamentId}), 0)`,
+      })
+      .from(sql`(SELECT 1) AS dummy`);
+
+    const pointsForMatch = isTie
+      ? (tournament?.pointsTie ?? 1)
+      : isWinner
+        ? (tournament?.pointsWin ?? 2)
+        : (tournament?.pointsLoss ?? 0);
+
+    // Upsert standings row
+    await tx
+      .update(tournamentStandings)
+      .set({
+        played: sql`${tournamentStandings.played} + 1`,
+        won: sql`${tournamentStandings.won} + ${isWinner ? 1 : 0}`,
+        lost: sql`${tournamentStandings.lost} + ${!isTie && !isWinner ? 1 : 0}`,
+        tied: sql`${tournamentStandings.tied} + ${isTie ? 1 : 0}`,
+        points: sql`${tournamentStandings.points} + ${pointsForMatch}`,
+        totalRunsScored: sql`${tournamentStandings.totalRunsScored} + ${runsScored}`,
+        totalOversFaced: sql`${tournamentStandings.totalOversFaced} + ${oversFaced.toFixed(1)}`,
+        totalRunsConceded: sql`${tournamentStandings.totalRunsConceded} + ${runsConceded}`,
+        totalOversBowled: sql`${tournamentStandings.totalOversBowled} + ${oversBowled.toFixed(1)}`,
+        nrr: sql`
+          CASE
+            WHEN (${tournamentStandings.totalOversFaced} + ${oversFaced.toFixed(1)}) > 0
+              AND (${tournamentStandings.totalOversBowled} + ${oversBowled.toFixed(1)}) > 0
+            THEN ROUND(
+              ((${tournamentStandings.totalRunsScored} + ${runsScored})::decimal
+                / (${tournamentStandings.totalOversFaced} + ${oversFaced.toFixed(1)}))
+              - ((${tournamentStandings.totalRunsConceded} + ${runsConceded})::decimal
+                / (${tournamentStandings.totalOversBowled} + ${oversBowled.toFixed(1)})),
+              3
+            )
+            ELSE 0
+          END
+        `,
+      })
+      .where(
+        and(
+          eq(tournamentStandings.tournamentId, tournamentId),
+          eq(tournamentStandings.teamId, teamId),
+        ),
+      );
+  }
 }
 
 // ============================================================

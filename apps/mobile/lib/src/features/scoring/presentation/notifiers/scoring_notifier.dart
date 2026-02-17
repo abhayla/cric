@@ -132,6 +132,7 @@ class ScoringState {
     required this.playersPerSide,
     this.wideRunsPenalty = CricketConstants.defaultWideRuns,
     this.noBallRunsPenalty = CricketConstants.defaultNoBallRuns,
+    this.magicOverNumber,
     this.battingTeamName = '',
     this.bowlingTeamName = '',
     // Playing XI rosters
@@ -188,6 +189,7 @@ class ScoringState {
   final int playersPerSide;
   final int wideRunsPenalty;
   final int noBallRunsPenalty;
+  final int? magicOverNumber;
   final String battingTeamName;
   final String bowlingTeamName;
 
@@ -475,6 +477,7 @@ class ScoringState {
       playersPerSide: playersPerSide,
       wideRunsPenalty: wideRunsPenalty,
       noBallRunsPenalty: noBallRunsPenalty,
+      magicOverNumber: magicOverNumber,
       battingTeamName: battingTeamName,
       bowlingTeamName: bowlingTeamName,
       battingTeamPlayers:
@@ -689,15 +692,27 @@ class ScoringNotifier {
       );
     }
 
-    // Reverse strike change
+    // Reverse strike change — use original (pre-doubling) runs for magic over
+    final undoRunsFromBat = lastDel.isMagicOverDelivery && lastDel.runsFromBat > 0
+        ? lastDel.runsFromBat ~/ 2
+        : lastDel.runsFromBat;
+    final undoWideRuns = lastDel.isMagicOverDelivery && lastDel.wideRuns > 0
+        ? lastDel.wideRuns ~/ 2
+        : lastDel.wideRuns;
+    final undoByeRuns = lastDel.isMagicOverDelivery && lastDel.byeRuns > 0
+        ? lastDel.byeRuns ~/ 2
+        : lastDel.byeRuns;
+    final undoLegByeRuns = lastDel.isMagicOverDelivery && lastDel.legByeRuns > 0
+        ? lastDel.legByeRuns ~/ 2
+        : lastDel.legByeRuns;
     final shouldHaveSwapped = ScoringUtils.shouldSwapStrike(
-      runsFromBat: lastDel.runsFromBat,
+      runsFromBat: undoRunsFromBat,
       isWide: lastDel.isWide,
-      wideRuns: lastDel.wideRuns,
+      wideRuns: undoWideRuns,
       isBye: lastDel.isBye,
-      byeRuns: lastDel.byeRuns,
+      byeRuns: undoByeRuns,
       isLegBye: lastDel.isLegBye,
-      legByeRuns: lastDel.legByeRuns,
+      legByeRuns: undoLegByeRuns,
     );
 
     String? newStrikerId = lastDel.strikerId;
@@ -860,6 +875,7 @@ class ScoringNotifier {
       wideRunsPenalty: _state.wideRunsPenalty,
       noBallRunsPenalty: _state.noBallRunsPenalty,
       maxOversPerBowler: _state.maxOversPerBowler,
+      magicOverNumber: _state.magicOverNumber,
       target: target,
       firstInningsSummary: firstSummary,
       firstInnings: firstInningsData,
@@ -975,7 +991,7 @@ class ScoringNotifier {
     );
 
     // Step 2: Calculate total runs
-    final totalDeliveryRuns = ScoringUtils.calculateTotalRuns(
+    var totalDeliveryRuns = ScoringUtils.calculateTotalRuns(
       runsFromBat: runsFromBat,
       wideRuns: wideRuns,
       noBallRuns: noBallRuns,
@@ -983,7 +999,31 @@ class ScoringNotifier {
       legByeRuns: legByeRuns,
     );
 
-    // Step 3: Create delivery record
+    // Step 2.5: Magic Over — double all runs if this is the magic over
+    final isMagicOver = _state.magicOverNumber != null &&
+        _state.currentOverNumber == _state.magicOverNumber;
+    if (isMagicOver && totalDeliveryRuns > 0) {
+      totalDeliveryRuns *= 2;
+    }
+
+    // Doubled individual components for stats (proportional doubling)
+    final effectiveRunsFromBat = isMagicOver && runsFromBat > 0
+        ? runsFromBat * 2
+        : runsFromBat;
+    final effectiveWideRuns = isMagicOver && wideRuns > 0
+        ? wideRuns * 2
+        : wideRuns;
+    final effectiveNoBallRuns = isMagicOver && noBallRuns > 0
+        ? noBallRuns * 2
+        : noBallRuns;
+    final effectiveByeRuns = isMagicOver && byeRuns > 0
+        ? byeRuns * 2
+        : byeRuns;
+    final effectiveLegByeRuns = isMagicOver && legByeRuns > 0
+        ? legByeRuns * 2
+        : legByeRuns;
+
+    // Step 3: Create delivery record (stores doubled values for correct undo)
     final delivery = Delivery(
       id: 'del-${_state.deliveryHistory.length + 1}',
       inningsId: _state.inningsId,
@@ -993,20 +1033,21 @@ class ScoringNotifier {
       strikerId: _state.strikerId ?? '',
       nonStrikerId: _state.nonStrikerId ?? '',
       bowlerId: _state.bowlerId ?? '',
-      runsFromBat: runsFromBat,
+      runsFromBat: effectiveRunsFromBat,
       isWide: isWide,
-      wideRuns: wideRuns,
+      wideRuns: effectiveWideRuns,
       isNoBall: isNoBall,
-      noBallRuns: noBallRuns,
+      noBallRuns: effectiveNoBallRuns,
       isBye: isBye,
-      byeRuns: byeRuns,
+      byeRuns: effectiveByeRuns,
       isLegBye: isLegBye,
-      legByeRuns: legByeRuns,
+      legByeRuns: effectiveLegByeRuns,
       isWicket: isWicket,
       isBoundaryFour: isBoundaryFour,
       isBoundarySix: isBoundarySix,
       isFreeHit: _state.isFreeHitPending,
       isPenalty: isPenalty,
+      isMagicOverDelivery: isMagicOver,
       wicketInfo: wicketInfo,
     );
 
@@ -1021,20 +1062,20 @@ class ScoringNotifier {
     var newTotalWickets = _state.totalWickets;
 
     if (isWide) {
-      newTotalExtras += wideRuns;
-      newTotalWides += wideRuns;
+      newTotalExtras += effectiveWideRuns;
+      newTotalWides += effectiveWideRuns;
     }
     if (isNoBall) {
-      newTotalExtras += noBallRuns;
-      newTotalNoBalls += noBallRuns;
+      newTotalExtras += effectiveNoBallRuns;
+      newTotalNoBalls += effectiveNoBallRuns;
     }
     if (isBye) {
-      newTotalExtras += byeRuns;
-      newTotalByes += byeRuns;
+      newTotalExtras += effectiveByeRuns;
+      newTotalByes += effectiveByeRuns;
     }
     if (isLegBye) {
-      newTotalExtras += legByeRuns;
-      newTotalLegByes += legByeRuns;
+      newTotalExtras += effectiveLegByeRuns;
+      newTotalLegByes += effectiveLegByeRuns;
     }
     if (isWicket) newTotalWickets++;
 
@@ -1051,7 +1092,7 @@ class ScoringNotifier {
         }
         if (!isBye && !isLegBye) {
           updatedBatter = updatedBatter.copyWith(
-            runsScored: currentBatter.runsScored + runsFromBat,
+            runsScored: currentBatter.runsScored + effectiveRunsFromBat,
             fours: currentBatter.fours + (isBoundaryFour ? 1 : 0),
             sixes: currentBatter.sixes + (isBoundarySix ? 1 : 0),
           );
@@ -1072,7 +1113,7 @@ class ScoringNotifier {
     if (_state.bowlerId != null) {
       final currentBowler = newBowlerStats[_state.bowlerId!];
       if (currentBowler != null) {
-        final bowlerRunsConceded = runsFromBat + wideRuns + noBallRuns;
+        final bowlerRunsConceded = effectiveRunsFromBat + effectiveWideRuns + effectiveNoBallRuns;
         newBowlerStats[_state.bowlerId!] = currentBowler.copyWith(
           ballsBowled: currentBowler.ballsBowled + (isLegal ? 1 : 0),
           runsConceded: currentBowler.runsConceded + bowlerRunsConceded,

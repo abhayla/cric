@@ -152,6 +152,7 @@ class Delivery {
     this.isBoundarySix = false,
     this.isFreeHit = false,
     this.isPenalty = false,
+    this.isMagicOverDelivery = false,
     this.wicketInfo,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -178,6 +179,7 @@ class Delivery {
   final bool isBoundarySix;
   final bool isFreeHit;
   final bool isPenalty;
+  final bool isMagicOverDelivery;
   final WicketInfo? wicketInfo;
   final DateTime timestamp;
 

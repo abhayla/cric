@@ -1,8 +1,12 @@
-import { eq, and, sql, count, desc, asc, inArray } from 'drizzle-orm';
+import { eq, and, sql, count, desc, asc, inArray, sum } from 'drizzle-orm';
 import { db } from '../db/index.ts';
 import { tournaments, tournamentTeams, tournamentGroups, tournamentFixtures, tournamentStandings, tournamentRequests } from '../db/schema/tournaments.ts';
 import { teams, teamRosters } from '../db/schema/teams.ts';
 import { users } from '../db/schema/users.ts';
+import { matches } from '../db/schema/matches.ts';
+import { innings } from '../db/schema/innings.ts';
+import { battingStats, bowlingStats } from '../db/schema/stats.ts';
+import { matchAnalytics } from '../db/schema/matches.ts';
 import { AppError } from '../middleware/error-handler.ts';
 
 // -- Types --
@@ -863,16 +867,72 @@ export async function getStandings(tournamentId: string, groupName?: string) {
   return { standings: result, groups };
 }
 
-// -- Leaderboard (stub — requires match data from Phase 3+) --
+// -- Leaderboard --
 
-export async function getLeaderboard(_tournamentId: string, category: string, _limit: number = 10) {
-  // Leaderboard requires completed matches with batting_stats/bowling_stats.
-  // Deferred to Phase 3 when scoring engine populates data.
-  // Return empty for now.
-  return {
-    category,
-    leaderboard: [],
-  };
+export async function getLeaderboard(tournamentId: string, category: string, limit: number = 10) {
+  // All leaderboard queries join through: stats → innings → matches WHERE tournament_id
+  if (category === 'runs') {
+    const result = await db
+      .select({
+        playerId: battingStats.playerId,
+        playerName: users.displayName,
+        totalRuns: sum(battingStats.runsScored).mapWith(Number),
+        matchCount: count(sql`DISTINCT ${innings.matchId}`),
+      })
+      .from(battingStats)
+      .innerJoin(innings, eq(battingStats.inningsId, innings.id))
+      .innerJoin(matches, eq(innings.matchId, matches.id))
+      .innerJoin(users, eq(battingStats.playerId, users.id))
+      .where(eq(matches.tournamentId, tournamentId))
+      .groupBy(battingStats.playerId, users.displayName)
+      .orderBy(desc(sum(battingStats.runsScored)))
+      .limit(limit);
+
+    return {
+      category,
+      leaderboard: result.map((r, i) => ({
+        rank: i + 1,
+        playerId: r.playerId,
+        playerName: r.playerName ?? 'Unknown',
+        teamName: '',
+        value: r.totalRuns ?? 0,
+        matches: r.matchCount ?? 0,
+      })),
+    };
+  }
+
+  if (category === 'wickets') {
+    const result = await db
+      .select({
+        playerId: bowlingStats.playerId,
+        playerName: users.displayName,
+        totalWickets: sum(bowlingStats.wicketsTaken).mapWith(Number),
+        matchCount: count(sql`DISTINCT ${innings.matchId}`),
+      })
+      .from(bowlingStats)
+      .innerJoin(innings, eq(bowlingStats.inningsId, innings.id))
+      .innerJoin(matches, eq(innings.matchId, matches.id))
+      .innerJoin(users, eq(bowlingStats.playerId, users.id))
+      .where(eq(matches.tournamentId, tournamentId))
+      .groupBy(bowlingStats.playerId, users.displayName)
+      .orderBy(desc(sum(bowlingStats.wicketsTaken)))
+      .limit(limit);
+
+    return {
+      category,
+      leaderboard: result.map((r, i) => ({
+        rank: i + 1,
+        playerId: r.playerId,
+        playerName: r.playerName ?? 'Unknown',
+        teamName: '',
+        value: r.totalWickets ?? 0,
+        matches: r.matchCount ?? 0,
+      })),
+    };
+  }
+
+  // Default: return empty
+  return { category, leaderboard: [] };
 }
 
 // -- Fixture Generation Algorithms --

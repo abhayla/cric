@@ -145,21 +145,21 @@ void main() {
 
     testWidgets('shows status badges on cards', (tester) async {
       final tournaments = [
-        _makeTournament(status: TournamentStatus.live, name: 'Live Tourney'),
+        _makeTournament(status: TournamentStatus.live, name: 'Live Tournament'),
         _makeTournament(
           id: 'tour-2',
           status: TournamentStatus.draft,
-          name: 'Draft Tourney',
+          name: 'Draft Tournament',
         ),
         _makeTournament(
           id: 'tour-3',
           status: TournamentStatus.registration,
-          name: 'Reg Tourney',
+          name: 'Reg Tournament',
         ),
         _makeTournament(
           id: 'tour-4',
           status: TournamentStatus.completed,
-          name: 'Done Tourney',
+          name: 'Done Tournament',
         ),
       ];
 

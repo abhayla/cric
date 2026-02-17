@@ -34,6 +34,7 @@ class ScoringPageArgs {
     this.target,
     this.wideRunsPenalty = 1,
     this.noBallRunsPenalty = 1,
+    this.magicOverNumber,
     required this.battingTeamPlayers,
     required this.bowlingTeamPlayers,
     required this.openingStrikerId,
@@ -57,6 +58,7 @@ class ScoringPageArgs {
   final int? target;
   final int wideRunsPenalty;
   final int noBallRunsPenalty;
+  final int? magicOverNumber;
   final List<PlayingXIPlayer> battingTeamPlayers;
   final List<PlayingXIPlayer> bowlingTeamPlayers;
   final String openingStrikerId;
@@ -146,6 +148,7 @@ class _ScoringPageState extends State<ScoringPage> {
       target: args.target,
       wideRunsPenalty: args.wideRunsPenalty,
       noBallRunsPenalty: args.noBallRunsPenalty,
+      magicOverNumber: args.magicOverNumber,
       battingTeamPlayers: args.battingTeamPlayers,
       bowlingTeamPlayers: args.bowlingTeamPlayers,
       firstInningsSummary: args.firstInningsSummary,
@@ -616,6 +619,9 @@ class _ScoringPageState extends State<ScoringPage> {
               target: _state.target,
               runsNeeded: _state.runsNeeded,
               onBack: _showExitDialog,
+              isMagicOver: _state.magicOverNumber != null &&
+                  _state.currentOverNumber == _state.magicOverNumber,
+              isFreeHitPending: _state.isFreeHitPending,
             ),
 
             // Scrollable middle: batters + bowler + this over

@@ -1,0 +1,1 @@
+ALTER TABLE "matches" ADD COLUMN "magic_over_number" integer;

@@ -282,8 +282,8 @@ void main() {
       // Confirm with 0 runs from bat
       await tester.tap(find.text('Confirm'));
       await tester.pumpAndSettle();
-      // Free hit indicator should appear
-      expect(find.text('FREE HIT'), findsOneWidget);
+      // Free hit indicator should appear (in header and/or this-over display)
+      expect(find.text('FREE HIT'), findsWidgets);
     });
   });
 

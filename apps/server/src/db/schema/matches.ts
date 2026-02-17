@@ -22,6 +22,7 @@ export const matches = pgTable('matches', {
   wideRuns: integer('wide_runs').default(1).notNull(),
   noBallRuns: integer('no_ball_runs').default(1).notNull(),
   powerplayOvers: integer('powerplay_overs'),
+  magicOverNumber: integer('magic_over_number'),
   createdBy: uuid('created_by').notNull().references(() => users.id, { onDelete: 'restrict' }),
   matchDate: date('match_date', { mode: 'string' }).notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),

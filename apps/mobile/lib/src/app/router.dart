@@ -109,12 +109,30 @@ abstract final class AppRoutes {
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Notifier that triggers GoRouter.refresh() when auth state changes.
+/// This avoids recreating the GoRouter (and its GlobalKeys) on every auth event.
+class _AuthNotifier extends ChangeNotifier {
+  _AuthNotifier(Ref ref) {
+    _sub = ref.listen(authStateProvider, (previous, next) => notifyListeners());
+  }
+
+  late final ProviderSubscription _sub;
+
+  @override
+  void dispose() {
+    _sub.close();
+    super.dispose();
+  }
+}
+
 /// go_router provider with auth-based redirect.
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  final authNotifier = _AuthNotifier(ref);
+  ref.onDispose(authNotifier.dispose);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
+    refreshListenable: authNotifier,
     initialLocation: AppRoutes.splash,
     redirect: (context, state) {
       // In debug mode, skip auth entirely for UI testing
@@ -128,6 +146,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
+      final container = ProviderScope.containerOf(context);
+      final authState = container.read(authStateProvider);
       final isLoggedIn = authState.value != null;
       final isLoading = authState.isLoading;
       final hasError = authState.hasError;
@@ -442,7 +462,7 @@ class _AppShell extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.emoji_events_outlined),
             selectedIcon: Icon(Icons.emoji_events),
-            label: 'Tourneys',
+            label: 'Tournaments',
           ),
           NavigationDestination(
             icon: Icon(Icons.groups_outlined),
