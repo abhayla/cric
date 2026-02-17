@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 6 (Polish & Testing) IN PROGRESS — Issue #60 (Home Page Dashboard) COMPLETE. Also committed pre-existing scoring widget/integration/performance tests and expanded server scoring tests. 1950 Flutter tests, 298 server tests.
+**Status:** Phase 7 (Polish & Testing) IN PROGRESS — MockTour-1 Tournament E2E test being built. Magic Over feature added (client + server). 2004 Flutter tests, 298 server tests.
 **Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
 ## Tech Stack
@@ -16,7 +16,38 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-**Issue #60 (Home Page Dashboard) is COMPLETE.** Fixed OTP page deprecated APIs (RawKeyboardListener → KeyboardListener) and enhanced auto-verify skill with Step 4b static analysis. Next: remaining Phase 6 issues or Phase 7 (Deployment).
+### Active: MockTour-1 Tournament E2E Test
+
+**Goal:** Full 16-team Group+Knockout tournament executed via emulator UI with DB verification.
+
+**What's done:**
+- Magic Over feature (client + server): 4th over doubles all runs
+- Server-side match awards (MOTM, best batsman, best bowler) via `computeMatchAwards()`
+- Test infrastructure: ServerManager (10.0.2.2 for Android emulator), DbVerifier, data generators with realistic Indian cricket names
+- Test-verify routes mounted in server (`/api/v1/test/*`) with health endpoint
+- Scoring page navigation helper (`navigateToScoringPage()`) that builds ScoringPageArgs programmatically
+- Resilient `settle()` helper that falls back on infinite animations
+- Wicket dialog layout fix (FilledButton in Row overflow)
+- TypeScript compiles clean, server runs on port 3001 with VPS PostgreSQL
+
+**What's NOT working yet:**
+- `createTeam()` helper enters player names into team name field — the UI flow after team creation doesn't navigate to a roster page correctly. **User wants to review and fix the test helpers before re-running.**
+- Match setup page `_handleProceedToToss()` is a stub (does nothing)
+- Fixture card `onTap` is not wired in tournament detail page
+- These are bypassed by using programmatic `navigateToScoringPage()` for scoring
+
+**Key files:**
+- `apps/mobile/integration_test/tournament_e2e_test.dart` — Main E2E test
+- `apps/mobile/integration_test/helpers/` — All test helpers
+- `apps/server/src/routes/v1/test-verify.routes.ts` — DB verification API
+- `apps/server/src/services/scoring.service.ts` — Magic over + match awards
+
+**Server:** Bun server connects to VPS PostgreSQL at `103.118.16.189:5432/cricapp_dev`. Start with: `cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts`
+
+**Commits this session:**
+- `431684f` feat(scoring): add server-side magic over doubling, match awards, DB verification
+- `274cecb` fix(e2e): add resilient settle(), optional server mode, fix pumpAndSettle timeouts
+- Uncommitted: realistic player names, test-verify routes mounted, wicket dialog fix, programmatic scoring navigation
 
 ### Session Fix (2026-02-16 — GlobalKey crash)
 

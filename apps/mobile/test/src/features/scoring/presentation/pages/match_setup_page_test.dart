@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricapp/src/features/scoring/presentation/pages/match_setup_page.dart';
@@ -8,10 +9,12 @@ void main() {
     void Function(String matchId)? onMatchCreated,
     void Function()? onNavigateToCreateTeam,
   }) {
-    return MaterialApp(
-      home: MatchSetupPage(
-        onMatchCreated: onMatchCreated ?? (_) {},
-        onNavigateToCreateTeam: onNavigateToCreateTeam,
+    return ProviderScope(
+      child: MaterialApp(
+        home: MatchSetupPage(
+          onMatchCreated: onMatchCreated ?? (_) {},
+          onNavigateToCreateTeam: onNavigateToCreateTeam,
+        ),
       ),
     );
   }

@@ -15,6 +15,7 @@ import '../features/teams/presentation/pages/manage_roster_page.dart';
 import '../features/teams/presentation/pages/team_detail_page.dart';
 import '../features/scoring/presentation/notifiers/toss_notifier.dart';
 import '../features/scoring/presentation/pages/match_setup_page.dart';
+import '../features/scoring/domain/entities/playing_xi_player.dart';
 import '../features/scoring/presentation/pages/scoring_page.dart';
 import '../features/scoring/presentation/pages/live_match_page.dart';
 import '../features/scoring/presentation/pages/scorecard_page.dart';
@@ -29,6 +30,8 @@ import '../features/tournaments/presentation/pages/tournament_leaderboard_page.d
 import '../features/tournaments/presentation/pages/tournaments_list_page.dart';
 import '../features/player_profile/presentation/pages/player_profile_page.dart';
 import '../features/player_profile/presentation/pages/player_match_history_page.dart';
+import '../features/teams/providers.dart' as teams;
+import '../features/scoring/providers.dart' as scoring;
 import 'providers.dart';
 
 /// Route paths.
@@ -221,11 +224,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.createTeam,
-        builder: (context, state) => CreateTeamPage(
-          onSubmit: (name, location) {
-            // TODO: Call API to create team, then navigate to team detail
-            GoRouter.of(context).pop();
-          },
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) => CreateTeamPage(
+            onSubmit: (name, location) async {
+              try {
+                final team = await ref.read(teams.teamRepositoryProvider)
+                    .createTeam(name: name, location: location);
+                if (context.mounted) {
+                  GoRouter.of(context).go(AppRoutes.teamDetailPath(team.id));
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to create team: $e')),
+                  );
+                }
+              }
+            },
+          ),
         ),
       ),
       GoRoute(
@@ -246,58 +262,236 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.addPlayer,
         builder: (context, state) {
           final teamId = state.pathParameters['teamId']!;
-          return AddPlayerPage(
-            teamId: teamId,
-            onCreatePlayer: (name, phone, role, batting, bowling) {
-              // TODO: Call API to create player and add to team
-              GoRouter.of(context).pop();
-            },
-            onAddExisting: (playerId) {
-              // TODO: Call API to add existing player to team
-              GoRouter.of(context).pop();
-            },
+          return Consumer(
+            builder: (context, ref, _) => AddPlayerPage(
+              teamId: teamId,
+              onCreatePlayer: (name, phone, role, batting, bowling) async {
+                try {
+                  final repo = ref.read(teams.teamRepositoryProvider);
+                  final player = await repo.createPlayer(
+                    displayName: name,
+                    phone: phone,
+                    playerRole: role,
+                    battingStyle: batting,
+                    bowlingStyle: bowling,
+                  );
+                  await repo.addPlayer(teamId, playerId: player.id);
+                  ref.invalidate(teams.teamDetailProvider(teamId));
+                  if (context.mounted) {
+                    GoRouter.of(context).pop();
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to add player: $e')),
+                    );
+                  }
+                }
+              },
+              onAddExisting: (playerId) async {
+                try {
+                  await ref.read(teams.teamRepositoryProvider)
+                      .addPlayer(teamId, playerId: playerId);
+                  ref.invalidate(teams.teamDetailProvider(teamId));
+                  if (context.mounted) {
+                    GoRouter.of(context).pop();
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to add player: $e')),
+                    );
+                  }
+                }
+              },
+            ),
           );
         },
       ),
       GoRoute(
         path: AppRoutes.matchSetup,
-        builder: (context, state) => MatchSetupPage(
-          onMatchCreated: (matchId) {
-            // After match created, navigate to toss page
-            // Toss page data will be passed via extra
-            final tossData = state.extra as Map<String, dynamic>?;
-            GoRouter.of(context).go(
-              AppRoutes.tossPath(matchId),
-              extra: tossData,
-            );
-          },
-          onNavigateToCreateTeam: () {
-            GoRouter.of(context).push(AppRoutes.createTeam);
-          },
-        ),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return Consumer(
+            builder: (context, ref, _) => MatchSetupPage(
+              initialHomeTeamId: extra['homeTeamId'] as String?,
+              initialHomeTeamName: extra['homeTeamName'] as String?,
+              initialAwayTeamId: extra['awayTeamId'] as String?,
+              initialAwayTeamName: extra['awayTeamName'] as String?,
+              initialOvers: extra['totalOvers'] as int?,
+              initialPlayersPerSide: extra['playersPerSide'] as int?,
+              onMatchCreated: (matchId) async {
+                // Fetch team rosters for the toss page
+                final teamRepo = ref.read(teams.teamRepositoryProvider);
+                final homeId = extra['homeTeamId'] as String?;
+                final awayId = extra['awayTeamId'] as String?;
+
+                List<RosterPlayer> homeRoster = [];
+                List<RosterPlayer> awayRoster = [];
+                String homeTeamName = extra['homeTeamName'] as String? ?? '';
+                String awayTeamName = extra['awayTeamName'] as String? ?? '';
+                int playersPerSide = extra['playersPerSide'] as int? ?? 11;
+
+                // Try to fetch rosters from the teams already in state
+                try {
+                  // Use extra data if present, otherwise look up from match
+                  if (homeId != null) {
+                    final homeDetail = await teamRepo.getTeam(homeId);
+                    homeTeamName = homeDetail.team.name;
+                    homeRoster = homeDetail.roster
+                        .map((r) => RosterPlayer(
+                              playerId: r.playerId,
+                              displayName: r.displayName,
+                              playerRole: r.playerRole?.label,
+                              isCaptain: r.isCaptain,
+                              isKeeper: r.isKeeper,
+                            ))
+                        .toList();
+                  }
+                  if (awayId != null) {
+                    final awayDetail = await teamRepo.getTeam(awayId);
+                    awayTeamName = awayDetail.team.name;
+                    awayRoster = awayDetail.roster
+                        .map((r) => RosterPlayer(
+                              playerId: r.playerId,
+                              displayName: r.displayName,
+                              playerRole: r.playerRole?.label,
+                              isCaptain: r.isCaptain,
+                              isKeeper: r.isKeeper,
+                            ))
+                        .toList();
+                  }
+                } catch (_) {
+                  // Proceed with empty rosters — toss page can still work
+                }
+
+                if (context.mounted) {
+                  GoRouter.of(context).go(
+                    AppRoutes.tossPath(matchId),
+                    extra: <String, dynamic>{
+                      'homeTeamId': homeId ?? '',
+                      'homeTeamName': homeTeamName,
+                      'awayTeamId': awayId ?? '',
+                      'awayTeamName': awayTeamName,
+                      'playersPerSide': playersPerSide,
+                      'homeRoster': homeRoster,
+                      'awayRoster': awayRoster,
+                      'totalOvers': extra['totalOvers'] as int? ?? 20,
+                      'wideRuns': extra['wideRuns'] as int? ?? 1,
+                      'noBallRuns': extra['noBallRuns'] as int? ?? 1,
+                      'magicOverNumber': extra['magicOverNumber'] as int?,
+                    },
+                  );
+                }
+              },
+              onNavigateToCreateTeam: () {
+                GoRouter.of(context).push(AppRoutes.createTeam);
+              },
+            ),
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.toss,
         builder: (context, state) {
           final matchId = state.pathParameters['matchId']!;
           final data = state.extra as Map<String, dynamic>? ?? {};
-          return TossPage(
-            matchId: matchId,
-            homeTeamId: data['homeTeamId'] as String? ?? '',
-            homeTeamName: data['homeTeamName'] as String? ?? '',
-            awayTeamId: data['awayTeamId'] as String? ?? '',
-            awayTeamName: data['awayTeamName'] as String? ?? '',
-            playersPerSide: data['playersPerSide'] as int? ?? 11,
-            homeRoster: data['homeRoster'] as List<RosterPlayer>? ?? [],
-            awayRoster: data['awayRoster'] as List<RosterPlayer>? ?? [],
-            onStartMatch: () {
-              // Navigate to scoring page with args passed via extra
-              final args = state.extra as Map<String, dynamic>? ?? {};
-              GoRouter.of(context).go(
-                AppRoutes.scoringPath(matchId),
-                extra: args,
-              );
-            },
+          return Consumer(
+            builder: (context, ref, _) => TossPage(
+              matchId: matchId,
+              homeTeamId: data['homeTeamId'] as String? ?? '',
+              homeTeamName: data['homeTeamName'] as String? ?? '',
+              awayTeamId: data['awayTeamId'] as String? ?? '',
+              awayTeamName: data['awayTeamName'] as String? ?? '',
+              playersPerSide: data['playersPerSide'] as int? ?? 11,
+              homeRoster: data['homeRoster'] as List<RosterPlayer>? ?? [],
+              awayRoster: data['awayRoster'] as List<RosterPlayer>? ?? [],
+              onStartMatch: (tossState) async {
+                try {
+                  final matchRepo = ref.read(scoring.matchRepositoryProvider);
+
+                  // 1. Set Playing XI for both teams
+                  await matchRepo.setPlayingXI(
+                    matchId,
+                    tossState.toHomePlayingXIInput(),
+                  );
+                  await matchRepo.setPlayingXI(
+                    matchId,
+                    tossState.toAwayPlayingXIInput(),
+                  );
+
+                  // 2. Record toss (returns updated match with innings)
+                  await matchRepo.recordToss(
+                    matchId,
+                    tossState.toRecordTossInput(),
+                  );
+
+                  // 3. Build ScoringPageArgs from toss state
+                  final battingXI = tossState.battingXI;
+                  final fieldingXI = tossState.fieldingXI;
+                  final nonStrikerId = tossState.openingBatterIds
+                      .firstWhere((id) => id != tossState.strikerId);
+
+                  final striker = battingXI.firstWhere(
+                    (p) => p.playerId == tossState.strikerId,
+                  );
+                  final nonStriker = battingXI.firstWhere(
+                    (p) => p.playerId == nonStrikerId,
+                  );
+                  final bowler = fieldingXI.firstWhere(
+                    (p) => p.playerId == tossState.openingBowlerId,
+                  );
+
+                  final args = ScoringPageArgs(
+                    matchId: matchId,
+                    inningsId: '$matchId-inn-1',
+                    battingTeamId: tossState.battingTeamId!,
+                    bowlingTeamId: tossState.fieldingTeamId!,
+                    battingTeamName: tossState.battingTeamName!,
+                    bowlingTeamName: tossState.fieldingTeamName!,
+                    inningsNumber: 1,
+                    totalOvers: data['totalOvers'] as int? ?? 20,
+                    playersPerSide: tossState.playersPerSide,
+                    wideRunsPenalty: data['wideRuns'] as int? ?? 1,
+                    noBallRunsPenalty: data['noBallRuns'] as int? ?? 1,
+                    magicOverNumber: data['magicOverNumber'] as int?,
+                    battingTeamPlayers: battingXI
+                        .map((p) => PlayingXIPlayer(
+                              playerId: p.playerId,
+                              displayName: p.displayName,
+                              playerRole: p.playerRole,
+                            ))
+                        .toList(),
+                    bowlingTeamPlayers: fieldingXI
+                        .map((p) => PlayingXIPlayer(
+                              playerId: p.playerId,
+                              displayName: p.displayName,
+                              playerRole: p.playerRole,
+                            ))
+                        .toList(),
+                    openingStrikerId: tossState.strikerId!,
+                    openingStrikerName: striker.displayName,
+                    openingNonStrikerId: nonStrikerId,
+                    openingNonStrikerName: nonStriker.displayName,
+                    openingBowlerId: tossState.openingBowlerId!,
+                    openingBowlerName: bowler.displayName,
+                  );
+
+                  if (context.mounted) {
+                    GoRouter.of(context).go(
+                      AppRoutes.scoringPath(matchId),
+                      extra: args,
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to start match: $e')),
+                    );
+                  }
+                }
+              },
+            ),
           );
         },
       ),

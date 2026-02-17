@@ -1217,7 +1217,7 @@ interface MatchAwards {
 
 async function computeMatchAwards(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-  matchId: string,
+  _matchId: string,
   allInnings: Array<typeof innings.$inferSelect>,
 ): Promise<MatchAwards> {
   const inningsIds = allInnings.map((i) => i.id);

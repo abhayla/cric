@@ -3,27 +3,36 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
-/// Manages the Bun test server lifecycle for E2E tests.
+/// Manages connectivity to an externally-running Bun test server for E2E tests.
 ///
-/// Spawns a Bun server process, waits for it to be healthy,
-/// and provides database reset capabilities.
+/// On Android emulator, `localhost` refers to the emulator itself.
+/// Use `10.0.2.2` to reach the host machine where the server runs.
+///
+/// Start the server manually BEFORE running E2E tests:
+/// ```bash
+/// cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts
+/// ```
 class ServerManager {
   ServerManager({
-    this.serverDir = 'D:/Abhay/VibeCoding/cric/apps/server',
     this.port = 3001,
     this.healthTimeout = const Duration(seconds: 30),
   });
 
-  final String serverDir;
   final int port;
   final Duration healthTimeout;
 
-  Process? _process;
   late final Dio _dio;
 
-  String get baseUrl => 'http://localhost:$port';
+  /// On Android emulator, 10.0.2.2 maps to host machine's localhost.
+  /// On real device or desktop, use localhost.
+  String get baseUrl {
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:$port';
+    }
+    return 'http://localhost:$port';
+  }
 
-  /// Start the Bun server and wait for health check.
+  /// Verify the externally-started server is reachable and healthy.
   Future<void> startServer() async {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
@@ -31,57 +40,26 @@ class ServerManager {
       receiveTimeout: const Duration(seconds: 5),
     ));
 
-    // Check if already running
-    if (await _isHealthy()) {
-      print('[ServerManager] Server already running on port $port');
-      return;
-    }
+    print('[ServerManager] Checking server at $baseUrl ...');
 
-    print('[ServerManager] Starting Bun server on port $port...');
-    _process = await Process.start(
-      'bun',
-      ['run', 'src/index.ts'],
-      workingDirectory: serverDir,
-      environment: {
-        ...Platform.environment,
-        'PORT': '$port',
-        'NODE_ENV': 'test',
-        'DATABASE_URL': 'postgresql://localhost:5432/cricapp_test_e2e',
-      },
-    );
-
-    // Forward stderr for debugging
-    _process!.stderr.transform(const SystemEncoding().decoder).listen(
-      (line) => print('[Server STDERR] $line'),
-    );
-
-    // Wait for health
     final deadline = DateTime.now().add(healthTimeout);
     while (DateTime.now().isBefore(deadline)) {
       if (await _isHealthy()) {
-        print('[ServerManager] Server healthy on port $port');
+        print('[ServerManager] Server healthy at $baseUrl');
         return;
       }
       await Future<void>.delayed(const Duration(milliseconds: 500));
     }
 
-    throw StateError('Server failed to start within ${healthTimeout.inSeconds}s');
+    throw StateError(
+      'Server not reachable at $baseUrl within ${healthTimeout.inSeconds}s.\n'
+      'Start it manually: cd apps/server && PORT=$port NODE_ENV=test bun run src/index.ts',
+    );
   }
 
-  /// Stop the server process.
+  /// No-op — server is managed externally.
   Future<void> stopServer() async {
-    if (_process != null) {
-      print('[ServerManager] Stopping server...');
-      _process!.kill(ProcessSignal.sigterm);
-      await _process!.exitCode.timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          _process!.kill(ProcessSignal.sigkill);
-          return -1;
-        },
-      );
-      _process = null;
-    }
+    print('[ServerManager] Server managed externally — not stopping.');
   }
 
   /// Reset the test database: truncate all tables, re-seed master data.
@@ -99,8 +77,13 @@ class ServerManager {
   /// Check if the server is healthy.
   Future<bool> _isHealthy() async {
     try {
-      final response = await _dio.get('/health');
-      return response.statusCode == 200;
+      final response = await _dio.get('/api/v1/test/health');
+      return response.statusCode != null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 403) {
+        return true;
+      }
+      return false;
     } catch (_) {
       return false;
     }

@@ -393,12 +393,14 @@ class _WicketDialogState extends State<WicketDialog> {
             onPressed: _step > 1 ? _onBack : null,
             child: const Text('Back'),
           ),
-          FilledButton(
-            onPressed: _isPrimaryEnabled ? _onNext : null,
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFC62828),
+          Flexible(
+            child: FilledButton(
+              onPressed: _isPrimaryEnabled ? _onNext : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFC62828),
+              ),
+              child: Text(_primaryButtonLabel),
             ),
-            child: Text(_primaryButtonLabel),
           ),
         ],
       ),

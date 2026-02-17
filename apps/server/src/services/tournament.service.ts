@@ -6,7 +6,6 @@ import { users } from '../db/schema/users.ts';
 import { matches } from '../db/schema/matches.ts';
 import { innings } from '../db/schema/innings.ts';
 import { battingStats, bowlingStats } from '../db/schema/stats.ts';
-import { matchAnalytics } from '../db/schema/matches.ts';
 import { AppError } from '../middleware/error-handler.ts';
 
 // -- Types --

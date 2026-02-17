@@ -487,13 +487,42 @@ class _FixturesTab extends ConsumerWidget {
         return ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: fixtures.length,
-          itemBuilder: (context, index) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: FixtureCard(fixture: fixtures[index]),
-          ),
+          itemBuilder: (context, index) {
+            final fixture = fixtures[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: FixtureCard(
+                fixture: fixture,
+                onTap: () => _onFixtureTap(context, fixture),
+              ),
+            );
+          },
         );
       },
     );
+  }
+
+  void _onFixtureTap(BuildContext context, Fixture fixture) {
+    if (fixture.isCompleted && fixture.matchId != null) {
+      // Completed match — navigate to scorecard
+      context.push(AppRoutes.scorecardPath(fixture.matchId!));
+    } else if (fixture.hasMatch) {
+      // Live match — navigate to scoring
+      context.push(AppRoutes.scoringPath(fixture.matchId!));
+    } else {
+      // No match yet — navigate to match setup with pre-selected teams
+      context.push(
+        AppRoutes.matchSetup,
+        extra: <String, dynamic>{
+          'homeTeamId': fixture.homeTeamId,
+          'homeTeamName': fixture.homeTeamName,
+          'awayTeamId': fixture.awayTeamId,
+          'awayTeamName': fixture.awayTeamName,
+          'tournamentId': fixture.tournamentId,
+          'fixtureId': fixture.id,
+        },
+      );
+    }
   }
 }
 

@@ -1,22 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../teams/domain/entities/team.dart';
+import '../../../teams/providers.dart' as teams;
+import '../../providers.dart' as scoring;
 import '../notifiers/match_setup_notifier.dart';
 
-class MatchSetupPage extends StatefulWidget {
+class MatchSetupPage extends ConsumerStatefulWidget {
   const MatchSetupPage({
     super.key,
     required this.onMatchCreated,
     this.onNavigateToCreateTeam,
+    this.initialHomeTeamId,
+    this.initialHomeTeamName,
+    this.initialAwayTeamId,
+    this.initialAwayTeamName,
+    this.initialOvers,
+    this.initialPlayersPerSide,
   });
 
   final void Function(String matchId) onMatchCreated;
   final void Function()? onNavigateToCreateTeam;
 
+  /// Pre-selected teams (e.g. from fixture tap).
+  final String? initialHomeTeamId;
+  final String? initialHomeTeamName;
+  final String? initialAwayTeamId;
+  final String? initialAwayTeamName;
+  final int? initialOvers;
+  final int? initialPlayersPerSide;
+
   @override
-  State<MatchSetupPage> createState() => _MatchSetupPageState();
+  ConsumerState<MatchSetupPage> createState() => _MatchSetupPageState();
 }
 
-class _MatchSetupPageState extends State<MatchSetupPage> {
+class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
   late MatchSetupState _state;
   final _venueController = TextEditingController();
   final _oversController = TextEditingController();
@@ -32,7 +50,14 @@ class _MatchSetupPageState extends State<MatchSetupPage> {
   @override
   void initState() {
     super.initState();
-    _state = MatchSetupState();
+    _state = MatchSetupState(
+      homeTeamId: widget.initialHomeTeamId,
+      homeTeamName: widget.initialHomeTeamName,
+      awayTeamId: widget.initialAwayTeamId,
+      awayTeamName: widget.initialAwayTeamName,
+      totalOvers: widget.initialOvers ?? 20,
+      playersPerSide: widget.initialPlayersPerSide ?? 11,
+    );
     _oversController.text = _state.totalOvers.toString();
     _playersController.text = _state.playersPerSide.toString();
     _wideRunsController.text = _state.wideRuns.toString();
@@ -95,8 +120,16 @@ class _MatchSetupPageState extends State<MatchSetupPage> {
                 width: double.infinity,
                 height: 48,
                 child: FilledButton(
-                  onPressed: _state.isValid ? _handleProceedToToss : null,
-                  child: const Text('Proceed to Toss'),
+                  onPressed: _state.isValid && !_state.isSubmitting
+                      ? _handleProceedToToss
+                      : null,
+                  child: _state.isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Proceed to Toss'),
                 ),
               ),
             ),
@@ -121,7 +154,7 @@ class _MatchSetupPageState extends State<MatchSetupPage> {
           theme: theme,
           teamName: _state.homeTeamName,
           placeholder: 'Select Team A',
-          onTap: () {},
+          onTap: () => _showTeamPicker(isHome: true),
         ),
         const SizedBox(height: 8),
         const Center(
@@ -135,7 +168,7 @@ class _MatchSetupPageState extends State<MatchSetupPage> {
           theme: theme,
           teamName: _state.awayTeamName,
           placeholder: 'Select Team B',
-          onTap: () {},
+          onTap: () => _showTeamPicker(isHome: false),
         ),
       ],
     );
@@ -476,7 +509,112 @@ class _MatchSetupPageState extends State<MatchSetupPage> {
     }
   }
 
-  void _handleProceedToToss() {
-    // Will be wired to match creation API in routing integration (#24)
+  Future<void> _showTeamPicker({required bool isHome}) async {
+    final teamsAsync = ref.read(teams.teamsListProvider);
+    final teamList = teamsAsync.value?.teams ?? [];
+
+    if (!mounted) return;
+
+    final selected = await showModalBottomSheet<Team>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          maxChildSize: 0.8,
+          minChildSize: 0.3,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    isHome ? 'Select Team A' : 'Select Team B',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: teamList.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('No teams found'),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  widget.onNavigateToCreateTeam?.call();
+                                },
+                                child: const Text('Create Team'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          itemCount: teamList.length,
+                          itemBuilder: (context, index) {
+                            final team = teamList[index];
+                            // Exclude already-selected team
+                            final isDisabled = isHome
+                                ? team.id == _state.awayTeamId
+                                : team.id == _state.homeTeamId;
+                            return ListTile(
+                              leading: CircleAvatar(
+                                child: Text(team.initial),
+                              ),
+                              title: Text(team.name),
+                              subtitle: Text(team.subtitle),
+                              enabled: !isDisabled,
+                              onTap: isDisabled
+                                  ? null
+                                  : () => Navigator.of(context).pop(team),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (selected != null) {
+      if (isHome) {
+        _updateState(_state.copyWith(
+          homeTeamId: selected.id,
+          homeTeamName: selected.name,
+        ));
+      } else {
+        _updateState(_state.copyWith(
+          awayTeamId: selected.id,
+          awayTeamName: selected.name,
+        ));
+      }
+    }
+  }
+
+  Future<void> _handleProceedToToss() async {
+    _updateState(_state.copyWith(isSubmitting: true));
+
+    try {
+      final matchRepo = ref.read(scoring.matchRepositoryProvider);
+      final match = await matchRepo.createMatch(_state.toCreateMatchInput());
+
+      if (!mounted) return;
+      widget.onMatchCreated(match.id);
+    } catch (e) {
+      if (!mounted) return;
+      _updateState(_state.copyWith(isSubmitting: false));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create match: $e')),
+      );
+    }
   }
 }

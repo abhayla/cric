@@ -233,7 +233,7 @@ function buildBottomNav(activePage) {
   const navItems = [
     { id: 'home',        label: 'Home',     icon: 'home',    page: '05-home.html' },
     { id: 'matches',     label: 'Matches',  icon: 'matches', page: '18-match-history.html' },
-    { id: 'tournaments', label: 'Tourneys',  icon: 'trophy',  page: '19-tournaments-list.html' },
+    { id: 'tournaments', label: 'Tournaments',  icon: 'trophy',  page: '19-tournaments-list.html' },
     { id: 'teams',       label: 'Teams',    icon: 'teams',   page: '06-teams-list.html' },
     { id: 'profile',     label: 'Profile',  icon: 'profile', page: '17-player-profile.html' },
   ];

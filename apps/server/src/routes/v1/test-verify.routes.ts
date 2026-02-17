@@ -1,5 +1,5 @@
 import { Elysia } from 'elysia';
-import { eq, sql, and } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../../db/index.ts';
 import { deliveries } from '../../db/schema/deliveries.ts';
 import { innings } from '../../db/schema/innings.ts';
@@ -13,14 +13,19 @@ import { users } from '../../db/schema/users.ts';
  *
  * Provides direct database query endpoints for E2E test assertions.
  */
-export const testVerifyRoutes = new Elysia({ prefix: '/test' })
+export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
   // Guard: only available in test environment
-  .onBeforeHandle(({ set }) => {
+  .onBeforeHandle(({ set, path }) => {
+    // Allow health check in any environment
+    if (path.endsWith('/health')) return;
     if (process.env.NODE_ENV !== 'test') {
       set.status = 403;
       return { error: 'Test endpoints only available in test environment' };
     }
   })
+
+  // GET /api/v1/test/health — health check (no guard)
+  .get('/health', () => ({ status: 'ok', env: process.env.NODE_ENV }))
 
   // GET /api/v1/test/deliveries/:matchId — all deliveries for a match
   .get('/deliveries/:matchId', async ({ params }) => {

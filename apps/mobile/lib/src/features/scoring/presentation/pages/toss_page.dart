@@ -25,7 +25,7 @@ class TossPage extends StatefulWidget {
   final int playersPerSide;
   final List<RosterPlayer> homeRoster;
   final List<RosterPlayer> awayRoster;
-  final VoidCallback onStartMatch;
+  final void Function(TossState tossState) onStartMatch;
 
   @override
   State<TossPage> createState() => _TossPageState();
@@ -56,7 +56,7 @@ class _TossPageState extends State<TossPage> {
   void _nextStep() {
     if (!_state.canProceed) return;
     if (_state.isLastStep) {
-      widget.onStartMatch();
+      widget.onStartMatch(_state);
       return;
     }
     final nextIndex = _state.currentStep.index + 1;

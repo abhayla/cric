@@ -26,18 +26,17 @@ import 'helpers/db_verifier.dart';
 // Random seed: 42 (deterministic for reproducibility).
 //
 // Prerequisites:
-//   - Bun server running with NODE_ENV=test on port 3001
-//   - PostgreSQL database `cricapp_test_e2e` available
+//   - Bun server running with NODE_ENV=test on port 3001 (if USE_SERVER=true)
 //   - Emulator connected: flutter test integration_test/tournament_e2e_test.dart -d emulator-5554
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  // Set to true when running with Bun server + PostgreSQL
-  const useServer = bool.fromEnvironment('USE_SERVER', defaultValue: false);
+  // Default to true — server must be running for full E2E flow
+  const useServer = bool.fromEnvironment('USE_SERVER', defaultValue: true);
 
   final serverManager = ServerManager(port: 3001);
-  final dbVerifier = DbVerifier(baseUrl: 'http://localhost:3001');
+  late final DbVerifier dbVerifier;
   final random = Random(42);
 
   // Test data
@@ -53,6 +52,7 @@ void main() {
   setUpAll(() async {
     if (useServer) {
       await serverManager.startServer();
+      dbVerifier = DbVerifier(baseUrl: serverManager.baseUrl);
       await serverManager.resetDatabase();
     }
   });
@@ -62,6 +62,105 @@ void main() {
       await serverManager.stopServer();
     }
   });
+
+  // ══════════════════════════════════════════════════════════════════════
+  // HELPER: Play a full match (both innings) between two teams
+  // ══════════════════════════════════════════════════════════════════════
+
+  Future<MatchRecord> playFullMatch(
+    WidgetTester tester, {
+    required String matchLabel,
+    required TeamData teamA,
+    required TeamData teamB,
+    required TournamentConfig matchConfig,
+    required Random rng,
+  }) async {
+    final record = MatchRecord(matchId: matchLabel);
+
+    final battingPlayers = teamA.players.take(matchConfig.playersPerSide).toList();
+    final bowlingPlayers = teamB.players.take(matchConfig.playersPerSide).toList();
+
+    // ── Navigate through real UI flow ──
+
+    // 1. Tap the fixture card (we should be on tournament detail, Fixtures tab)
+    await tapFixtureCard(
+      tester,
+      homeTeamName: teamA.name,
+      awayTeamName: teamB.name,
+    );
+
+    // 2. Complete Match Setup (teams pre-selected from fixture)
+    await completeMatchSetup(tester);
+
+    // 3. Complete Toss Wizard (teamA wins toss, chooses to bat)
+    await completeTossWizard(
+      tester,
+      tossWinnerName: teamA.name,
+      battingOpener1: battingPlayers[0].name,
+      battingOpener2: battingPlayers[1].name,
+      openingBowler: bowlingPlayers[0].name,
+    );
+
+    // ── Now on Scoring Page — score 1st innings (teamA bats) ──
+
+    await playRandomInnings(
+      tester: tester,
+      matchRecord: record,
+      inningsNumber: 1,
+      totalOvers: matchConfig.overs,
+      playersPerSide: matchConfig.playersPerSide,
+      bowlerNames: bowlingPlayers.map((p) => p.name).toList(),
+      batterNames: battingPlayers.map((p) => p.name).toList(),
+      magicOverNumber: matchConfig.magicOverNumber,
+      random: rng,
+    );
+
+    print('    1st innings: ${record.firstInningsRuns}/${record.firstInningsWickets}');
+
+    // Innings transition (teamB now bats)
+    await completeInningsTransition(
+      tester,
+      striker: bowlingPlayers[0].name,
+      nonStriker: bowlingPlayers[1].name,
+      bowler: battingPlayers[0].name,
+    );
+
+    // Score 2nd innings (teamB bats)
+    await playRandomInnings(
+      tester: tester,
+      matchRecord: record,
+      inningsNumber: 2,
+      totalOvers: matchConfig.overs,
+      playersPerSide: matchConfig.playersPerSide,
+      bowlerNames: battingPlayers.map((p) => p.name).toList(),
+      batterNames: bowlingPlayers.map((p) => p.name).toList(),
+      magicOverNumber: matchConfig.magicOverNumber,
+      random: rng,
+    );
+
+    print('    2nd innings: ${record.secondInningsRuns}/${record.secondInningsWickets}');
+    print('    Result: $record');
+
+    // Match complete — dismiss modal and navigate back to tournament
+    await settle(tester);
+    await visualPause(tester, 500);
+    await navigateToHome(tester);
+
+    return record;
+  }
+
+  /// Navigate back to the tournament detail Fixtures tab.
+  /// Call this before each `playFullMatch` if not already there.
+  Future<void> ensureOnTournamentFixtures(WidgetTester tester) async {
+    await navigateToTournaments(tester);
+    // Tap the tournament to open its detail page
+    final tournamentCard = find.text(config.name);
+    if (tournamentCard.evaluate().isNotEmpty) {
+      await tester.tap(tournamentCard.first);
+      await settle(tester);
+      await visualPause(tester);
+    }
+  }
 
   // ══════════════════════════════════════════════════════════════════════
   // THE BIG TEST
@@ -90,8 +189,10 @@ void main() {
         final team = teams[i];
         print('  Creating ${team.name} (${i + 1}/16)...');
         await createTeam(tester, team);
+        // Now on team detail page — add players
         await addPlayersToRoster(tester, team.players);
-        await goBack(tester); // Back to teams list
+        // Go back from team detail to teams list
+        await goBack(tester);
       }
       print('[PHASE 2] All 16 teams created');
 
@@ -133,60 +234,18 @@ void main() {
             print(
                 '\n  Match $matchCount/24: ${teamA.name} vs ${teamB.name} (Group ${entry.key})');
 
-            final record = MatchRecord(matchId: 'group-match-$matchCount');
-            matchRecords.add(record);
+            // Navigate to tournament fixtures before each match
+            await ensureOnTournamentFixtures(tester);
 
-            // Score 1st innings
-            await playRandomInnings(
-              tester: tester,
-              matchRecord: record,
-              inningsNumber: 1,
-              totalOvers: config.overs,
-              playersPerSide: config.playersPerSide,
-              bowlerNames: teamB.players.take(6).map((p) => p.name).toList(),
-              batterNames: teamA.players.take(6).map((p) => p.name).toList(),
-              magicOverNumber: config.magicOverNumber,
-              random: random,
-            );
-
-            print(
-                '    1st innings: ${record.firstInningsRuns}/${record.firstInningsWickets}');
-
-            // Innings transition
-            await completeInningsTransition(
+            final record = await playFullMatch(
               tester,
-              striker: teamB.players[0].name,
-              nonStriker: teamB.players[1].name,
-              bowler: teamA.players[0].name,
+              matchLabel: 'group-match-$matchCount',
+              teamA: teamA,
+              teamB: teamB,
+              matchConfig: config,
+              rng: random,
             );
-
-            // Score 2nd innings
-            await playRandomInnings(
-              tester: tester,
-              matchRecord: record,
-              inningsNumber: 2,
-              totalOvers: config.overs,
-              playersPerSide: config.playersPerSide,
-              bowlerNames: teamA.players.take(6).map((p) => p.name).toList(),
-              batterNames: teamB.players.take(6).map((p) => p.name).toList(),
-              magicOverNumber: config.magicOverNumber,
-              random: random,
-            );
-
-            print(
-                '    2nd innings: ${record.secondInningsRuns}/${record.secondInningsWickets}');
-            print('    Result: $record');
-
-            // Match complete — dismiss modal
-            await settle(tester);
-            await visualPause(tester, 500);
-
-            // Tap "Back to Home" or dismiss the match complete modal
-            final backHome = find.text('Back to Home');
-            if (backHome.evaluate().isNotEmpty) {
-              await tester.tap(backHome.first);
-              await settle(tester);
-            }
+            matchRecords.add(record);
           }
         }
       }
@@ -194,123 +253,63 @@ void main() {
 
       // ── 7. VERIFY GROUP STANDINGS ──
       print('\n[PHASE 7] Verifying group standings...');
+      // Navigate back to tournament to see standings
+      await navigateToTournaments(tester);
       await verifyStandingsPage(tester);
       print('[PHASE 7] Standings verified (UI)');
 
       // ── 8. PLAY 2 SEMI-FINALS ──
       print('\n[PHASE 8] Playing semi-finals...');
 
-      for (var sf = 1; sf <= 2; sf++) {
-        print('\n  Semi-Final $sf');
-        final record = MatchRecord(matchId: 'semi-final-$sf');
-        matchRecords.add(record);
+      // Use group winners (Team1 from A, Team5 from B, Team9 from C, Team13 from D)
+      // SF1: A-winner vs D-winner, SF2: B-winner vs C-winner
+      // (actual winners may differ based on random results, using placeholders)
+      final sfTeams = [
+        [teams[0], teams[12]], // SF1: Team1 vs Team13
+        [teams[4], teams[8]],  // SF2: Team5 vs Team9
+      ];
 
-        // In a real test, we'd navigate to the specific knockout fixture.
-        // For now, we assume the UI shows knockout fixtures after group stage.
+      for (var sf = 0; sf < 2; sf++) {
+        final sfTeamA = sfTeams[sf][0];
+        final sfTeamB = sfTeams[sf][1];
+        print('\n  Semi-Final ${sf + 1}: ${sfTeamA.name} vs ${sfTeamB.name}');
 
-        // Score 1st innings
-        await playRandomInnings(
-          tester: tester,
-          matchRecord: record,
-          inningsNumber: 1,
-          totalOvers: config.overs,
-          playersPerSide: config.playersPerSide,
-          bowlerNames: ['B1', 'B2', 'B3', 'B4', 'B5', 'B6'],
-          batterNames: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6'],
-          magicOverNumber: config.magicOverNumber,
-          random: random,
-        );
+        await ensureOnTournamentFixtures(tester);
 
-        print(
-            '    1st innings: ${record.firstInningsRuns}/${record.firstInningsWickets}');
-
-        // Innings transition
-        await completeInningsTransition(
+        final record = await playFullMatch(
           tester,
-          striker: 'B1',
-          nonStriker: 'B2',
-          bowler: 'A1',
+          matchLabel: 'semi-final-${sf + 1}',
+          teamA: sfTeamA,
+          teamB: sfTeamB,
+          matchConfig: config,
+          rng: random,
         );
-
-        // Score 2nd innings
-        await playRandomInnings(
-          tester: tester,
-          matchRecord: record,
-          inningsNumber: 2,
-          totalOvers: config.overs,
-          playersPerSide: config.playersPerSide,
-          bowlerNames: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6'],
-          batterNames: ['B1', 'B2', 'B3', 'B4', 'B5', 'B6'],
-          magicOverNumber: config.magicOverNumber,
-          random: random,
-        );
-
-        print(
-            '    2nd innings: ${record.secondInningsRuns}/${record.secondInningsWickets}');
-
-        // Dismiss match complete
-        await settle(tester);
-        final backHome = find.text('Back to Home');
-        if (backHome.evaluate().isNotEmpty) {
-          await tester.tap(backHome.first);
-          await settle(tester);
-        }
+        matchRecords.add(record);
       }
       print('[PHASE 8] Semi-finals completed');
 
       // ── 9. PLAY FINAL ──
       print('\n[PHASE 9] Playing the Final...');
-      final finalRecord = MatchRecord(matchId: 'final');
-      matchRecords.add(finalRecord);
+      // Final: SF1 winner vs SF2 winner (use same team placeholders)
+      final finalTeamA = sfTeams[0][0]; // Team1
+      final finalTeamB = sfTeams[1][0]; // Team5
 
-      await playRandomInnings(
-        tester: tester,
-        matchRecord: finalRecord,
-        inningsNumber: 1,
-        totalOvers: config.overs,
-        playersPerSide: config.playersPerSide,
-        bowlerNames: ['F-B1', 'F-B2', 'F-B3', 'F-B4', 'F-B5', 'F-B6'],
-        batterNames: ['F-A1', 'F-A2', 'F-A3', 'F-A4', 'F-A5', 'F-A6'],
-        magicOverNumber: config.magicOverNumber,
-        random: random,
-      );
-
-      print(
-          '  1st innings: ${finalRecord.firstInningsRuns}/${finalRecord.firstInningsWickets}');
-
-      await completeInningsTransition(
+      print('  Final: ${finalTeamA.name} vs ${finalTeamB.name}');
+      await ensureOnTournamentFixtures(tester);
+      final finalRecord = await playFullMatch(
         tester,
-        striker: 'F-B1',
-        nonStriker: 'F-B2',
-        bowler: 'F-A1',
+        matchLabel: 'final',
+        teamA: finalTeamA,
+        teamB: finalTeamB,
+        matchConfig: config,
+        rng: random,
       );
-
-      await playRandomInnings(
-        tester: tester,
-        matchRecord: finalRecord,
-        inningsNumber: 2,
-        totalOvers: config.overs,
-        playersPerSide: config.playersPerSide,
-        bowlerNames: ['F-A1', 'F-A2', 'F-A3', 'F-A4', 'F-A5', 'F-A6'],
-        batterNames: ['F-B1', 'F-B2', 'F-B3', 'F-B4', 'F-B5', 'F-B6'],
-        magicOverNumber: config.magicOverNumber,
-        random: random,
-      );
-
-      print(
-          '  2nd innings: ${finalRecord.secondInningsRuns}/${finalRecord.secondInningsWickets}');
-
-      // Dismiss match complete
-      await settle(tester);
-      final backHome = find.text('Back to Home');
-      if (backHome.evaluate().isNotEmpty) {
-        await tester.tap(backHome.first);
-        await settle(tester);
-      }
+      matchRecords.add(finalRecord);
       print('[PHASE 9] Final completed');
 
       // ── 10. VERIFY TOURNAMENT AWARDS ──
       print('\n[PHASE 10] Verifying tournament awards...');
+      await navigateToTournaments(tester);
       await navigateToLeaderboard(tester);
       print('[PHASE 10] Leaderboard page displayed');
 
@@ -348,28 +347,27 @@ void main() {
 
         // Verify tournament standings and leaderboard
         try {
-          // Note: tournamentId would come from the create step in a real run
           const tournamentId = 'mock-tour-1'; // placeholder
           final standings = await dbVerifier.verifyStandings(tournamentId);
           print('  DB standings: $standings');
 
-        final runsLeader = await dbVerifier.verifyLeaderboard(
-          tournamentId,
-          category: 'runs',
-        );
-        print('\n╔══════════════════════════════════════╗');
-        print('║    TOURNAMENT AWARDS                 ║');
-        print('╠══════════════════════════════════════╣');
-        print('║ Batsman of Tournament: ${runsLeader.topPlayer} '
-            '(${runsLeader.topValue?.toInt()} runs)');
+          final runsLeader = await dbVerifier.verifyLeaderboard(
+            tournamentId,
+            category: 'runs',
+          );
+          print('\n╔══════════════════════════════════════╗');
+          print('║    TOURNAMENT AWARDS                 ║');
+          print('╠══════════════════════════════════════╣');
+          print('║ Batsman of Tournament: ${runsLeader.topPlayer} '
+              '(${runsLeader.topValue?.toInt()} runs)');
 
-        final wicketsLeader = await dbVerifier.verifyLeaderboard(
-          tournamentId,
-          category: 'wickets',
-        );
-        print('║ Bowler of Tournament: ${wicketsLeader.topPlayer} '
-            '(${wicketsLeader.topValue?.toInt()} wickets)');
-        print('╚══════════════════════════════════════╝\n');
+          final wicketsLeader = await dbVerifier.verifyLeaderboard(
+            tournamentId,
+            category: 'wickets',
+          );
+          print('║ Bowler of Tournament: ${wicketsLeader.topPlayer} '
+              '(${wicketsLeader.topValue?.toInt()} wickets)');
+          print('╚══════════════════════════════════════╝\n');
         } catch (e) {
           print('  DB tournament verification: SKIPPED ($e)');
         }
