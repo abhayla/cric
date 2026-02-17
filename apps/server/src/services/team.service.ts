@@ -154,6 +154,7 @@ export async function getTeam(teamId: string) {
       playerRole: users.playerRole,
       phone: users.phone,
       avatarUrl: users.avatarUrl,
+      isVerified: users.isVerified,
     })
     .from(teamRosters)
     .innerJoin(users, eq(teamRosters.playerId, users.id))
@@ -239,16 +240,37 @@ export async function addPlayer(teamId: string, userId: string, input: AddPlayer
       throw new AppError('CONFLICT', 'Player is already on this team', 409);
     }
     // Reactivate previously removed player
-    const [reactivated] = await db
+    await db
       .update(teamRosters)
       .set({
         isActive: true,
         role: input.role || 'player',
         jerseyNumber: input.jerseyNumber ?? null,
       })
+      .where(eq(teamRosters.id, existing.id));
+
+    // Return enriched entry with user data (matches getTeam roster shape)
+    const [enriched] = await db
+      .select({
+        id: teamRosters.id,
+        playerId: teamRosters.playerId,
+        jerseyNumber: teamRosters.jerseyNumber,
+        role: teamRosters.role,
+        isActive: teamRosters.isActive,
+        joinedAt: teamRosters.joinedAt,
+        displayName: users.displayName,
+        battingStyle: users.battingStyle,
+        bowlingStyle: users.bowlingStyle,
+        playerRole: users.playerRole,
+        phone: users.phone,
+        avatarUrl: users.avatarUrl,
+        isVerified: users.isVerified,
+      })
+      .from(teamRosters)
+      .innerJoin(users, eq(teamRosters.playerId, users.id))
       .where(eq(teamRosters.id, existing.id))
-      .returning();
-    return reactivated!;
+      .limit(1);
+    return enriched!;
   }
 
   const [entry] = await db
@@ -261,7 +283,29 @@ export async function addPlayer(teamId: string, userId: string, input: AddPlayer
     })
     .returning();
 
-  return entry!;
+  // Return enriched entry with user data (matches getTeam roster shape)
+  const [enriched] = await db
+    .select({
+      id: teamRosters.id,
+      playerId: teamRosters.playerId,
+      jerseyNumber: teamRosters.jerseyNumber,
+      role: teamRosters.role,
+      isActive: teamRosters.isActive,
+      joinedAt: teamRosters.joinedAt,
+      displayName: users.displayName,
+      battingStyle: users.battingStyle,
+      bowlingStyle: users.bowlingStyle,
+      playerRole: users.playerRole,
+      phone: users.phone,
+      avatarUrl: users.avatarUrl,
+      isVerified: users.isVerified,
+    })
+    .from(teamRosters)
+    .innerJoin(users, eq(teamRosters.playerId, users.id))
+    .where(eq(teamRosters.id, entry!.id))
+    .limit(1);
+
+  return enriched!;
 }
 
 export async function removePlayer(teamId: string, userId: string, playerId: string) {

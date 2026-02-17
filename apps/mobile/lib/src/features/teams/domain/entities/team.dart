@@ -82,6 +82,7 @@ class RosterEntry {
     this.bowlingStyle,
     this.phone,
     this.avatarUrl,
+    this.isVerified = false,
   });
 
   final String id;
@@ -96,6 +97,10 @@ class RosterEntry {
   final BowlingStyle? bowlingStyle;
   final String? phone;
   final String? avatarUrl;
+  final bool isVerified;
+
+  /// Whether this player has an unverified (placeholder) account.
+  bool get isUnverified => !isVerified;
 
   /// Initials from display name.
   String get initials {

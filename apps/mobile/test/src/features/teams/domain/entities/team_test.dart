@@ -333,5 +333,32 @@ void main() {
       );
       expect(entry.isKeeper, true);
     });
+
+    test('isVerified defaults to false', () {
+      final entry = RosterEntry(
+        id: 'r1',
+        playerId: 'p1',
+        displayName: 'Test',
+        rosterRole: RosterRole.player,
+        isActive: true,
+        joinedAt: DateTime(2025, 3, 15),
+      );
+      expect(entry.isVerified, false);
+      expect(entry.isUnverified, true);
+    });
+
+    test('isUnverified returns false when isVerified is true', () {
+      final entry = RosterEntry(
+        id: 'r1',
+        playerId: 'p1',
+        displayName: 'Test',
+        rosterRole: RosterRole.player,
+        isActive: true,
+        joinedAt: DateTime(2025, 3, 15),
+        isVerified: true,
+      );
+      expect(entry.isVerified, true);
+      expect(entry.isUnverified, false);
+    });
   });
 }

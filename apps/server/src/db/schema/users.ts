@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -7,6 +7,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }),
   displayName: varchar('display_name', { length: 60 }).notNull(),
   avatarUrl: text('avatar_url'),
+  isVerified: boolean('is_verified').default(false).notNull(),
   battingStyle: varchar('batting_style', { length: 20 }),
   bowlingStyle: varchar('bowling_style', { length: 30 }),
   playerRole: varchar('player_role', { length: 20 }),

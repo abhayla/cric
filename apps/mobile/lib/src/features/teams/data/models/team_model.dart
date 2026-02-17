@@ -68,6 +68,7 @@ abstract class RosterEntryModel with _$RosterEntryModel {
     @JsonKey(name: 'bowlingStyle') String? bowlingStyle,
     String? phone,
     @JsonKey(name: 'avatarUrl') String? avatarUrl,
+    @JsonKey(name: 'isVerified') @Default(false) bool isVerified,
   }) = _RosterEntryModel;
 
   factory RosterEntryModel.fromJson(Map<String, dynamic> json) =>
@@ -89,6 +90,7 @@ extension RosterEntryModelX on RosterEntryModel {
         bowlingStyle: BowlingStyle.fromApiValue(bowlingStyle),
         phone: phone,
         avatarUrl: avatarUrl,
+        isVerified: isVerified,
       );
 }
 

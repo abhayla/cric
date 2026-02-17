@@ -101,6 +101,24 @@ class PlayerRow extends StatelessWidget {
                 ),
               ),
             ],
+            if (entry.isUnverified) ...[
+              if (entry.isCaptain || entry.isKeeper)
+                const SizedBox(width: 4),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Unverified',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

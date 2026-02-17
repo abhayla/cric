@@ -122,14 +122,116 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
+    testWidgets('Create tab button disabled without phone',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create New'));
+      await tester.pumpAndSettle();
+
+      // Enter only name
+      await tester.enterText(
+        find.byKey(const Key('playerNameField')),
+        'Test Player',
+      );
+      await tester.pump();
+
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Add to Team'),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('Create tab button disabled with invalid phone',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create New'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('playerNameField')),
+        'Test Player',
+      );
+      await tester.enterText(
+        find.byKey(const Key('playerPhoneField')),
+        '12345',
+      );
+      await tester.pump();
+
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Add to Team'),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('Create tab shows validation error for invalid phone',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create New'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('playerPhoneField')),
+        '12345',
+      );
+      await tester.pump();
+
+      expect(
+        find.text('Enter a valid 10-digit Indian mobile number'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Create tab button enabled with valid name and phone',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create New'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('playerNameField')),
+        'Test Player',
+      );
+      await tester.enterText(
+        find.byKey(const Key('playerPhoneField')),
+        '9876543210',
+      );
+      await tester.pump();
+
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Add to Team'),
+      );
+      expect(button.onPressed, isNotNull);
+    });
+
+    testWidgets('Create tab shows Phone Number as required field',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create New'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Phone Number *'), findsOneWidget);
+    });
+
     testWidgets('Create tab calls onCreatePlayer with form data',
         (tester) async {
       String? createdName;
+      String? createdPhone;
       String? createdRole;
 
       await tester.pumpWidget(buildTestWidget(
         onCreatePlayer: (name, phone, role, batting, bowling) {
           createdName = name;
+          createdPhone = phone;
           createdRole = role;
         },
       ));
@@ -140,8 +242,13 @@ void main() {
 
       // Enter player name
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Enter full name'),
+        find.byKey(const Key('playerNameField')),
         'Test Player',
+      );
+      // Enter valid phone
+      await tester.enterText(
+        find.byKey(const Key('playerPhoneField')),
+        '9876543210',
       );
       await tester.pump();
 
@@ -150,6 +257,7 @@ void main() {
       await tester.pump();
 
       expect(createdName, 'Test Player');
+      expect(createdPhone, '9876543210');
       expect(createdRole, 'batter'); // Default role
     });
   });

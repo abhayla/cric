@@ -168,7 +168,12 @@ class _CreateTabState extends State<_CreateTab> {
     super.dispose();
   }
 
-  bool get _isValid => _nameController.text.trim().length >= 2;
+  static final _phoneRegex = RegExp(r'^[6-9]\d{9}$');
+
+  bool get _isPhoneValid => _phoneRegex.hasMatch(_phoneController.text.trim());
+
+  bool get _isValid =>
+      _nameController.text.trim().length >= 2 && _isPhoneValid;
 
   void _handleSubmit() {
     if (!_isValid) return;
@@ -203,6 +208,7 @@ class _CreateTabState extends State<_CreateTab> {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
+                  key: const Key('playerNameField'),
                   controller: _nameController,
                   onChanged: (_) => setState(() {}),
                   maxLength: 50,
@@ -214,9 +220,9 @@ class _CreateTabState extends State<_CreateTab> {
 
                 const SizedBox(height: 16),
 
-                // Phone Number (optional)
+                // Phone Number (required)
                 Text(
-                  'Phone Number (optional)',
+                  'Phone Number *',
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -240,7 +246,9 @@ class _CreateTabState extends State<_CreateTab> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextFormField(
+                        key: const Key('playerPhoneField'),
                         controller: _phoneController,
+                        onChanged: (_) => setState(() {}),
                         keyboardType: TextInputType.phone,
                         maxLength: 10,
                         decoration: const InputDecoration(
@@ -251,6 +259,17 @@ class _CreateTabState extends State<_CreateTab> {
                     ),
                   ],
                 ),
+                if (_phoneController.text.trim().isNotEmpty &&
+                    !_isPhoneValid)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Enter a valid 10-digit Indian mobile number',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
 
                 const SizedBox(height: 16),
 

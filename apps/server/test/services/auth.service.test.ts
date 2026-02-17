@@ -11,8 +11,14 @@ import {
 const TEST_UID = `test-uid-${Date.now()}`;
 const TEST_PHONE = '+919876543210';
 
+const CLAIM_PHONE = `+91999${Date.now().toString().slice(-7)}`;
+const CLAIM_UID = `claim-uid-${Date.now()}`;
+const PLACEHOLDER_UID = `placeholder-${Date.now()}`;
+
 afterAll(async () => {
   await db.delete(users).where(eq(users.firebaseUid, TEST_UID));
+  await db.delete(users).where(eq(users.firebaseUid, CLAIM_UID));
+  await db.delete(users).where(eq(users.firebaseUid, PLACEHOLDER_UID));
 });
 
 describe('Auth Service', () => {
@@ -40,6 +46,65 @@ describe('Auth Service', () => {
 
       expect(isNewUser).toBe(false);
       expect(user!.firebaseUid).toBe(TEST_UID);
+    });
+  });
+
+  describe('auto-claim placeholder', () => {
+    it('claims placeholder user when phone matches', async () => {
+      // Create a placeholder user
+      const [placeholder] = await db
+        .insert(users)
+        .values({
+          firebaseUid: PLACEHOLDER_UID,
+          phone: CLAIM_PHONE,
+          displayName: 'Offline Player',
+          isVerified: false,
+        })
+        .returning();
+
+      // Register with same phone → should claim
+      const { user, isNewUser } = await verifyAndGetUser({
+        uid: CLAIM_UID,
+        phone: CLAIM_PHONE,
+        email: null,
+      });
+
+      expect(isNewUser).toBe(false);
+      expect(user!.id).toBe(placeholder!.id); // Same user ID preserved
+      expect(user!.firebaseUid).toBe(CLAIM_UID); // Updated to real UID
+      expect(user!.isVerified).toBe(true);
+      expect(user!.displayName).toBe('Offline Player'); // Name preserved
+    });
+
+    it('does NOT claim already-verified users by phone', async () => {
+      // The claimed user from previous test is now verified with CLAIM_PHONE
+      // A new registration with same phone should create a new user
+      const newUid = `new-uid-${Date.now()}`;
+      const { user, isNewUser } = await verifyAndGetUser({
+        uid: newUid,
+        phone: CLAIM_PHONE,
+        email: null,
+      });
+
+      expect(isNewUser).toBe(true);
+      expect(user!.firebaseUid).toBe(newUid);
+      // Clean up
+      await db.delete(users).where(eq(users.firebaseUid, newUid));
+    });
+
+    it('new users always get isVerified true', async () => {
+      const freshUid = `fresh-uid-${Date.now()}`;
+      const freshPhone = `+91888${Date.now().toString().slice(-7)}`;
+      const { user, isNewUser } = await verifyAndGetUser({
+        uid: freshUid,
+        phone: freshPhone,
+        email: null,
+      });
+
+      expect(isNewUser).toBe(true);
+      expect(user!.isVerified).toBe(true);
+      // Clean up
+      await db.delete(users).where(eq(users.firebaseUid, freshUid));
     });
   });
 

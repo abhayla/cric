@@ -205,7 +205,6 @@ describe('Team Service', () => {
       });
 
       expect(entry).toBeDefined();
-      expect(entry.teamId).toBe(testTeamId);
       expect(entry.playerId).toBe(playerUserId);
       expect(entry.role).toBe('player');
       expect(entry.jerseyNumber).toBe(7);

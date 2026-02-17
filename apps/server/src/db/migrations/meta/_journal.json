@@ -22,6 +22,13 @@
       "when": 1771335373392,
       "tag": "0002_heavy_banshee",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1771348442882,
+      "tag": "0003_clumsy_machine_man",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../db/index.ts';
 import { users } from '../db/schema/users.ts';
 import type { FirebaseUser } from '../types/auth.ts';
@@ -22,6 +22,24 @@ export async function verifyAndGetUser(firebaseUser: FirebaseUser) {
     return { user: existing[0], isNewUser: false };
   }
 
+  // Auto-claim: check for unverified placeholder user with matching phone
+  if (firebaseUser.phone) {
+    const [placeholder] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.phone, firebaseUser.phone), eq(users.isVerified, false)))
+      .limit(1);
+
+    if (placeholder) {
+      const [claimed] = await db
+        .update(users)
+        .set({ firebaseUid: firebaseUser.uid, isVerified: true })
+        .where(eq(users.id, placeholder.id))
+        .returning();
+      return { user: claimed!, isNewUser: false };
+    }
+  }
+
   const phoneSuffix = firebaseUser.phone?.slice(-4);
   const displayName = phoneSuffix ? `Player ${phoneSuffix}` : 'New Player';
 
@@ -32,6 +50,7 @@ export async function verifyAndGetUser(firebaseUser: FirebaseUser) {
       phone: firebaseUser.phone,
       email: firebaseUser.email,
       displayName,
+      isVerified: true,
     })
     .returning();
 
