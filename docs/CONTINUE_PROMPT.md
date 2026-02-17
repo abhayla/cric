@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 7 (Polish & Testing) IN PROGRESS — MockTour-1 Tournament E2E test being built. Magic Over feature added (client + server). 2004 Flutter tests, 298 server tests.
+**Status:** Phase 7 (Polish & Testing) IN PROGRESS — MockTour-1 Tournament E2E test PASSING (27 matches, 65 min). Magic Over feature added (client + server). 2004 Flutter tests, 298 server tests.
 **Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
 ## Tech Stack
@@ -30,24 +30,34 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - Wicket dialog layout fix (FilledButton in Row overflow)
 - TypeScript compiles clean, server runs on port 3001 with VPS PostgreSQL
 
-**What's NOT working yet:**
-- `createTeam()` helper enters player names into team name field — the UI flow after team creation doesn't navigate to a roster page correctly. **User wants to review and fix the test helpers before re-running.**
-- Match setup page `_handleProceedToToss()` is a stub (does nothing)
-- Fixture card `onTap` is not wired in tournament detail page
-- These are bypassed by using programmatic `navigateToScoringPage()` for scoring
+**What's working:**
+- Full 27-match tournament plays through real UI (fixture tap → match setup → toss → scoring → match complete → back to home → next fixture)
+- API-based setup (phases 2-5): teams, players, tournament, group assignment, fixture generation
+- All 24 group matches + 2 semi-finals + 1 final complete via UI
+- Standings verification (Phase 7), leaderboard (Phase 10)
+- DB verification endpoint called (Phase 12) — returns 500 but test passes non-blocking
+
+**Known issues to fix:**
+- `test-verify` API returns 500 on tournament verification — server-side bug in the endpoint
+- DB verification is skipped due to 500; need to fix and make it actually validate data
+- Team/player names use hardcoded Indian cricket names — user may want different naming format
 
 **Key files:**
-- `apps/mobile/integration_test/tournament_e2e_test.dart` — Main E2E test
-- `apps/mobile/integration_test/helpers/` — All test helpers
-- `apps/server/src/routes/v1/test-verify.routes.ts` — DB verification API
-- `apps/server/src/services/scoring.service.ts` — Magic over + match awards
+- `apps/mobile/integration_test/tournament_e2e_test.dart` — Main E2E test (27 matches)
+- `apps/mobile/integration_test/helpers/tournament_flow_helpers.dart` — tapFixtureCard, completeTossWizard, completeMatchSetup
+- `apps/mobile/integration_test/helpers/match_flow_helpers.dart` — playRandomInnings, tapRun, handleWicket
+- `apps/mobile/integration_test/helpers/data_generators.dart` — 16 teams with 6 players each
+- `apps/server/src/routes/v1/test-verify.routes.ts` — DB verification API (needs fix)
+
+**Key bugs fixed (sessions 2026-02-16/17):**
+- `void Function` → `Future<void> Function` for toss onStartMatch (errors were swallowed)
+- Captured refs before async gap in router.dart (deactivated widget error)
+- `Navigator.pop()` → `GoRouter.go('/home')` for match complete (PopScope blocked pop)
+- FixtureCard tap: match BOTH team names via Fixture entity, tap InkWell descendant, scroll past pinned header (y<200)
 
 **Server:** Bun server connects to VPS PostgreSQL at `103.118.16.189:5432/cricapp_dev`. Start with: `cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts`
 
-**Commits this session:**
-- `431684f` feat(scoring): add server-side magic over doubling, match awards, DB verification
-- `274cecb` fix(e2e): add resilient settle(), optional server mode, fix pumpAndSettle timeouts
-- Uncommitted: realistic player names, test-verify routes mounted, wicket dialog fix, programmatic scoring navigation
+**Uncommitted changes:** Many files modified across mobile + server. See git status for full list.
 
 ### Session Fix (2026-02-16 — GlobalKey crash)
 

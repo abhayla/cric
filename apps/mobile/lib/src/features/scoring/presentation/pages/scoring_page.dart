@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../shared/data/sync/sync_service.dart';
 import '../../data/datasources/scoring_local_datasource.dart';
 import '../../domain/entities/innings_data.dart';
 import '../../domain/entities/playing_xi_player.dart';
@@ -76,6 +78,7 @@ class ScoringPage extends StatefulWidget {
     super.key,
     required this.args,
     this.datasource,
+    this.syncService,
   });
 
   final ScoringPageArgs args;
@@ -83,6 +86,9 @@ class ScoringPage extends StatefulWidget {
   /// Optional local datasource for persistence. When provided, scoring state
   /// is automatically saved after every mutation and can be resumed.
   final ScoringLocalDatasource? datasource;
+
+  /// Optional sync service for pushing deliveries to the server.
+  final SyncService? syncService;
 
   @override
   State<ScoringPage> createState() => _ScoringPageState();
@@ -99,15 +105,23 @@ class _ScoringPageState extends State<ScoringPage> {
     _initScoring();
   }
 
+  @override
+  void dispose() {
+    _service?.dispose();
+    super.dispose();
+  }
+
   Future<void> _initScoring() async {
     final args = widget.args;
     final datasource = widget.datasource;
+    final syncService = widget.syncService;
 
     if (datasource != null) {
       // Try to resume from saved state first
       final resumed = await ScoringPersistenceService.resume(
         matchId: args.matchId,
         datasource: datasource,
+        syncService: syncService,
       );
 
       if (resumed != null) {
@@ -119,6 +133,7 @@ class _ScoringPageState extends State<ScoringPage> {
         _service = await ScoringPersistenceService.createNew(
           notifier: notifier,
           datasource: datasource,
+          syncService: syncService,
         );
         _notifier = notifier;
       }
@@ -402,7 +417,7 @@ class _ScoringPageState extends State<ScoringPage> {
           ),
         );
       case MatchCompleteAction.backToHome:
-        Navigator.of(context).pop();
+        GoRouter.of(context).go('/home');
     }
   }
 

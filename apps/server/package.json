@@ -9,7 +9,8 @@
     "db:generate": "bunx drizzle-kit generate",
     "db:migrate": "bunx drizzle-kit migrate",
     "db:seed": "bun run src/db/seed/master_data.ts",
-    "typecheck": "bunx tsc --noEmit"
+    "typecheck": "bunx tsc --noEmit",
+    "test": "bun test --timeout=60000"
   },
   "dependencies": {
     "elysia": "^1.2.12",

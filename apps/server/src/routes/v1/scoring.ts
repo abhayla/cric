@@ -98,7 +98,9 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
 
       const matchId = ctx.params.id;
       const result = await recordDelivery(matchId, user.id, {
+        id: ctx.body.id,
         inningsId: ctx.body.inningsId,
+        inningsNumber: ctx.body.inningsNumber,
         overNumber: ctx.body.overNumber,
         ballNumber: ctx.body.ballNumber,
         strikerId: ctx.body.strikerId,
@@ -121,6 +123,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       });
 
       // --- Broadcast score_update ---
+      const resultInningsId = result.delivery.inningsId;
       try {
         // Get striker batting stat + name
         const [strikerStat] = await db
@@ -136,7 +139,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
           .innerJoin(users, eq(users.id, battingStats.playerId))
           .where(
             and(
-              eq(battingStats.inningsId, ctx.body.inningsId),
+              eq(battingStats.inningsId, resultInningsId),
               eq(battingStats.playerId, ctx.body.strikerId),
             ),
           )
@@ -156,13 +159,13 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
           .innerJoin(users, eq(users.id, bowlingStats.playerId))
           .where(
             and(
-              eq(bowlingStats.inningsId, ctx.body.inningsId),
+              eq(bowlingStats.inningsId, resultInningsId),
               eq(bowlingStats.playerId, ctx.body.bowlerId),
             ),
           )
           .limit(1);
 
-        const currentOver = await getCurrentOverBalls(ctx.body.inningsId, ctx.body.overNumber);
+        const currentOver = await getCurrentOverBalls(resultInningsId, ctx.body.overNumber);
 
         const scoreUpdateMsg = buildScoreUpdate(
           matchId,
@@ -251,7 +254,9 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
     {
       params: t.Object({ id: t.String() }),
       body: t.Object({
-        inningsId: t.String(),
+        id: t.Optional(t.String()),
+        inningsId: t.Optional(t.String()),
+        inningsNumber: t.Optional(t.Number({ minimum: 1 })),
         overNumber: t.Number({ minimum: 0 }),
         ballNumber: t.Number({ minimum: 1 }),
         strikerId: t.String(),

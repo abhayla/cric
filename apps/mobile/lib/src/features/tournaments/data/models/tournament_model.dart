@@ -12,7 +12,7 @@ abstract class TournamentModel with _$TournamentModel {
     required String name,
     required String format,
     @JsonKey(name: 'oversPerMatch') required int oversPerMatch,
-    @JsonKey(name: 'ballTypeId') required int ballTypeId,
+    @JsonKey(name: 'ballTypeId') @Default(1) int ballTypeId,
     required String status,
     @JsonKey(name: 'pointsWin') @Default(2) int pointsWin,
     @JsonKey(name: 'pointsTie') @Default(1) int pointsTie,

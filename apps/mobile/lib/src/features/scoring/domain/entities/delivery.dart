@@ -200,6 +200,38 @@ class Delivery {
   /// Includes bat runs + wides + no-balls. Excludes byes/leg-byes.
   int get bowlerRunsConceded => runsFromBat + wideRuns + noBallRuns;
 
+  /// Build a payload map for syncing to the server REST API.
+  ///
+  /// The caller must add `inningsNumber` to the returned map.
+  Map<String, dynamic> toSyncPayload() => {
+        'id': id,
+        'overNumber': overNumber,
+        'ballNumber': ballNumber,
+        'strikerId': strikerId,
+        'nonStrikerId': nonStrikerId,
+        'bowlerId': bowlerId,
+        'runsFromBat': runsFromBat,
+        'isWide': isWide,
+        'wideRuns': wideRuns,
+        'isNoBall': isNoBall,
+        'noBallRuns': noBallRuns,
+        'isBye': isBye,
+        'byeRuns': byeRuns,
+        'isLegBye': isLegBye,
+        'legByeRuns': legByeRuns,
+        'isWicket': isWicket,
+        'isBoundaryFour': isBoundaryFour,
+        'isBoundarySix': isBoundarySix,
+        'isPenalty': isPenalty,
+        if (wicketInfo != null)
+          'wicket': {
+            'dismissedPlayerId': wicketInfo!.dismissedPlayerId,
+            'dismissalTypeId': wicketInfo!.dismissalType.id,
+            if (wicketInfo!.fielderId != null) 'fielderId': wicketInfo!.fielderId,
+            'bowlerCredited': wicketInfo!.bowlerCredited,
+          },
+      };
+
   /// Cricket notation for this delivery.
   ///
   /// Examples: ".", "1", "4", "6", "W", "Wd", "1Wd", "Nb", "1Nb", "B", "Lb"

@@ -407,24 +407,32 @@ final routerProvider = Provider<GoRouter>((ref) {
               homeRoster: data['homeRoster'] as List<RosterPlayer>? ?? [],
               awayRoster: data['awayRoster'] as List<RosterPlayer>? ?? [],
               onStartMatch: (tossState) async {
+                // Capture references before async gap to avoid deactivated widget errors
+                final matchRepo = ref.read(scoring.matchRepositoryProvider);
+                final router = GoRouter.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+
                 try {
-                  final matchRepo = ref.read(scoring.matchRepositoryProvider);
+                  debugPrint('[onStartMatch] Starting match $matchId...');
 
                   // 1. Set Playing XI for both teams
                   await matchRepo.setPlayingXI(
                     matchId,
                     tossState.toHomePlayingXIInput(),
                   );
+                  debugPrint('[onStartMatch] Home XI set, calling setPlayingXI for away...');
                   await matchRepo.setPlayingXI(
                     matchId,
                     tossState.toAwayPlayingXIInput(),
                   );
+                  debugPrint('[onStartMatch] Away XI set, recording toss...');
 
                   // 2. Record toss (returns updated match with innings)
                   await matchRepo.recordToss(
                     matchId,
                     tossState.toRecordTossInput(),
                   );
+                  debugPrint('[onStartMatch] Toss recorded, building args...');
 
                   // 3. Build ScoringPageArgs from toss state
                   final battingXI = tossState.battingXI;
@@ -477,15 +485,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                     openingBowlerName: bowler.displayName,
                   );
 
+                  debugPrint('[onStartMatch] Args built, navigating to scoring page...');
+                  router.go(
+                    AppRoutes.scoringPath(matchId),
+                    extra: args,
+                  );
+                } catch (e, stack) {
+                  debugPrint('[onStartMatch] ERROR: $e');
+                  debugPrint('[onStartMatch] Stack: $stack');
                   if (context.mounted) {
-                    GoRouter.of(context).go(
-                      AppRoutes.scoringPath(matchId),
-                      extra: args,
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(content: Text('Failed to start match: $e')),
                     );
                   }
@@ -501,7 +510,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           final matchId = state.pathParameters['matchId']!;
           final args = state.extra as ScoringPageArgs?;
           if (args != null) {
-            return ScoringPage(args: args);
+            return ScoringPage(
+              args: args,
+              datasource: ref.read(scoring.scoringLocalDatasourceProvider),
+              syncService: ref.read(scoring.syncServiceProvider),
+            );
           }
           // Fallback: navigate home if no args (shouldn't happen in normal flow)
           return const SizedBox.shrink();

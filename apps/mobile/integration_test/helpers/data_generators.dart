@@ -90,11 +90,11 @@ const _teamNames = [
 
 /// Generates test data for tournament E2E tests.
 class TournamentTestData {
-  /// Generate 16 teams with 8 players each (6 playing + 2 extras).
+  /// Generate 16 teams with 6 players each (matching playersPerSide=6).
   /// Uses realistic Indian cricket player names and IPL-style team names.
   static List<TeamData> generate16Teams() {
     return List.generate(16, (i) {
-      final players = List.generate(8, (j) {
+      final players = List.generate(6, (j) {
         return PlayerData(
           name: _playerNames[i][j],
           role: 'all_rounder', // Everyone can bat & bowl in 6-player format

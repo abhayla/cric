@@ -98,7 +98,7 @@ class _TournamentDetailView extends StatelessWidget {
                 tournament: tournament,
                 tournamentId: tournamentId,
               ),
-              _FixturesTab(tournamentId: tournamentId),
+              _FixturesTab(tournamentId: tournamentId, tournament: tournament),
               _TeamsTab(tournament: tournament),
             ],
           ),
@@ -464,9 +464,10 @@ class _StandingsPreview extends StatelessWidget {
 // -- Fixtures Tab --
 
 class _FixturesTab extends ConsumerWidget {
-  const _FixturesTab({required this.tournamentId});
+  const _FixturesTab({required this.tournamentId, required this.tournament});
 
   final String tournamentId;
+  final Tournament tournament;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -520,6 +521,8 @@ class _FixturesTab extends ConsumerWidget {
           'awayTeamName': fixture.awayTeamName,
           'tournamentId': fixture.tournamentId,
           'fixtureId': fixture.id,
+          'totalOvers': tournament.oversPerMatch,
+          'playersPerSide': tournament.playersPerSide,
         },
       );
     }

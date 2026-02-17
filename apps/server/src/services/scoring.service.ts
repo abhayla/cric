@@ -14,7 +14,9 @@ import { refreshMatchPlayerCareerStats } from './career-stats.service.ts';
 // ============================================================
 
 interface DeliveryInput {
-  inningsId: string;
+  id?: string;
+  inningsId?: string;
+  inningsNumber?: number;
   overNumber: number;
   ballNumber: number;
   strikerId: string;
@@ -97,11 +99,29 @@ export async function recordDelivery(
       throw new AppError('VALIDATION_ERROR', 'Match must be in live status to record deliveries', 400);
     }
 
+    // Resolve innings: by ID or by innings number
+    let resolvedInningsId = input.inningsId;
+    if (!resolvedInningsId && input.inningsNumber) {
+      const [innByNumber] = await tx
+        .select()
+        .from(innings)
+        .where(and(eq(innings.matchId, matchId), eq(innings.inningsNumber, input.inningsNumber)))
+        .limit(1);
+      if (!innByNumber) {
+        throw new AppError('NOT_FOUND', `Innings #${input.inningsNumber} not found for this match`, 404);
+      }
+      resolvedInningsId = innByNumber.id;
+    }
+
+    if (!resolvedInningsId) {
+      throw new AppError('VALIDATION_ERROR', 'Either inningsId or inningsNumber is required', 400);
+    }
+
     // Validate innings exists and belongs to match
     const [inn] = await tx
       .select()
       .from(innings)
-      .where(and(eq(innings.id, input.inningsId), eq(innings.matchId, matchId)))
+      .where(and(eq(innings.id, resolvedInningsId), eq(innings.matchId, matchId)))
       .limit(1);
 
     if (!inn) {
@@ -110,6 +130,14 @@ export async function recordDelivery(
 
     if (inn.isCompleted) {
       throw new AppError('VALIDATION_ERROR', 'Cannot record delivery in a completed innings', 400);
+    }
+
+    // If match is in innings_break and we're recording in the 2nd innings, transition to live
+    if (txMatch!.status === 'innings_break' && inn.inningsNumber >= 2) {
+      await tx
+        .update(matches)
+        .set({ status: 'live' })
+        .where(eq(matches.id, matchId));
     }
 
     // ── Step 2: CALCULATE ──
@@ -136,7 +164,7 @@ export async function recordDelivery(
     const [seqResult] = await tx
       .select({ maxSeq: max(deliveries.sequenceNumber) })
       .from(deliveries)
-      .where(eq(deliveries.inningsId, input.inningsId));
+      .where(eq(deliveries.inningsId, resolvedInningsId!));
 
     const sequenceNumber = (seqResult?.maxSeq ?? 0) + 1;
 
@@ -150,7 +178,7 @@ export async function recordDelivery(
           isLegal: deliveries.isLegal,
         })
         .from(deliveries)
-        .where(eq(deliveries.inningsId, input.inningsId))
+        .where(eq(deliveries.inningsId, resolvedInningsId!))
         .orderBy(desc(deliveries.sequenceNumber))
         .limit(1);
 
@@ -171,7 +199,8 @@ export async function recordDelivery(
     const [delivery] = await tx
       .insert(deliveries)
       .values({
-        inningsId: input.inningsId,
+        ...(input.id ? { id: input.id } : {}),
+        inningsId: resolvedInningsId!,
         overNumber: input.overNumber,
         ballNumber: input.ballNumber,
         sequenceNumber,
@@ -212,7 +241,7 @@ export async function recordDelivery(
       const currentOvers = computeOversDisplay(inn, isLegal);
 
       await tx.insert(fallOfWickets).values({
-        inningsId: input.inningsId,
+        inningsId: resolvedInningsId!,
         wicketNumber: currentWickets,
         runsAtFall: inn.totalRuns + totalRuns,
         oversAtFall: currentOvers,
@@ -222,7 +251,7 @@ export async function recordDelivery(
 
       // Update fielding stats
       if (input.wicket.fielderId) {
-        await upsertFieldingStats(tx, input.inningsId, input.wicket);
+        await upsertFieldingStats(tx, resolvedInningsId!, input.wicket);
       }
     }
 
@@ -236,10 +265,10 @@ export async function recordDelivery(
       byeRuns: effectiveByeRuns,
       legByeRuns: effectiveLegByeRuns,
     } : input;
-    await upsertBattingStats(tx, input.inningsId, effectiveInput, delivery!);
+    await upsertBattingStats(tx, resolvedInningsId!, effectiveInput, delivery!);
 
     // ── Step 6: UPDATE BOWLING STATS ──
-    await upsertBowlingStats(tx, input.inningsId, effectiveInput, delivery!);
+    await upsertBowlingStats(tx, resolvedInningsId!, effectiveInput, delivery!);
 
     // ── Step 7: UPDATE INNINGS TOTALS ──
     const inningsUpdate: Record<string, unknown> = {
@@ -281,11 +310,11 @@ export async function recordDelivery(
     await tx
       .update(innings)
       .set(inningsUpdate)
-      .where(eq(innings.id, input.inningsId));
+      .where(eq(innings.id, resolvedInningsId!));
 
     // ── Step 8: CHECK OVER COMPLETION ──
     if (isLegal) {
-      await checkOverCompletion(tx, input.inningsId, input.overNumber, input.bowlerId);
+      await checkOverCompletion(tx, resolvedInningsId!, input.overNumber, input.bowlerId);
     }
 
     // ── Step 9: CHECK INNINGS COMPLETION ──
@@ -293,7 +322,7 @@ export async function recordDelivery(
     const [updatedInnings] = await tx
       .select()
       .from(innings)
-      .where(eq(innings.id, input.inningsId))
+      .where(eq(innings.id, resolvedInningsId!))
       .limit(1);
 
     const { inningsComplete, matchComplete, completedReason } = checkInningsCompletion(
@@ -308,7 +337,7 @@ export async function recordDelivery(
           isCompleted: true,
           completedReason,
         })
-        .where(eq(innings.id, input.inningsId));
+        .where(eq(innings.id, resolvedInningsId!));
 
       // Handle match state transition
       if (matchComplete) {
@@ -320,6 +349,16 @@ export async function recordDelivery(
           .update(matches)
           .set({ status: 'innings_break' })
           .where(eq(matches.id, matchId));
+
+        // Auto-create 2nd innings with teams swapped
+        const target = updatedInnings!.totalRuns + 1;
+        await tx.insert(innings).values({
+          matchId,
+          inningsNumber: 2,
+          battingTeamId: updatedInnings!.bowlingTeamId,
+          bowlingTeamId: updatedInnings!.battingTeamId,
+          target,
+        });
       }
     }
 

@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import '../../../../core/constants/cricket_constants.dart';
 import '../../../../core/utils/cricket_utils.dart';
 import '../../../../core/utils/scoring_utils.dart';
@@ -545,6 +547,8 @@ class ScoringState {
 class ScoringNotifier {
   ScoringNotifier(this._state);
 
+  static const _uuid = Uuid();
+
   ScoringState _state;
   ScoringState get state => _state;
 
@@ -1025,7 +1029,7 @@ class ScoringNotifier {
 
     // Step 3: Create delivery record (stores doubled values for correct undo)
     final delivery = Delivery(
-      id: 'del-${_state.deliveryHistory.length + 1}',
+      id: _uuid.v4(),
       inningsId: _state.inningsId,
       overNumber: _state.currentOverNumber,
       ballNumber: _state.currentOverBalls + 1,

@@ -113,6 +113,22 @@ If the ONLY viable fix would violate a prohibited action, mark UNRESOLVED with r
 
 ---
 
+## Fix All Errors — No Dismissals
+
+**All failures must be addressed.** Do NOT dismiss any failure as "pre-existing", "infrastructure issue", "environment problem", or "not caused by current changes." If a test fails, fix it. If the DB is unreachable, diagnose and fix connectivity. If test cleanup has FK ordering bugs, fix the cleanup.
+
+Specifically:
+- Do NOT classify errors as "pre-existing" and skip them
+- Do NOT report failures as "not related to my changes" without fixing them
+- Do NOT declare success while failures remain, regardless of their origin
+- Infrastructure issues (DB down, service unreachable) should be diagnosed and fixed or clearly escalated with actionable next steps
+- Test file compilation errors are real bugs — fix the test code
+- Timeout failures indicate a real problem (connectivity, deadlock, slow query) — investigate root cause
+
+The only acceptable outcome is: all tests pass, or a clear actionable blocker is identified with a concrete fix path.
+
+---
+
 ## Iteration Log Format
 
 Each iteration written to `{log_dir}/{session_id}/iteration-{NNN}.md`:
@@ -222,3 +238,7 @@ On completion, update `fixLoopResult` with the outcome status.
 | Retest times out | Treat as failure, next attempt |
 | No `files_of_interest` | Infer via Grep/Glob on error messages |
 | All prohibited actions violated | Mark UNRESOLVED, log reason |
+| DB connectivity timeout | Diagnose: check service status, connection string, firewall. Fix or provide exact steps to restore. |
+| Test cleanup FK errors | Fix cleanup ordering (delete child rows before parent). |
+| Stale test signatures | Update test to match current production API (e.g., sync → async callbacks). |
+| Environment not configured | Provide exact setup commands (start service, create DB, update .env). |

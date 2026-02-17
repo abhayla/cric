@@ -25,7 +25,7 @@ class TossPage extends StatefulWidget {
   final int playersPerSide;
   final List<RosterPlayer> homeRoster;
   final List<RosterPlayer> awayRoster;
-  final void Function(TossState tossState) onStartMatch;
+  final Future<void> Function(TossState tossState) onStartMatch;
 
   @override
   State<TossPage> createState() => _TossPageState();
@@ -53,10 +53,16 @@ class _TossPageState extends State<TossPage> {
     setState(() => _state = newState);
   }
 
-  void _nextStep() {
+  Future<void> _nextStep() async {
+    debugPrint('[TossPage._nextStep] step=${_state.currentStep}, canProceed=${_state.canProceed}');
+    if (_state.currentStep == TossStep.openers) {
+      debugPrint('[TossPage._nextStep] openers=${_state.openingBatterIds.length}, '
+          'striker=${_state.strikerId}, bowler=${_state.openingBowlerId}');
+    }
     if (!_state.canProceed) return;
     if (_state.isLastStep) {
-      widget.onStartMatch(_state);
+      debugPrint('[TossPage._nextStep] Calling onStartMatch...');
+      await widget.onStartMatch(_state);
       return;
     }
     final nextIndex = _state.currentStep.index + 1;

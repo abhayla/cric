@@ -48,7 +48,8 @@ export const errorHandler = new Elysia({ name: 'error-handler' })
 
     if (elysiaCode === 'VALIDATION') {
       set.status = 400;
-      return toErrorResponse('VALIDATION_ERROR', 'Invalid request data');
+      console.error('Validation error:', JSON.stringify(error, null, 2));
+      return toErrorResponse('VALIDATION_ERROR', 'Invalid request data', error.message);
     }
 
     console.error('Unhandled error:', error);

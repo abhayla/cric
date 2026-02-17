@@ -135,6 +135,16 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
     };
   })
 
+  // POST /api/v1/test/run-migration — apply pending schema changes
+  .post('/run-migration', async () => {
+    try {
+      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_number" integer`);
+      return { success: true, message: 'Migration applied' };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
+  })
+
   // POST /api/v1/test/reset-db — truncate all data tables, re-seed master data
   .post('/reset-db', async () => {
     await db.execute(sql`
@@ -163,6 +173,19 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
         users
       CASCADE
     `);
+
+    // Apply any pending schema migrations
+    await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_number" integer`);
+
+    // Seed test user (matches auth middleware TEST_USER)
+    await db.insert(users).values({
+      firebaseUid: 'test-user-e2e-001',
+      phone: '+919999900001',
+      displayName: 'E2E Test Scorer',
+      playerRole: 'all_rounder',
+      battingStyle: 'right_hand_bat',
+      bowlingStyle: 'right_arm_medium',
+    }).onConflictDoNothing();
 
     return { success: true, message: 'Database reset complete' };
   });

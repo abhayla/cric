@@ -8,6 +8,8 @@ INPUT: failure_output, failure_context, files_of_interest, retest_command, max_i
 session_id = generate_timestamp_id()
 mkdir {log_dir}/{session_id}/
 issue_queue = parse_discrete_issues(failure_output)
+// NOTE: Do NOT filter out "pre-existing" issues. All failures are real bugs.
+// Infrastructure issues (DB down, service unavailable) are also actionable.
 attempt_counts = {}  // issue_key -> count
 iteration = 0
 all_fixes = []
@@ -171,3 +173,7 @@ RETURN { fix_applied: true, fix: proposed_fix, review: review, build: "PASSED" }
 | `Connection refused` | Server not running for integration test | Start server or mock the endpoint |
 | `Build runner error` | Stale generated files | Run `build_runner build --delete-conflicting-outputs` |
 | `Type check error` (TypeScript) | Drizzle schema mismatch | Check schema definition types |
+| All DB tests timeout at 5s | PostgreSQL not running/reachable | Check `pg_isready`, verify `.env` DATABASE_URL, start service or update connection |
+| FK constraint in test cleanup | Test teardown deletes parent before child | Reorder cleanup: delete `player_career_stats` before `users` |
+| `void Function` vs `Future<void> Function` in test | Production API changed to async, test not updated | Update test callback signature to match |
+| `Connection refused` / timeout on remote host | Remote DB server down or network issue | Check connectivity, fall back to localhost, or start local DB |

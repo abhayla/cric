@@ -32,7 +32,7 @@ void main() {
     int playersPerSide = 11,
     List<RosterPlayer>? homeRoster,
     List<RosterPlayer>? awayRoster,
-    void Function(TossState)? onStartMatch,
+    Future<void> Function(TossState)? onStartMatch,
   }) {
     return MaterialApp(
       home: TossPage(
@@ -44,7 +44,7 @@ void main() {
         playersPerSide: playersPerSide,
         homeRoster: homeRoster ?? makeRoster(11, prefix: 'h'),
         awayRoster: awayRoster ?? makeRoster(11, prefix: 'a'),
-        onStartMatch: onStartMatch ?? (_) {},
+        onStartMatch: onStartMatch ?? (_) async {},
       ),
     );
   }

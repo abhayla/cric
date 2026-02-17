@@ -5,6 +5,7 @@ import { users } from '../../src/db/schema/users.ts';
 import { teams, teamRosters } from '../../src/db/schema/teams.ts';
 import { matches, matchPlayers, matchResult } from '../../src/db/schema/matches.ts';
 import { innings } from '../../src/db/schema/innings.ts';
+import { playerCareerStats } from '../../src/db/schema/stats.ts';
 import {
   createMatch,
   getMatches,
@@ -140,6 +141,11 @@ afterAll(async () => {
   await db.delete(teamRosters).where(eq(teamRosters.teamId, awayTeamId));
   await db.delete(teams).where(eq(teams.id, homeTeamId));
   await db.delete(teams).where(eq(teams.id, awayTeamId));
+
+  // Delete career stats (may be created by completeMatch pipeline)
+  if (testUserIds.length > 0) {
+    await db.delete(playerCareerStats).where(inArray(playerCareerStats.playerId, testUserIds));
+  }
 
   if (testUserIds.length > 0) {
     await db.delete(users).where(inArray(users.id, testUserIds));

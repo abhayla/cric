@@ -3,13 +3,13 @@ abstract final class AppConstants {
   /// Default API base URL for Android emulator.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:3000/api/v1',
+    defaultValue: 'http://10.0.2.2:3001/api/v1',
   );
 
   /// WebSocket URL.
   static const String wsBaseUrl = String.fromEnvironment(
     'WS_BASE_URL',
-    defaultValue: 'ws://10.0.2.2:3000/ws',
+    defaultValue: 'ws://10.0.2.2:3001/ws',
   );
 
   /// Pagination default page size.

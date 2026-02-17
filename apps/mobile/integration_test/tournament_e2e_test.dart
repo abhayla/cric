@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -141,10 +142,31 @@ void main() {
     print('    2nd innings: ${record.secondInningsRuns}/${record.secondInningsWickets}');
     print('    Result: $record');
 
-    // Match complete — dismiss modal and navigate back to tournament
+    // Match complete — wait for MatchCompleteModal and navigate back
     await settle(tester);
-    await visualPause(tester, 500);
-    await navigateToHome(tester);
+    await visualPause(tester, 1000);
+
+    // Wait for MatchCompleteModal to appear (retry)
+    for (var i = 0; i < 5; i++) {
+      final backHome = find.text('Back to Home');
+      if (backHome.evaluate().isNotEmpty) {
+        print('    [postMatch] Found "Back to Home", tapping...');
+        await tester.tap(backHome.first);
+        await settle(tester);
+        await visualPause(tester, 1000);
+        break;
+      }
+      await visualPause(tester, 500);
+      await settle(tester);
+    }
+
+    // Verify we're on home page or navigate there
+    await settle(tester);
+    final homeIndicator = find.text('Home');
+    if (homeIndicator.evaluate().isEmpty) {
+      print('    [postMatch] Not on home page, forcing navigation...');
+      await navigateToHome(tester);
+    }
 
     return record;
   }
@@ -152,13 +174,43 @@ void main() {
   /// Navigate back to the tournament detail Fixtures tab.
   /// Call this before each `playFullMatch` if not already there.
   Future<void> ensureOnTournamentFixtures(WidgetTester tester) async {
+    // Check if we're already on tournament detail with Fixtures tab
+    final fixturesTab = find.text('Fixtures');
+    if (fixturesTab.evaluate().isNotEmpty) {
+      // Make sure we're on the Fixtures tab
+      await tester.tap(fixturesTab.last);
+      await settle(tester);
+      return;
+    }
+
+    // Pop any pushed pages until we get to a shell route
+    for (var i = 0; i < 5; i++) {
+      final backIcon = find.byIcon(Icons.arrow_back);
+      if (backIcon.evaluate().isEmpty) break;
+      await tester.tap(backIcon.first);
+      await settle(tester);
+    }
+
+    // Navigate to Tournaments tab
     await navigateToTournaments(tester);
+    await settle(tester);
+
     // Tap the tournament to open its detail page
-    final tournamentCard = find.text(config.name);
+    final tournamentCard = find.textContaining(config.name);
     if (tournamentCard.evaluate().isNotEmpty) {
       await tester.tap(tournamentCard.first);
       await settle(tester);
       await visualPause(tester);
+    } else {
+      print('    [ensureFixtures] WARNING: Tournament "${config.name}" not found!');
+      dumpVisibleTexts(tester, 'ensureFixtures');
+    }
+
+    // Switch to Fixtures tab
+    final fixturesTabAfter = find.text('Fixtures');
+    if (fixturesTabAfter.evaluate().isNotEmpty) {
+      await tester.tap(fixturesTabAfter.last);
+      await settle(tester);
     }
   }
 
@@ -181,43 +233,61 @@ void main() {
           reason: 'Should land on Home page');
       print('[SETUP] App launched, on Home page');
 
-      // ── 2. CREATE 16 TEAMS ──
-      print('\n[PHASE 2] Creating 16 teams...');
-      await navigateToTeams(tester);
-
+      // ── 2. CREATE 16 TEAMS + PLAYERS (via API) ──
+      print('\n[PHASE 2] Creating 16 teams with players via API...');
+      final teamIds = <String, String>{}; // teamName → teamId
+      final playerIds = <String, String>{}; // playerName → playerId
       for (var i = 0; i < teams.length; i++) {
         final team = teams[i];
-        print('  Creating ${team.name} (${i + 1}/16)...');
-        await createTeam(tester, team);
-        // Now on team detail page — add players
-        await addPlayersToRoster(tester, team.players);
-        // Go back from team detail to teams list
-        await goBack(tester);
+        final teamId = await serverManager.createTeamApi(team.name);
+        teamIds[team.name] = teamId;
+
+        // Create players and add to roster
+        for (final player in team.players) {
+          final playerId = await serverManager.createPlayerApi(
+            player.name,
+            playerRole: player.role,
+          );
+          playerIds[player.name] = playerId;
+          await serverManager.addPlayerToTeamApi(teamId, playerId);
+        }
+        print('  Created ${team.name} with ${team.players.length} players (${i + 1}/16)');
       }
-      print('[PHASE 2] All 16 teams created');
+      print('[PHASE 2] All 16 teams created with players via API');
 
-      // ── 3. CREATE TOURNAMENT ──
-      print('\n[PHASE 3] Creating tournament: ${config.name}');
-      await createTournament(tester, config);
-      print('[PHASE 3] Tournament created');
+      // ── 3. CREATE TOURNAMENT (via API) ──
+      print('\n[PHASE 3] Creating tournament via API: ${config.name}');
+      final tournamentId = await serverManager.createTournamentApi(
+        name: config.name,
+        format: config.format,
+        oversPerMatch: config.overs,
+        numGroups: config.numGroups,
+        qualifyPerGroup: config.qualifyPerGroup,
+        playersPerSide: config.playersPerSide,
+      );
+      print('[PHASE 3] Tournament created → $tournamentId');
 
-      // ── 4. ADD TEAMS TO TOURNAMENT ──
-      print('\n[PHASE 4] Adding teams to tournament...');
+      // ── 4. ADD TEAMS TO TOURNAMENT (via API) ──
+      print('\n[PHASE 4] Adding teams to tournament via API...');
       for (final entry in groupAssignments.entries) {
         final groupName = entry.key;
         final teamIndices = entry.value;
         for (final teamIdx in teamIndices) {
           final teamName = teams[teamIdx - 1].name;
-          print('  Adding $teamName to Group $groupName');
-          await addTeamToTournament(tester, teamName, groupName: groupName);
+          final teamId = teamIds[teamName]!;
+          await serverManager.addTeamToTournamentApi(
+            tournamentId, teamId, groupName: groupName,
+          );
+          print('  Added $teamName to Group $groupName');
         }
       }
       print('[PHASE 4] All 16 teams added to groups');
 
-      // ── 5. GENERATE FIXTURES ──
-      print('\n[PHASE 5] Generating fixtures...');
-      await generateFixtures(tester);
-      print('[PHASE 5] Fixtures generated');
+      // ── 5. GENERATE FIXTURES (via API) ──
+      print('\n[PHASE 5] Generating fixtures via API...');
+      await serverManager.generateFixturesApi(tournamentId);
+      final fixtures = await serverManager.getFixturesApi(tournamentId);
+      print('[PHASE 5] ${fixtures.length} fixtures generated');
 
       // ── 6. PLAY 24 GROUP MATCHES ──
       print('\n[PHASE 6] Playing 24 group matches...');

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/data/sync/sync_service.dart';
 import '../../shared/providers/database_provider.dart';
 import 'data/datasources/match_remote_datasource.dart';
 import 'data/datasources/scoring_local_datasource.dart';
@@ -67,3 +68,10 @@ final matchLiveNotifierProvider =
     NotifierProvider<MatchLiveNotifier, LiveMatchState>(
   MatchLiveNotifier.new,
 );
+
+/// Sync service for pushing deliveries to the server.
+final syncServiceProvider = Provider<SyncService>((ref) {
+  final dao = ref.watch(scoringDaoProvider);
+  final dio = ref.watch(_dioProvider);
+  return SyncService(scoringDao: dao, dio: dio);
+});

@@ -3,8 +3,20 @@ import { getFirebaseAuth } from '../config/firebase.ts';
 import { AppError } from './error-handler.ts';
 import type { FirebaseUser } from '../types/auth.ts';
 
-export const authMiddleware = new Elysia({ name: 'auth' }).derive(
+const TEST_USER: FirebaseUser = {
+  uid: 'test-user-e2e-001',
+  phone: '+919999900001',
+  email: null,
+};
+
+export const authMiddleware = new Elysia({ name: 'auth' }).resolve(
+  { as: 'scoped' },
   async ({ request }): Promise<{ firebaseUser: FirebaseUser }> => {
+    // In test mode, bypass Firebase auth and use a test user
+    if (process.env.NODE_ENV === 'test') {
+      return { firebaseUser: TEST_USER };
+    }
+
     const authorization = request.headers.get('authorization');
 
     if (!authorization?.startsWith('Bearer ')) {

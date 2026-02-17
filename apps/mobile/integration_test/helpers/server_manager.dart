@@ -74,6 +74,73 @@ class ServerManager {
     }
   }
 
+  /// Create a player (user) via API. Returns the player ID.
+  Future<String> createPlayerApi(String displayName, {String? playerRole}) async {
+    final response = await _dio.post('/api/v1/players', data: {
+      'displayName': displayName,
+      if (playerRole != null) 'playerRole': playerRole,
+    });
+    return response.data['player']['id'] as String;
+  }
+
+  /// Create a team via API. Returns the team ID.
+  Future<String> createTeamApi(String name) async {
+    final response = await _dio.post('/api/v1/teams', data: {'name': name});
+    return response.data['team']['id'] as String;
+  }
+
+  /// Add a player to a team roster via API.
+  Future<void> addPlayerToTeamApi(String teamId, String playerId) async {
+    await _dio.post('/api/v1/teams/$teamId/players', data: {
+      'playerId': playerId,
+    });
+  }
+
+  /// Create a tournament via API. Returns the tournament ID.
+  Future<String> createTournamentApi({
+    required String name,
+    required String format,
+    required int oversPerMatch,
+    int ballTypeId = 1,
+    int? numGroups,
+    int? qualifyPerGroup,
+    int? playersPerSide,
+  }) async {
+    final response = await _dio.post('/api/v1/tournaments', data: {
+      'name': name,
+      'format': format,
+      'oversPerMatch': oversPerMatch,
+      'ballTypeId': ballTypeId,
+      if (numGroups != null) 'numGroups': numGroups,
+      if (qualifyPerGroup != null) 'qualifyPerGroup': qualifyPerGroup,
+      if (playersPerSide != null) 'playersPerSide': playersPerSide,
+    });
+    return response.data['tournament']['id'] as String;
+  }
+
+  /// Add a team to a tournament via API.
+  Future<void> addTeamToTournamentApi(
+    String tournamentId,
+    String teamId, {
+    String? groupName,
+  }) async {
+    await _dio.post('/api/v1/tournaments/$tournamentId/teams', data: {
+      'teamId': teamId,
+      if (groupName != null) 'groupName': groupName,
+    });
+  }
+
+  /// Generate fixtures for a tournament via API.
+  Future<void> generateFixturesApi(String tournamentId) async {
+    await _dio.post('/api/v1/tournaments/$tournamentId/fixtures/generate');
+  }
+
+  /// Get fixtures for a tournament via API.
+  Future<List<Map<String, dynamic>>> getFixturesApi(String tournamentId) async {
+    final response = await _dio.get('/api/v1/tournaments/$tournamentId/fixtures');
+    return (response.data['fixtures'] as List).cast<Map<String, dynamic>>();
+  }
+
   /// Check if the server is healthy.
   Future<bool> _isHealthy() async {
     try {

@@ -32,12 +32,12 @@ class MatchRemoteDatasource {
           'totalOvers': totalOvers,
           'ballTypeId': ballTypeId,
           'matchDate': matchDate,
-          ?'venue': venue,
-          ?'playersPerSide': playersPerSide,
-          ?'maxOversPerBowler': maxOversPerBowler,
-          ?'wideRuns': wideRuns,
-          ?'noBallRuns': noBallRuns,
-          ?'powerplayOvers': powerplayOvers,
+          if (venue != null) 'venue': venue,
+          if (playersPerSide != null) 'playersPerSide': playersPerSide,
+          if (maxOversPerBowler != null) 'maxOversPerBowler': maxOversPerBowler,
+          if (wideRuns != null) 'wideRuns': wideRuns,
+          if (noBallRuns != null) 'noBallRuns': noBallRuns,
+          if (powerplayOvers != null) 'powerplayOvers': powerplayOvers,
         },
       );
       return response.data['match'] as Map<String, dynamic>;
