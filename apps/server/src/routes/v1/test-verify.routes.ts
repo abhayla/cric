@@ -3,7 +3,7 @@ import { eq, sql, and } from 'drizzle-orm';
 import { db } from '../../db/index.ts';
 import { deliveries } from '../../db/schema/deliveries.ts';
 import { innings } from '../../db/schema/innings.ts';
-import { matches, matchResult } from '../../db/schema/matches.ts';
+import { matches, matchResult, matchAnalytics } from '../../db/schema/matches.ts';
 import { tournamentStandings } from '../../db/schema/tournaments.ts';
 import { battingStats, bowlingStats } from '../../db/schema/stats.ts';
 import { users } from '../../db/schema/users.ts';
@@ -108,6 +108,26 @@ export const testVerifyRoutes = new Elysia({ prefix: '/test' })
     }
 
     return { category, leaderboard: [] };
+  })
+
+  // GET /api/v1/test/match-awards/:matchId — match awards (MOTM, best batsman, best bowler)
+  .get('/match-awards/:matchId', async ({ params }) => {
+    const [result] = await db
+      .select()
+      .from(matchResult)
+      .where(eq(matchResult.matchId, params.matchId))
+      .limit(1);
+
+    const [analytics] = await db
+      .select()
+      .from(matchAnalytics)
+      .where(eq(matchAnalytics.matchId, params.matchId))
+      .limit(1);
+
+    return {
+      manOfMatchId: result?.manOfMatchId ?? null,
+      awards: analytics?.mvpScores ?? null,
+    };
   })
 
   // POST /api/v1/test/reset-db — truncate all data tables, re-seed master data

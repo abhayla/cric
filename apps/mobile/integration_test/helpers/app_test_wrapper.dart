@@ -10,14 +10,10 @@ import 'package:cricapp/src/app/app.dart';
 /// This wrapper can provide Riverpod overrides for testing.
 class AppTestWrapper {
   /// Create and pump the full app with optional provider overrides.
-  static Future<void> pumpApp(
-    WidgetTester tester, {
-    List<Override> overrides = const [],
-  }) async {
+  static Future<void> pumpApp(WidgetTester tester) async {
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: overrides,
-        child: const CricApp(),
+      const ProviderScope(
+        child: CricApp(),
       ),
     );
     // Wait for initial navigation + splash redirect
@@ -25,12 +21,9 @@ class AppTestWrapper {
   }
 
   /// Build the full app widget for integration testing.
-  static Widget buildApp({
-    List<Override> overrides = const [],
-  }) {
-    return ProviderScope(
-      overrides: overrides,
-      child: const CricApp(),
+  static Widget buildApp() {
+    return const ProviderScope(
+      child: CricApp(),
     );
   }
 }

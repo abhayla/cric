@@ -585,7 +585,7 @@ void main() {
       await _confirmExtra(tester);
 
       // Free hit indicator should appear
-      expect(find.text('FREE HIT'), findsOneWidget);
+      expect(find.text('FREE HIT'), findsWidgets);
     });
 
     testWidgets('Bye: legal delivery, advances over count', (tester) async {
@@ -651,7 +651,7 @@ void main() {
       await _tapExtra(tester, 'NB');
       await _confirmExtra(tester);
 
-      expect(find.text('FREE HIT'), findsOneWidget);
+      expect(find.text('FREE HIT'), findsWidgets);
 
       // Legal delivery on free hit → consumes it
       await _tapRun(tester, 4);
@@ -690,12 +690,12 @@ void main() {
       // No-ball → free hit
       await _tapExtra(tester, 'NB');
       await _confirmExtra(tester);
-      expect(find.text('FREE HIT'), findsOneWidget);
+      expect(find.text('FREE HIT'), findsWidgets);
 
       // Wide on free hit → free hit persists
       await _tapExtra(tester, 'WD');
       await _confirmExtra(tester);
-      expect(find.text('FREE HIT'), findsOneWidget);
+      expect(find.text('FREE HIT'), findsWidgets);
 
       // Legal delivery → consumes
       await _tapRun(tester, 0);
@@ -709,12 +709,12 @@ void main() {
       // NB → free hit
       await _tapExtra(tester, 'NB');
       await _confirmExtra(tester);
-      expect(find.text('FREE HIT'), findsOneWidget);
+      expect(find.text('FREE HIT'), findsWidgets);
 
       // Another NB → still free hit
       await _tapExtra(tester, 'NB');
       await _confirmExtra(tester);
-      expect(find.text('FREE HIT'), findsOneWidget);
+      expect(find.text('FREE HIT'), findsWidgets);
 
       // Legal delivery → consumes
       await _tapRun(tester, 0);

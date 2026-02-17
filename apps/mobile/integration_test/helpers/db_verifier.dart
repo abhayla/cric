@@ -154,6 +154,24 @@ class DbVerifier {
     );
   }
 
+  /// Verify match awards (MOTM, best batsman, best bowler).
+  Future<MatchAwardsVerification> verifyMatchAwards(
+    String matchId,
+  ) async {
+    final response = await _dio.get('/api/v1/test/match-awards/$matchId');
+    final manOfMatchId = response.data['manOfMatchId'] as String?;
+    final awards = response.data['awards'] as Map<String, dynamic>?;
+
+    return MatchAwardsVerification(
+      passed: manOfMatchId != null && awards != null,
+      manOfMatchId: manOfMatchId,
+      bestBatsmanId: awards?['bestBatsmanId'] as String?,
+      bestBatsmanRuns: (awards?['bestBatsmanRuns'] as num?)?.toInt() ?? 0,
+      bestBowlerId: awards?['bestBowlerId'] as String?,
+      bestBowlerWickets: (awards?['bestBowlerWickets'] as num?)?.toInt() ?? 0,
+    );
+  }
+
   /// Verify tournament leaderboard.
   Future<LeaderboardVerification> verifyLeaderboard(
     String tournamentId, {
@@ -230,6 +248,31 @@ class StandingsVerification {
   String toString() => passed
       ? 'PASS: $teamCount teams verified'
       : 'FAIL: ${mismatches.join(', ')}';
+}
+
+/// Result of match awards verification.
+class MatchAwardsVerification {
+  const MatchAwardsVerification({
+    required this.passed,
+    this.manOfMatchId,
+    this.bestBatsmanId,
+    this.bestBatsmanRuns = 0,
+    this.bestBowlerId,
+    this.bestBowlerWickets = 0,
+  });
+
+  final bool passed;
+  final String? manOfMatchId;
+  final String? bestBatsmanId;
+  final int bestBatsmanRuns;
+  final String? bestBowlerId;
+  final int bestBowlerWickets;
+
+  @override
+  String toString() => passed
+      ? 'PASS: MOTM=$manOfMatchId, BestBat=$bestBatsmanId ($bestBatsmanRuns runs), '
+        'BestBowl=$bestBowlerId ($bestBowlerWickets wkts)'
+      : 'FAIL: Awards not computed';
 }
 
 /// Result of leaderboard verification.

@@ -1,6 +1,6 @@
 import { eq, and, sql, desc, count, max } from 'drizzle-orm';
 import { db } from '../db/index.ts';
-import { matches, matchResult } from '../db/schema/matches.ts';
+import { matches, matchResult, matchAnalytics } from '../db/schema/matches.ts';
 import { innings, overs } from '../db/schema/innings.ts';
 import { deliveries, wicketsByDelivery, fallOfWickets } from '../db/schema/deliveries.ts';
 import { battingStats, bowlingStats, fieldingStats } from '../db/schema/stats.ts';
@@ -114,7 +114,23 @@ export async function recordDelivery(
 
     // ── Step 2: CALCULATE ──
     const isLegal = !input.isWide && !input.isNoBall && !input.isPenalty;
-    const totalRuns = input.runsFromBat + input.wideRuns + input.noBallRuns + input.byeRuns + input.legByeRuns;
+
+    // Step 2.5: Magic Over — double all runs if this is the magic over
+    const isMagicOver = txMatch!.magicOverNumber != null &&
+      input.overNumber === txMatch!.magicOverNumber;
+
+    const effectiveRunsFromBat = isMagicOver && input.runsFromBat > 0
+      ? input.runsFromBat * 2 : input.runsFromBat;
+    const effectiveWideRuns = isMagicOver && input.wideRuns > 0
+      ? input.wideRuns * 2 : input.wideRuns;
+    const effectiveNoBallRuns = isMagicOver && input.noBallRuns > 0
+      ? input.noBallRuns * 2 : input.noBallRuns;
+    const effectiveByeRuns = isMagicOver && input.byeRuns > 0
+      ? input.byeRuns * 2 : input.byeRuns;
+    const effectiveLegByeRuns = isMagicOver && input.legByeRuns > 0
+      ? input.legByeRuns * 2 : input.legByeRuns;
+
+    const totalRuns = effectiveRunsFromBat + effectiveWideRuns + effectiveNoBallRuns + effectiveByeRuns + effectiveLegByeRuns;
 
     // Get next sequence number
     const [seqResult] = await tx
@@ -162,15 +178,15 @@ export async function recordDelivery(
         strikerId: input.strikerId,
         nonStrikerId: input.nonStrikerId,
         bowlerId: input.bowlerId,
-        runsFromBat: input.runsFromBat,
+        runsFromBat: effectiveRunsFromBat,
         isWide: input.isWide,
-        wideRuns: input.wideRuns,
+        wideRuns: effectiveWideRuns,
         isNoBall: input.isNoBall,
-        noBallRuns: input.noBallRuns,
+        noBallRuns: effectiveNoBallRuns,
         isBye: input.isBye,
-        byeRuns: input.byeRuns,
+        byeRuns: effectiveByeRuns,
         isLegBye: input.isLegBye,
-        legByeRuns: input.legByeRuns,
+        legByeRuns: effectiveLegByeRuns,
         totalRuns,
         isWicket: input.isWicket,
         isLegal,
@@ -211,28 +227,37 @@ export async function recordDelivery(
     }
 
     // ── Step 5: UPDATE BATTING STATS ──
-    await upsertBattingStats(tx, input.inningsId, input, delivery!);
+    // Use effective (magic-over doubled) values for stats
+    const effectiveInput = isMagicOver ? {
+      ...input,
+      runsFromBat: effectiveRunsFromBat,
+      wideRuns: effectiveWideRuns,
+      noBallRuns: effectiveNoBallRuns,
+      byeRuns: effectiveByeRuns,
+      legByeRuns: effectiveLegByeRuns,
+    } : input;
+    await upsertBattingStats(tx, input.inningsId, effectiveInput, delivery!);
 
     // ── Step 6: UPDATE BOWLING STATS ──
-    await upsertBowlingStats(tx, input.inningsId, input, delivery!);
+    await upsertBowlingStats(tx, input.inningsId, effectiveInput, delivery!);
 
     // ── Step 7: UPDATE INNINGS TOTALS ──
     const inningsUpdate: Record<string, unknown> = {
       totalRuns: sql`${innings.totalRuns} + ${totalRuns}`,
-      totalExtras: sql`${innings.totalExtras} + ${input.wideRuns + input.noBallRuns + input.byeRuns + input.legByeRuns}`,
+      totalExtras: sql`${innings.totalExtras} + ${effectiveWideRuns + effectiveNoBallRuns + effectiveByeRuns + effectiveLegByeRuns}`,
     };
 
     if (input.isWide) {
-      inningsUpdate.totalWides = sql`${innings.totalWides} + ${input.wideRuns}`;
+      inningsUpdate.totalWides = sql`${innings.totalWides} + ${effectiveWideRuns}`;
     }
     if (input.isNoBall) {
-      inningsUpdate.totalNoBalls = sql`${innings.totalNoBalls} + ${input.noBallRuns}`;
+      inningsUpdate.totalNoBalls = sql`${innings.totalNoBalls} + ${effectiveNoBallRuns}`;
     }
     if (input.isBye) {
-      inningsUpdate.totalByes = sql`${innings.totalByes} + ${input.byeRuns}`;
+      inningsUpdate.totalByes = sql`${innings.totalByes} + ${effectiveByeRuns}`;
     }
     if (input.isLegBye) {
-      inningsUpdate.totalLegByes = sql`${innings.totalLegByes} + ${input.legByeRuns}`;
+      inningsUpdate.totalLegByes = sql`${innings.totalLegByes} + ${effectiveLegByeRuns}`;
     }
     if (input.isWicket) {
       inningsUpdate.totalWickets = sql`${innings.totalWickets} + 1`;
@@ -1172,6 +1197,115 @@ function checkInningsCompletion(
 }
 
 // ============================================================
+// Helper: Compute Match Awards
+// ============================================================
+
+interface MatchAwards {
+  motmPlayerId: string | null;
+  bestBatsmanId: string | null;
+  bestBatsmanRuns: number;
+  bestBowlerId: string | null;
+  bestBowlerWickets: number;
+  bestBowlerEconomy: number;
+  playerScores: Array<{
+    playerId: string;
+    battingScore: number;
+    bowlingScore: number;
+    totalScore: number;
+  }>;
+}
+
+async function computeMatchAwards(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  matchId: string,
+  allInnings: Array<typeof innings.$inferSelect>,
+): Promise<MatchAwards> {
+  const inningsIds = allInnings.map((i) => i.id);
+
+  // Get all batting stats for this match
+  const allBatting = await tx
+    .select()
+    .from(battingStats)
+    .where(sql`${battingStats.inningsId} IN (${sql.join(inningsIds.map(id => sql`${id}`), sql`, `)})`);
+
+  // Get all bowling stats for this match
+  const allBowling = await tx
+    .select()
+    .from(bowlingStats)
+    .where(sql`${bowlingStats.inningsId} IN (${sql.join(inningsIds.map(id => sql`${id}`), sql`, `)})`);
+
+  // Best Batsman: highest runs scored
+  let bestBatsmanId: string | null = null;
+  let bestBatsmanRuns = 0;
+  for (const bs of allBatting) {
+    if (bs.runsScored > bestBatsmanRuns ||
+        (bs.runsScored === bestBatsmanRuns && (bs.ballsFaced ?? 999) < (allBatting.find(b => b.playerId === bestBatsmanId)?.ballsFaced ?? 999))) {
+      bestBatsmanRuns = bs.runsScored;
+      bestBatsmanId = bs.playerId;
+    }
+  }
+
+  // Best Bowler: most wickets, tiebreak by best economy
+  let bestBowlerId: string | null = null;
+  let bestBowlerWickets = 0;
+  let bestBowlerEconomy = 999;
+  for (const bw of allBowling) {
+    const wickets = bw.wicketsTaken ?? 0;
+    const economy = bw.economyRate ? Number(bw.economyRate) : 999;
+    if (wickets > bestBowlerWickets ||
+        (wickets === bestBowlerWickets && economy < bestBowlerEconomy)) {
+      bestBowlerWickets = wickets;
+      bestBowlerEconomy = economy;
+      bestBowlerId = bw.playerId;
+    }
+  }
+
+  // MOTM: Simple weighted score (batting: runs/10 + SR bonus, bowling: wickets*3 + economy bonus)
+  const playerScoreMap = new Map<string, { batting: number; bowling: number }>();
+
+  for (const bs of allBatting) {
+    const battingScore = bs.runsScored / 10 +
+      (bs.runsScored >= 50 ? 2 : 0) +
+      (bs.runsScored >= 100 ? 3 : 0) +
+      (bs.fours ?? 0) * 0.1 + (bs.sixes ?? 0) * 0.2;
+    const existing = playerScoreMap.get(bs.playerId) ?? { batting: 0, bowling: 0 };
+    existing.batting += battingScore;
+    playerScoreMap.set(bs.playerId, existing);
+  }
+
+  for (const bw of allBowling) {
+    const wickets = bw.wicketsTaken ?? 0;
+    const maidens = bw.maidens ?? 0;
+    const bowlingScore = wickets * 3 + maidens * 1 +
+      (wickets >= 3 ? 3 : 0) + (wickets >= 5 ? 2 : 0);
+    const existing = playerScoreMap.get(bw.playerId) ?? { batting: 0, bowling: 0 };
+    existing.bowling += bowlingScore;
+    playerScoreMap.set(bw.playerId, existing);
+  }
+
+  const playerScores = Array.from(playerScoreMap.entries())
+    .map(([playerId, scores]) => ({
+      playerId,
+      battingScore: scores.batting,
+      bowlingScore: scores.bowling,
+      totalScore: scores.batting + scores.bowling,
+    }))
+    .sort((a, b) => b.totalScore - a.totalScore);
+
+  const motmPlayerId = playerScores.length > 0 ? playerScores[0]!.playerId : null;
+
+  return {
+    motmPlayerId,
+    bestBatsmanId,
+    bestBatsmanRuns,
+    bestBowlerId,
+    bestBowlerWickets,
+    bestBowlerEconomy,
+    playerScores,
+  };
+}
+
+// ============================================================
 // Helper: Complete Match
 // ============================================================
 
@@ -1224,12 +1358,22 @@ async function completeMatch(
     summary = 'Match Tied';
   }
 
+  // Compute match awards (best batsman, best bowler, MOTM)
+  const awards = await computeMatchAwards(tx, matchId, [firstInnings, secondInnings]);
+
   await tx.insert(matchResult).values({
     matchId,
     winnerTeamId,
     resultType,
     margin,
+    manOfMatchId: awards.motmPlayerId,
     summary,
+  });
+
+  // Persist awards in match_analytics
+  await tx.insert(matchAnalytics).values({
+    matchId,
+    mvpScores: awards,
   });
 
   await tx
