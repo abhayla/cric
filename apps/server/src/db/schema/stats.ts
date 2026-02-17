@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, integer, boolean, decimal, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, integer, boolean, decimal, timestamp, index, unique } from 'drizzle-orm/pg-core';
 import { users } from './users.ts';
 import { innings } from './innings.ts';
 import { dismissalTypes } from './master-data.ts';
@@ -57,7 +57,10 @@ export const fieldingStats = pgTable('fielding_stats', {
   directHits: integer('direct_hits').default(0).notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index('idx_fielding_stats_innings').on(table.inningsId),
+  index('idx_fielding_stats_player').on(table.playerId),
+]);
 
 export const playerCareerStats = pgTable('player_career_stats', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -91,4 +94,5 @@ export const playerCareerStats = pgTable('player_career_stats', {
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => [
   index('idx_career_stats_player').on(table.playerId, table.format),
+  unique('uq_career_stats_player_format').on(table.playerId, table.format),
 ]);

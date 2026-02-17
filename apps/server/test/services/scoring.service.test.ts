@@ -2166,7 +2166,7 @@ describe('Scoring Service', () => {
     });
 
     it('creates correct "won by runs" result when 2nd innings all-out below target', async () => {
-      const live = await createLiveMatch({ totalOvers: 20, playersPerSide: 6 });
+      const live = await createLiveMatch({ totalOvers: 20 });
 
       // First innings: score 10 runs, then declare
       await recordDelivery(live.matchId, scorerUserId, {
@@ -2231,15 +2231,15 @@ describe('Scoring Service', () => {
         .set({ status: 'live' })
         .where(eq(matches.id, live.matchId));
 
-      // Bowl out the second team (6-a-side = 5 wickets)
-      for (let w = 0; w < 5; w++) {
+      // Bowl out the second team (11-a-side = 10 wickets)
+      for (let w = 0; w < 10; w++) {
         await recordDelivery(live.matchId, scorerUserId, {
           inningsId: secondInnings!.id,
           overNumber: w,
           ballNumber: 1,
           strikerId: awayPlayerIds[w]!,
-          nonStrikerId: awayPlayerIds[w + 1 < 6 ? w + 1 : w]!,
-          bowlerId: homePlayerIds[w % 3]!,
+          nonStrikerId: awayPlayerIds[w + 1 < 11 ? w + 1 : w]!,
+          bowlerId: homePlayerIds[w % 5]!,
           runsFromBat: 0,
           isWide: false,
           isNoBall: false,
@@ -2273,7 +2273,7 @@ describe('Scoring Service', () => {
     });
 
     it('creates tie result when scores are equal', async () => {
-      const live = await createLiveMatch({ totalOvers: 20, playersPerSide: 6 });
+      const live = await createLiveMatch({ totalOvers: 20 });
 
       // First innings: score 5 runs
       await recordDelivery(live.matchId, scorerUserId, {
@@ -2381,15 +2381,15 @@ describe('Scoring Service', () => {
         isBoundarySix: false,
       });
 
-      // All out (5 wickets for 6-a-side) — tied at 5
-      for (let w = 0; w < 5; w++) {
+      // All out (11-a-side = 10 wickets) — tied at 5
+      for (let w = 0; w < 10; w++) {
         await recordDelivery(live.matchId, scorerUserId, {
           inningsId: secondInnings!.id,
           overNumber: w + 1,
           ballNumber: 1,
           strikerId: awayPlayerIds[w]!,
-          nonStrikerId: awayPlayerIds[w + 1 < 6 ? w + 1 : w]!,
-          bowlerId: homePlayerIds[(w + 1) % 3]!,
+          nonStrikerId: awayPlayerIds[w + 1 < 11 ? w + 1 : w]!,
+          bowlerId: homePlayerIds[(w + 1) % 5]!,
           runsFromBat: 0,
           isWide: false,
           isNoBall: false,
@@ -2427,17 +2427,17 @@ describe('Scoring Service', () => {
   // ============================================================
   describe('innings completion — state transitions', () => {
     it('1st innings completion transitions match to innings_break', async () => {
-      const live = await createLiveMatch({ totalOvers: 20, playersPerSide: 6 });
+      const live = await createLiveMatch({ totalOvers: 20 });
 
-      // All-out 1st innings (5 wickets for 6-a-side)
-      for (let w = 0; w < 5; w++) {
+      // All-out 1st innings (11-a-side = 10 wickets)
+      for (let w = 0; w < 10; w++) {
         await recordDelivery(live.matchId, scorerUserId, {
           inningsId: live.inningsId,
           overNumber: w,
           ballNumber: 1,
           strikerId: homePlayerIds[w]!,
-          nonStrikerId: homePlayerIds[w + 1 < 6 ? w + 1 : w]!,
-          bowlerId: awayPlayerIds[w % 3]!,
+          nonStrikerId: homePlayerIds[w + 1 < 11 ? w + 1 : w]!,
+          bowlerId: awayPlayerIds[w % 5]!,
           runsFromBat: 0,
           isWide: false,
           isNoBall: false,

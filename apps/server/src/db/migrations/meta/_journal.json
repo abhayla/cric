@@ -15,6 +15,13 @@
       "when": 1770900757929,
       "tag": "0001_tense_sharon_carter",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771335373392,
+      "tag": "0002_heavy_banshee",
+      "breakpoints": true
     }
   ]
 }

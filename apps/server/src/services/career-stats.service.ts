@@ -289,20 +289,337 @@ export async function refreshPlayerAllFormats(
 /**
  * Refresh career stats for ALL players who participated in a given match.
  * Called after match completion.
+ *
+ * Optimized: uses batch SQL with GROUPING SETS to compute all players × all formats
+ * in ~8 queries total (O(1) regardless of player count), instead of the previous
+ * per-player loop that ran ~17 queries × 22 players = ~374 queries.
  */
 export async function refreshMatchPlayerCareerStats(
   tx: Tx,
   matchId: string,
 ): Promise<void> {
-  // Get all player IDs from match_players
+  // ── Query 1: Get all player IDs from match_players ──
   const players = await tx
     .select({ playerId: matchPlayers.playerId })
     .from(matchPlayers)
     .where(eq(matchPlayers.matchId, matchId));
 
   const playerIds = [...new Set(players.map((p) => p.playerId))];
+  if (playerIds.length === 0) return;
 
-  for (const playerId of playerIds) {
-    await refreshPlayerAllFormats(tx, playerId);
+  // Build a reusable SQL fragment for IN (...) since Drizzle raw sql doesn't auto-serialize JS arrays
+  const playerIdList = sql.join(playerIds.map((id) => sql`${id}::uuid`), sql`, `);
+
+  // ── Query 2: Match count per player per format + 'all' ──
+  const matchCountRows = await tx.execute<{
+    player_id: string;
+    format: string;
+    matches_played: number;
+  }>(sql`
+    SELECT
+      mp.player_id,
+      CASE WHEN GROUPING(m.format) = 1 THEN 'all' ELSE m.format END AS format,
+      COUNT(DISTINCT m.id)::int AS matches_played
+    FROM match_players mp
+    JOIN matches m ON mp.match_id = m.id
+    WHERE mp.player_id IN (${playerIdList})
+      AND m.status = 'completed'
+    GROUP BY GROUPING SETS (
+      (mp.player_id, m.format),
+      (mp.player_id)
+    )
+  `);
+
+  // ── Query 3: Batting aggregation ──
+  const battingRows = await tx.execute<{
+    player_id: string;
+    format: string;
+    innings_batted: number;
+    total_runs: number;
+    highest_score: number;
+    total_balls_faced: number;
+    total_fours: number;
+    total_sixes: number;
+    not_outs: number;
+    fifties: number;
+    hundreds: number;
+  }>(sql`
+    SELECT
+      bs.player_id,
+      CASE WHEN GROUPING(m.format) = 1 THEN 'all' ELSE m.format END AS format,
+      COUNT(*)::int AS innings_batted,
+      COALESCE(SUM(bs.runs_scored), 0)::int AS total_runs,
+      COALESCE(MAX(bs.runs_scored), 0)::int AS highest_score,
+      COALESCE(SUM(bs.balls_faced), 0)::int AS total_balls_faced,
+      COALESCE(SUM(bs.fours), 0)::int AS total_fours,
+      COALESCE(SUM(bs.sixes), 0)::int AS total_sixes,
+      COALESCE(SUM(CASE WHEN bs.is_not_out = true THEN 1 ELSE 0 END), 0)::int AS not_outs,
+      COALESCE(SUM(CASE WHEN bs.runs_scored >= 50 AND bs.runs_scored < 100 THEN 1 ELSE 0 END), 0)::int AS fifties,
+      COALESCE(SUM(CASE WHEN bs.runs_scored >= 100 THEN 1 ELSE 0 END), 0)::int AS hundreds
+    FROM batting_stats bs
+    JOIN innings i ON bs.innings_id = i.id
+    JOIN matches m ON i.match_id = m.id
+    WHERE bs.player_id IN (${playerIdList})
+      AND i.is_super_over = false
+      AND m.status = 'completed'
+    GROUP BY GROUPING SETS (
+      (bs.player_id, m.format),
+      (bs.player_id)
+    )
+  `);
+
+  // ── Query 4: Bowling aggregation (with inline overs→balls math) ──
+  const bowlingRows = await tx.execute<{
+    player_id: string;
+    format: string;
+    innings_bowled: number;
+    total_runs_conceded: number;
+    total_wickets: number;
+    total_balls_bowled: number;
+    three_wicket_hauls: number;
+    five_wicket_hauls: number;
+  }>(sql`
+    SELECT
+      bw.player_id,
+      CASE WHEN GROUPING(m.format) = 1 THEN 'all' ELSE m.format END AS format,
+      COUNT(*)::int AS innings_bowled,
+      COALESCE(SUM(bw.runs_conceded), 0)::int AS total_runs_conceded,
+      COALESCE(SUM(bw.wickets_taken), 0)::int AS total_wickets,
+      COALESCE(SUM(
+        SPLIT_PART(bw.overs_bowled::text, '.', 1)::int * 6 +
+        COALESCE(NULLIF(SPLIT_PART(bw.overs_bowled::text, '.', 2), ''), '0')::int
+      ), 0)::int AS total_balls_bowled,
+      COALESCE(SUM(CASE WHEN bw.wickets_taken >= 3 AND bw.wickets_taken < 5 THEN 1 ELSE 0 END), 0)::int AS three_wicket_hauls,
+      COALESCE(SUM(CASE WHEN bw.wickets_taken >= 5 THEN 1 ELSE 0 END), 0)::int AS five_wicket_hauls
+    FROM bowling_stats bw
+    JOIN innings i ON bw.innings_id = i.id
+    JOIN matches m ON i.match_id = m.id
+    WHERE bw.player_id IN (${playerIdList})
+      AND i.is_super_over = false
+      AND m.status = 'completed'
+    GROUP BY GROUPING SETS (
+      (bw.player_id, m.format),
+      (bw.player_id)
+    )
+  `);
+
+  // ── Query 5: Best bowling via ROW_NUMBER() window ──
+  const bestBowlingRows = await tx.execute<{
+    player_id: string;
+    format: string;
+    best_wickets: number;
+    best_runs: number;
+  }>(sql`
+    WITH per_format AS (
+      SELECT
+        bw.player_id,
+        m.format,
+        bw.wickets_taken,
+        bw.runs_conceded,
+        ROW_NUMBER() OVER (
+          PARTITION BY bw.player_id, m.format
+          ORDER BY bw.wickets_taken DESC, bw.runs_conceded ASC
+        ) AS rn
+      FROM bowling_stats bw
+      JOIN innings i ON bw.innings_id = i.id
+      JOIN matches m ON i.match_id = m.id
+      WHERE bw.player_id IN (${playerIdList})
+        AND i.is_super_over = false
+        AND m.status = 'completed'
+    ),
+    per_all AS (
+      SELECT
+        bw.player_id,
+        'all' AS format,
+        bw.wickets_taken,
+        bw.runs_conceded,
+        ROW_NUMBER() OVER (
+          PARTITION BY bw.player_id
+          ORDER BY bw.wickets_taken DESC, bw.runs_conceded ASC
+        ) AS rn
+      FROM bowling_stats bw
+      JOIN innings i ON bw.innings_id = i.id
+      JOIN matches m ON i.match_id = m.id
+      WHERE bw.player_id IN (${playerIdList})
+        AND i.is_super_over = false
+        AND m.status = 'completed'
+    )
+    SELECT player_id, format, wickets_taken AS best_wickets, runs_conceded AS best_runs
+    FROM per_format WHERE rn = 1
+    UNION ALL
+    SELECT player_id, format, wickets_taken AS best_wickets, runs_conceded AS best_runs
+    FROM per_all WHERE rn = 1
+  `);
+
+  // ── Query 6: Fielding aggregation ──
+  const fieldingRows = await tx.execute<{
+    player_id: string;
+    format: string;
+    total_catches: number;
+    total_run_outs: number;
+    total_stumpings: number;
+  }>(sql`
+    SELECT
+      fs.player_id,
+      CASE WHEN GROUPING(m.format) = 1 THEN 'all' ELSE m.format END AS format,
+      COALESCE(SUM(fs.catches), 0)::int AS total_catches,
+      COALESCE(SUM(fs.run_outs), 0)::int AS total_run_outs,
+      COALESCE(SUM(fs.stumpings), 0)::int AS total_stumpings
+    FROM fielding_stats fs
+    JOIN innings i ON fs.innings_id = i.id
+    JOIN matches m ON i.match_id = m.id
+    WHERE fs.player_id IN (${playerIdList})
+      AND i.is_super_over = false
+      AND m.status = 'completed'
+    GROUP BY GROUPING SETS (
+      (fs.player_id, m.format),
+      (fs.player_id)
+    )
+  `);
+
+  // ── JS-side merge into Map<"playerId:format", stats> ──
+  type StatsRow = {
+    playerId: string;
+    format: string;
+    matchesPlayed: number;
+    inningsBatted: number;
+    totalRuns: number;
+    highestScore: number;
+    totalBallsFaced: number;
+    totalFours: number;
+    totalSixes: number;
+    notOuts: number;
+    fifties: number;
+    hundreds: number;
+    inningsBowled: number;
+    totalRunsConceded: number;
+    totalWickets: number;
+    totalBallsBowled: number;
+    threeWicketHauls: number;
+    fiveWicketHauls: number;
+    bestBowlingWickets: number;
+    bestBowlingRuns: number;
+    totalCatches: number;
+    totalRunOuts: number;
+    totalStumpings: number;
+  };
+
+  const statsMap = new Map<string, StatsRow>();
+
+  function getOrCreate(playerId: string, format: string): StatsRow {
+    const key = `${playerId}:${format}`;
+    let row = statsMap.get(key);
+    if (!row) {
+      row = {
+        playerId, format,
+        matchesPlayed: 0,
+        inningsBatted: 0, totalRuns: 0, highestScore: 0, totalBallsFaced: 0,
+        totalFours: 0, totalSixes: 0, notOuts: 0, fifties: 0, hundreds: 0,
+        inningsBowled: 0, totalRunsConceded: 0, totalWickets: 0, totalBallsBowled: 0,
+        threeWicketHauls: 0, fiveWicketHauls: 0,
+        bestBowlingWickets: 0, bestBowlingRuns: 0,
+        totalCatches: 0, totalRunOuts: 0, totalStumpings: 0,
+      };
+      statsMap.set(key, row);
+    }
+    return row;
+  }
+
+  for (const r of matchCountRows) {
+    const row = getOrCreate(r.player_id, r.format);
+    row.matchesPlayed = Number(r.matches_played);
+  }
+
+  for (const r of battingRows) {
+    const row = getOrCreate(r.player_id, r.format);
+    row.inningsBatted = Number(r.innings_batted);
+    row.totalRuns = Number(r.total_runs);
+    row.highestScore = Number(r.highest_score);
+    row.totalBallsFaced = Number(r.total_balls_faced);
+    row.totalFours = Number(r.total_fours);
+    row.totalSixes = Number(r.total_sixes);
+    row.notOuts = Number(r.not_outs);
+    row.fifties = Number(r.fifties);
+    row.hundreds = Number(r.hundreds);
+  }
+
+  for (const r of bowlingRows) {
+    const row = getOrCreate(r.player_id, r.format);
+    row.inningsBowled = Number(r.innings_bowled);
+    row.totalRunsConceded = Number(r.total_runs_conceded);
+    row.totalWickets = Number(r.total_wickets);
+    row.totalBallsBowled = Number(r.total_balls_bowled);
+    row.threeWicketHauls = Number(r.three_wicket_hauls);
+    row.fiveWicketHauls = Number(r.five_wicket_hauls);
+  }
+
+  for (const r of bestBowlingRows) {
+    const row = getOrCreate(r.player_id, r.format);
+    row.bestBowlingWickets = Number(r.best_wickets);
+    row.bestBowlingRuns = Number(r.best_runs);
+  }
+
+  for (const r of fieldingRows) {
+    const row = getOrCreate(r.player_id, r.format);
+    row.totalCatches = Number(r.total_catches);
+    row.totalRunOuts = Number(r.total_run_outs);
+    row.totalStumpings = Number(r.total_stumpings);
+  }
+
+  // ── Query 7: Bulk delete old career stats ──
+  await tx
+    .delete(playerCareerStats)
+    .where(sql`${playerCareerStats.playerId} IN (${playerIdList})`);
+
+  // ── Query 8: Bulk insert all rows ──
+  const values = Array.from(statsMap.values())
+    .filter((row) => row.matchesPlayed > 0)
+    .map((row) => {
+      const dismissals = row.inningsBatted - row.notOuts;
+      const battingAverage = dismissals > 0
+        ? (row.totalRuns / dismissals).toFixed(2) : null;
+      const battingStrikeRate = row.totalBallsFaced > 0
+        ? ((row.totalRuns / row.totalBallsFaced) * 100).toFixed(2) : null;
+      const bowlingAverage = row.totalWickets > 0
+        ? (row.totalRunsConceded / row.totalWickets).toFixed(2) : null;
+      const oversAsNumber = row.totalBallsBowled / 6;
+      const bowlingEconomy = oversAsNumber > 0
+        ? (row.totalRunsConceded / oversAsNumber).toFixed(2) : null;
+      const bowlingStrikeRate = row.totalWickets > 0
+        ? (row.totalBallsBowled / row.totalWickets).toFixed(2) : null;
+
+      return {
+        playerId: row.playerId,
+        format: row.format,
+        matchesPlayed: row.matchesPlayed,
+        inningsBatted: row.inningsBatted,
+        totalRuns: row.totalRuns,
+        highestScore: row.highestScore,
+        battingAverage,
+        battingStrikeRate,
+        fifties: row.fifties,
+        hundreds: row.hundreds,
+        fours: row.totalFours,
+        sixes: row.totalSixes,
+        notOuts: row.notOuts,
+        inningsBowled: row.inningsBowled,
+        oversBowled: ballsToOvers(row.totalBallsBowled),
+        runsConceded: row.totalRunsConceded,
+        wicketsTaken: row.totalWickets,
+        bowlingAverage,
+        bowlingEconomy,
+        bowlingStrikeRate,
+        bestBowlingWickets: row.bestBowlingWickets,
+        bestBowlingRuns: row.bestBowlingRuns,
+        threeWicketHauls: row.threeWicketHauls,
+        fiveWicketHauls: row.fiveWicketHauls,
+        catches: row.totalCatches,
+        runOuts: row.totalRunOuts,
+        stumpings: row.totalStumpings,
+      };
+    });
+
+  if (values.length > 0) {
+    await tx.insert(playerCareerStats).values(values);
   }
 }
