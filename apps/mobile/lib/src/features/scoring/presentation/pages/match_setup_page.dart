@@ -510,75 +510,86 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
   }
 
   Future<void> _showTeamPicker({required bool isHome}) async {
-    final teamsAsync = ref.read(teams.teamsListProvider);
-    final teamList = teamsAsync.value?.teams ?? [];
-
     if (!mounted) return;
+
+    // Refresh teams so the picker always shows current data even if the
+    // teamsListProvider was disposed after navigating away from Teams tab.
+    ref.read(teams.teamsListProvider.notifier).refresh();
 
     final selected = await showModalBottomSheet<Team>(
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.5,
-          maxChildSize: 0.8,
-          minChildSize: 0.3,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    isHome ? 'Select Team A' : 'Select Team B',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: teamList.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('No teams found'),
-                              const SizedBox(height: 8),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  widget.onNavigateToCreateTeam?.call();
-                                },
-                                child: const Text('Create Team'),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          controller: scrollController,
-                          itemCount: teamList.length,
-                          itemBuilder: (context, index) {
-                            final team = teamList[index];
-                            // Exclude already-selected team
-                            final isDisabled = isHome
-                                ? team.id == _state.awayTeamId
-                                : team.id == _state.homeTeamId;
-                            return ListTile(
-                              leading: CircleAvatar(
-                                child: Text(team.initial),
-                              ),
-                              title: Text(team.name),
-                              subtitle: Text(team.subtitle),
-                              enabled: !isDisabled,
-                              onTap: isDisabled
-                                  ? null
-                                  : () => Navigator.of(context).pop(team),
-                            );
-                          },
-                        ),
-                ),
-              ],
+        return Consumer(
+          builder: (context, ref, _) {
+            final teamsAsync = ref.watch(teams.teamsListProvider);
+            final teamList = teamsAsync.value?.teams ?? [];
+            final isLoading = teamsAsync.isLoading;
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.5,
+              maxChildSize: 0.8,
+              minChildSize: 0.3,
+              expand: false,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        isHome ? 'Select Team A' : 'Select Team B',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : teamList.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text('No teams found'),
+                                      const SizedBox(height: 8),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                          widget.onNavigateToCreateTeam?.call();
+                                        },
+                                        child: const Text('Create Team'),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : ListView.builder(
+                                  controller: scrollController,
+                                  itemCount: teamList.length,
+                                  itemBuilder: (context, index) {
+                                    final team = teamList[index];
+                                    // Exclude already-selected team
+                                    final isDisabled = isHome
+                                        ? team.id == _state.awayTeamId
+                                        : team.id == _state.homeTeamId;
+                                    return ListTile(
+                                      leading: CircleAvatar(
+                                        child: Text(team.initial),
+                                      ),
+                                      title: Text(team.name),
+                                      subtitle: Text(team.subtitle),
+                                      enabled: !isDisabled,
+                                      onTap: isDisabled
+                                          ? null
+                                          : () => Navigator.of(context).pop(team),
+                                    );
+                                  },
+                                ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         );

@@ -35,9 +35,10 @@ Future<void> navigateToTournaments(WidgetTester tester) async {
 
 /// Navigate to the Teams tab from the Home page.
 Future<void> navigateToTeams(WidgetTester tester) async {
+  // Use .last to prefer bottom nav bar label over any page title that says "Teams"
   final teamsTab = find.text('Teams');
   if (teamsTab.evaluate().isNotEmpty) {
-    await tester.tap(teamsTab);
+    await tester.tap(teamsTab.last);
     await settle(tester);
     await visualPause(tester);
   }

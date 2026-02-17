@@ -135,6 +135,20 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
     };
   })
 
+  // GET /api/v1/test/latest-match — latest match created (for test verification)
+  .get('/latest-match', async () => {
+    const [match] = await db
+      .select({
+        id: matches.id,
+        createdAt: matches.createdAt,
+      })
+      .from(matches)
+      .orderBy(sql`${matches.createdAt} DESC`)
+      .limit(1);
+
+    return { matchId: match?.id ?? null };
+  })
+
   // POST /api/v1/test/run-migration — apply pending schema changes
   .post('/run-migration', async () => {
     try {

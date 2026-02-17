@@ -16,48 +16,60 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Active: MockTour-1 Tournament E2E Test
+### Active: Single Match E2E Test (UI-driven + DB Verification)
 
-**Goal:** Full 16-team Group+Knockout tournament executed via emulator UI with DB verification.
+**Goal:** A focused single-match integration test that enters all data via the real Flutter UI on the emulator, verifies every delivery is saved in PostgreSQL, and generates a comparison report.
+
+**Match setup:**
+- Teams: Mumbai Lions (teamA) vs Chennai Kings (teamB), 5 overs, 6 players per side
+- 1st Innings: Mumbai Lions ALL OUT in 2 overs → 19/5 (includes 1 Wide)
+- 2nd Innings: Chennai Kings chase 20 in 0.4 overs → 20/0 (target chased)
+- Result: Chennai Kings won by 5 wickets
+
+**Key files:**
+- `apps/mobile/integration_test/single_match_e2e_test.dart` — Main single-match E2E test
+- `apps/mobile/integration_test/helpers/single_match_flow.dart` — Reusable flow helper (UiDelivery, UiOver, SingleMatchFlow)
+- `apps/mobile/integration_test/helpers/tournament_flow_helpers.dart` — navigateToTeams (fixed .last), completeTossWizard, completeMatchSetup
+- `apps/mobile/lib/src/features/scoring/presentation/pages/match_setup_page.dart` — `_showTeamPicker` fixed
+- `apps/server/src/routes/v1/test-verify.routes.ts` — added `GET /api/v1/test/latest-match`
+
+**Production bug fixed this session:**
+- `_showTeamPicker` in match_setup_page.dart used `ref.read(teamsListProvider)` which returned empty when provider was disposed after leaving Teams tab. Fixed to: call `.refresh()` before opening sheet + use `Consumer`+`ref.watch` inside the bottom sheet builder so it reactively shows teams as they load.
+
+**Test bug fixed this session:**
+- `navigateToTeams` was tapping first match of "Teams" (page title) instead of bottom nav. Fixed to `.last`.
+
+**Test status (2026-02-17):**
+- Build: ✓ (app-debug.apk)
+- Phase 1 Boot: ✓
+- Phase 2 Teams: ✓ (Mumbai Lions + Chennai Kings created with 6 players each)
+- Phase 3 Match Setup: IN PROGRESS — team picker fix deployed, test running
+- Phase 4+ Toss/Scoring/DB: pending test run
+
+**How to run:**
+```bash
+# Ensure server is running:
+cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts
+
+# Run test:
+cd apps/mobile && flutter test integration_test/single_match_e2e_test.dart -d emulator-5554
+```
+
+**Server:** Bun server connects to VPS PostgreSQL at `103.118.16.189:5432/cricapp_dev`. Start with: `cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts`
+
+### Previously Done: MockTour-1 Tournament E2E Test
 
 **What's done:**
 - Magic Over feature (client + server): 4th over doubles all runs
 - Server-side match awards (MOTM, best batsman, best bowler) via `computeMatchAwards()`
-- Test infrastructure: ServerManager (10.0.2.2 for Android emulator), DbVerifier, data generators with realistic Indian cricket names
-- Test-verify routes mounted in server (`/api/v1/test/*`) with health endpoint
-- Scoring page navigation helper (`navigateToScoringPage()`) that builds ScoringPageArgs programmatically
-- Resilient `settle()` helper that falls back on infinite animations
-- Wicket dialog layout fix (FilledButton in Row overflow)
-- TypeScript compiles clean, server runs on port 3001 with VPS PostgreSQL
-
-**What's working:**
 - Full 27-match tournament plays through real UI (fixture tap → match setup → toss → scoring → match complete → back to home → next fixture)
 - API-based setup (phases 2-5): teams, players, tournament, group assignment, fixture generation
-- All 24 group matches + 2 semi-finals + 1 final complete via UI
 - Standings verification (Phase 7), leaderboard (Phase 10)
-- DB verification endpoint called (Phase 12) — returns 500 but test passes non-blocking
 
-**Known issues to fix:**
+**Known issues (tournament test):**
 - `test-verify` API returns 500 on tournament verification — server-side bug in the endpoint
-- DB verification is skipped due to 500; need to fix and make it actually validate data
-- Team/player names use hardcoded Indian cricket names — user may want different naming format
 
-**Key files:**
-- `apps/mobile/integration_test/tournament_e2e_test.dart` — Main E2E test (27 matches)
-- `apps/mobile/integration_test/helpers/tournament_flow_helpers.dart` — tapFixtureCard, completeTossWizard, completeMatchSetup
-- `apps/mobile/integration_test/helpers/match_flow_helpers.dart` — playRandomInnings, tapRun, handleWicket
-- `apps/mobile/integration_test/helpers/data_generators.dart` — 16 teams with 6 players each
-- `apps/server/src/routes/v1/test-verify.routes.ts` — DB verification API (needs fix)
-
-**Key bugs fixed (sessions 2026-02-16/17):**
-- `void Function` → `Future<void> Function` for toss onStartMatch (errors were swallowed)
-- Captured refs before async gap in router.dart (deactivated widget error)
-- `Navigator.pop()` → `GoRouter.go('/home')` for match complete (PopScope blocked pop)
-- FixtureCard tap: match BOTH team names via Fixture entity, tap InkWell descendant, scroll past pinned header (y<200)
-
-**Server:** Bun server connects to VPS PostgreSQL at `103.118.16.189:5432/cricapp_dev`. Start with: `cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts`
-
-**Uncommitted changes:** Many files modified across mobile + server. See git status for full list.
+**Uncommitted changes:** See git status. Files in this session: match_setup_page.dart, tournament_flow_helpers.dart, test-verify.routes.ts, single_match_e2e_test.dart (new), single_match_flow.dart (new).
 
 ### Session Fix (2026-02-16 — GlobalKey crash)
 
