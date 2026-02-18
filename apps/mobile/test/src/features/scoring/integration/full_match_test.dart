@@ -599,6 +599,118 @@ void main() {
     });
   });
 
+  // ── Retired hurt return-to-bat ──────────────────────────────────────
+
+  group('Full match — retired hurt return-to-bat', () {
+    test('Retired hurt batter returns and resumes innings stats', () {
+      // 5-over match, 4 players per side
+      final n = makeMatchNotifier(totalOvers: 5, playersPerSide: 4);
+
+      // Ball 1: bat-1 scores 4 (boundary)
+      n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+
+      // Ball 2: bat-1 scores 1 → swap strike, bat-2 now on strike
+      n.recordDelivery(runsFromBat: 1);
+
+      // Ball 3: bat-2 scores 2 runs
+      n.recordDelivery(runsFromBat: 2);
+      expect(n.state.batterStats['bat-2']!.runsScored, 2);
+      expect(n.state.batterStats['bat-2']!.ballsFaced, 1);
+
+      // Ball 4: Retire bat-2 hurt (counts as legal delivery in current impl)
+      n.recordWicket(
+        dismissalType: DismissalType.retiredHurt,
+        dismissedPlayerId: 'bat-2',
+      );
+
+      // Verify retired hurt state
+      final retiredBatter = n.state.batterStats['bat-2']!;
+      expect(retiredBatter.isRetiredHurt, isTrue);
+      expect(retiredBatter.isNotOut, isTrue);
+      expect(retiredBatter.canReturn, isTrue);
+      expect(retiredBatter.runsScored, 2); // Runs preserved
+      // ballsFaced = 2 because retired hurt delivery counts as a faced ball
+      expect(retiredBatter.ballsFaced, 2);
+      expect(n.state.retiredHurtBatters, hasLength(1));
+      // Retired hurt should NOT increment wickets
+      expect(n.state.totalWickets, 0);
+
+      // Select bat-3 as replacement
+      n.selectNewBatter(playerId: 'bat-3', displayName: 'bat Player 3');
+
+      // Ball 5: bat-3 scores 0
+      n.recordDelivery(runsFromBat: 0);
+      // Ball 6: bat-3 scores 0 → over complete (6 legal balls)
+      n.recordDelivery(runsFromBat: 0);
+
+      // New over — select bowler
+      n.selectNewBowler(playerId: 'bowl-2', displayName: 'bowl Player 2');
+
+      // Ball 1 (over 2): dismiss whoever is striker via bowled
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: n.state.strikerId!,
+      );
+      expect(n.state.totalWickets, 1); // Only the bowled counts
+
+      // Re-select bat-2 (returning from retired hurt)
+      n.selectNewBatter(playerId: 'bat-2', displayName: 'bat Player 2');
+
+      // Verify stats preserved from before retirement
+      final returnedBatter = n.state.batterStats['bat-2']!;
+      expect(returnedBatter.runsScored, 2);
+      expect(returnedBatter.ballsFaced, 2);
+      expect(returnedBatter.isRetiredHurt, isFalse);
+      expect(returnedBatter.isNotOut, isTrue);
+      expect(n.state.retiredHurtBatters, isEmpty);
+    });
+
+    test('Returned batter accumulates stats on top of prior total', () {
+      final n = makeMatchNotifier(totalOvers: 5, playersPerSide: 4);
+
+      // Ball 1: bat-1 scores 2
+      n.recordDelivery(runsFromBat: 2);
+
+      // Ball 2: bat-1 scores 1 → swap, bat-2 on strike
+      n.recordDelivery(runsFromBat: 1);
+
+      // Ball 3: bat-2 scores 2
+      n.recordDelivery(runsFromBat: 2);
+
+      // Ball 4: Retire bat-2 hurt
+      n.recordWicket(
+        dismissalType: DismissalType.retiredHurt,
+        dismissedPlayerId: 'bat-2',
+      );
+
+      // Select bat-3
+      n.selectNewBatter(playerId: 'bat-3', displayName: 'bat Player 3');
+
+      // Ball 5-6: complete the over
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.selectNewBowler(playerId: 'bowl-2', displayName: 'bowl Player 2');
+
+      // Dismiss striker via bowled to bring bat-2 back
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: n.state.strikerId!,
+      );
+
+      // Return bat-2 from retired hurt
+      n.selectNewBatter(playerId: 'bat-2', displayName: 'bat Player 2');
+
+      // Record 4 runs for returned bat-2
+      n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+
+      // Stats should accumulate on top of prior total
+      final bat2 = n.state.batterStats['bat-2']!;
+      expect(bat2.runsScored, 6); // 2 (before) + 4 (after return)
+      expect(bat2.ballsFaced, 3); // 2 (before, incl retire delivery) + 1 (after)
+      expect(bat2.fours, 1);
+    });
+  });
+
   // ── Free hit with stumping (only run-out valid) ─────────────────────
   group('Full match — free hit restrictions', () {
     test('run-out on free hit is valid wicket', () {

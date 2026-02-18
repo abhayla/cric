@@ -26,13 +26,13 @@ import 'helpers/tournament_flow_helpers.dart';
 //  Overs         : 5 per innings (min preset), 6 players per side
 //  Toss          : Mumbai Lions wins → Bats first
 //
-//  1st Innings (Mumbai Lions) — ALL OUT in 2 overs → 19/5:
-//    Over 1 (Deepak Chahar)   :  4, 6, W(B), WD, 1, W(B), 4      → 16/2
-//    Over 2 (Ravindra Jadeja) :  2, W(B), 0, W(B), 1, W(B)=ALLOUT → 19/5
-//    Target: 20
+//  1st Innings (Mumbai Lions) — ALL OUT in 2 overs → 20/5:
+//    Over 1 (Deepak Chahar)   :  4, 6, W(B), WD, NB, 1(FH), W(B), 4  → 17/2
+//    Over 2 (Ravindra Jadeja) :  2, W(B), 0, W(B), 1, W(B)=ALLOUT    → 20/5
+//    Target: 21
 //
-//  2nd Innings (Chennai Kings) — Target chased in 0.4 overs → 20/0:
-//    Over 1 (Rohit Sharma)    :  6, 6, 4, 4 → 20/0 ★ TARGET CHASED
+//  2nd Innings (Chennai Kings) — Target chased in 0.4 overs → 22/0:
+//    Over 1 (Rohit Sharma)    :  6, 6, 4, 6 → 22/0 ★ TARGET CHASED
 //
 //  Result: Chennai Kings won by 5 wickets
 //
@@ -251,11 +251,18 @@ void main() {
         isWide: true, wideRuns: 1, overNumber: 1, ballNumber: 0));
       print('  1.WD→ WD (Wide +1)          Score: 11/1  [not legal]');
 
-      // ─ Over 1, Ball 4: 1 (single) — Ishan Kishan, swaps to SKY
+      // ─ Over 1, No Ball — extra, not legal; next ball is free hit
+      await tapExtra(tester, 'NB');
+      await confirmExtra(tester);
+      inn1.add(const DeliveryRecord(
+        isNoBall: true, noBallRuns: 1, overNumber: 1, ballNumber: 0));
+      print('  1.NB→ NB (No Ball +1)       Score: 12/1  [not legal, free hit next]');
+
+      // ─ Over 1, Ball 4: 1 (single, FREE HIT) — Ishan Kishan, swaps to SKY
       await tapRun(tester, 1);
       inn1.add(const DeliveryRecord(
         runsFromBat: 1, overNumber: 1, ballNumber: 4));
-      print('  1.4 → 1  (single)           Score: 12/1  [Ishan → SKY strikes]');
+      print('  1.4 → 1  (single, FH)       Score: 13/1  [Ishan → SKY strikes]');
 
       // ─ Over 1, Ball 5: W Bowled — SKY out, Hardik Pandya in
       await tapWicket(tester);
@@ -263,15 +270,15 @@ void main() {
       await tapWicketConfirm(tester);
       inn1.add(const DeliveryRecord(
         isWicket: true, overNumber: 1, ballNumber: 5));
-      print('  1.5 → W  (Bowled)           Score: 12/2  [SKY out → Hardik in]');
+      print('  1.5 → W  (Bowled)           Score: 13/2  [SKY out → Hardik in]');
       await selectBatter(tester, 'Hardik Pandya');
 
       // ─ Over 1, Ball 6: 4 (boundary) — Hardik Pandya
       await tapRun(tester, 4);
       inn1.add(const DeliveryRecord(
         runsFromBat: 4, isBoundaryFour: true, overNumber: 1, ballNumber: 6));
-      print('  1.6 → 4  (boundary)         Score: 16/2  [Hardik]');
-      print('  ─── End Over 1 | Score: 16/2 | [Ishan=str, Hardik=non-str] ───');
+      print('  1.6 → 4  (boundary)         Score: 17/2  [Hardik]');
+      print('  ─── End Over 1 | Score: 17/2 | [Ishan=str, Hardik=non-str] ───');
 
       // Select bowler for over 2
       await selectBowler(tester, 'Ravindra Jadeja');
@@ -282,7 +289,7 @@ void main() {
       await tapRun(tester, 2);
       inn1.add(const DeliveryRecord(
         runsFromBat: 2, overNumber: 2, ballNumber: 1));
-      print('  2.1 → 2                     Score: 18/2  [Ishan]');
+      print('  2.1 → 2                     Score: 19/2  [Ishan]');
 
       // ─ Over 2, Ball 2: W Bowled — Ishan out, Jasprit Bumrah in
       await tapWicket(tester);
@@ -290,14 +297,14 @@ void main() {
       await tapWicketConfirm(tester);
       inn1.add(const DeliveryRecord(
         isWicket: true, overNumber: 2, ballNumber: 2));
-      print('  2.2 → W  (Bowled)           Score: 18/3  [Ishan out → Bumrah in]');
+      print('  2.2 → W  (Bowled)           Score: 19/3  [Ishan out → Bumrah in]');
       await selectBatter(tester, 'Jasprit Bumrah');
 
       // ─ Over 2, Ball 3: 0 (dot) — Jasprit Bumrah
       await tapRun(tester, 0);
       inn1.add(const DeliveryRecord(
         runsFromBat: 0, overNumber: 2, ballNumber: 3));
-      print('  2.3 → 0  (dot)              Score: 18/3  [Bumrah]');
+      print('  2.3 → 0  (dot)              Score: 19/3  [Bumrah]');
 
       // ─ Over 2, Ball 4: W Bowled — Bumrah out, Rahul Chahar in
       await tapWicket(tester);
@@ -305,14 +312,14 @@ void main() {
       await tapWicketConfirm(tester);
       inn1.add(const DeliveryRecord(
         isWicket: true, overNumber: 2, ballNumber: 4));
-      print('  2.4 → W  (Bowled)           Score: 18/4  [Bumrah out → Rahul in]');
+      print('  2.4 → W  (Bowled)           Score: 19/4  [Bumrah out → Rahul in]');
       await selectBatter(tester, 'Rahul Chahar');
 
       // ─ Over 2, Ball 5: 1 — Rahul Chahar (swaps to Hardik)
       await tapRun(tester, 1);
       inn1.add(const DeliveryRecord(
         runsFromBat: 1, overNumber: 2, ballNumber: 5));
-      print('  2.5 → 1                     Score: 19/4  [Rahul → Hardik strikes]');
+      print('  2.5 → 1                     Score: 20/4  [Rahul → Hardik strikes]');
 
       // ─ Over 2, Ball 6: W Bowled — Hardik out → ALL OUT! (5th wicket)
       await tapWicket(tester);
@@ -320,7 +327,7 @@ void main() {
       await tapWicketConfirm(tester);
       inn1.add(const DeliveryRecord(
         isWicket: true, overNumber: 2, ballNumber: 6));
-      print('  2.6 → W  (Bowled)           Score: 19/5  ★ ALL OUT!');
+      print('  2.6 → W  (Bowled)           Score: 20/5  ★ ALL OUT!');
 
       final inn1Runs = inn1.fold(0, (s, d) => s + d.totalRuns);
       final inn1Wkts = inn1.where((d) => d.isWicket).length;
@@ -362,11 +369,11 @@ void main() {
         runsFromBat: 4, isBoundaryFour: true, overNumber: 1, ballNumber: 3));
       print('  1.3 → 4  (boundary)         Score: 16/0  [Dhoni]');
 
-      // ─ Ball 4: 4 — MS Dhoni → 20/0 ≥ 20 → TARGET CHASED!
-      await tapRun(tester, 4);
+      // ─ Ball 4: 6 — MS Dhoni → 22/0 ≥ 21 → TARGET CHASED!
+      await tapRun(tester, 6);
       inn2.add(const DeliveryRecord(
-        runsFromBat: 4, isBoundaryFour: true, overNumber: 1, ballNumber: 4));
-      print('  1.4 → 4  (boundary)         Score: 20/0  ★★ TARGET CHASED ★★');
+        runsFromBat: 6, isBoundarySix: true, overNumber: 1, ballNumber: 4));
+      print('  1.4 → 6  (six)              Score: 22/0  ★★ TARGET CHASED ★★');
 
       await settle(tester);
       await visualPause(tester, 2000);
@@ -448,7 +455,13 @@ void main() {
           final wideOk = dbWide == ui.isWide;
           final nbOk = dbNb == ui.isNoBall;
           final wktOk = dbWkt == ui.isWicket;
-          final allOk = runsOk && wideOk && nbOk && wktOk;
+          final legalOk = dbLegal == ui.isLegal;
+          final overOk = dbOver == ui.overNumber;
+          final ballOk = dbBall == ui.ballNumber;
+          final fourOk = dbFour == ui.isBoundaryFour;
+          final sixOk = dbSix == ui.isBoundarySix;
+          final allOk = runsOk && wideOk && nbOk && wktOk
+              && legalOk && overOk && ballOk && fourOk && sixOk;
 
           final status = allOk ? '✓' : '✗';
           if (allOk) deliveryMatches++; else deliveryMismatches++;
@@ -477,6 +490,43 @@ void main() {
         print('│  COUNT: UI=$uiCount, DB=$dbCount | Matches:$deliveryMatches, Mismatches:$deliveryMismatches │');
       }
       print('└─────────────────────────────────────────────────────────────┘');
+
+      // ── Delivery-level expect() assertions ──
+      expect(dbDeliveries.length, equals(allTracked.length),
+          reason: 'DB delivery count must match UI-tracked count');
+      expect(deliveryMismatches, equals(0),
+          reason: 'All delivery fields must match between UI and DB');
+
+      for (var i = 0; i < checkCount; i++) {
+        final ui = allTracked[i];
+        final db = dbDeliveries[i];
+        final label = 'Delivery ${i + 1}';
+
+        expect(db['totalRuns'] as int? ?? 0, equals(ui.totalRuns),
+            reason: '$label: totalRuns');
+        expect(db['isWide'] as bool? ?? false, equals(ui.isWide),
+            reason: '$label: isWide');
+        expect(db['isNoBall'] as bool? ?? false, equals(ui.isNoBall),
+            reason: '$label: isNoBall');
+        expect(db['isWicket'] as bool? ?? false, equals(ui.isWicket),
+            reason: '$label: isWicket');
+        expect(db['isLegal'] as bool? ?? true, equals(ui.isLegal),
+            reason: '$label: isLegal');
+        expect(db['overNumber'] as int? ?? -1, equals(ui.overNumber),
+            reason: '$label: overNumber');
+        expect(db['ballNumber'] as int? ?? -1, equals(ui.ballNumber),
+            reason: '$label: ballNumber');
+        expect(db['isBoundaryFour'] as bool? ?? false, equals(ui.isBoundaryFour),
+            reason: '$label: isBoundaryFour');
+        expect(db['isBoundarySix'] as bool? ?? false, equals(ui.isBoundarySix),
+            reason: '$label: isBoundarySix');
+        // isFreeHit: verify NB deliveries are followed by free-hit ball
+        // (DB tracks free hit on the delivery AFTER the no-ball)
+      }
+
+      // Verify at least one no-ball exists in tracked deliveries
+      expect(allTracked.any((d) => d.isNoBall), isTrue,
+          reason: 'Test must include at least one no-ball delivery');
 
       // ── Match Result ──
       print('\n┌─────────────────────────────────────────────────────────────┐');
@@ -548,6 +598,93 @@ void main() {
           final dots = b['dotBalls'] ?? 0;
           final inn = b['inningsNumber'] ?? '?';
           print('│    Inn$inn $name $overs-$runs-$wkts wd:$wides nb:$noBalls dot:$dots');
+        }
+
+        // ── Batting stats expect() assertions ──
+        // Should have batting records for both innings
+        expect(battingList.length, greaterThanOrEqualTo(2),
+            reason: 'Must have batting stats for at least 2 batters');
+
+        // Build a lookup by playerName + inningsNumber
+        Map<String, Map<String, dynamic>> battingByName(int inn) {
+          return {
+            for (final b in battingList)
+              if ((b['inningsNumber'] ?? 0) == inn)
+                (b['playerName'] as String? ?? '?'): b as Map<String, dynamic>,
+          };
+        }
+
+        // 1st innings batting assertions
+        final inn1Batting = battingByName(1);
+
+        // Rohit Sharma: 10 runs (4+6), 2 balls, 1 four, 1 six, out
+        if (inn1Batting.containsKey('Rohit Sharma')) {
+          final rohit = inn1Batting['Rohit Sharma']!;
+          expect(rohit['runsScored'], equals(10),
+              reason: 'Rohit Sharma should have 10 runs (4+6)');
+          expect(rohit['ballsFaced'], equals(3),
+              reason: 'Rohit Sharma faced 3 balls (4, 6, W)');
+          expect(rohit['fours'], equals(1),
+              reason: 'Rohit Sharma hit 1 four');
+          expect(rohit['sixes'], equals(1),
+              reason: 'Rohit Sharma hit 1 six');
+          expect(rohit['isNotOut'], equals(false),
+              reason: 'Rohit Sharma was bowled out');
+        }
+
+        // MS Dhoni: 22 runs (6+6+4+6), 4 balls, 1 four, 3 sixes, not out
+        final inn2Batting = battingByName(2);
+        if (inn2Batting.containsKey('MS Dhoni')) {
+          final dhoni = inn2Batting['MS Dhoni']!;
+          expect(dhoni['runsScored'], equals(22),
+              reason: 'MS Dhoni should have 22 runs (6+6+4+6)');
+          expect(dhoni['ballsFaced'], equals(4),
+              reason: 'MS Dhoni faced 4 balls');
+          expect(dhoni['fours'], equals(1),
+              reason: 'MS Dhoni hit 1 four');
+          expect(dhoni['sixes'], equals(3),
+              reason: 'MS Dhoni hit 3 sixes');
+          expect(dhoni['isNotOut'], equals(true),
+              reason: 'MS Dhoni was not out (target chased)');
+        }
+
+        // ── Bowling stats expect() assertions ──
+        expect(bowlingList.length, greaterThanOrEqualTo(2),
+            reason: 'Must have bowling stats for at least 2 bowlers');
+
+        Map<String, Map<String, dynamic>> bowlingByName(int inn) {
+          return {
+            for (final b in bowlingList)
+              if ((b['inningsNumber'] ?? 0) == inn)
+                (b['playerName'] as String? ?? '?'): b as Map<String, dynamic>,
+          };
+        }
+
+        // 1st innings bowling: Deepak Chahar bowled 1 over, took 2 wickets
+        final inn1Bowling = bowlingByName(1);
+        if (inn1Bowling.containsKey('Deepak Chahar')) {
+          final chahar = inn1Bowling['Deepak Chahar']!;
+          expect(chahar['wicketsTaken'], equals(2),
+              reason: 'Deepak Chahar took 2 wickets in Over 1');
+          expect(chahar['wides'], equals(1),
+              reason: 'Deepak Chahar bowled 1 wide');
+          expect(chahar['noBalls'], equals(1),
+              reason: 'Deepak Chahar bowled 1 no-ball');
+        }
+
+        // 1st innings bowling: Ravindra Jadeja bowled 1 over, took 3 wickets
+        if (inn1Bowling.containsKey('Ravindra Jadeja')) {
+          final jadeja = inn1Bowling['Ravindra Jadeja']!;
+          expect(jadeja['wicketsTaken'], equals(3),
+              reason: 'Ravindra Jadeja took 3 wickets in Over 2');
+        }
+
+        // 2nd innings bowling: Rohit Sharma bowled 0.4 overs, 0 wickets
+        final inn2Bowling = bowlingByName(2);
+        if (inn2Bowling.containsKey('Rohit Sharma')) {
+          final rohitBowl = inn2Bowling['Rohit Sharma']!;
+          expect(rohitBowl['wicketsTaken'], equals(0),
+              reason: 'Rohit Sharma took 0 wickets in 2nd innings');
         }
       } catch (e) {
         print('│  ✗ Stats query error: $e');

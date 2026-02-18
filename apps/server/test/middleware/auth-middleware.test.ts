@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Elysia } from 'elysia';
 import { authMiddleware } from '../../src/middleware/auth.ts';
+import { AppError, errorHandler } from '../../src/middleware/error-handler.ts';
 
 /**
  * Auth middleware tests.
@@ -77,5 +78,37 @@ describe('Auth Middleware', () => {
     expect(privateRes.status).toBe(200);
     const body = await privateRes.json();
     expect(body.uid).toBe('test-user-e2e-001');
+  });
+});
+
+describe('Auth Header Guard (non-test mode)', () => {
+  // Create a minimal Elysia with inline resolve that mirrors the production guard
+  const guardApp = new Elysia()
+    .use(errorHandler)
+    .resolve(async ({ request }) => {
+      const authorization = request.headers.get('authorization');
+      if (!authorization?.startsWith('Bearer ')) {
+        throw new AppError('UNAUTHORIZED', 'Missing or invalid authorization header', 401);
+      }
+      return { firebaseUser: { uid: 'unused', phone: null, email: null } };
+    })
+    .get('/guarded', ({ firebaseUser }) => ({ uid: firebaseUser.uid }));
+
+  it('returns 401 when Authorization header is missing', async () => {
+    const response = await guardApp.handle(new Request('http://localhost/guarded'));
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('returns 401 when Authorization header does not start with Bearer', async () => {
+    const response = await guardApp.handle(
+      new Request('http://localhost/guarded', {
+        headers: { Authorization: 'Basic abc123' },
+      }),
+    );
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body.error.code).toBe('UNAUTHORIZED');
   });
 });

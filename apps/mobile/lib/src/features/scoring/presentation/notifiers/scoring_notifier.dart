@@ -656,7 +656,10 @@ class ScoringNotifier {
       newTotalExtras -= lastDel.legByeRuns;
       newTotalLegByes -= lastDel.legByeRuns;
     }
-    if (lastDel.isWicket) newTotalWickets--;
+    if (lastDel.isWicket &&
+        (lastDel.wicketInfo?.dismissalType?.isRealWicket ?? true)) {
+      newTotalWickets--;
+    }
 
     // Reverse batter stats
     final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
@@ -674,7 +677,11 @@ class ScoringNotifier {
       }
       if (lastDel.isWicket &&
           lastDel.wicketInfo?.dismissedPlayerId == lastDel.strikerId) {
-        updatedBatter = updatedBatter.copyWith(isNotOut: true);
+        if (lastDel.wicketInfo?.dismissalType == DismissalType.retiredHurt) {
+          updatedBatter = updatedBatter.copyWith(isRetiredHurt: false);
+        } else {
+          updatedBatter = updatedBatter.copyWith(isNotOut: true);
+        }
       }
       newBatterStats[lastDel.strikerId] = updatedBatter;
     }
@@ -916,16 +923,27 @@ class ScoringNotifier {
   }
 
   /// Select a new batter (after wicket or to start).
+  /// If the player was retired hurt, their stats are preserved.
   void selectNewBatter({
     required String playerId,
     required String displayName,
   }) {
     final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
-    newBatterStats[playerId] = BatterInnings(
-      playerId: playerId,
-      displayName: displayName,
-      isOnStrike: _state.strikerId == null,
-    );
+    final existing = newBatterStats[playerId];
+
+    if (existing != null && existing.canReturn) {
+      // Returning retired-hurt batter: preserve stats, clear retired flag
+      newBatterStats[playerId] = existing.copyWith(
+        isRetiredHurt: false,
+        isOnStrike: _state.strikerId == null,
+      );
+    } else {
+      newBatterStats[playerId] = BatterInnings(
+        playerId: playerId,
+        displayName: displayName,
+        isOnStrike: _state.strikerId == null,
+      );
+    }
 
     if (_state.strikerId == null) {
       _state = _state.copyWith(
@@ -1081,7 +1099,9 @@ class ScoringNotifier {
       newTotalExtras += effectiveLegByeRuns;
       newTotalLegByes += effectiveLegByeRuns;
     }
-    if (isWicket) newTotalWickets++;
+    if (isWicket && (wicketInfo?.dismissalType?.isRealWicket ?? true)) {
+      newTotalWickets++;
+    }
 
     // Step 5: Update batter stats
     final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
@@ -1103,10 +1123,18 @@ class ScoringNotifier {
         }
         if (isWicket &&
             wicketInfo?.dismissedPlayerId == _state.strikerId) {
-          updatedBatter = updatedBatter.copyWith(
-            isNotOut: false,
-            dismissalType: wicketInfo?.dismissalType,
-          );
+          if (wicketInfo?.dismissalType == DismissalType.retiredHurt) {
+            // Retired hurt: batter is still not-out but marked as retired
+            updatedBatter = updatedBatter.copyWith(
+              isRetiredHurt: true,
+              dismissalType: wicketInfo?.dismissalType,
+            );
+          } else {
+            updatedBatter = updatedBatter.copyWith(
+              isNotOut: false,
+              dismissalType: wicketInfo?.dismissalType,
+            );
+          }
         }
         newBatterStats[_state.strikerId!] = updatedBatter;
       }
