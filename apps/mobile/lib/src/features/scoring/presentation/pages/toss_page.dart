@@ -230,10 +230,12 @@ class _TossPageState extends State<TossPage> {
         ? teamName
             .split(RegExp(r'\s+'))
             .take(2)
-            .map((w) => w[0])
+            .map((w) => w.isNotEmpty ? w[0] : '')
             .join()
             .toUpperCase()
-        : teamName[0].toUpperCase();
+        : teamName.isNotEmpty
+            ? teamName[0].toUpperCase()
+            : '?';
 
     return InkWell(
       onTap: () {

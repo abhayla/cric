@@ -1,19 +1,28 @@
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricapp/src/app/app.dart';
+import 'package:cricapp/src/shared/data/database/app_database.dart';
+import 'package:cricapp/src/shared/providers/database_provider.dart';
 
 /// Wraps the full CricApp in a ProviderScope for E2E testing.
 ///
 /// In debug mode, the router already skips auth and goes to /home.
-/// This wrapper can provide Riverpod overrides for testing.
+/// This wrapper provides an in-memory Drift database override so
+/// the scoring page (and other local DB features) work correctly.
 class AppTestWrapper {
   /// Create and pump the full app with optional provider overrides.
   static Future<void> pumpApp(WidgetTester tester) async {
+    final db = AppDatabase(NativeDatabase.memory());
+
     await tester.pumpWidget(
-      const ProviderScope(
-        child: CricApp(),
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+        ],
+        child: const CricApp(),
       ),
     );
     // Use pump with fixed duration instead of pumpAndSettle to avoid
@@ -26,8 +35,13 @@ class AppTestWrapper {
 
   /// Build the full app widget for integration testing.
   static Widget buildApp() {
-    return const ProviderScope(
-      child: CricApp(),
+    final db = AppDatabase(NativeDatabase.memory());
+
+    return ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+      ],
+      child: const CricApp(),
     );
   }
 }

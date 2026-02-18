@@ -19,7 +19,14 @@ class MatchSetupPage extends ConsumerStatefulWidget {
     this.initialPlayersPerSide,
   });
 
-  final void Function(String matchId) onMatchCreated;
+  final void Function(
+    String matchId, {
+    required String homeTeamId,
+    required String homeTeamName,
+    required String awayTeamId,
+    required String awayTeamName,
+    required int playersPerSide,
+  }) onMatchCreated;
   final void Function()? onNavigateToCreateTeam;
 
   /// Pre-selected teams (e.g. from fixture tap).
@@ -512,9 +519,14 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
   Future<void> _showTeamPicker({required bool isHome}) async {
     if (!mounted) return;
 
-    // Refresh teams so the picker always shows current data even if the
-    // teamsListProvider was disposed after navigating away from Teams tab.
-    ref.read(teams.teamsListProvider.notifier).refresh();
+    // Only refresh if there is no data yet (initial load or error state).
+    // When navigating away from the Teams tab the provider keeps its cached
+    // data because it is not auto-disposed, so a fresh fetch is usually
+    // unnecessary and would briefly reset the list to a loading spinner.
+    final current = ref.read(teams.teamsListProvider);
+    if (!current.hasValue) {
+      ref.read(teams.teamsListProvider.notifier).refresh();
+    }
 
     final selected = await showModalBottomSheet<Team>(
       context: context,
@@ -619,7 +631,14 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
       final match = await matchRepo.createMatch(_state.toCreateMatchInput());
 
       if (!mounted) return;
-      widget.onMatchCreated(match.id);
+      widget.onMatchCreated(
+        match.id,
+        homeTeamId: _state.homeTeamId ?? '',
+        homeTeamName: _state.homeTeamName ?? '',
+        awayTeamId: _state.awayTeamId ?? '',
+        awayTeamName: _state.awayTeamName ?? '',
+        playersPerSide: _state.playersPerSide,
+      );
     } catch (e) {
       if (!mounted) return;
       _updateState(_state.copyWith(isSubmitting: false));

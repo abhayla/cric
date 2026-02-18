@@ -166,66 +166,47 @@ Future<void> addPlayersToRoster(
   await settle(tester);
   await visualPause(tester, 500);
 
-  // For remaining players: use "Add Player" from wherever we are (Team Detail
-  // empty state or ManageRosterPage). The teamDetailProvider is not refreshed
-  // after each player add, so the page still shows the empty state — that's
-  // fine because the empty state "Add Player" button is always available.
+  // For remaining players: navigate directly to AddPlayerPage via GoRouter.
+  // We extract the teamId from the current route (which is /teams/:id).
   if (players.length > 1) {
     await settle(tester);
 
-    // Try ManageRosterPage first (only available if provider refreshed)
-    final manageBtn = find.text('Manage');
-    final wentToManage = manageBtn.evaluate().isNotEmpty;
-    if (wentToManage) {
-      await tester.tap(manageBtn.first);
-      await settle(tester);
-      await visualPause(tester);
-      print('    [addPlayers] Using ManageRosterPage for remaining players');
+    // Extract teamId from current GoRouter location
+    final routerState = GoRouterState.of(
+      tester.element(find.byType(Scaffold).first),
+    );
+    final currentPath = routerState.uri.toString();
+    // Path format: /teams/<teamId> or /teams/<teamId>/...
+    final teamIdMatch = RegExp(r'/teams/([^/]+)').firstMatch(currentPath);
+    final teamId = teamIdMatch?.group(1);
+
+    if (teamId == null) {
+      print('    [addPlayers] ERROR: Could not extract teamId from $currentPath');
     } else {
-      print('    [addPlayers] Manage button not found — '
-          'using empty state "Add Player" for remaining players');
-    }
+      print('    [addPlayers] Using GoRouter navigation for remaining players (teamId=$teamId)');
 
-    // Add remaining players in a loop
-    for (var i = 1; i < players.length; i++) {
-      // Wait for "Add Player" button to appear (we should be on TeamDetail
-      // or ManageRoster after the previous player's pop completed).
-      var foundAddBtn = false;
-      for (var wait = 0; wait < 15; wait++) {
-        final addBtn = find.text('Add Player');
-        if (addBtn.evaluate().isNotEmpty) {
-          await tester.tap(addBtn.first);
-          await settle(tester);
-          await visualPause(tester, 300);
-          foundAddBtn = true;
-          break;
+      for (var i = 1; i < players.length; i++) {
+        // Navigate directly to AddPlayerPage
+        final router = GoRouter.of(
+          tester.element(find.byType(Scaffold).first),
+        );
+        router.push('/teams/$teamId/roster/add');
+        await settle(tester);
+        await visualPause(tester, 300);
+
+        // Wait for AddPlayerPage to appear
+        for (var wait = 0; wait < 10; wait++) {
+          if (find.text('Create New').evaluate().isNotEmpty ||
+              find.byKey(const Key('playerNameField')).evaluate().isNotEmpty) {
+            break;
+          }
+          await tester.pump(const Duration(milliseconds: 200));
         }
-        await tester.pump(const Duration(milliseconds: 200));
-      }
-      if (!foundAddBtn) {
-        dumpVisibleTexts(tester, 'addPlayers-noBtn-player$i', 20);
-        print('    [addPlayers] WARNING: "Add Player" not found for player[$i]');
-      }
 
-      // Wait for AddPlayerPage to actually appear (playerNameField or Create New tab)
-      for (var wait = 0; wait < 10; wait++) {
-        if (find.text('Create New').evaluate().isNotEmpty ||
-            find.byKey(const Key('playerNameField')).evaluate().isNotEmpty) {
-          break;
-        }
-        await tester.pump(const Duration(milliseconds: 200));
+        await _fillAndSubmitPlayer(tester, players[i]);
+        await settle(tester);
       }
-
-      await _fillAndSubmitPlayer(tester, players[i]);
-      await settle(tester);
     }
-
-    // Only go back if we navigated to ManageRosterPage
-    if (wentToManage) {
-      await goBack(tester);
-    }
-    // Otherwise, we're already on Team Detail — the outer goBack in the
-    // test will navigate from Team Detail → Teams List.
   }
 }
 

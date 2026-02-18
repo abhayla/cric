@@ -67,9 +67,29 @@ export const teamRoutes = new Elysia({ prefix: '/api/v1/teams' })
   .get(
     '/:id',
     async (ctx) => {
+      const { firebaseUser } = ctx as typeof ctx & {
+        firebaseUser: { uid: string; phone: string | null; email: string | null };
+      };
+      const user = await getUserByFirebaseUid(firebaseUser.uid);
+      if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
+
       const team = await getTeam(ctx.params.id);
       if (!team) throw new AppError('NOT_FOUND', 'Team not found', 404);
-      return { team };
+
+      // Compute user's role relative to this team
+      let role = 'member';
+      if (team.createdBy === user.id) {
+        role = 'owner';
+      } else {
+        const rosterEntry = team.roster.find((r: any) => r.playerId === user.id);
+        if (rosterEntry) {
+          role = (rosterEntry as any).role;
+        }
+      }
+
+      const teamObj = JSON.parse(JSON.stringify(team));
+      teamObj.role = role;
+      return { team: teamObj };
     },
     {
       params: t.Object({

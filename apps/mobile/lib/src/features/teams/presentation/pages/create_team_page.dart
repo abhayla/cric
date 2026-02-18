@@ -115,6 +115,7 @@ class _CreateTeamPageState extends State<CreateTeamPage> {
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
+                      key: const Key('teamNameField'),
                       controller: _nameController,
                       onChanged: (_) => setState(() {}),
                       maxLength: 50,

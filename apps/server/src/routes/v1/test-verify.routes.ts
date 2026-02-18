@@ -161,45 +161,52 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
 
   // POST /api/v1/test/reset-db — truncate all data tables, re-seed master data
   .post('/reset-db', async () => {
-    await db.execute(sql`
-      TRUNCATE TABLE
-        match_analytics,
-        match_result,
-        fall_of_wickets,
-        wickets_by_delivery,
-        deliveries,
-        batting_stats,
-        bowling_stats,
-        fielding_stats,
-        player_career_stats,
-        overs,
-        innings,
-        match_players,
-        matches,
-        tournament_standings,
-        tournament_fixtures,
-        tournament_requests,
-        tournament_teams,
-        tournament_groups,
-        tournaments,
-        team_rosters,
-        teams,
-        users
-      CASCADE
-    `);
+    try {
+      // Use DELETE in FK-safe order (TRUNCATE can hang with connection pool locks)
+      const tables = [
+        'match_analytics',
+        'match_result',
+        'fall_of_wickets',
+        'wickets_by_delivery',
+        'deliveries',
+        'batting_stats',
+        'bowling_stats',
+        'fielding_stats',
+        'player_career_stats',
+        'overs',
+        'innings',
+        'match_players',
+        'matches',
+        'tournament_standings',
+        'tournament_fixtures',
+        'tournament_requests',
+        'tournament_teams',
+        'tournament_groups',
+        'tournaments',
+        'team_rosters',
+        'teams',
+        'users',
+      ];
+      for (const table of tables) {
+        await db.execute(sql.raw(`DELETE FROM "${table}"`));
+      }
 
-    // Apply any pending schema migrations
-    await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_number" integer`);
+      // Apply any pending schema migrations
+      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_number" integer`);
 
-    // Seed test user (matches auth middleware TEST_USER)
-    await db.insert(users).values({
-      firebaseUid: 'test-user-e2e-001',
-      phone: '+919999900001',
-      displayName: 'E2E Test Scorer',
-      playerRole: 'all_rounder',
-      battingStyle: 'right_hand_bat',
-      bowlingStyle: 'right_arm_medium',
-    }).onConflictDoNothing();
+      // Seed test user (matches auth middleware TEST_USER)
+      await db.insert(users).values({
+        firebaseUid: 'test-user-e2e-001',
+        phone: '+919999900001',
+        displayName: 'E2E Test Scorer',
+        isVerified: true,
+        playerRole: 'all_rounder',
+        battingStyle: 'right_hand_bat',
+        bowlingStyle: 'right_arm_medium',
+      }).onConflictDoNothing();
 
-    return { success: true, message: 'Database reset complete' };
+      return { success: true, message: 'Database reset complete' };
+    } catch (e: any) {
+      return { success: false, message: e.message, stack: e.stack?.slice(0, 500) };
+    }
   });

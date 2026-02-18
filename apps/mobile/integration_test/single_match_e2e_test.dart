@@ -5,6 +5,7 @@ import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_contro
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'helpers/app_test_wrapper.dart';
@@ -69,6 +70,9 @@ void main() {
 
   setUpAll(() async {
     await serverManager.startServer();
+    // Reset DB: truncates all tables + seeds test user (firebase_uid='test-user-e2e-001').
+    // Without reset, getUserByFirebaseUid returns null → 401 on all team API calls.
+    await serverManager.resetDatabase();
     testDio = Dio(BaseOptions(
       baseUrl: serverManager.baseUrl,
       connectTimeout: const Duration(seconds: 10),
@@ -92,6 +96,7 @@ void main() {
       await visualPause(tester, 1000);
       expect(find.text('Home'), findsWidgets);
       print('✓ Home page loaded');
+
 
       // ── PHASE 2: Create Teams via UI ──────────────────────────────
       print('\n══════════ PHASE 2: Create Teams ══════════');
@@ -117,11 +122,24 @@ void main() {
       // ── PHASE 3: Match Setup ───────────────────────────────────────
       print('\n══════════ PHASE 3: Match Setup ══════════');
 
-      // Go to Home tab and tap "Start Match"
-      final homeTab = find.text('Home');
-      if (homeTab.evaluate().isNotEmpty) {
-        await tester.tap(homeTab.first);
+      // Go to Home tab and tap "Start Match".
+      // After addPlayersToRoster we may be on Team Detail (outside ShellRoute),
+      // so NavigationBar is not visible. Use GoRouter as fallback.
+      final navBarCheck = find.byType(NavigationBar);
+      final homeTabText = find.text('Home');
+      if (navBarCheck.evaluate().isNotEmpty && homeTabText.evaluate().isNotEmpty) {
+        await tester.tap(homeTabText.first);
         await settle(tester);
+      } else {
+        // Outside ShellRoute — navigate to home via GoRouter
+        try {
+          final ctx = tester.element(find.byType(Navigator).last);
+          GoRouter.of(ctx).go('/home');
+          await settle(tester);
+          print('[Phase3] Navigated to home via GoRouter.go(/home)');
+        } catch (e) {
+          print('[Phase3] WARNING: GoRouter navigation to /home failed: $e');
+        }
       }
       await visualPause(tester, 500);
 
@@ -131,6 +149,7 @@ void main() {
       await settle(tester);
       await visualPause(tester, 1000);
       print('✓ Navigated to Match Setup');
+
       dumpVisibleTexts(tester, 'match-setup', 25);
 
       // Select Home team via bottom-sheet team picker
@@ -176,6 +195,7 @@ void main() {
       expect(find.byType(ScoringControls), findsWidgets,
           reason: 'ScoringControls must be visible after toss');
       print('✓ Scoring page ready');
+
 
       // ── PHASE 5: 1st Innings ──────────────────────────────────────
       print('\n══════════ PHASE 5: 1st Innings — ${teamA.name} ══════════');
@@ -284,6 +304,7 @@ void main() {
       final inn1Wkts = inn1.where((d) => d.isWicket).length;
       print('\n  ══ 1st Innings: $inn1Runs/$inn1Wkts all out in 2 overs ══');
       print('  Target for ${teamB.name}: ${inn1Runs + 1}');
+
       await visualPause(tester, 1500);
 
       // ── PHASE 6: Innings Transition ───────────────────────────────
@@ -510,9 +531,9 @@ void main() {
 
 /// Open the team picker bottom sheet and select [teamName].
 ///
-/// The picker now uses Consumer+ref.watch so it may briefly show a spinner
-/// while the teamsListProvider refreshes. This helper pumps extra frames to
-/// let the data load before asserting the team name is visible.
+/// The picker uses Consumer+ref.watch. With non-autoDispose providers the
+/// cached team list is available immediately. This helper pumps a few frames
+/// to let the sheet open and then selects the team.
 Future<void> _selectTeamInPicker(
   WidgetTester tester,
   String pickerLabel,
@@ -525,15 +546,17 @@ Future<void> _selectTeamInPicker(
     return;
   }
 
-  // Tap to open the bottom sheet (the InkWell parent handles the gesture)
+  // Tap to open the bottom sheet
   await tester.tap(selector.first);
-  await tester.pump(); // start frame
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.pump(const Duration(milliseconds: 400));
 
-  // The picker triggers a provider refresh → loading state → then data.
-  // Pump up to 6 s in 300 ms increments until the team name appears.
+  // Pump up to 5 s in 200 ms increments until the team name appears.
+  // Cached data should appear immediately; if a network fetch is needed
+  // it should complete within a couple of seconds.
   var found = false;
-  for (var i = 0; i < 20; i++) {
-    await tester.pump(const Duration(milliseconds: 300));
+  for (var i = 0; i < 25; i++) {
+    await tester.pump(const Duration(milliseconds: 200));
     if (find.text(teamName).evaluate().isNotEmpty) {
       found = true;
       break;
@@ -541,8 +564,11 @@ Future<void> _selectTeamInPicker(
   }
 
   if (!found) {
-    print('⚠ Team "$teamName" did not appear in picker after 6 s');
-    dumpVisibleTexts(tester, 'picker-$pickerLabel', 25);
+    print('⚠ Team "$teamName" did not appear in picker after 5 s');
+    dumpVisibleTexts(tester, 'picker-$pickerLabel', 30);
+    // Close the sheet so subsequent UI interactions aren't blocked
+    await tester.pageBack();
+    await tester.pump(const Duration(milliseconds: 300));
     return;
   }
 

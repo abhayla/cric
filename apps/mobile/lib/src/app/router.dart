@@ -230,6 +230,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               try {
                 final team = await ref.read(teams.teamRepositoryProvider)
                     .createTeam(name: name, location: location);
+                // Invalidate the teams list so the picker shows this new team.
+                ref.invalidate(teams.teamsListProvider);
                 if (context.mounted) {
                   GoRouter.of(context).go(AppRoutes.teamDetailPath(team.id));
                 }
@@ -320,24 +322,31 @@ final routerProvider = Provider<GoRouter>((ref) {
               initialAwayTeamName: extra['awayTeamName'] as String?,
               initialOvers: extra['totalOvers'] as int?,
               initialPlayersPerSide: extra['playersPerSide'] as int?,
-              onMatchCreated: (matchId) async {
+              onMatchCreated: (
+                matchId, {
+                required String homeTeamId,
+                required String homeTeamName,
+                required String awayTeamId,
+                required String awayTeamName,
+                required int playersPerSide,
+              }) async {
                 // Fetch team rosters for the toss page
                 final teamRepo = ref.read(teams.teamRepositoryProvider);
-                final homeId = extra['homeTeamId'] as String?;
-                final awayId = extra['awayTeamId'] as String?;
+                // Use team data passed from MatchSetupPage._state (preferred over stale
+                // extra, which may be empty when navigating from Home → Match Setup).
+                final homeId = homeTeamId.isNotEmpty ? homeTeamId : extra['homeTeamId'] as String?;
+                final awayId = awayTeamId.isNotEmpty ? awayTeamId : extra['awayTeamId'] as String?;
+                String resolvedHomeName = homeTeamName.isNotEmpty ? homeTeamName : extra['homeTeamName'] as String? ?? '';
+                String resolvedAwayName = awayTeamName.isNotEmpty ? awayTeamName : extra['awayTeamName'] as String? ?? '';
 
                 List<RosterPlayer> homeRoster = [];
                 List<RosterPlayer> awayRoster = [];
-                String homeTeamName = extra['homeTeamName'] as String? ?? '';
-                String awayTeamName = extra['awayTeamName'] as String? ?? '';
-                int playersPerSide = extra['playersPerSide'] as int? ?? 11;
 
                 // Try to fetch rosters from the teams already in state
                 try {
-                  // Use extra data if present, otherwise look up from match
                   if (homeId != null) {
                     final homeDetail = await teamRepo.getTeam(homeId);
-                    homeTeamName = homeDetail.team.name;
+                    resolvedHomeName = homeDetail.team.name;
                     homeRoster = homeDetail.roster
                         .map((r) => RosterPlayer(
                               playerId: r.playerId,
@@ -350,7 +359,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   }
                   if (awayId != null) {
                     final awayDetail = await teamRepo.getTeam(awayId);
-                    awayTeamName = awayDetail.team.name;
+                    resolvedAwayName = awayDetail.team.name;
                     awayRoster = awayDetail.roster
                         .map((r) => RosterPlayer(
                               playerId: r.playerId,
@@ -370,9 +379,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                     AppRoutes.tossPath(matchId),
                     extra: <String, dynamic>{
                       'homeTeamId': homeId ?? '',
-                      'homeTeamName': homeTeamName,
+                      'homeTeamName': resolvedHomeName,
                       'awayTeamId': awayId ?? '',
-                      'awayTeamName': awayTeamName,
+                      'awayTeamName': resolvedAwayName,
                       'playersPerSide': playersPerSide,
                       'homeRoster': homeRoster,
                       'awayRoster': awayRoster,

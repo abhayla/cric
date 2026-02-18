@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 7 (Polish & Testing) IN PROGRESS — MockTour-1 Tournament E2E test PASSING (27 matches, 65 min). Magic Over feature added (client + server). 2004 Flutter tests, 298 server tests.
+**Status:** Phase 7 (Polish & Testing) IN PROGRESS — MockTour-1 Tournament E2E test PASSING (27 matches, 65 min). Magic Over feature added (client + server). 2004 Flutter tests, 298 server tests. CLAUDE.md reviewed via `/init` — no changes needed, minor improvements suggested (integration test commands, flutter analyze).
 **Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
 ## Tech Stack
