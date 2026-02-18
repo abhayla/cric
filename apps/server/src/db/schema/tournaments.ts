@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, integer, boolean, decimal, timestamp, date, time, unique, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, integer, boolean, decimal, timestamp, date, time, unique, index, jsonb } from 'drizzle-orm/pg-core';
 import { users } from './users.ts';
 import { teams } from './teams.ts';
 import { matches } from './matches.ts';
@@ -23,6 +23,9 @@ export const tournaments = pgTable('tournaments', {
   wideRuns: integer('wide_runs').default(1).notNull(),
   noBallRuns: integer('no_ball_runs').default(1).notNull(),
   powerplayOvers: integer('powerplay_overs'),
+  magicOverNumbers: jsonb('magic_over_numbers').$type<number[] | null>(),
+  magicOverRunMultiplier: integer('magic_over_run_multiplier').default(2).notNull(),
+  magicOverWicketPenalty: integer('magic_over_wicket_penalty').default(-5).notNull(),
   createdBy: uuid('created_by').notNull().references(() => users.id, { onDelete: 'restrict' }),
   startDate: date('start_date', { mode: 'string' }),
   endDate: date('end_date', { mode: 'string' }),

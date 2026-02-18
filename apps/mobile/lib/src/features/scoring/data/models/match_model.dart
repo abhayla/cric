@@ -31,6 +31,9 @@ abstract class MatchModel with _$MatchModel {
     @JsonKey(name: 'maxOversPerBowler') int? maxOversPerBowler,
     @JsonKey(name: 'powerplayOvers') int? powerplayOvers,
     @JsonKey(name: 'tournamentId') String? tournamentId,
+    @JsonKey(name: 'magicOverNumbers') List<int>? magicOverNumbers,
+    @JsonKey(name: 'magicOverRunMultiplier') int? magicOverRunMultiplier,
+    @JsonKey(name: 'magicOverWicketPenalty') int? magicOverWicketPenalty,
   }) = _MatchModel;
 
   factory MatchModel.fromJson(Map<String, dynamic> json) =>
@@ -66,6 +69,9 @@ extension MatchModelX on MatchModel {
         maxOversPerBowler: maxOversPerBowler,
         powerplayOvers: powerplayOvers,
         tournamentId: tournamentId,
+        magicOverNumbers: magicOverNumbers,
+        magicOverRunMultiplier: magicOverRunMultiplier ?? 2,
+        magicOverWicketPenalty: magicOverWicketPenalty ?? -5,
       );
 }
 

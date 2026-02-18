@@ -347,6 +347,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 required String awayTeamId,
                 required String awayTeamName,
                 required int playersPerSide,
+                required int totalOvers,
+                required int wideRuns,
+                required int noBallRuns,
+                required List<int>? magicOverNumbers,
+                required int magicOverRunMultiplier,
+                required int magicOverWicketPenalty,
               }) async {
                 // Fetch team rosters for the toss page
                 final teamRepo = ref.read(teams.teamRepositoryProvider);
@@ -403,10 +409,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                       'playersPerSide': playersPerSide,
                       'homeRoster': homeRoster,
                       'awayRoster': awayRoster,
-                      'totalOvers': extra['totalOvers'] as int? ?? 20,
-                      'wideRuns': extra['wideRuns'] as int? ?? 1,
-                      'noBallRuns': extra['noBallRuns'] as int? ?? 1,
-                      'magicOverNumber': extra['magicOverNumber'] as int?,
+                      'totalOvers': totalOvers,
+                      'wideRuns': wideRuns,
+                      'noBallRuns': noBallRuns,
+                      'magicOverNumbers': magicOverNumbers,
+                      'magicOverRunMultiplier': magicOverRunMultiplier,
+                      'magicOverWicketPenalty': magicOverWicketPenalty,
                     },
                   );
                 }
@@ -491,7 +499,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                     playersPerSide: tossState.playersPerSide,
                     wideRunsPenalty: data['wideRuns'] as int? ?? 1,
                     noBallRunsPenalty: data['noBallRuns'] as int? ?? 1,
-                    magicOverNumber: data['magicOverNumber'] as int?,
+                    magicOverNumbers: data['magicOverNumbers'] as List<int>?,
+                    magicOverRunMultiplier: data['magicOverRunMultiplier'] as int? ?? 2,
+                    magicOverWicketPenalty: data['magicOverWicketPenalty'] as int? ?? -5,
                     battingTeamPlayers: battingXI
                         .map((p) => PlayingXIPlayer(
                               playerId: p.playerId,

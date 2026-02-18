@@ -36,7 +36,9 @@ class ScoringPageArgs {
     this.target,
     this.wideRunsPenalty = 1,
     this.noBallRunsPenalty = 1,
-    this.magicOverNumber,
+    this.magicOverNumbers,
+    this.magicOverRunMultiplier = 2,
+    this.magicOverWicketPenalty = -5,
     required this.battingTeamPlayers,
     required this.bowlingTeamPlayers,
     required this.openingStrikerId,
@@ -60,7 +62,9 @@ class ScoringPageArgs {
   final int? target;
   final int wideRunsPenalty;
   final int noBallRunsPenalty;
-  final int? magicOverNumber;
+  final List<int>? magicOverNumbers;
+  final int magicOverRunMultiplier;
+  final int magicOverWicketPenalty;
   final List<PlayingXIPlayer> battingTeamPlayers;
   final List<PlayingXIPlayer> bowlingTeamPlayers;
   final String openingStrikerId;
@@ -163,7 +167,9 @@ class _ScoringPageState extends State<ScoringPage> {
       target: args.target,
       wideRunsPenalty: args.wideRunsPenalty,
       noBallRunsPenalty: args.noBallRunsPenalty,
-      magicOverNumber: args.magicOverNumber,
+      magicOverNumbers: args.magicOverNumbers,
+      magicOverRunMultiplier: args.magicOverRunMultiplier,
+      magicOverWicketPenalty: args.magicOverWicketPenalty,
       battingTeamPlayers: args.battingTeamPlayers,
       bowlingTeamPlayers: args.bowlingTeamPlayers,
       firstInningsSummary: args.firstInningsSummary,
@@ -634,8 +640,8 @@ class _ScoringPageState extends State<ScoringPage> {
               target: _state.target,
               runsNeeded: _state.runsNeeded,
               onBack: _showExitDialog,
-              isMagicOver: _state.magicOverNumber != null &&
-                  _state.currentOverNumber == _state.magicOverNumber,
+              isMagicOver: _state.isMagicOver,
+              magicOverMultiplier: _state.magicOverRunMultiplier,
               isFreeHitPending: _state.isFreeHitPending,
             ),
 
@@ -673,6 +679,8 @@ class _ScoringPageState extends State<ScoringPage> {
                       deliveries: _state.currentOverDeliveries,
                       isFreeHitPending: _state.isFreeHitPending,
                       overNumber: _state.currentOverNumber,
+                      isMagicOver: _state.isMagicOver,
+                      magicOverMultiplier: _state.magicOverRunMultiplier,
                     ),
                   ],
                 ),

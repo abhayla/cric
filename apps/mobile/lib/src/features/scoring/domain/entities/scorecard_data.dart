@@ -12,6 +12,7 @@ class ScorecardData {
     required this.firstInnings,
     required this.secondInnings,
     required this.matchResult,
+    this.magicOverRunMultiplier = 1,
   });
 
   final String matchId;
@@ -20,6 +21,7 @@ class ScorecardData {
   final InningsData firstInnings;
   final InningsData secondInnings;
   final MatchResult matchResult;
+  final int magicOverRunMultiplier;
 
   /// Create from the scoring state at match completion.
   ///
@@ -37,6 +39,7 @@ class ScorecardData {
       firstInnings: state.firstInnings!,
       secondInnings: InningsData.fromScoringState(state),
       matchResult: state.matchResult!,
+      magicOverRunMultiplier: state.magicOverRunMultiplier,
     );
   }
 }

@@ -92,6 +92,9 @@ class Tournament {
     this.teamCount,
     this.teams,
     this.groups,
+    this.magicOverNumbers,
+    this.magicOverRunMultiplier = 2,
+    this.magicOverWicketPenalty = -5,
   });
 
   final String id;
@@ -122,6 +125,9 @@ class Tournament {
   final int? teamCount;
   final List<TournamentTeam>? teams;
   final List<TournamentGroup>? groups;
+  final List<int>? magicOverNumbers;
+  final int magicOverRunMultiplier;
+  final int magicOverWicketPenalty;
 
   /// Max overs per bowler: provided value or ceil(oversPerMatch/5).
   int get effectiveMaxOversPerBowler =>

@@ -28,6 +28,9 @@ class CreateMatchInput {
     this.wideRuns,
     this.noBallRuns,
     this.powerplayOvers,
+    this.magicOverNumbers,
+    this.magicOverRunMultiplier,
+    this.magicOverWicketPenalty,
   });
 
   final String homeTeamId;
@@ -42,6 +45,9 @@ class CreateMatchInput {
   final int? wideRuns;
   final int? noBallRuns;
   final int? powerplayOvers;
+  final List<int>? magicOverNumbers;
+  final int? magicOverRunMultiplier;
+  final int? magicOverWicketPenalty;
 }
 
 /// Input for recording toss result.

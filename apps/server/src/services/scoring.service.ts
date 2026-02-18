@@ -143,22 +143,25 @@ export async function recordDelivery(
     // ── Step 2: CALCULATE ──
     const isLegal = !input.isWide && !input.isNoBall && !input.isPenalty;
 
-    // Step 2.5: Magic Over — double all runs if this is the magic over
-    const isMagicOver = txMatch!.magicOverNumber != null &&
-      input.overNumber === txMatch!.magicOverNumber;
+    // Step 2.5: Magic Over — configurable multiplier
+    const magicOverNumbers = txMatch!.magicOverNumbers as number[] | null;
+    const isMagicOver = magicOverNumbers != null && magicOverNumbers.includes(input.overNumber);
+    const multiplier = isMagicOver ? txMatch!.magicOverRunMultiplier : 1;
 
     const effectiveRunsFromBat = isMagicOver && input.runsFromBat > 0
-      ? input.runsFromBat * 2 : input.runsFromBat;
+      ? input.runsFromBat * multiplier : input.runsFromBat;
     const effectiveWideRuns = isMagicOver && input.wideRuns > 0
-      ? input.wideRuns * 2 : input.wideRuns;
+      ? input.wideRuns * multiplier : input.wideRuns;
     const effectiveNoBallRuns = isMagicOver && input.noBallRuns > 0
-      ? input.noBallRuns * 2 : input.noBallRuns;
+      ? input.noBallRuns * multiplier : input.noBallRuns;
     const effectiveByeRuns = isMagicOver && input.byeRuns > 0
-      ? input.byeRuns * 2 : input.byeRuns;
+      ? input.byeRuns * multiplier : input.byeRuns;
     const effectiveLegByeRuns = isMagicOver && input.legByeRuns > 0
-      ? input.legByeRuns * 2 : input.legByeRuns;
+      ? input.legByeRuns * multiplier : input.legByeRuns;
 
-    const totalRuns = effectiveRunsFromBat + effectiveWideRuns + effectiveNoBallRuns + effectiveByeRuns + effectiveLegByeRuns;
+    // Magic over wicket penalty (negative value)
+    const magicOverPenalty = isMagicOver && input.isWicket ? txMatch!.magicOverWicketPenalty : 0;
+    const totalRuns = effectiveRunsFromBat + effectiveWideRuns + effectiveNoBallRuns + effectiveByeRuns + effectiveLegByeRuns + magicOverPenalty;
 
     // Get next sequence number
     const [seqResult] = await tx

@@ -134,7 +134,9 @@ class ScoringState {
     required this.playersPerSide,
     this.wideRunsPenalty = CricketConstants.defaultWideRuns,
     this.noBallRunsPenalty = CricketConstants.defaultNoBallRuns,
-    this.magicOverNumber,
+    this.magicOverNumbers,
+    this.magicOverRunMultiplier = 2,
+    this.magicOverWicketPenalty = -5,
     this.battingTeamName = '',
     this.bowlingTeamName = '',
     // Playing XI rosters
@@ -191,7 +193,9 @@ class ScoringState {
   final int playersPerSide;
   final int wideRunsPenalty;
   final int noBallRunsPenalty;
-  final int? magicOverNumber;
+  final List<int>? magicOverNumbers;
+  final int magicOverRunMultiplier;
+  final int magicOverWicketPenalty;
   final String battingTeamName;
   final String bowlingTeamName;
 
@@ -256,6 +260,10 @@ class ScoringState {
   final InningsData? firstInnings;
 
   // ── Computed properties ──
+
+  /// Whether the current over is a magic over.
+  bool get isMagicOver =>
+      magicOverNumbers != null && magicOverNumbers!.contains(currentOverNumber);
 
   /// Overs display: "12.3" format.
   String get oversDisplay => CricketUtils.formatOvers(totalBalls);
@@ -479,7 +487,9 @@ class ScoringState {
       playersPerSide: playersPerSide,
       wideRunsPenalty: wideRunsPenalty,
       noBallRunsPenalty: noBallRunsPenalty,
-      magicOverNumber: magicOverNumber,
+      magicOverNumbers: magicOverNumbers,
+      magicOverRunMultiplier: magicOverRunMultiplier,
+      magicOverWicketPenalty: magicOverWicketPenalty,
       battingTeamName: battingTeamName,
       bowlingTeamName: bowlingTeamName,
       battingTeamPlayers:
@@ -629,8 +639,8 @@ class ScoringNotifier {
     final lastDel = _state.deliveryHistory.last;
     final history = List<Delivery>.from(_state.deliveryHistory)..removeLast();
 
-    // Reverse innings totals
-    final newTotalRuns = _state.totalRuns - lastDel.totalRuns;
+    // Reverse innings totals (also reverse magic over wicket penalty)
+    final newTotalRuns = _state.totalRuns - lastDel.totalRuns - lastDel.magicOverPenaltyApplied;
     var newTotalBalls = _state.totalBalls;
     var newTotalExtras = _state.totalExtras;
     var newTotalWides = _state.totalWides;
@@ -703,18 +713,19 @@ class ScoringNotifier {
       );
     }
 
-    // Reverse strike change — use original (pre-doubling) runs for magic over
+    // Reverse strike change — use original (pre-multiplied) runs for magic over
+    final undoMultiplier = lastDel.isMagicOverDelivery ? _state.magicOverRunMultiplier : 1;
     final undoRunsFromBat = lastDel.isMagicOverDelivery && lastDel.runsFromBat > 0
-        ? lastDel.runsFromBat ~/ 2
+        ? lastDel.runsFromBat ~/ undoMultiplier
         : lastDel.runsFromBat;
     final undoWideRuns = lastDel.isMagicOverDelivery && lastDel.wideRuns > 0
-        ? lastDel.wideRuns ~/ 2
+        ? lastDel.wideRuns ~/ undoMultiplier
         : lastDel.wideRuns;
     final undoByeRuns = lastDel.isMagicOverDelivery && lastDel.byeRuns > 0
-        ? lastDel.byeRuns ~/ 2
+        ? lastDel.byeRuns ~/ undoMultiplier
         : lastDel.byeRuns;
     final undoLegByeRuns = lastDel.isMagicOverDelivery && lastDel.legByeRuns > 0
-        ? lastDel.legByeRuns ~/ 2
+        ? lastDel.legByeRuns ~/ undoMultiplier
         : lastDel.legByeRuns;
     final shouldHaveSwapped = ScoringUtils.shouldSwapStrike(
       runsFromBat: undoRunsFromBat,
@@ -886,7 +897,9 @@ class ScoringNotifier {
       wideRunsPenalty: _state.wideRunsPenalty,
       noBallRunsPenalty: _state.noBallRunsPenalty,
       maxOversPerBowler: _state.maxOversPerBowler,
-      magicOverNumber: _state.magicOverNumber,
+      magicOverNumbers: _state.magicOverNumbers,
+      magicOverRunMultiplier: _state.magicOverRunMultiplier,
+      magicOverWicketPenalty: _state.magicOverWicketPenalty,
       target: target,
       firstInningsSummary: firstSummary,
       firstInnings: firstInningsData,
@@ -1021,28 +1034,28 @@ class ScoringNotifier {
       legByeRuns: legByeRuns,
     );
 
-    // Step 2.5: Magic Over — double all runs if this is the magic over
-    final isMagicOver = _state.magicOverNumber != null &&
-        _state.currentOverNumber == _state.magicOverNumber;
+    // Step 2.5: Magic Over — configurable multiplier
+    final isMagicOver = _state.isMagicOver;
+    final multiplier = isMagicOver ? _state.magicOverRunMultiplier : 1;
     if (isMagicOver && totalDeliveryRuns > 0) {
-      totalDeliveryRuns *= 2;
+      totalDeliveryRuns *= multiplier;
     }
 
-    // Doubled individual components for stats (proportional doubling)
+    // Multiplied individual components for stats
     final effectiveRunsFromBat = isMagicOver && runsFromBat > 0
-        ? runsFromBat * 2
+        ? runsFromBat * multiplier
         : runsFromBat;
     final effectiveWideRuns = isMagicOver && wideRuns > 0
-        ? wideRuns * 2
+        ? wideRuns * multiplier
         : wideRuns;
     final effectiveNoBallRuns = isMagicOver && noBallRuns > 0
-        ? noBallRuns * 2
+        ? noBallRuns * multiplier
         : noBallRuns;
     final effectiveByeRuns = isMagicOver && byeRuns > 0
-        ? byeRuns * 2
+        ? byeRuns * multiplier
         : byeRuns;
     final effectiveLegByeRuns = isMagicOver && legByeRuns > 0
-        ? legByeRuns * 2
+        ? legByeRuns * multiplier
         : legByeRuns;
 
     // Step 3: Create delivery record (stores doubled values for correct undo)
@@ -1070,11 +1083,14 @@ class ScoringNotifier {
       isFreeHit: _state.isFreeHitPending,
       isPenalty: isPenalty,
       isMagicOverDelivery: isMagicOver,
+      magicOverPenaltyApplied: isMagicOver && isWicket ? _state.magicOverWicketPenalty : 0,
       wicketInfo: wicketInfo,
     );
 
     // Step 4: Update innings totals
-    final newTotalRuns = _state.totalRuns + totalDeliveryRuns;
+    // Apply magic over wicket penalty (negative value deducted from total)
+    final magicOverPenalty = isMagicOver && isWicket ? _state.magicOverWicketPenalty : 0;
+    final newTotalRuns = _state.totalRuns + totalDeliveryRuns + magicOverPenalty;
     final newTotalBalls = _state.totalBalls + (isLegal ? 1 : 0);
     var newTotalExtras = _state.totalExtras;
     var newTotalWides = _state.totalWides;
@@ -1099,7 +1115,7 @@ class ScoringNotifier {
       newTotalExtras += effectiveLegByeRuns;
       newTotalLegByes += effectiveLegByeRuns;
     }
-    if (isWicket && (wicketInfo?.dismissalType?.isRealWicket ?? true)) {
+    if (isWicket && (wicketInfo?.dismissalType.isRealWicket ?? true)) {
       newTotalWickets++;
     }
 

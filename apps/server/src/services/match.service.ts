@@ -19,6 +19,9 @@ interface CreateMatchInput {
   wideRuns?: number;
   noBallRuns?: number;
   powerplayOvers?: number;
+  magicOverNumbers?: number[] | null;
+  magicOverRunMultiplier?: number;
+  magicOverWicketPenalty?: number;
   createdBy: string;
 }
 
@@ -101,6 +104,9 @@ export async function createMatch(input: CreateMatchInput) {
       wideRuns: input.wideRuns ?? 1,
       noBallRuns: input.noBallRuns ?? 1,
       powerplayOvers: input.powerplayOvers ?? null,
+      magicOverNumbers: input.magicOverNumbers ?? null,
+      magicOverRunMultiplier: input.magicOverRunMultiplier ?? 2,
+      magicOverWicketPenalty: input.magicOverWicketPenalty ?? -5,
       scorerId: input.createdBy,
       createdBy: input.createdBy,
       status: 'setup',

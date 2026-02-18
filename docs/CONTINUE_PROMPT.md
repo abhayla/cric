@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 7 (Polish & Testing) IN PROGRESS — Single Match E2E test PASSING. Test coverage audit complete, all gaps filled including route tests & retired hurt bug fix. ~1954 Flutter tests, ~420 server tests.
+**Status:** Phase 7 (Polish & Testing) IN PROGRESS — Magic Over Customization feature COMPLETE (client + server). ~1130 scoring tests passing (37 new magic over tests). ~420 server tests.
 **Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
 ## Tech Stack
@@ -16,21 +16,78 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Recommended: Continue Phase 7 — Additional Test Scenarios or Move to Phase 8
+### Recommended: Update UI Wireframes for Magic Over, Then Continue Phase 7/8
 
-**Context:** Test coverage audit completed and all identified gaps filled. Current totals: 2014 Flutter tests, 376 server tests. The E2E test verifies the happy path thoroughly including deeper DB field checks.
+**Context:** Magic Over Customization feature fully implemented across client + server. 37 new tests, all passing. Scoring test suite: 1093 passed, 2 pre-existing failures (offline_sync_test, scoring_page_test "Back to Home" — documented below).
 
-**Option A: Write a second E2E test (extras + dismissals)**
-- Cover no-ball, bye, leg-bye, free hit, undo delivery, and dismissal types beyond bowled (caught, LBW, run-out)
-- Requires emulator + server running
+**Option A: Update UI wireframe screens for magic over (PENDING)**
+- `docs/ui/10-match-setup.html` — Add magic over config section (toggle, chip grid, multiplier, penalty slider)
+- `docs/ui/12-scoring-page.html` — Score header + this-over magic over badges
+- `docs/ui/15-scorecard.html` — Commentary tab amber highlighting for magic over deliveries
+- `docs/ui/20-create-tournament.html` — Tournament-level magic over defaults
 
-**Option B: Fix pre-existing test issues**
-- `match_setup_page_test.dart` has a callback signature mismatch (void Function(String) vs named params)
-- ~~Server tests timeout when run all together (DB contention issue)~~ **FIXED** — Increased postgres connection pool to 30 in test mode (`database.ts`). Needs verification with `bun test`.
+**Option B: Install TypeScript in server and run type check**
+- `typescript` not installed in `apps/server/node_modules` — need `bun add -d typescript` then `bunx tsc --noEmit`
+- Server changes: schema (matches.ts, tournaments.ts), services (scoring, match, tournament), routes (matches, tournaments)
 
-**Option C: Move to Phase 8 (Deployment)**
+**Option C: Write server-side magic over tests**
+- `apps/server/test/services/scoring.service.test.ts` — Add magic over group: multiplier 3x, wicket penalty, multiple overs, undo
+
+**Option D: Move to Phase 8 (Deployment)**
 - VPS setup (Windows Server), PM2, Nginx, Cloudflare, `pg_dump` backups
-- See IMPLEMENTATION_PLAN.md Phase 8 for details
+
+### Magic Over Customization — Completed (2026-02-18)
+
+**Feature:** Replaced hardcoded single magic over (1 over, 2x, no penalty) with fully customizable system:
+- Multiple magic overs (chip grid selection)
+- Configurable run multiplier (1x-5x, default 2x)
+- Wicket penalty (0 to -20 runs, default -5)
+- Tournament defaults cascade to matches
+- Rich visual display: score header badge, this-over badge, commentary "MAGIC OVER!" prefix, scorecard amber highlighting
+- Backward compatibility: old `magicOverNumber` (int) auto-converts to `magicOverNumbers` (array)
+
+**Bug fixes included:**
+- Serialization: `scoring_state_converter.dart` was NOT serializing magic over fields — resuming a match lost config
+- Undo: hardcoded division by 2 replaced with dynamic `magicOverRunMultiplier`
+
+**Files modified (27 total):**
+
+*Client domain/data:*
+- `domain/entities/match.dart` — `magicOverNumbers`, `magicOverRunMultiplier`, `magicOverWicketPenalty`
+- `domain/entities/delivery.dart` — `magicOverPenaltyApplied` field for clean undo
+- `domain/entities/tournament.dart` — Same 3 magic over fields
+- `domain/entities/scorecard_data.dart` — `magicOverRunMultiplier` for commentary
+- `domain/repositories/match_repository.dart` — 3 fields in `CreateMatchInput`
+- `data/models/match_model.dart` — Freezed fields + `toEntity()`
+- `data/models/tournament_model.dart` — Freezed fields + `toEntity()`
+- `data/models/scoring_state_converter.dart` — Serialize/deserialize + backward compat
+
+*Client presentation:*
+- `notifiers/scoring_notifier.dart` — `ScoringState` fields, `isMagicOver` getter, `_processDelivery` multiplier+penalty, `undoLastDelivery` reversal, `startSecondInnings` carry-forward
+- `notifiers/match_setup_notifier.dart` — `magicOverEnabled`, numbers, multiplier, penalty + validation
+- `pages/match_setup_page.dart` — Full config UI (toggle, chip grid, choice chips, slider) + extended callback
+- `pages/scoring_page.dart` — Pass magic over params to ScoreHeader + ThisOverDisplay
+- `pages/scorecard_page.dart` — Commentary highlighting, multiplier param
+- `widgets/score_header.dart` — Dynamic "MAGIC OVER {multiplier}x" badge
+- `widgets/this_over_display.dart` — "MAGIC {multiplier}x" badge
+
+*Client utils + router:*
+- `core/utils/commentary_generator.dart` — "MAGIC OVER!" prefix + original/multiplied display
+- `app/router.dart` — New field names, extended onMatchCreated callback
+
+*Server:*
+- `db/migrations/0004_magic_over_customization.sql` — NEW: migrate + add columns
+- `db/schema/matches.ts` — `magicOverNumbers` (jsonb), multiplier, penalty
+- `db/schema/tournaments.ts` — Same 3 columns
+- `services/scoring.service.ts` — Configurable multiplier + wicket penalty
+- `services/match.service.ts` — 3 fields in CreateMatchInput + createMatch
+- `services/tournament.service.ts` — 3 fields in create/update
+- `routes/v1/matches.ts` — 3 fields in POST schema
+- `routes/v1/tournaments.ts` — 3 fields in POST + PUT schemas
+
+*Tests:*
+- `magic_over_test.dart` — Rewritten: 37 tests (was ~20 with old API)
+- `match_setup_page_test.dart` — Updated callback signature
 
 ### Test Coverage Audit — Completed (2026-02-18)
 

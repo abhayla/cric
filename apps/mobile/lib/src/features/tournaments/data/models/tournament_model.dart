@@ -32,6 +32,9 @@ abstract class TournamentModel with _$TournamentModel {
     @JsonKey(name: 'startDate') String? startDate,
     @JsonKey(name: 'endDate') String? endDate,
     @JsonKey(name: 'teamCount') int? teamCount,
+    @JsonKey(name: 'magicOverNumbers') List<int>? magicOverNumbers,
+    @JsonKey(name: 'magicOverRunMultiplier') int? magicOverRunMultiplier,
+    @JsonKey(name: 'magicOverWicketPenalty') int? magicOverWicketPenalty,
     List<TournamentTeamModel>? teams,
     List<TournamentGroupModel>? groups,
   }) = _TournamentModel;
@@ -68,6 +71,9 @@ extension TournamentModelX on TournamentModel {
         startDate: startDate,
         endDate: endDate,
         teamCount: teamCount,
+        magicOverNumbers: magicOverNumbers,
+        magicOverRunMultiplier: magicOverRunMultiplier ?? 2,
+        magicOverWicketPenalty: magicOverWicketPenalty ?? -5,
         teams: teams?.map((t) => t.toEntity()).toList(),
         groups: groups?.map((g) => g.toEntity()).toList(),
       );

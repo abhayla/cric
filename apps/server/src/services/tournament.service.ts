@@ -27,6 +27,9 @@ interface CreateTournamentInput {
   wideRuns?: number;
   noBallRuns?: number;
   powerplayOvers?: number | null;
+  magicOverNumbers?: number[] | null;
+  magicOverRunMultiplier?: number;
+  magicOverWicketPenalty?: number;
   startDate?: string | null;
   endDate?: string | null;
   createdBy: string;
@@ -48,6 +51,9 @@ interface UpdateTournamentInput {
   wideRuns?: number;
   noBallRuns?: number;
   powerplayOvers?: number | null;
+  magicOverNumbers?: number[] | null;
+  magicOverRunMultiplier?: number;
+  magicOverWicketPenalty?: number;
   startDate?: string | null;
   endDate?: string | null;
 }
@@ -101,6 +107,9 @@ export async function createTournament(input: CreateTournamentInput) {
       wideRuns: input.wideRuns ?? 1,
       noBallRuns: input.noBallRuns ?? 1,
       powerplayOvers: input.powerplayOvers ?? null,
+      magicOverNumbers: input.magicOverNumbers ?? null,
+      magicOverRunMultiplier: input.magicOverRunMultiplier ?? 2,
+      magicOverWicketPenalty: input.magicOverWicketPenalty ?? -5,
       createdBy: input.createdBy,
       startDate: input.startDate ?? null,
       endDate: input.endDate ?? null,

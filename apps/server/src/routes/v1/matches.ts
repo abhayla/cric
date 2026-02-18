@@ -37,6 +37,9 @@ export const matchRoutes = new Elysia({ prefix: '/api/v1/matches' })
         wideRuns: ctx.body.wideRuns,
         noBallRuns: ctx.body.noBallRuns,
         powerplayOvers: ctx.body.powerplayOvers,
+        magicOverNumbers: ctx.body.magicOverNumbers,
+        magicOverRunMultiplier: ctx.body.magicOverRunMultiplier,
+        magicOverWicketPenalty: ctx.body.magicOverWicketPenalty,
         createdBy: user.id,
       });
 
@@ -57,6 +60,9 @@ export const matchRoutes = new Elysia({ prefix: '/api/v1/matches' })
         wideRuns: t.Optional(t.Nullable(t.Number({ minimum: 1, maximum: 5 }))),
         noBallRuns: t.Optional(t.Nullable(t.Number({ minimum: 1, maximum: 5 }))),
         powerplayOvers: t.Optional(t.Nullable(t.Number({ minimum: 0 }))),
+        magicOverNumbers: t.Optional(t.Nullable(t.Array(t.Number({ minimum: 1 })))),
+        magicOverRunMultiplier: t.Optional(t.Number({ minimum: 1, maximum: 5 })),
+        magicOverWicketPenalty: t.Optional(t.Number({ minimum: -20, maximum: 0 })),
       }),
     },
   )

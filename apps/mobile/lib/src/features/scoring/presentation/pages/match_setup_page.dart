@@ -26,6 +26,12 @@ class MatchSetupPage extends ConsumerStatefulWidget {
     required String awayTeamId,
     required String awayTeamName,
     required int playersPerSide,
+    required int totalOvers,
+    required int wideRuns,
+    required int noBallRuns,
+    required List<int>? magicOverNumbers,
+    required int magicOverRunMultiplier,
+    required int magicOverWicketPenalty,
   }) onMatchCreated;
   final void Function()? onNavigateToCreateTeam;
 
@@ -461,6 +467,118 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
               }
             },
           ),
+          const SizedBox(height: 24),
+          _buildMagicOverSection(theme),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMagicOverSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            'Enable Magic Over',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          subtitle: const Text('Multiply runs and penalize wickets in selected overs'),
+          value: _state.magicOverEnabled,
+          onChanged: (value) {
+            _updateState(_state.copyWith(magicOverEnabled: value));
+          },
+        ),
+        if (_state.magicOverEnabled) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Select Magic Overs',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (_state.magicOverError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _state.magicOverError!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: List.generate(_state.totalOvers, (i) {
+              final overNum = i + 1;
+              final isSelected = _state.magicOverNumbers.contains(overNum);
+              return FilterChip(
+                label: Text('$overNum'),
+                selected: isSelected,
+                onSelected: (selected) {
+                  final updated = List<int>.from(_state.magicOverNumbers);
+                  if (selected) {
+                    updated.add(overNum);
+                  } else {
+                    updated.remove(overNum);
+                  }
+                  updated.sort();
+                  _updateState(_state.copyWith(magicOverNumbers: updated));
+                },
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Run Multiplier',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [1, 2, 3, 4, 5].map((m) {
+              return ChoiceChip(
+                label: Text('${m}x'),
+                selected: _state.magicOverRunMultiplier == m,
+                onSelected: (_) {
+                  _updateState(_state.copyWith(magicOverRunMultiplier: m));
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Wicket Penalty: ${_state.magicOverWicketPenalty} runs',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Slider(
+            value: _state.magicOverWicketPenalty.toDouble(),
+            min: -20,
+            max: 0,
+            divisions: 20,
+            label: '${_state.magicOverWicketPenalty}',
+            onChanged: (value) {
+              _updateState(
+                _state.copyWith(magicOverWicketPenalty: value.round()),
+              );
+            },
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('-20', style: theme.textTheme.bodySmall),
+              Text('0 (none)', style: theme.textTheme.bodySmall),
+            ],
+          ),
         ],
       ],
     );
@@ -638,6 +756,12 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
         awayTeamId: _state.awayTeamId ?? '',
         awayTeamName: _state.awayTeamName ?? '',
         playersPerSide: _state.playersPerSide,
+        totalOvers: _state.totalOvers,
+        wideRuns: _state.wideRuns,
+        noBallRuns: _state.noBallRuns,
+        magicOverNumbers: _state.magicOverEnabled ? _state.magicOverNumbers : null,
+        magicOverRunMultiplier: _state.magicOverRunMultiplier,
+        magicOverWicketPenalty: _state.magicOverWicketPenalty,
       );
     } catch (e) {
       if (!mounted) return;

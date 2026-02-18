@@ -13,11 +13,15 @@ class ThisOverDisplay extends StatelessWidget {
     required this.deliveries,
     this.isFreeHitPending = false,
     this.overNumber = 1,
+    this.isMagicOver = false,
+    this.magicOverMultiplier = 2,
   });
 
   final List<Delivery> deliveries;
   final bool isFreeHitPending;
   final int overNumber;
+  final bool isMagicOver;
+  final int magicOverMultiplier;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +41,25 @@ class ThisOverDisplay extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (isMagicOver) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.amber,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'MAGIC ${magicOverMultiplier}x',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
               if (isFreeHitPending) ...[
                 const SizedBox(width: 8),
                 Container(

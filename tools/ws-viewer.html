@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CricApp Live Score Viewer</title>
+<style>
+  :root {
+    --primary: #1976D2;
+    --on-primary: #fff;
+    --surface: #FAFAFA;
+    --on-surface: #1C1B1F;
+    --outline: #79747E;
+    --error: #B3261E;
+    --wicket: #D32F2F;
+    --four: #1565C0;
+    --six: #7B1FA2;
+    --dot: #9E9E9E;
+    --wide: #F57C00;
+    --noball: #E64A19;
+    --success: #2E7D32;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--surface); color: var(--on-surface); }
+
+  .header {
+    background: var(--primary); color: var(--on-primary);
+    padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+  }
+  .header h1 { font-size: 20px; font-weight: 500; }
+  .header .status-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #aaa; margin-left: auto;
+  }
+  .header .status-dot.connected { background: #4CAF50; }
+  .header .status-dot.connecting { background: #FFC107; }
+  .header .status-label { font-size: 12px; opacity: 0.8; }
+
+  .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+
+  /* Connection panel */
+  .connect-panel {
+    background: #fff; border-radius: 12px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12); margin-bottom: 16px;
+  }
+  .connect-panel label { font-size: 14px; font-weight: 500; display: block; margin-bottom: 6px; }
+  .connect-panel input, .connect-panel select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--outline);
+    border-radius: 8px; font-size: 14px; margin-bottom: 12px;
+  }
+  .connect-panel .btn-row { display: flex; gap: 8px; }
+  .btn {
+    padding: 10px 20px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--primary); color: var(--on-primary); flex: 1; }
+  .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Score card */
+  .score-card {
+    background: var(--primary); color: var(--on-primary);
+    border-radius: 16px; padding: 24px; margin-bottom: 16px;
+    text-align: center; display: none;
+  }
+  .score-card.visible { display: block; }
+  .score-card .innings-label { font-size: 12px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+  .score-card .score { font-size: 48px; font-weight: 700; margin: 8px 0; }
+  .score-card .overs { font-size: 16px; opacity: 0.9; }
+  .score-card .run-rates { font-size: 13px; opacity: 0.7; margin-top: 8px; }
+  .score-card .target-info { font-size: 14px; margin-top: 8px; background: rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; display: inline-block; }
+
+  /* Players section */
+  .players-section {
+    background: #fff; border-radius: 12px; padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12); margin-bottom: 16px;
+    display: none;
+  }
+  .players-section.visible { display: block; }
+  .players-section h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--outline); margin-bottom: 12px; }
+  .player-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+  }
+  .player-row:last-child { border-bottom: none; }
+  .player-name { font-size: 14px; font-weight: 500; }
+  .player-name .on-strike { color: var(--primary); font-weight: 700; }
+  .player-stats { font-size: 13px; color: var(--outline); }
+  .player-stats span { margin-left: 12px; }
+
+  /* This Over */
+  .this-over {
+    background: #fff; border-radius: 12px; padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12); margin-bottom: 16px;
+    display: none;
+  }
+  .this-over.visible { display: block; }
+  .this-over h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--outline); margin-bottom: 12px; }
+  .ball-indicators { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ball {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: #fff;
+  }
+  .ball.dot { background: transparent; border: 2px solid var(--dot); color: var(--dot); }
+  .ball.runs { background: var(--on-surface); }
+  .ball.four { background: var(--four); }
+  .ball.six { background: var(--six); }
+  .ball.wicket { background: var(--wicket); }
+  .ball.wide { background: var(--wide); }
+  .ball.noball { background: var(--noball); }
+  .ball.bye, .ball.legbye { background: #795548; }
+
+  /* Event log */
+  .event-log {
+    background: #fff; border-radius: 12px; padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12); margin-bottom: 16px;
+  }
+  .event-log h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--outline); margin-bottom: 12px; }
+  .event-log .events { max-height: 400px; overflow-y: auto; }
+  .event {
+    padding: 8px 12px; margin-bottom: 6px; border-radius: 8px;
+    font-size: 13px; border-left: 3px solid #ddd; background: #fafafa;
+  }
+  .event.score_update { border-left-color: var(--primary); }
+  .event.wicket { border-left-color: var(--wicket); background: #FFEBEE; }
+  .event.innings_complete { border-left-color: var(--wide); background: #FFF3E0; }
+  .event.match_complete { border-left-color: var(--success); background: #E8F5E9; }
+  .event.match_state { border-left-color: #9C27B0; background: #F3E5F5; }
+  .event.delivery_undone { border-left-color: var(--dot); }
+  .event.error { border-left-color: var(--error); background: #FFEBEE; }
+  .event .event-type { font-weight: 600; text-transform: uppercase; font-size: 11px; }
+  .event .event-time { font-size: 11px; color: var(--outline); float: right; }
+  .event .event-body { margin-top: 4px; }
+
+  /* Match result */
+  .match-result {
+    background: var(--success); color: #fff; border-radius: 12px;
+    padding: 20px; text-align: center; margin-bottom: 16px; display: none;
+  }
+  .match-result.visible { display: block; }
+  .match-result .result-text { font-size: 18px; font-weight: 600; }
+  .match-result .result-detail { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--outline); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>CricApp Live Score</h1>
+  <div class="status-label" id="statusLabel">Disconnected</div>
+  <div class="status-dot" id="statusDot"></div>
+</div>
+
+<div class="container">
+  <!-- Connection Panel -->
+  <div class="connect-panel" id="connectPanel">
+    <label for="wsUrl">WebSocket URL</label>
+    <input type="text" id="wsUrl" value="ws://localhost:3001/ws" placeholder="ws://localhost:3001/ws">
+
+    <label for="matchId">Match ID</label>
+    <input type="text" id="matchId" placeholder="Paste match UUID here...">
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnConnect" onclick="connectAndJoin()">Connect & Join</button>
+      <button class="btn btn-outline" id="btnDisconnect" onclick="disconnect()" disabled>Disconnect</button>
+    </div>
+  </div>
+
+  <!-- Match Result Banner -->
+  <div class="match-result" id="matchResult">
+    <div class="result-text" id="resultText"></div>
+    <div class="result-detail" id="resultDetail"></div>
+  </div>
+
+  <!-- Score Card -->
+  <div class="score-card" id="scoreCard">
+    <div class="innings-label" id="inningsLabel">Innings 1</div>
+    <div class="score" id="mainScore">0/0</div>
+    <div class="overs" id="oversDisplay">Overs: 0.0</div>
+    <div class="run-rates" id="runRates"></div>
+    <div class="target-info" id="targetInfo" style="display:none"></div>
+  </div>
+
+  <!-- Batting -->
+  <div class="players-section" id="battingSection">
+    <h3>Batting</h3>
+    <div id="battingRows"></div>
+  </div>
+
+  <!-- Bowling -->
+  <div class="players-section" id="bowlingSection">
+    <h3>Bowling</h3>
+    <div id="bowlingRows"></div>
+  </div>
+
+  <!-- This Over -->
+  <div class="this-over" id="thisOver">
+    <h3>This Over</h3>
+    <div class="ball-indicators" id="ballIndicators"></div>
+  </div>
+
+  <!-- Event Log -->
+  <div class="event-log">
+    <h3>Live Events <span id="eventCount" style="font-weight:400; color:#999">(0)</span></h3>
+    <div class="events" id="eventList">
+      <div class="empty-state">
+        <div class="icon">&#127935;</div>
+        <div>Connect to a match to see live events</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let ws = null;
+let eventCount = 0;
+
+function setStatus(status, label) {
+  const dot = document.getElementById('statusDot');
+  const lbl = document.getElementById('statusLabel');
+  dot.className = 'status-dot ' + status;
+  lbl.textContent = label;
+}
+
+function connectAndJoin() {
+  const url = document.getElementById('wsUrl').value.trim();
+  const matchId = document.getElementById('matchId').value.trim();
+
+  if (!url) { alert('Enter WebSocket URL'); return; }
+  if (!matchId) { alert('Enter Match ID'); return; }
+
+  setStatus('connecting', 'Connecting...');
+  document.getElementById('btnConnect').disabled = true;
+
+  try {
+    ws = new WebSocket(url);
+  } catch (e) {
+    setStatus('', 'Error: ' + e.message);
+    document.getElementById('btnConnect').disabled = false;
+    return;
+  }
+
+  ws.onopen = () => {
+    setStatus('connected', 'Connected');
+    document.getElementById('btnConnect').disabled = true;
+    document.getElementById('btnDisconnect').disabled = false;
+
+    // Send join_match
+    const joinMsg = JSON.stringify({ type: 'join_match', matchId });
+    ws.send(joinMsg);
+    addEvent('info', 'Joined match room: ' + matchId);
+  };
+
+  ws.onmessage = (event) => {
+    let msg;
+    try { msg = JSON.parse(event.data); } catch { addEvent('error', 'Invalid JSON: ' + event.data); return; }
+    handleMessage(msg);
+  };
+
+  ws.onclose = (event) => {
+    setStatus('', 'Disconnected (code: ' + event.code + ')');
+    document.getElementById('btnConnect').disabled = false;
+    document.getElementById('btnDisconnect').disabled = true;
+    ws = null;
+  };
+
+  ws.onerror = () => {
+    setStatus('', 'Connection error');
+    document.getElementById('btnConnect').disabled = false;
+  };
+}
+
+function disconnect() {
+  if (ws) {
+    const matchId = document.getElementById('matchId').value.trim();
+    if (matchId) {
+      ws.send(JSON.stringify({ type: 'leave_match', matchId }));
+    }
+    ws.close();
+  }
+}
+
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'match_state':
+      handleMatchState(msg);
+      break;
+    case 'score_update':
+      handleScoreUpdate(msg);
+      break;
+    case 'wicket':
+      handleWicket(msg);
+      break;
+    case 'innings_complete':
+      handleInningsComplete(msg);
+      break;
+    case 'match_complete':
+      handleMatchComplete(msg);
+      break;
+    case 'delivery_undone':
+      handleDeliveryUndone(msg);
+      break;
+    case 'error':
+      addEvent('error', msg.message);
+      break;
+    default:
+      addEvent('info', 'Unknown: ' + JSON.stringify(msg));
+  }
+}
+
+function handleMatchState(msg) {
+  const d = msg.data;
+  updateScoreCard(d.inningsNumber, d.totalRuns, d.totalWickets, d.overs, d.currentRunRate, d.requiredRunRate, d.target);
+  updateBatting(d.striker, d.nonStriker);
+  updateBowling(d.bowler);
+  updateThisOver(d.currentOver);
+
+  addEvent('match_state', `Match state: ${d.totalRuns}/${d.totalWickets} (${d.overs} ov) | Status: ${d.status}`);
+}
+
+function handleScoreUpdate(msg) {
+  const d = msg.data;
+  updateScoreCard(null, d.totalRuns, d.totalWickets, d.overs, d.currentRunRate, d.requiredRunRate, null);
+  updateBatting(d.striker, d.nonStriker);
+  updateBowling(d.bowler);
+  updateThisOver(d.currentOver);
+
+  const desc = d.lastDelivery ? d.lastDelivery.description : `${d.totalRuns}/${d.totalWickets}`;
+  addEvent('score_update', `${desc} | ${d.totalRuns}/${d.totalWickets} (${d.overs})`);
+}
+
+function handleWicket(msg) {
+  const d = msg.data;
+  addEvent('wicket', `OUT! ${d.dismissedPlayer} - ${d.description} | ${d.teamScore} (${d.overs})`);
+}
+
+function handleInningsComplete(msg) {
+  const d = msg.data;
+  addEvent('innings_complete', `Innings ${d.inningsNumber} complete: ${d.battingTeam} ${d.totalRuns}/${d.totalWickets} (${d.overs} ov) | Target: ${d.target}`);
+}
+
+function handleMatchComplete(msg) {
+  const d = msg.data;
+  const resultEl = document.getElementById('matchResult');
+  resultEl.classList.add('visible');
+  document.getElementById('resultText').textContent = d.summary || 'Match Complete';
+  document.getElementById('resultDetail').textContent = d.winner ? `Winner: ${d.winner}` : (d.resultType === 'tie' ? 'Match Tied' : '');
+
+  addEvent('match_complete', d.summary || 'Match complete');
+}
+
+function handleDeliveryUndone(msg) {
+  const d = msg.data;
+  updateScoreCard(null, d.updatedScore.runs, d.updatedScore.wickets, d.updatedScore.overs, null, null, null);
+  updateThisOver(d.currentOver);
+  addEvent('delivery_undone', `Delivery undone | ${d.updatedScore.runs}/${d.updatedScore.wickets} (${d.updatedScore.overs})`);
+}
+
+// --- UI Updaters ---
+
+function updateScoreCard(inningsNumber, runs, wickets, overs, crr, rrr, target) {
+  const card = document.getElementById('scoreCard');
+  card.classList.add('visible');
+
+  if (inningsNumber !== null) {
+    document.getElementById('inningsLabel').textContent = 'Innings ' + inningsNumber;
+  }
+  document.getElementById('mainScore').textContent = runs + '/' + wickets;
+  document.getElementById('oversDisplay').textContent = 'Overs: ' + overs;
+
+  let rrText = '';
+  if (crr !== null) rrText += 'CRR: ' + crr.toFixed(2);
+  if (rrr !== null) rrText += '  |  RRR: ' + rrr.toFixed(2);
+  document.getElementById('runRates').textContent = rrText;
+
+  const targetEl = document.getElementById('targetInfo');
+  if (target !== null && target !== undefined) {
+    const need = target - runs;
+    targetEl.textContent = need > 0 ? `Need ${need} from target ${target}` : `Target ${target} reached!`;
+    targetEl.style.display = 'inline-block';
+  }
+}
+
+function updateBatting(striker, nonStriker) {
+  const section = document.getElementById('battingSection');
+  const rows = document.getElementById('battingRows');
+  rows.innerHTML = '';
+
+  if (!striker && !nonStriker) { section.classList.remove('visible'); return; }
+  section.classList.add('visible');
+
+  [striker, nonStriker].forEach((b, i) => {
+    if (!b) return;
+    const isStriker = i === 0;
+    const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '0.0';
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <div class="player-name">${isStriker ? '<span class="on-strike">*</span> ' : ''}${b.name}</div>
+      <div class="player-stats">
+        <span>${b.runs}(${b.balls})</span>
+        <span>4s:${b.fours}</span>
+        <span>6s:${b.sixes}</span>
+        <span>SR:${sr}</span>
+      </div>`;
+    rows.appendChild(row);
+  });
+}
+
+function updateBowling(bowler) {
+  const section = document.getElementById('bowlingSection');
+  const rows = document.getElementById('bowlingRows');
+  rows.innerHTML = '';
+
+  if (!bowler) { section.classList.remove('visible'); return; }
+  section.classList.add('visible');
+
+  const row = document.createElement('div');
+  row.className = 'player-row';
+  row.innerHTML = `
+    <div class="player-name">${bowler.name}</div>
+    <div class="player-stats">
+      <span>${bowler.overs} ov</span>
+      <span>M:${bowler.maidens}</span>
+      <span>R:${bowler.runs}</span>
+      <span>W:${bowler.wickets}</span>
+      <span>Ec:${bowler.economy.toFixed(1)}</span>
+    </div>`;
+  rows.appendChild(row);
+}
+
+function updateThisOver(balls) {
+  const section = document.getElementById('thisOver');
+  const indicators = document.getElementById('ballIndicators');
+  indicators.innerHTML = '';
+
+  if (!balls || balls.length === 0) { section.classList.remove('visible'); return; }
+  section.classList.add('visible');
+
+  balls.forEach(b => {
+    const el = document.createElement('div');
+    let cls = 'ball ';
+    const d = b.display;
+    if (b.isWicket) cls += 'wicket';
+    else if (d.includes('Wd')) cls += 'wide';
+    else if (d.includes('Nb')) cls += 'noball';
+    else if (d === '6') cls += 'six';
+    else if (d === '4') cls += 'four';
+    else if (d === '.') cls += 'dot';
+    else if (d.includes('B') || d.includes('Lb')) cls += 'bye';
+    else cls += 'runs';
+    el.className = cls;
+    el.textContent = d;
+    indicators.appendChild(el);
+  });
+}
+
+function addEvent(type, text) {
+  eventCount++;
+  document.getElementById('eventCount').textContent = '(' + eventCount + ')';
+
+  const list = document.getElementById('eventList');
+  // Remove empty state on first event
+  if (eventCount === 1) list.innerHTML = '';
+
+  const el = document.createElement('div');
+  el.className = 'event ' + type;
+  const now = new Date().toLocaleTimeString();
+  el.innerHTML = `
+    <span class="event-type">${type.replace('_', ' ')}</span>
+    <span class="event-time">${now}</span>
+    <div class="event-body">${text}</div>`;
+  list.insertBefore(el, list.firstChild);
+}
+
+// Auto-focus match ID field
+document.getElementById('matchId').focus();
+</script>
+</body>
+</html>

@@ -3,52 +3,107 @@ import '../../features/scoring/domain/entities/delivery.dart';
 /// Generates ball-by-ball commentary text from delivery data.
 ///
 /// Pure utility — no dependencies beyond the Delivery entity.
-String generateCommentary(Delivery delivery, {String? strikerName, String? bowlerName}) {
+/// When [magicOverMultiplier] is provided and > 1, augments commentary
+/// with magic over effects (multiplied runs, wicket penalty).
+String generateCommentary(
+  Delivery delivery, {
+  String? strikerName,
+  String? bowlerName,
+  int? magicOverMultiplier,
+}) {
   final batter = strikerName ?? 'Batter';
   final bowler = bowlerName ?? 'Bowler';
   final over = '${delivery.overNumber}.${delivery.ballNumber}';
+  final isMagic = delivery.isMagicOverDelivery &&
+      magicOverMultiplier != null &&
+      magicOverMultiplier > 1;
 
   if (delivery.isWicket) {
-    return _wicketCommentary(delivery, batter, bowler, over);
+    final base = _wicketCommentary(delivery, batter, bowler, over);
+    if (isMagic && delivery.magicOverPenaltyApplied != 0) {
+      return 'MAGIC OVER! $base ${delivery.magicOverPenaltyApplied} penalty runs applied';
+    }
+    return isMagic ? 'MAGIC OVER! $base' : base;
   }
 
   if (delivery.isWide) {
     final extra = delivery.wideRuns - 1;
+    String base;
     if (extra > 0) {
-      return '$over $bowler to $batter, wide, $extra extra ${_runsWord(extra)}';
+      base = '$over $bowler to $batter, wide, $extra extra ${_runsWord(extra)}';
+    } else {
+      base = '$over $bowler to $batter, wide';
     }
-    return '$over $bowler to $batter, wide';
+    if (isMagic && delivery.totalRuns > 0) {
+      final original = delivery.totalRuns ~/ magicOverMultiplier!;
+      return 'MAGIC OVER! $base ($original -> ${delivery.totalRuns} awarded, ${magicOverMultiplier}x)';
+    }
+    return base;
   }
 
   if (delivery.isNoBall) {
     final batRuns = delivery.runsFromBat;
+    String base;
     if (batRuns > 0) {
-      return '$over $bowler to $batter, no ball, $batRuns ${_runsWord(batRuns)} scored';
+      base = '$over $bowler to $batter, no ball, $batRuns ${_runsWord(batRuns)} scored';
+    } else {
+      base = '$over $bowler to $batter, no ball';
     }
-    return '$over $bowler to $batter, no ball';
+    if (isMagic && delivery.totalRuns > 0) {
+      final original = delivery.totalRuns ~/ magicOverMultiplier!;
+      return 'MAGIC OVER! $base ($original -> ${delivery.totalRuns} awarded, ${magicOverMultiplier}x)';
+    }
+    return base;
   }
 
   if (delivery.isBye) {
-    return '$over $bowler to $batter, ${delivery.byeRuns} ${_byeWord(delivery.byeRuns)}';
+    final base = '$over $bowler to $batter, ${delivery.byeRuns} ${_byeWord(delivery.byeRuns)}';
+    if (isMagic && delivery.totalRuns > 0) {
+      final original = delivery.totalRuns ~/ magicOverMultiplier!;
+      return 'MAGIC OVER! $base ($original -> ${delivery.totalRuns} awarded, ${magicOverMultiplier}x)';
+    }
+    return base;
   }
 
   if (delivery.isLegBye) {
-    return '$over $bowler to $batter, ${delivery.legByeRuns} leg ${_byeWord(delivery.legByeRuns)}';
+    final base = '$over $bowler to $batter, ${delivery.legByeRuns} leg ${_byeWord(delivery.legByeRuns)}';
+    if (isMagic && delivery.totalRuns > 0) {
+      final original = delivery.totalRuns ~/ magicOverMultiplier!;
+      return 'MAGIC OVER! $base ($original -> ${delivery.totalRuns} awarded, ${magicOverMultiplier}x)';
+    }
+    return base;
   }
 
   if (delivery.isBoundarySix) {
-    return '$over $bowler to $batter, SIX!';
+    final base = '$over $bowler to $batter, SIX!';
+    if (isMagic) {
+      final original = delivery.runsFromBat ~/ magicOverMultiplier!;
+      return 'MAGIC OVER! $base ($original -> ${delivery.runsFromBat} awarded, ${magicOverMultiplier}x)';
+    }
+    return base;
   }
 
   if (delivery.isBoundaryFour) {
-    return '$over $bowler to $batter, FOUR!';
+    final base = '$over $bowler to $batter, FOUR!';
+    if (isMagic) {
+      final original = delivery.runsFromBat ~/ magicOverMultiplier!;
+      return 'MAGIC OVER! $base ($original -> ${delivery.runsFromBat} awarded, ${magicOverMultiplier}x)';
+    }
+    return base;
   }
 
   if (delivery.runsFromBat == 0) {
-    return '$over $bowler to $batter, no run';
+    return isMagic
+        ? 'MAGIC OVER! $over $bowler to $batter, no run'
+        : '$over $bowler to $batter, no run';
   }
 
-  return '$over $bowler to $batter, ${delivery.runsFromBat} ${_runsWord(delivery.runsFromBat)}';
+  final base = '$over $bowler to $batter, ${delivery.runsFromBat} ${_runsWord(delivery.runsFromBat)}';
+  if (isMagic) {
+    final original = delivery.runsFromBat ~/ magicOverMultiplier!;
+    return 'MAGIC OVER! $base ($original -> ${delivery.runsFromBat} awarded, ${magicOverMultiplier}x)';
+  }
+  return base;
 }
 
 String _wicketCommentary(Delivery delivery, String batter, String bowler, String over) {

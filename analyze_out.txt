@@ -1,0 +1,461 @@
+Analyzing mobile...                                             
+
+   info - Unnecessary braces in a string interpolation - integration_test\helpers\delivery_record.dart:97:24 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - integration_test\helpers\delivery_record.dart:97:44 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - integration_test\helpers\delivery_record.dart:98:8 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - integration_test\helpers\delivery_record.dart:98:29 - unnecessary_brace_in_string_interps
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:43:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:48:9 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:62:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:67:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:70:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:72:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:80:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:83:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:85:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\server_manager.dart:101:7 - avoid_print
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - integration_test\helpers\server_manager.dart:110:7 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - integration_test\helpers\server_manager.dart:143:7 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - integration_test\helpers\server_manager.dart:144:7 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - integration_test\helpers\server_manager.dart:145:7 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - integration_test\helpers\server_manager.dart:158:7 - use_null_aware_elements
+warning - Unused import: 'package:cricapp/src/features/scoring/presentation/widgets/wicket_dialog.dart' - integration_test\helpers\single_match_flow.dart:7:8 - unused_import
+warning - A value for optional parameter 'isBypass' isn't ever given - integration_test\helpers\single_match_flow.dart:46:10 - unused_element_parameter
+warning - A value for optional parameter 'isLegBypass' isn't ever given - integration_test\helpers\single_match_flow.dart:47:10 - unused_element_parameter
+   info - Statements in an if should be enclosed in a block - integration_test\helpers\single_match_flow.dart:568:15 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - integration_test\helpers\single_match_flow.dart:568:31 - curly_braces_in_flow_control_structures
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:17:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:60:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:62:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:98:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:102:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:112:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:120:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:123:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:158:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:161:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:184:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:186:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:225:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:244:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:247:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:259:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:302:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:304:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:307:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:369:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:375:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:377:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:390:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:393:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:473:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:475:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:505:9 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:524:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:527:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:549:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:567:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:576:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:590:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:597:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:622:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:633:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:642:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:646:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:650:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:657:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:664:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:669:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:676:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:683:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:690:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:699:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:706:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:709:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:715:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:717:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:718:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:737:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:743:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:750:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:752:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:759:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:764:3 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:768:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:780:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:782:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:786:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:793:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:799:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\helpers\tournament_flow_helpers.dart:802:5 - avoid_print
+   info - Use 'const' with the constructor to improve performance - integration_test\single_match_e2e_test.dart:49:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - integration_test\single_match_e2e_test.dart:58:17 - prefer_const_constructors
+   info - Statements in an if should be enclosed in a block - integration_test\single_match_e2e_test.dart:467:22 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - integration_test\single_match_e2e_test.dart:467:46 - curly_braces_in_flow_control_structures
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:119:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:142:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:143:5 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:153:9 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:167:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:205:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:225:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:226:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:227:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:234:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:237:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:254:9 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:256:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:259:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:268:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:271:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:281:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:284:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:287:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:290:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:293:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:304:13 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:322:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:325:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:329:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:332:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:345:9 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:359:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:362:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:367:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:378:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:381:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:384:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:387:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:388:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:389:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:390:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:392:9 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:394:7 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:398:9 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:407:13 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:412:13 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:414:13 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:422:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:428:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:429:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:430:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:431:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:438:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:440:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:442:11 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:445:9 - avoid_print
+   info - Don't invoke 'print' in production code - integration_test\tournament_e2e_test.dart:447:9 - avoid_print
+warning - The value of the local variable 'matchId' isn't used - lib\src\app\router.dart:549:17 - unused_local_variable
+warning - The '!' will have no effect because the receiver can't be null - lib\src\core\utils\commentary_generator.dart:38:65 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\src\core\utils\commentary_generator.dart:53:65 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\src\core\utils\commentary_generator.dart:62:65 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\src\core\utils\commentary_generator.dart:71:65 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\src\core\utils\commentary_generator.dart:80:67 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\src\core\utils\commentary_generator.dart:89:67 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\src\core\utils\commentary_generator.dart:103:65 - unnecessary_non_null_assertion
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\src\features\auth\presentation\pages\profile_setup_page.dart:161:23 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\src\features\auth\presentation\pages\profile_setup_page.dart:223:23 - deprecated_member_use
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\home\data\datasources\home_remote_datasource.dart:22:11 - use_null_aware_elements
+warning - Unused import: '../../domain/entities/match_list_item.dart' - lib\src\features\home\data\repositories\home_repository_impl.dart:1:8 - unused_import
+   info - Unnecessary use of multiple underscores - lib\src\features\home\presentation\pages\home_page.dart:138:26 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\src\features\home\presentation\pages\home_page.dart:200:26 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\src\features\home\presentation\pages\home_page.dart:241:28 - unnecessary_underscores
+warning - The value of the local variable 'theme' isn't used - lib\src\features\home\presentation\widgets\my_stats_card.dart:12:11 - unused_local_variable
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\player_profile\data\datasources\player_profile_remote_datasource.dart:50:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\player_profile\data\datasources\player_profile_remote_datasource.dart:51:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\scoring\data\datasources\match_remote_datasource.dart:35:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\scoring\data\datasources\match_remote_datasource.dart:36:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\scoring\data\datasources\match_remote_datasource.dart:37:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\scoring\data\datasources\match_remote_datasource.dart:38:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\scoring\data\datasources\match_remote_datasource.dart:39:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\scoring\data\datasources\match_remote_datasource.dart:40:11 - use_null_aware_elements
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:12:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:13:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:15:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:16:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:18:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:19:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:20:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:21:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:22:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:23:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:24:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:25:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:26:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:27:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:29:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:30:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:31:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:32:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:33:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:34:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:35:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:36:6 - invalid_annotation_target
+  error - The redirected constructor '_MatchModel Function({required String awayTeamId, String? awayTeamName, required int ballTypeId, String? createdAt, required String createdBy, required String format, required String homeTeamId, String? homeTeamName, required String id, required String matchDate, int? maxOversPerBowler, int noBallRuns, int playersPerSide, int? powerplayOvers, required String scorerId, required String status, String? tossDecision, String? tossWinnerId, required int totalOvers, String? tournamentId, String? updatedAt, String? venue, int wideRuns})' has incompatible parameters with 'MatchModel Function({required String awayTeamId, String? awayTeamName, required int ballTypeId, String? createdAt, required String createdBy, required String format, required String homeTeamId, String? homeTeamName, required String id, List<int>? magicOverNumbers, int? magicOverRunMultiplier, int? magicOverWicketPenalty, required String matchDate, int? maxOversPerBowler, int noBallRuns, int playersPerSide, int? powerplayOvers, required String scorerId, required String status, String? tossDecision, String? tossWinnerId, required int totalOvers, String? tournamentId, String? updatedAt, String? venue, int wideRuns})' - lib\src\features\scoring\data\models\match_model.dart:37:8 - redirect_to_invalid_function_type
+  error - Undefined name 'magicOverNumbers' - lib\src\features\scoring\data\models\match_model.dart:72:27 - undefined_identifier
+  error - Undefined name 'magicOverRunMultiplier' - lib\src\features\scoring\data\models\match_model.dart:73:33 - undefined_identifier
+  error - Undefined name 'magicOverWicketPenalty' - lib\src\features\scoring\data\models\match_model.dart:74:33 - undefined_identifier
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:82:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:83:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:84:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:85:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:86:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:87:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:88:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:89:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:90:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:91:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\scoring\data\models\match_model.dart:92:6 - invalid_annotation_target
+warning - The receiver can't be 'null' because of short-circuiting, so the null-aware operator '?.' can't be used - lib\src\features\scoring\presentation\notifiers\scoring_notifier.dart:670:43 - invalid_null_aware_operator
+warning - The receiver can't be 'null' because of short-circuiting, so the null-aware operator '?.' can't be used - lib\src\features\scoring\presentation\notifiers\scoring_notifier.dart:1118:47 - invalid_null_aware_operator
+warning - Unused import: '../../domain/entities/playing_xi_player.dart' - lib\src\features\scoring\presentation\notifiers\scoring_persistence_service.dart:4:8 - unused_import
+warning - The '!' will have no effect because the receiver can't be null - lib\src\features\scoring\presentation\notifiers\scoring_persistence_service.dart:138:19 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\src\features\scoring\presentation\notifiers\scoring_persistence_service.dart:215:17 - unnecessary_non_null_assertion
+warning - Unused import: '../../domain/entities/batter_innings.dart' - lib\src\features\scoring\presentation\pages\live_match_page.dart:7:8 - unused_import
+warning - Unused import: '../../domain/entities/bowler_spell.dart' - lib\src\features\scoring\presentation\pages\live_match_page.dart:8:8 - unused_import
+warning - Unused import: '../../domain/entities/delivery.dart' - lib\src\features\scoring\presentation\pages\scorecard_page.dart:14:8 - unused_import
+warning - Unused import: '../notifiers/scoring_notifier.dart' - lib\src\features\scoring\presentation\pages\scorecard_page.dart:17:8 - unused_import
+warning - The declaration '_isStep1Terminal' isn't referenced - lib\src\features\scoring\presentation\widgets\wicket_dialog.dart:80:12 - unused_element
+warning - Unused import: '../models/team_model.dart' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:5:8 - unused_import
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:22:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:23:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:65:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:66:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:67:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:95:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:96:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:154:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:155:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:156:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\src\features\teams\data\datasources\team_remote_datasource.dart:157:11 - use_null_aware_elements
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:14:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:16:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:17:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:18:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:20:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:21:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:60:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:61:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:62:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:64:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:65:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:66:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:67:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:68:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:70:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:71:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:101:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:103:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:104:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:105:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\teams\data\models\team_model.dart:107:6 - invalid_annotation_target
+warning - Unused import: '../../../auth/domain/entities/app_user.dart' - lib\src\features\teams\presentation\pages\manage_roster_page.dart:6:8 - unused_import
+   info - Unnecessary use of multiple underscores - lib\src\features\teams\presentation\pages\manage_roster_page.dart:150:35 - unnecessary_underscores
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:42:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:43:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:44:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:45:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:46:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:47:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:48:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:49:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:50:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:51:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:52:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:53:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:54:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:55:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:75:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:133:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:134:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:165:27 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:186:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:187:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:188:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:225:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:226:11 - invalid_null_aware_operator
+warning - The map entry key can't be null, so the null-aware operator '?' is unnecessary - lib\src\features\tournaments\data\datasources\tournament_remote_datasource.dart:260:27 - invalid_null_aware_operator
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:12:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:13:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:14:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:15:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:16:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:17:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:18:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:19:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:20:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:21:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:22:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:23:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\fixture_model.dart:24:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\standing_model.dart:11:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\standing_model.dart:12:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\standing_model.dart:17:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\standing_model.dart:20:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\standing_model.dart:21:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\standing_model.dart:22:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\standing_model.dart:23:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\standing_model.dart:24:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\standing_model.dart:26:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:14:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:15:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:17:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:18:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:19:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:20:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:21:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:22:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:23:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:24:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:25:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:26:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:27:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:28:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:29:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:30:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:31:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:32:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:33:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:34:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:35:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:36:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:37:6 - invalid_annotation_target
+  error - The redirected constructor '_TournamentModel Function({int ballTypeId, String? createdAt, required String createdBy, String? endDate, required String format, List<TournamentGroupModel>? groups, bool hasThirdPlaceMatch, required String id, int? maxOversPerBowler, required String name, int noBallRuns, int numGroups, required int oversPerMatch, int playersPerSide, int pointsLoss, int pointsNoResult, int pointsTie, int pointsWin, int? powerplayOvers, int qualifyPerGroup, String? startDate, required String status, int? teamCount, List<TournamentTeamModel>? teams, String? updatedAt, int wideRuns})' has incompatible parameters with 'TournamentModel Function({int ballTypeId, String? createdAt, required String createdBy, String? endDate, required String format, List<TournamentGroupModel>? groups, bool hasThirdPlaceMatch, required String id, List<int>? magicOverNumbers, int? magicOverRunMultiplier, int? magicOverWicketPenalty, int? maxOversPerBowler, required String name, int noBallRuns, int numGroups, required int oversPerMatch, int playersPerSide, int pointsLoss, int pointsNoResult, int pointsTie, int pointsWin, int? powerplayOvers, int qualifyPerGroup, String? startDate, required String status, int? teamCount, List<TournamentTeamModel>? teams, String? updatedAt, int wideRuns})' - lib\src\features\tournaments\data\models\tournament_model.dart:40:8 - redirect_to_invalid_function_type
+  error - Undefined name 'magicOverNumbers' - lib\src\features\tournaments\data\models\tournament_model.dart:74:27 - undefined_identifier
+  error - Undefined name 'magicOverRunMultiplier' - lib\src\features\tournaments\data\models\tournament_model.dart:75:33 - undefined_identifier
+  error - Undefined name 'magicOverWicketPenalty' - lib\src\features\tournaments\data\models\tournament_model.dart:76:33 - undefined_identifier
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:86:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:87:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:88:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:89:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:90:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:91:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:92:6 - invalid_annotation_target
+warning - The annotation 'JsonKey.new' can only be used on fields or getters - lib\src\features\tournaments\data\models\tournament_model.dart:118:6 - invalid_annotation_target
+warning - Unused import: '../../domain/entities/standing.dart' - lib\src\features\tournaments\data\repositories\tournament_repository_impl.dart:2:8 - unused_import
+warning - Unused import: '../../domain/repositories/tournament_repository.dart' - lib\src\features\tournaments\presentation\pages\tournament_detail_page.dart:9:8 - unused_import
+   info - Use 'const' with the constructor to improve performance - lib\src\features\tournaments\presentation\pages\tournament_detail_page.dart:168:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\src\features\tournaments\presentation\pages\tournament_detail_page.dart:169:15 - prefer_const_constructors
+   info - Unnecessary use of multiple underscores - lib\src\features\tournaments\presentation\pages\tournament_detail_page.dart:309:22 - unnecessary_underscores
+   info - Use 'const' with the constructor to improve performance - lib\src\features\tournaments\presentation\pages\tournament_detail_page.dart:312:22 - prefer_const_constructors
+   info - Unnecessary use of multiple underscores - lib\src\features\tournaments\presentation\pages\tournaments_list_page.dart:57:29 - unnecessary_underscores
+warning - Unused import: 'domain/entities/standing.dart' - lib\src\features\tournaments\providers.dart:7:8 - unused_import
+   info - Use 'const' with the constructor to improve performance - test\src\core\utils\mvp_utils_test.dart:704:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\core\utils\mvp_utils_test.dart:762:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\analytics\domain\entities\chart_data_test.dart:49:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\analytics\presentation\widgets\mvp_ranking_widget_test.dart:42:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\analytics\presentation\widgets\mvp_ranking_widget_test.dart:64:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\analytics\presentation\widgets\mvp_ranking_widget_test.dart:141:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\analytics\presentation\widgets\mvp_ranking_widget_test.dart:169:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\auth\domain\entities\app_user_test.dart:8:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\auth\domain\entities\app_user_test.dart:25:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\auth\domain\entities\app_user_test.dart:43:20 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\auth\domain\entities\app_user_test.dart:52:20 - prefer_const_constructors
+   info - Use 'const' for final variables initialized to a constant value - test\src\features\home\presentation\pages\home_page_test.dart:59:3 - prefer_const_declarations
+   info - Use 'const' for final variables initialized to a constant value - test\src\features\home\presentation\pages\match_history_page_test.dart:39:3 - prefer_const_declarations
+   info - Use 'const' with the constructor to improve performance - test\src\features\home\presentation\widgets\my_stats_card_test.dart:16:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\home\presentation\widgets\my_stats_card_test.dart:71:25 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\home\presentation\widgets\my_stats_card_test.dart:118:24 - prefer_const_constructors
+   info - Use 'const' for final variables initialized to a constant value - test\src\features\player_profile\data\models\player_profile_model_test.dart:58:7 - prefer_const_declarations
+warning - The declaration '_t20Stats' isn't referenced - test\src\features\player_profile\integration\player_profile_integration_test.dart:58:7 - unused_element
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\data\models\scoring_state_converter_test.dart:768:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\data\models\scoring_state_converter_test.dart:819:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\data\models\scoring_state_converter_test.dart:900:23 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\data\models\scoring_state_converter_test.dart:908:32 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\data\repositories\match_repository_impl_test.dart:55:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\data\repositories\match_repository_impl_test.dart:153:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\data\repositories\match_repository_impl_test.dart:187:21 - prefer_const_constructors
+   info - The local variable '_createInningsData' starts with an underscore - test\src\features\scoring\domain\entities\innings_data_test.dart:12:17 - no_leading_underscores_for_local_identifiers
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\match_test.dart:342:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\match_test.dart:356:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\match_test.dart:374:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\match_test.dart:384:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\match_test.dart:394:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\match_test.dart:404:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\over_test.dart:47:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\over_test.dart:103:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\over_test.dart:147:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\over_test.dart:205:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\over_test.dart:215:17 - prefer_const_constructors
+   info - The local variable '_createScorecardData' starts with an underscore - test\src\features\scoring\domain\entities\scorecard_data_test.dart:9:19 - no_leading_underscores_for_local_identifiers
+   info - Use 'const' for final variables initialized to a constant value - test\src\features\scoring\domain\entities\scorecard_data_test.dart:57:7 - prefer_const_declarations
+   info - Use 'const' for final variables initialized to a constant value - test\src\features\scoring\domain\entities\scorecard_data_test.dart:70:7 - prefer_const_declarations
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\scorecard_data_test.dart:100:30 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:9:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:22:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:35:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:50:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:62:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:70:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:79:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:88:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:97:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:107:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:119:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:130:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\entities\wicket_info_test.dart:140:17 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\repositories\match_repository_test.dart:9:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\repositories\match_repository_test.dart:51:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\repositories\match_repository_test.dart:71:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\repositories\match_repository_test.dart:95:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\scoring\domain\repositories\match_repository_test.dart:111:21 - prefer_const_constructors
+warning - Unused import: 'package:cricapp/src/features/scoring/domain/entities/delivery.dart' - test\src\features\scoring\integration\e2e_ui_match_test.dart:4:8 - unused_import
+warning - Unused import: 'package:cricapp/src/features/scoring/presentation/widgets/this_over_display.dart' - test\src\features\scoring\integration\e2e_ui_match_test.dart:15:8 - unused_import
+warning - The declaration '_expectScore' isn't referenced - test\src\features\scoring\integration\e2e_ui_match_test.dart:247:6 - unused_element
+warning - Unused import: 'package:cricapp/src/features/scoring/domain/entities/batter_innings.dart' - test\src\features\scoring\integration\full_match_test.dart:3:8 - unused_import
+warning - Unused import: 'package:cricapp/src/features/scoring/domain/entities/bowler_spell.dart' - test\src\features\scoring\integration\full_match_test.dart:4:8 - unused_import
+warning - The declaration 'bowlDotOver' isn't referenced - test\src\features\scoring\integration\full_match_test.dart:66:8 - unused_element
+  error - The named parameter 'magicOverNumber' isn't defined - test\src\features\scoring\presentation\notifiers\magic_over_test.dart:41:7 - undefined_named_parameter
+  error - The getter 'magicOverNumber' isn't defined for the type 'ScoringState' - test\src\features\scoring\presentation\notifiers\magic_over_test.dart:301:29 - undefined_getter
+  error - The getter 'magicOverNumber' isn't defined for the type 'ScoringState' - test\src\features\scoring\presentation\notifiers\magic_over_test.dart:306:29 - undefined_getter
+  error - The getter 'magicOverNumber' isn't defined for the type 'ScoringState' - test\src\features\scoring\presentation\notifiers\magic_over_test.dart:312:21 - undefined_getter
+  error - The getter 'magicOverNumber' isn't defined for the type 'ScoringState' - test\src\features\scoring\presentation\notifiers\magic_over_test.dart:349:29 - undefined_getter
+warning - Unused import: 'package:cricapp/src/shared/data/websocket/ws_message_model.dart' - test\src\features\scoring\presentation\notifiers\match_live_notifier_test.dart:7:8 - unused_import
+   info - The imported package 'stream_channel' isn't a dependency of the importing package - test\src\features\scoring\presentation\notifiers\match_live_notifier_test.dart:12:8 - depend_on_referenced_packages
+warning - Unused import: 'package:cricapp/src/features/scoring/presentation/notifiers/match_live_notifier.dart' - test\src\features\scoring\presentation\pages\live_match_page_test.dart:5:8 - unused_import
+warning - Unused import: 'package:cricapp/src/features/scoring/providers.dart' - test\src\features\scoring\presentation\pages\live_match_page_test.dart:11:8 - unused_import
+warning - Unused import: 'package:cricapp/src/shared/data/websocket/ws_message_model.dart' - test\src\features\scoring\presentation\pages\live_match_page_test.dart:13:8 - unused_import
+   info - The imported package 'stream_channel' isn't a dependency of the importing package - test\src\features\scoring\presentation\pages\live_match_page_test.dart:18:8 - depend_on_referenced_packages
+  error - The argument type 'void Function(String)' can't be assigned to the parameter type 'void Function(String, {required String awayTeamId, required String awayTeamName, required String homeTeamId, required String homeTeamName, required List<int>? magicOverNumbers, required int magicOverRunMultiplier, required int magicOverWicketPenalty, required int noBallRuns, required int playersPerSide, required int totalOvers, required int wideRuns})'.  - test\src\features\scoring\presentation\pages\match_setup_page_test.dart:15:27 - argument_type_not_assignable
+warning - Unused import: 'package:cricapp/src/core/utils/commentary_generator.dart' - test\src\features\scoring\presentation\pages\scorecard_page_test.dart:4:8 - unused_import
+warning - The value of the local variable 'called' isn't used - test\src\features\scoring\presentation\widgets\scoring_controls_test.dart:204:11 - unused_local_variable
+warning - The value of the local variable 'called' isn't used - test\src\features\scoring\presentation\widgets\scoring_controls_test.dart:214:11 - unused_local_variable
+warning - The value of the local variable 'called' isn't used - test\src\features\scoring\presentation\widgets\scoring_controls_test.dart:225:11 - unused_local_variable
+warning - The value of the local variable 'called' isn't used - test\src\features\scoring\presentation\widgets\scoring_controls_test.dart:236:11 - unused_local_variable
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\data\repositories\tournament_repository_impl_test.dart:69:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\data\repositories\tournament_repository_impl_test.dart:169:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\data\repositories\tournament_repository_impl_test.dart:184:21 - prefer_const_constructors
+warning - Unused import: 'package:cricapp/src/features/tournaments/domain/entities/fixture.dart' - test\src\features\tournaments\domain\repositories\tournament_repository_test.dart:3:8 - unused_import
+warning - Unused import: 'package:cricapp/src/features/tournaments/domain/entities/standing.dart' - test\src\features\tournaments\domain\repositories\tournament_repository_test.dart:4:8 - unused_import
+warning - Unused import: 'package:cricapp/src/features/tournaments/domain/entities/tournament_request.dart' - test\src\features\tournaments\domain\repositories\tournament_repository_test.dart:6:8 - unused_import
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\knockout_bracket_page_test.dart:53:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\knockout_bracket_page_test.dart:72:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\knockout_bracket_page_test.dart:83:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\knockout_bracket_page_test.dart:107:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\knockout_bracket_page_test.dart:126:9 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\standings_page_test.dart:60:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\standings_page_test.dart:62:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\standings_page_test.dart:92:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\standings_page_test.dart:94:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\standings_page_test.dart:124:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\standings_page_test.dart:126:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\standings_page_test.dart:143:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_detail_page_test.dart:146:25 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_detail_page_test.dart:148:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_detail_page_test.dart:189:9 - prefer_const_constructors
+   info - Use 'const' for final variables initialized to a constant value - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:16:5 - prefer_const_declarations
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:95:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:98:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:106:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:129:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:132:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:140:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:148:11 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:168:22 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\features\tournaments\presentation\pages\tournament_leaderboard_page_test.dart:171:11 - prefer_const_constructors
+   info - The import of 'dart:async' is unnecessary because all of the used elements are also provided by the import of 'package:flutter_test/flutter_test.dart' - test\src\shared\data\sync\sync_service_test.dart:1:8 - unnecessary_import
+   info - Use 'const' with the constructor to improve performance - test\src\shared\data\websocket\ws_message_model_test.dart:33:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\shared\data\websocket\ws_message_model_test.dart:79:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\shared\data\websocket\ws_message_model_test.dart:101:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - test\src\shared\data\websocket\ws_message_model_test.dart:117:24 - prefer_const_constructors
+

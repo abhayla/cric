@@ -6,13 +6,39 @@ import 'package:cricapp/src/features/scoring/presentation/pages/match_setup_page
 
 void main() {
   Widget buildPage({
-    void Function(String matchId)? onMatchCreated,
+    void Function(
+      String matchId, {
+      required String homeTeamId,
+      required String homeTeamName,
+      required String awayTeamId,
+      required String awayTeamName,
+      required int playersPerSide,
+      required int totalOvers,
+      required int wideRuns,
+      required int noBallRuns,
+      required List<int>? magicOverNumbers,
+      required int magicOverRunMultiplier,
+      required int magicOverWicketPenalty,
+    })? onMatchCreated,
     void Function()? onNavigateToCreateTeam,
   }) {
     return ProviderScope(
       child: MaterialApp(
         home: MatchSetupPage(
-          onMatchCreated: onMatchCreated ?? (_) {},
+          onMatchCreated: onMatchCreated ??
+              (_, {
+                required homeTeamId,
+                required homeTeamName,
+                required awayTeamId,
+                required awayTeamName,
+                required playersPerSide,
+                required totalOvers,
+                required wideRuns,
+                required noBallRuns,
+                required magicOverNumbers,
+                required magicOverRunMultiplier,
+                required magicOverWicketPenalty,
+              }) {},
           onNavigateToCreateTeam: onNavigateToCreateTeam,
         ),
       ),

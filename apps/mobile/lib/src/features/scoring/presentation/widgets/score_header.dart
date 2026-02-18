@@ -23,6 +23,7 @@ class ScoreHeader extends StatelessWidget {
     this.syncStatus,
     this.pendingCount = 0,
     this.isMagicOver = false,
+    this.magicOverMultiplier = 2,
     this.isFreeHitPending = false,
   });
 
@@ -39,6 +40,7 @@ class ScoreHeader extends StatelessWidget {
   final SyncStatus? syncStatus;
   final int pendingCount;
   final bool isMagicOver;
+  final int magicOverMultiplier;
   final bool isFreeHitPending;
 
   String get _inningsLabel =>
@@ -134,7 +136,7 @@ class ScoreHeader extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'MAGIC OVER 2x',
+                          'MAGIC OVER ${magicOverMultiplier}x',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,

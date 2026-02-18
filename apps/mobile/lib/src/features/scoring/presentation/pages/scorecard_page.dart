@@ -14,7 +14,6 @@ import '../../domain/entities/bowler_spell.dart';
 import '../../domain/entities/delivery.dart';
 import '../../domain/entities/innings_data.dart';
 import '../../domain/entities/scorecard_data.dart';
-import '../notifiers/scoring_notifier.dart';
 
 /// Scorecard page showing match results with 3 tabs:
 /// Scorecard, Commentary, Analytics.
@@ -536,10 +535,20 @@ class _ScorecardPageState extends State<ScorecardPage>
           delivery,
           strikerName: strikerName,
           bowlerName: bowlerName,
+          magicOverMultiplier: _data.magicOverRunMultiplier > 1
+              ? _data.magicOverRunMultiplier
+              : null,
         );
+        final isMagic = delivery.isMagicOverDelivery;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+          decoration: isMagic
+              ? BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                )
+              : null,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -549,14 +558,16 @@ class _ScorecardPageState extends State<ScorecardPage>
                   '${delivery.overNumber}.${delivery.ballNumber}',
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+                    color: isMagic ? Colors.amber.shade800 : theme.colorScheme.primary,
                   ),
                 ),
               ),
               Expanded(
                 child: Text(
                   text,
-                  style: theme.textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: isMagic ? FontWeight.w600 : null,
+                  ),
                 ),
               ),
             ],

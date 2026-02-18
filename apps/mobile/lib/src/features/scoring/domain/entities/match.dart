@@ -91,6 +91,9 @@ class Match {
     this.maxOversPerBowler,
     this.powerplayOvers,
     this.tournamentId,
+    this.magicOverNumbers,
+    this.magicOverRunMultiplier = 2,
+    this.magicOverWicketPenalty = -5,
   });
 
   final String id;
@@ -118,6 +121,9 @@ class Match {
   final int? maxOversPerBowler;
   final int? powerplayOvers;
   final String? tournamentId;
+  final List<int>? magicOverNumbers;
+  final int magicOverRunMultiplier;
+  final int magicOverWicketPenalty;
 
   /// Match title: "Home vs Away" or fallback "Match".
   String get title {

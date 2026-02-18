@@ -33,6 +33,9 @@ Map<String, dynamic> _scoringStateToMap(ScoringState state) {
     'playersPerSide': state.playersPerSide,
     'wideRunsPenalty': state.wideRunsPenalty,
     'noBallRunsPenalty': state.noBallRunsPenalty,
+    'magicOverNumbers': state.magicOverNumbers,
+    'magicOverRunMultiplier': state.magicOverRunMultiplier,
+    'magicOverWicketPenalty': state.magicOverWicketPenalty,
     'battingTeamName': state.battingTeamName,
     'bowlingTeamName': state.bowlingTeamName,
     'battingTeamPlayers':
@@ -91,6 +94,11 @@ ScoringState _scoringStateFromMap(Map<String, dynamic> m) {
     playersPerSide: m['playersPerSide'] as int,
     wideRunsPenalty: m['wideRunsPenalty'] as int? ?? 1,
     noBallRunsPenalty: m['noBallRunsPenalty'] as int? ?? 1,
+    magicOverNumbers: m['magicOverNumbers'] != null
+        ? (m['magicOverNumbers'] as List<dynamic>).map((e) => e as int).toList()
+        : m['magicOverNumber'] != null ? [m['magicOverNumber'] as int] : null,
+    magicOverRunMultiplier: m['magicOverRunMultiplier'] as int? ?? 2,
+    magicOverWicketPenalty: m['magicOverWicketPenalty'] as int? ?? -5,
     battingTeamName: m['battingTeamName'] as String? ?? '',
     bowlingTeamName: m['bowlingTeamName'] as String? ?? '',
     battingTeamPlayers: (m['battingTeamPlayers'] as List<dynamic>?)
@@ -209,6 +217,8 @@ Map<String, dynamic> _deliveryToMap(Delivery d) {
     'isBoundarySix': d.isBoundarySix,
     'isFreeHit': d.isFreeHit,
     'isPenalty': d.isPenalty,
+    'isMagicOverDelivery': d.isMagicOverDelivery,
+    'magicOverPenaltyApplied': d.magicOverPenaltyApplied,
     'wicketInfo':
         d.wicketInfo != null ? _wicketInfoToMap(d.wicketInfo!) : null,
     'timestamp': d.timestamp.millisecondsSinceEpoch,
@@ -239,6 +249,8 @@ Delivery _deliveryFromMap(Map<String, dynamic> m) {
     isBoundarySix: m['isBoundarySix'] as bool? ?? false,
     isFreeHit: m['isFreeHit'] as bool? ?? false,
     isPenalty: m['isPenalty'] as bool? ?? false,
+    isMagicOverDelivery: m['isMagicOverDelivery'] as bool? ?? false,
+    magicOverPenaltyApplied: m['magicOverPenaltyApplied'] as int? ?? 0,
     wicketInfo: m['wicketInfo'] != null
         ? _wicketInfoFromMap(m['wicketInfo'] as Map<String, dynamic>)
         : null,

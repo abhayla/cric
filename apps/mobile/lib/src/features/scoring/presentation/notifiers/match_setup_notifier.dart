@@ -29,6 +29,10 @@ class MatchSetupState {
     this.noBallRuns = 1,
     this.maxOversPerBowler,
     this.powerplayOvers,
+    this.magicOverEnabled = false,
+    this.magicOverNumbers = const [],
+    this.magicOverRunMultiplier = 2,
+    this.magicOverWicketPenalty = -5,
     this.isAdvancedOpen = false,
     this.isSubmitting = false,
     this.error,
@@ -47,6 +51,10 @@ class MatchSetupState {
   final int noBallRuns;
   final int? maxOversPerBowler;
   final int? powerplayOvers;
+  final bool magicOverEnabled;
+  final List<int> magicOverNumbers;
+  final int magicOverRunMultiplier;
+  final int magicOverWicketPenalty;
   final bool isAdvancedOpen;
   final bool isSubmitting;
   final String? error;
@@ -63,7 +71,16 @@ class MatchSetupState {
     if (homeTeamId == awayTeamId) return false;
     if (totalOvers < 1 || totalOvers > 50) return false;
     if (playersPerSide < 2 || playersPerSide > 11) return false;
+    if (magicOverEnabled && magicOverNumbers.isEmpty) return false;
     return true;
+  }
+
+  /// Error message for magic over selection.
+  String? get magicOverError {
+    if (magicOverEnabled && magicOverNumbers.isEmpty) {
+      return 'Select at least one magic over';
+    }
+    return null;
   }
 
   /// Error message for team selection.
@@ -114,6 +131,9 @@ class MatchSetupState {
       noBallRuns: noBallRuns,
       maxOversPerBowler: maxOversPerBowler,
       powerplayOvers: powerplayOvers,
+      magicOverNumbers: magicOverEnabled ? magicOverNumbers : null,
+      magicOverRunMultiplier: magicOverEnabled ? magicOverRunMultiplier : null,
+      magicOverWicketPenalty: magicOverEnabled ? magicOverWicketPenalty : null,
     );
   }
 
@@ -132,6 +152,10 @@ class MatchSetupState {
     int? noBallRuns,
     int? maxOversPerBowler,
     int? powerplayOvers,
+    bool? magicOverEnabled,
+    List<int>? magicOverNumbers,
+    int? magicOverRunMultiplier,
+    int? magicOverWicketPenalty,
     bool? isAdvancedOpen,
     bool? isSubmitting,
     String? error,
@@ -150,6 +174,10 @@ class MatchSetupState {
       noBallRuns: noBallRuns ?? this.noBallRuns,
       maxOversPerBowler: maxOversPerBowler ?? this.maxOversPerBowler,
       powerplayOvers: powerplayOvers ?? this.powerplayOvers,
+      magicOverEnabled: magicOverEnabled ?? this.magicOverEnabled,
+      magicOverNumbers: magicOverNumbers ?? this.magicOverNumbers,
+      magicOverRunMultiplier: magicOverRunMultiplier ?? this.magicOverRunMultiplier,
+      magicOverWicketPenalty: magicOverWicketPenalty ?? this.magicOverWicketPenalty,
       isAdvancedOpen: isAdvancedOpen ?? this.isAdvancedOpen,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       error: error ?? this.error,
