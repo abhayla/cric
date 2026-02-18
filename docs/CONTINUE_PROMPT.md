@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 7 (Polish & Testing) IN PROGRESS — MockTour-1 Tournament E2E test PASSING (27 matches, 65 min). Magic Over feature added (client + server). 2004 Flutter tests, 298 server tests. CLAUDE.md reviewed via `/init` — no changes needed, minor improvements suggested (integration test commands, flutter analyze).
+**Status:** Phase 7 (Polish & Testing) IN PROGRESS — Single Match E2E test PASSING (3 consecutive runs). GoRouter state.extra data loss bug fixed. Smart E2E reset (fast path). 2004 Flutter tests, 298 server tests.
 **Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
 ## Tech Stack
@@ -16,49 +16,60 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Active: Single Match E2E Test (UI-driven + DB Verification)
+### Recommended: Audit Test Coverage Then Fill Gaps
 
-**Goal:** A focused single-match integration test that enters all data via the real Flutter UI on the emulator, verifies every delivery is saved in PostgreSQL, and generates a comparison report.
+**Context:** The Single Match E2E test is fully passing (3 consecutive runs, 17/17 deliveries matched). However, it only covers the happy path. Before writing new tests, audit what the existing 2004 Flutter tests and 298 server tests already cover.
 
-**Match setup:**
-- Teams: Mumbai Lions (teamA) vs Chennai Kings (teamB), 5 overs, 6 players per side
-- 1st Innings: Mumbai Lions ALL OUT in 2 overs → 19/5 (includes 1 Wide)
-- 2nd Innings: Chennai Kings chase 20 in 0.4 overs → 20/0 (target chased)
-- Result: Chennai Kings won by 5 wickets
+**Step 1: Audit existing test coverage**
+- Check which scoring paths (extras, dismissal types, undo, strike rotation, bowler eligibility) are covered by the 2004 Flutter unit tests
+- Check which DB verification paths (batting_stats, bowling_stats, fielding_stats, fall_of_wickets) are covered by the 298 server tests
+- Produce a gap report: what's covered vs. what's missing
+
+**Step 2: Fill gaps at the RIGHT test level**
+- **Unit tests** (fast, reliable) for: all 12 dismissal types, no-ball/bye/leg-bye extras, free hit chains, undo pipeline, strike rotation edge cases, bowler eligibility, maiden overs, innings completion variants
+- **Server integration tests** for: batting_stats/bowling_stats/fielding_stats table correctness, fall_of_wickets, match result edge cases (tied match), MVP algorithm with known inputs
+- **E2E tests** (slow, only for full-flow) for: a second match with no-ball/bye/caught/LBW/run-out, undo delivery, offline→online sync
+
+**Step 3: Deepen existing E2E DB verification (quick win)**
+The current test checks only 4 fields per delivery (`totalRuns`, `isWide`, `isNoBall`, `isWicket`). Add assertions for `batterId`, `bowlerId`, `overNumber`, `ballNumber`, `dismissalType`, plus verify `batting_stats` and `bowling_stats` tables.
+
+### E2E Test Coverage — What IS Verified
+
+| Area | Status |
+|------|--------|
+| App boot, team creation, match setup, toss wizard | ✓ |
+| Run scoring (0, 1, 2, 4, 6) | ✓ |
+| Wicket (Bowled only, 5 wickets) | ✓ |
+| Wide extra (1 wide, +1 run) | ✓ |
+| New batter selection after wicket | ✓ |
+| Over transition + new bowler selection | ✓ |
+| Innings completion (all out) | ✓ |
+| Innings transition (select 2nd innings openers + bowler) | ✓ |
+| Target chase (match ends mid-over) | ✓ |
+| Match complete modal | ✓ |
+| DB: 17/17 deliveries synced (runs, wide, wicket flags) | ✓ |
+| DB: Match result (winner, margin, MOTM) | ✓ |
+| Smart re-run (teams preserved, fast path ~1:40) | ✓ |
+| GoRouter state.extra stability (route extra cache) | ✓ |
+
+### E2E Test Gaps — NOT Verified
+
+**Scoring gaps:** No-ball, bye, leg-bye, free hit, undo, 11 of 12 dismissal types, strike rotation assertions, maiden over, bowler eligibility (consecutive over block, max overs), manual swap strike
+
+**Match flow gaps:** Bowl-first choice, full-length innings (overs exhausted), declaration, tied match, abandoned match, multiple bowlers per side
+
+**DB gaps:** batting_stats, bowling_stats, fielding_stats, overs, innings, fall_of_wickets, player_career_stats tables not verified. Only 4 of ~15 delivery fields checked.
+
+**UI gaps:** Scorecard page, analytics charts, live match viewer (WebSocket), player profile, tournament flow, home dashboard content
+
+### Single Match E2E Test — Reference
 
 **Key files:**
-- `apps/mobile/integration_test/single_match_e2e_test.dart` — Main single-match E2E test
-- `apps/mobile/integration_test/helpers/single_match_flow.dart` — Reusable flow helper (UiDelivery, UiOver, SingleMatchFlow)
-- `apps/mobile/integration_test/helpers/tournament_flow_helpers.dart` — navigateToTeams (fixed .last), completeTossWizard, completeMatchSetup
-- `apps/mobile/lib/src/features/scoring/presentation/pages/match_setup_page.dart` — `_showTeamPicker` fixed
-- `apps/server/src/routes/v1/test-verify.routes.ts` — added `GET /api/v1/test/latest-match`
-
-**Production bug fixed this session:**
-- `_showTeamPicker` in match_setup_page.dart used `ref.read(teamsListProvider)` which returned empty when provider was disposed after leaving Teams tab. Fixed to: call `.refresh()` before opening sheet + use `Consumer`+`ref.watch` inside the bottom sheet builder so it reactively shows teams as they load.
-
-**Test bug fixed this session:**
-- `navigateToTeams` was tapping first match of "Teams" (page title) instead of bottom nav. Fixed to `.last`.
-
-**Sync service 500 errors fixed (2026-02-18):**
-Four root causes identified and fixed for delivery sync failures during E2E test:
-1. **RC1 — Extra `matchId` in POST body** (`sync_service.dart`): `enqueueDelivery()` stored `matchId` in payload, sent as body. Server TypeBox schema rejects extra fields → 500. Fix: strip `matchId` from body before POSTing (it's already in the URL path).
-2. **RC2 — No idempotent retry** (`scoring.service.ts`): Retry with same delivery UUID → PK violation → 500. Fix: added Step 2.5 duplicate check — if delivery UUID exists, return existing record.
-3. **RC3 — No auth token on Dio** (`providers.dart`): Bare Dio had no auth headers. Fix: added interceptor attaching Firebase ID token. (Test mode bypasses auth on server, but production would have failed with 401.)
-4. **RC4 — Concurrent sync race** (`sync_service.dart`): `unawaited(processSyncQueue())` + periodic timer could run concurrently, causing duplicate POSTs. Fix: added `_isSyncing` mutex flag.
-5. **Enhanced error logging** (`scoring.ts`): Wrapped `recordDelivery` call with try-catch logging matchId on failure.
-
-**Test status (2026-02-18):**
-- Build: ✓ (app-debug.apk)
-- Phase 1 Boot: ✓
-- Phase 2 Teams: ✓ (Mumbai Lions + Chennai Kings created with 6 players each)
-- Phase 3 Match Setup: ✓
-- Phase 4 Toss: ✓
-- Phase 5 1st Innings: ✓ (19/5 all out in 2 overs, 13 deliveries incl. extras)
-- Phase 6 Innings Transition: ✓
-- Phase 7 2nd Innings: ✓ (20/0 in 0.4 overs, target chased)
-- Phase 8 Match Complete: ✓ (MatchCompleteModal displayed)
-- Phase 9 DB Verification: ✓ PERFECT — 17/17 deliveries matched, match result + awards present
-- Result: Chennai Kings won by 5 wickets, MOTM awarded
+- `apps/mobile/integration_test/single_match_e2e_test.dart` — Main test
+- `apps/mobile/integration_test/helpers/server_manager.dart` — Server health, smart reset
+- `apps/mobile/integration_test/helpers/tournament_flow_helpers.dart` — Toss wizard, match setup helpers
+- `apps/mobile/lib/src/app/router.dart` — Route extra cache fix (`_cachedRouteExtra`)
+- `apps/server/src/routes/v1/test-verify.routes.ts` — Test verification endpoints
 
 **How to run:**
 ```bash
@@ -69,21 +80,38 @@ cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts
 cd apps/mobile && flutter test integration_test/single_match_e2e_test.dart -d emulator-5554
 ```
 
-**Server:** Bun server connects to VPS PostgreSQL at `103.118.16.189:5432/cricapp_dev`. Start with: `cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts`
+**Server:** Bun server connects to VPS PostgreSQL at `103.118.16.189:5432/cricapp_dev`.
+
+### Bugs Fixed This Session (2026-02-18)
+
+**Critical: GoRouter state.extra data loss on auth refresh**
+- **Root cause:** `GoRouter.refreshListenable` fires on auth state changes, causing all route builders to re-execute with `state.extra == null`. This caused intermittent failures: toss page showing `?` for team names, scoring page disappearing after first delivery.
+- **Fix:** Added `_cachedRouteExtra<T>()` in `router.dart` — caches extra data on first navigation, returns cached on GoRouter rebuild. Applied to toss, scoring, and scorecard routes.
+- **File:** `apps/mobile/lib/src/app/router.dart`
+
+**Smart E2E test reset (teams preserved across runs)**
+- Added `POST /api/v1/test/reset-match-data` — clears match tables only, preserves users/teams/rosters
+- Added `GET /api/v1/test/teams` — returns teams with player counts
+- E2E test detects existing teams → uses fast path (~1:40) instead of full reset (~3:16)
+- **Files:** `apps/server/src/routes/v1/test-verify.routes.ts`, `apps/mobile/integration_test/helpers/server_manager.dart`, `apps/mobile/integration_test/single_match_e2e_test.dart`
+
+**Sync service fixes (from earlier in session):**
+1. RC1 — Extra `matchId` in POST body → stripped before sending
+2. RC2 — No idempotent retry → duplicate check by delivery UUID
+3. RC3 — No auth token on Dio → Firebase interceptor added
+4. RC4 — Concurrent sync race → `_isSyncing` mutex flag
+5. Enhanced error logging on `scoring.ts`
 
 ### Previously Done: MockTour-1 Tournament E2E Test
 
 **What's done:**
 - Magic Over feature (client + server): 4th over doubles all runs
 - Server-side match awards (MOTM, best batsman, best bowler) via `computeMatchAwards()`
-- Full 27-match tournament plays through real UI (fixture tap → match setup → toss → scoring → match complete → back to home → next fixture)
+- Full 27-match tournament plays through real UI
 - API-based setup (phases 2-5): teams, players, tournament, group assignment, fixture generation
-- Standings verification (Phase 7), leaderboard (Phase 10)
 
 **Known issues (tournament test):**
 - `test-verify` API returns 500 on tournament verification — server-side bug in the endpoint
-
-**Uncommitted changes:** See git status. Files in this session: match_setup_page.dart, tournament_flow_helpers.dart, test-verify.routes.ts, single_match_e2e_test.dart (new), single_match_flow.dart (new).
 
 ### Session Fix (2026-02-16 — GlobalKey crash)
 
