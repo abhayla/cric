@@ -74,6 +74,35 @@ class ServerManager {
     }
   }
 
+  /// Reset only match data — preserves teams, players, and users.
+  /// Use this for re-runs when teams already exist.
+  Future<void> resetMatchData() async {
+    print('[ServerManager] Resetting match data (preserving teams)...');
+    try {
+      await _dio.post('/api/v1/test/reset-match-data');
+      print('[ServerManager] Match data reset complete');
+    } catch (e) {
+      print('[ServerManager] Match data reset failed: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if expected teams exist in the database.
+  /// Returns a map of team name → player count.
+  Future<Map<String, int>> getExistingTeams() async {
+    try {
+      final response = await _dio.get('/api/v1/test/teams');
+      final teams = response.data['teams'] as List;
+      return {
+        for (final t in teams)
+          t['name'] as String: (t['playerCount'] as num).toInt(),
+      };
+    } catch (e) {
+      print('[ServerManager] getExistingTeams failed: $e');
+      return {};
+    }
+  }
+
   /// Create a player (user) via API. Returns the player ID.
   Future<String> createPlayerApi(String displayName, {String? playerRole}) async {
     final response = await _dio.post('/api/v1/players', data: {

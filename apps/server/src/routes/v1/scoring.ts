@@ -97,30 +97,36 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
       const matchId = ctx.params.id;
-      const result = await recordDelivery(matchId, user.id, {
-        id: ctx.body.id,
-        inningsId: ctx.body.inningsId,
-        inningsNumber: ctx.body.inningsNumber,
-        overNumber: ctx.body.overNumber,
-        ballNumber: ctx.body.ballNumber,
-        strikerId: ctx.body.strikerId,
-        nonStrikerId: ctx.body.nonStrikerId,
-        bowlerId: ctx.body.bowlerId,
-        runsFromBat: ctx.body.runsFromBat,
-        isWide: ctx.body.isWide,
-        isNoBall: ctx.body.isNoBall,
-        isBye: ctx.body.isBye,
-        isLegBye: ctx.body.isLegBye,
-        wideRuns: ctx.body.wideRuns,
-        noBallRuns: ctx.body.noBallRuns,
-        byeRuns: ctx.body.byeRuns,
-        legByeRuns: ctx.body.legByeRuns,
-        isWicket: ctx.body.isWicket,
-        isBoundaryFour: ctx.body.isBoundaryFour,
-        isBoundarySix: ctx.body.isBoundarySix,
-        isPenalty: ctx.body.isPenalty,
-        wicket: ctx.body.wicket,
-      });
+      let result;
+      try {
+        result = await recordDelivery(matchId, user.id, {
+          id: ctx.body.id,
+          inningsId: ctx.body.inningsId,
+          inningsNumber: ctx.body.inningsNumber,
+          overNumber: ctx.body.overNumber,
+          ballNumber: ctx.body.ballNumber,
+          strikerId: ctx.body.strikerId,
+          nonStrikerId: ctx.body.nonStrikerId,
+          bowlerId: ctx.body.bowlerId,
+          runsFromBat: ctx.body.runsFromBat,
+          isWide: ctx.body.isWide,
+          isNoBall: ctx.body.isNoBall,
+          isBye: ctx.body.isBye,
+          isLegBye: ctx.body.isLegBye,
+          wideRuns: ctx.body.wideRuns,
+          noBallRuns: ctx.body.noBallRuns,
+          byeRuns: ctx.body.byeRuns,
+          legByeRuns: ctx.body.legByeRuns,
+          isWicket: ctx.body.isWicket,
+          isBoundaryFour: ctx.body.isBoundaryFour,
+          isBoundarySix: ctx.body.isBoundarySix,
+          isPenalty: ctx.body.isPenalty,
+          wicket: ctx.body.wicket,
+        });
+      } catch (err) {
+        console.error(`[Scoring] recordDelivery failed for match=${matchId}:`, err);
+        throw err;
+      }
 
       // --- Broadcast score_update ---
       const resultInningsId = result.delivery.inningsId;

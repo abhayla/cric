@@ -195,6 +195,29 @@ export async function recordDelivery(
       }
     }
 
+    // ── Step 2.5: CHECK DUPLICATE (idempotent retry) ──
+    if (input.id) {
+      const [existing] = await tx
+        .select()
+        .from(deliveries)
+        .where(eq(deliveries.id, input.id))
+        .limit(1);
+      if (existing) {
+        // Already processed — return existing result (idempotent)
+        const [existingInnings] = await tx
+          .select()
+          .from(innings)
+          .where(eq(innings.id, existing.inningsId))
+          .limit(1);
+        return {
+          delivery: existing,
+          inningsComplete: false,
+          matchComplete: false,
+          updatedInnings: existingInnings!,
+        };
+      }
+    }
+
     // ── Step 3: INSERT DELIVERY ──
     const [delivery] = await tx
       .insert(deliveries)

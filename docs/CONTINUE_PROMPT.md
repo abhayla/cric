@@ -39,12 +39,26 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 **Test bug fixed this session:**
 - `navigateToTeams` was tapping first match of "Teams" (page title) instead of bottom nav. Fixed to `.last`.
 
-**Test status (2026-02-17):**
+**Sync service 500 errors fixed (2026-02-18):**
+Four root causes identified and fixed for delivery sync failures during E2E test:
+1. **RC1 — Extra `matchId` in POST body** (`sync_service.dart`): `enqueueDelivery()` stored `matchId` in payload, sent as body. Server TypeBox schema rejects extra fields → 500. Fix: strip `matchId` from body before POSTing (it's already in the URL path).
+2. **RC2 — No idempotent retry** (`scoring.service.ts`): Retry with same delivery UUID → PK violation → 500. Fix: added Step 2.5 duplicate check — if delivery UUID exists, return existing record.
+3. **RC3 — No auth token on Dio** (`providers.dart`): Bare Dio had no auth headers. Fix: added interceptor attaching Firebase ID token. (Test mode bypasses auth on server, but production would have failed with 401.)
+4. **RC4 — Concurrent sync race** (`sync_service.dart`): `unawaited(processSyncQueue())` + periodic timer could run concurrently, causing duplicate POSTs. Fix: added `_isSyncing` mutex flag.
+5. **Enhanced error logging** (`scoring.ts`): Wrapped `recordDelivery` call with try-catch logging matchId on failure.
+
+**Test status (2026-02-18):**
 - Build: ✓ (app-debug.apk)
 - Phase 1 Boot: ✓
 - Phase 2 Teams: ✓ (Mumbai Lions + Chennai Kings created with 6 players each)
-- Phase 3 Match Setup: IN PROGRESS — team picker fix deployed, test running
-- Phase 4+ Toss/Scoring/DB: pending test run
+- Phase 3 Match Setup: ✓
+- Phase 4 Toss: ✓
+- Phase 5 1st Innings: ✓ (19/5 all out in 2 overs, 13 deliveries incl. extras)
+- Phase 6 Innings Transition: ✓
+- Phase 7 2nd Innings: ✓ (20/0 in 0.4 overs, target chased)
+- Phase 8 Match Complete: ✓ (MatchCompleteModal displayed)
+- Phase 9 DB Verification: ✓ PERFECT — 17/17 deliveries matched, match result + awards present
+- Result: Chennai Kings won by 5 wickets, MOTM awarded
 
 **How to run:**
 ```bash

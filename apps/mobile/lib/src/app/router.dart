@@ -112,6 +112,24 @@ abstract final class AppRoutes {
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Cache for route extra data that GoRouter loses on rebuild/refresh.
+/// When GoRouter's refreshListenable fires (e.g., auth state changes), all
+/// route builders re-execute. GoRouter can only reconstruct routes from URLs,
+/// so `state.extra` becomes null on rebuild. This cache preserves the extra
+/// data across rebuilds, keyed by matched route path.
+final _routeExtraCache = <String, Object>{};
+
+/// Get or cache typed route extra data. On first navigation (non-null extra),
+/// stores it. On GoRouter rebuild (null extra), returns the cached value.
+T? _cachedRouteExtra<T extends Object>(String path, Object? extra) {
+  if (extra is T) {
+    _routeExtraCache[path] = extra;
+    return extra;
+  }
+  final cached = _routeExtraCache[path];
+  return cached is T ? cached : null;
+}
+
 /// Notifier that triggers GoRouter.refresh() when auth state changes.
 /// This avoids recreating the GoRouter (and its GlobalKeys) on every auth event.
 class _AuthNotifier extends ChangeNotifier {
@@ -404,7 +422,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.toss,
         builder: (context, state) {
           final matchId = state.pathParameters['matchId']!;
-          final data = state.extra as Map<String, dynamic>? ?? {};
+          final data = _cachedRouteExtra<Map<String, dynamic>>(
+            state.matchedLocation, state.extra,
+          ) ?? {};
           return Consumer(
             builder: (context, ref, _) => TossPage(
               matchId: matchId,
@@ -517,7 +537,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.scoring,
         builder: (context, state) {
           final matchId = state.pathParameters['matchId']!;
-          final args = state.extra as ScoringPageArgs?;
+          final args = _cachedRouteExtra<ScoringPageArgs>(
+            state.matchedLocation, state.extra,
+          );
           if (args != null) {
             return ScoringPage(
               args: args,
@@ -532,7 +554,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.scorecard,
         builder: (context, state) {
-          final data = state.extra as ScorecardData?;
+          final data = _cachedRouteExtra<ScorecardData>(
+            state.matchedLocation, state.extra,
+          );
           if (data != null) {
             return ScorecardPage(data: data);
           }

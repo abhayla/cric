@@ -68,17 +68,34 @@ void main() {
   final inn1 = <DeliveryRecord>[];
   final inn2 = <DeliveryRecord>[];
 
+  // Whether teams already exist from a previous run (skip UI creation)
+  bool teamsAlreadyExist = false;
+
   setUpAll(() async {
     await serverManager.startServer();
-    // Reset DB: truncates all tables + seeds test user (firebase_uid='test-user-e2e-001').
-    // Without reset, getUserByFirebaseUid returns null → 401 on all team API calls.
-    await serverManager.resetDatabase();
     testDio = Dio(BaseOptions(
       baseUrl: serverManager.baseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ));
-    print('\n[Setup] Server healthy: ${serverManager.baseUrl}');
+
+    // Check if teams from a previous run still exist
+    final existingTeams = await serverManager.getExistingTeams();
+    final teamAExists = (existingTeams[teamA.name] ?? 0) >= teamA.players.length;
+    final teamBExists = (existingTeams[teamB.name] ?? 0) >= teamB.players.length;
+
+    if (teamAExists && teamBExists) {
+      // Teams exist — only reset match data (fast path)
+      teamsAlreadyExist = true;
+      await serverManager.resetMatchData();
+      print('\n[Setup] Teams already exist — reset match data only (fast path)');
+    } else {
+      // First run or teams missing — full reset
+      await serverManager.resetDatabase();
+      print('\n[Setup] Full database reset (teams will be created via UI)');
+    }
+
+    print('[Setup] Server healthy: ${serverManager.baseUrl}');
   });
 
   // ══════════════════════════════════════════════════════════════════════
@@ -101,23 +118,28 @@ void main() {
       // ── PHASE 2: Create Teams via UI ──────────────────────────────
       print('\n══════════ PHASE 2: Create Teams ══════════');
 
-      // --- Create Mumbai Lions ---
-      await navigateToTeams(tester);
-      print('Creating ${teamA.name}...');
-      await createTeam(tester, teamA);
-      await addPlayersToRoster(tester, teamA.players);
-      await goBack(tester);
-      await settle(tester);
-      print('✓ ${teamA.name} created with ${teamA.players.length} players');
+      if (teamsAlreadyExist) {
+        print('✓ ${teamA.name} already exists — skipping creation');
+        print('✓ ${teamB.name} already exists — skipping creation');
+      } else {
+        // --- Create Mumbai Lions ---
+        await navigateToTeams(tester);
+        print('Creating ${teamA.name}...');
+        await createTeam(tester, teamA);
+        await addPlayersToRoster(tester, teamA.players);
+        await goBack(tester);
+        await settle(tester);
+        print('✓ ${teamA.name} created with ${teamA.players.length} players');
 
-      // --- Create Chennai Kings ---
-      await navigateToTeams(tester);
-      print('Creating ${teamB.name}...');
-      await createTeam(tester, teamB);
-      await addPlayersToRoster(tester, teamB.players);
-      await goBack(tester);
-      await settle(tester);
-      print('✓ ${teamB.name} created with ${teamB.players.length} players');
+        // --- Create Chennai Kings ---
+        await navigateToTeams(tester);
+        print('Creating ${teamB.name}...');
+        await createTeam(tester, teamB);
+        await addPlayersToRoster(tester, teamB.players);
+        await goBack(tester);
+        await settle(tester);
+        print('✓ ${teamB.name} created with ${teamB.players.length} players');
+      }
 
       // ── PHASE 3: Match Setup ───────────────────────────────────────
       print('\n══════════ PHASE 3: Match Setup ══════════');
@@ -362,7 +384,9 @@ void main() {
 
       // ── PHASE 9: Database Verification ────────────────────────────
       print('\n══════════ PHASE 9: Database Verification ══════════');
-      await Future<void>.delayed(const Duration(seconds: 2));
+      // Wait for sync to flush all deliveries (including the last one
+      // that may have been enqueued while a previous sync was in-flight)
+      await Future<void>.delayed(const Duration(seconds: 8));
 
       // Retrieve latest match ID from test API
       String matchId = '';
@@ -409,10 +433,10 @@ void main() {
 
         if (i < dbDeliveries.length) {
           final db = dbDeliveries[i];
-          final dbRuns = db['total_runs'] as int? ?? 0;
-          final dbWide = db['is_wide'] as bool? ?? false;
-          final dbNb = db['is_no_ball'] as bool? ?? false;
-          final dbWkt = db['is_wicket'] as bool? ?? false;
+          final dbRuns = db['totalRuns'] as int? ?? 0;
+          final dbWide = db['isWide'] as bool? ?? false;
+          final dbNb = db['isNoBall'] as bool? ?? false;
+          final dbWkt = db['isWicket'] as bool? ?? false;
 
           final runsOk = dbRuns == ui.totalRuns;
           final wideOk = dbWide == ui.isWide;
@@ -434,7 +458,7 @@ void main() {
       // Extra DB records beyond tracked
       for (var i = allTracked.length; i < dbDeliveries.length; i++) {
         final db = dbDeliveries[i];
-        print('│✗${(i+1).toString().padLeft(2)} │  ? │ NOT TRACKED IN TEST              │ r=${db['total_runs']}');
+        print('│✗${(i+1).toString().padLeft(2)} │  ? │ NOT TRACKED IN TEST              │ r=${db['totalRuns']}');
         deliveryMismatches++;
       }
 
@@ -456,10 +480,10 @@ void main() {
         final r = await testDio.get('/api/v1/test/match-result/$matchId');
         final result = r.data['result'] as Map<String, dynamic>?;
         if (result != null) {
-          print('│  ✓ Result type      : ${result['result_type']}');
-          print('│  ✓ Winner team ID   : ${result['winner_team_id']}');
-          print('│  ✓ Winning margin   : ${result['winning_margin']} ${result['winning_margin_type']}');
-          print('│  ✓ Man of Match ID  : ${result['man_of_match_id']}');
+          print('│  ✓ Result type      : ${result['resultType']}');
+          print('│  ✓ Winner team ID   : ${result['winnerTeamId']}');
+          print('│  ✓ Winning margin   : ${result['margin']} ${result['resultType']}');
+          print('│  ✓ Man of Match ID  : ${result['manOfMatchId']}');
         } else {
           print('│  ✗ No match result record found in DB');
         }

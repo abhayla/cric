@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/providers.dart';
+import '../../core/constants/app_constants.dart';
+
 import '../../shared/data/sync/sync_service.dart';
 import '../../shared/providers/database_provider.dart';
 import 'data/datasources/match_remote_datasource.dart';
@@ -11,8 +14,42 @@ import 'domain/repositories/match_repository.dart';
 import 'presentation/notifiers/match_live_notifier.dart';
 
 /// Dio instance for scoring feature.
+///
+/// Uses the server root as baseUrl so that both absolute URLs
+/// (used by datasources: `${AppConstants.apiBaseUrl}/matches`)
+/// and relative paths (used by SyncService: `/api/v1/matches/...`)
+/// resolve correctly.
 final _dioProvider = Provider<Dio>((ref) {
-  return Dio();
+  // Extract server root from apiBaseUrl (strip /api/v1 suffix)
+  const apiBase = AppConstants.apiBaseUrl; // e.g. http://10.0.2.2:3001/api/v1
+  final serverRoot = apiBase.replaceAll(RegExp(r'/api/v\d+$'), '');
+  final dio = Dio(BaseOptions(
+    baseUrl: serverRoot,
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+  ));
+
+  // Add Firebase auth token for production (test mode bypasses on server)
+  try {
+    final authDatasource = ref.read(firebaseAuthDatasourceProvider);
+    dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        try {
+          final token = await authDatasource.getIdToken();
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+        } catch (_) {
+          // Silently continue without auth (test mode, no user logged in)
+        }
+        handler.next(options);
+      },
+    ));
+  } catch (_) {
+    // Provider not available (e.g., in test environment)
+  }
+
+  return dio;
 });
 
 /// Scoring local datasource for persistence.

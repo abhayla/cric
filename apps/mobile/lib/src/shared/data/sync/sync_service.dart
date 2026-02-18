@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../database/app_database.dart';
 import '../database/daos/scoring_dao.dart';
@@ -28,6 +29,7 @@ class SyncService {
   Timer? _timer;
   SyncStatus _status = SyncStatus.allSynced;
   int _unsyncedCount = 0;
+  bool _isSyncing = false;
 
   /// Current sync status.
   SyncStatus get status => _status;
@@ -82,34 +84,47 @@ class SyncService {
   ///
   /// Stops on first failure to maintain ordering.
   Future<void> processSyncQueue() async {
-    final entries = await _dao.getPendingSyncEntries();
-    if (entries.isEmpty) {
-      _updateStatus(SyncStatus.allSynced);
-      return;
-    }
+    if (_isSyncing) return; // Prevent concurrent processing
+    _isSyncing = true;
+    try {
+      while (true) {
+        final entries = await _dao.getPendingSyncEntries();
+        if (entries.isEmpty) {
+          _updateStatus(SyncStatus.allSynced);
+          return;
+        }
 
-    _updateStatus(SyncStatus.pending);
+        _updateStatus(SyncStatus.pending);
 
-    for (final entry in entries) {
-      if (entry.retryCount >= maxRetries) {
-        // Skip entries that exceeded retry limit
-        await _dao.markSynced(entry.id); // Mark as "done" to skip
-        continue;
+        var hadFailure = false;
+        for (final entry in entries) {
+          if (entry.retryCount >= maxRetries) {
+            // Skip entries that exceeded retry limit
+            await _dao.markSynced(entry.id); // Mark as "done" to skip
+            continue;
+          }
+
+          final success = await _syncEntry(entry);
+          if (!success) {
+            await _dao.incrementRetry(entry.id);
+            _updateStatus(SyncStatus.error);
+            hadFailure = true;
+            break; // Stop on first failure to maintain FIFO
+          }
+
+          await _dao.markSynced(entry.id);
+        }
+
+        if (hadFailure) break;
+        // Loop to pick up entries enqueued during this sync pass
       }
 
-      final success = await _syncEntry(entry);
-      if (!success) {
-        await _dao.incrementRetry(entry.id);
-        _updateStatus(SyncStatus.error);
-        break; // Stop on first failure to maintain FIFO
+      await _refreshCount();
+      if (_unsyncedCount == 0) {
+        _updateStatus(SyncStatus.allSynced);
       }
-
-      await _dao.markSynced(entry.id);
-    }
-
-    await _refreshCount();
-    if (_unsyncedCount == 0) {
-      _updateStatus(SyncStatus.allSynced);
+    } finally {
+      _isSyncing = false;
     }
   }
 
@@ -143,9 +158,11 @@ class SyncService {
       final matchId = payload['matchId'] as String;
 
       if (entry.operation == 'create') {
+        final body = Map<String, dynamic>.from(payload);
+        body.remove('matchId'); // matchId is in the URL, not the body
         await _dio.post(
           '/api/v1/matches/$matchId/deliveries',
-          data: payload,
+          data: body,
         );
       } else if (entry.operation == 'delete') {
         final deliveryId = payload['deliveryId'] as String;
@@ -154,9 +171,16 @@ class SyncService {
         );
       }
       return true;
-    } on DioException {
+    } on DioException catch (e) {
+      final responseBody = e.response?.data;
+      debugPrint('[SyncService] DioException syncing ${entry.entityType} '
+          '${entry.entityId}: status=${e.response?.statusCode} '
+          'url=${e.requestOptions.uri} '
+          'body=$responseBody');
       return false;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[SyncService] Error syncing ${entry.entityType} '
+          '${entry.entityId}: $e');
       return false;
     }
   }

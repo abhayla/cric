@@ -7,6 +7,7 @@ import { matches, matchResult, matchAnalytics } from '../../db/schema/matches.ts
 import { tournamentStandings } from '../../db/schema/tournaments.ts';
 import { battingStats, bowlingStats } from '../../db/schema/stats.ts';
 import { users } from '../../db/schema/users.ts';
+import { teams } from '../../db/schema/teams.ts';
 
 /**
  * Test verification API routes — ONLY enabled when NODE_ENV=test.
@@ -40,10 +41,37 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
 
     const inningsIds = matchInnings.map((i) => i.id);
     const allDeliveries = await db
-      .select()
+      .select({
+        id: deliveries.id,
+        inningsId: deliveries.inningsId,
+        inningsNumber: innings.inningsNumber,
+        overNumber: deliveries.overNumber,
+        ballNumber: deliveries.ballNumber,
+        sequenceNumber: deliveries.sequenceNumber,
+        strikerId: deliveries.strikerId,
+        nonStrikerId: deliveries.nonStrikerId,
+        bowlerId: deliveries.bowlerId,
+        runsFromBat: deliveries.runsFromBat,
+        isWide: deliveries.isWide,
+        wideRuns: deliveries.wideRuns,
+        isNoBall: deliveries.isNoBall,
+        noBallRuns: deliveries.noBallRuns,
+        isBye: deliveries.isBye,
+        byeRuns: deliveries.byeRuns,
+        isLegBye: deliveries.isLegBye,
+        legByeRuns: deliveries.legByeRuns,
+        totalRuns: deliveries.totalRuns,
+        isWicket: deliveries.isWicket,
+        isLegal: deliveries.isLegal,
+        isBoundaryFour: deliveries.isBoundaryFour,
+        isBoundarySix: deliveries.isBoundarySix,
+        isFreeHit: deliveries.isFreeHit,
+        isPenalty: deliveries.isPenalty,
+      })
       .from(deliveries)
+      .innerJoin(innings, eq(deliveries.inningsId, innings.id))
       .where(sql`${deliveries.inningsId} IN ${inningsIds}`)
-      .orderBy(deliveries.sequenceNumber);
+      .orderBy(innings.inningsNumber, deliveries.sequenceNumber);
 
     return { deliveries: allDeliveries };
   })
@@ -209,4 +237,64 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
     } catch (e: any) {
       return { success: false, message: e.message, stack: e.stack?.slice(0, 500) };
     }
+  })
+
+  // POST /api/v1/test/reset-match-data — clear only match data, preserve teams/players/users
+  .post('/reset-match-data', async () => {
+    try {
+      const matchTables = [
+        'match_analytics',
+        'match_result',
+        'fall_of_wickets',
+        'wickets_by_delivery',
+        'deliveries',
+        'batting_stats',
+        'bowling_stats',
+        'fielding_stats',
+        'player_career_stats',
+        'overs',
+        'innings',
+        'match_players',
+        'matches',
+        'tournament_standings',
+        'tournament_fixtures',
+        'tournament_requests',
+        'tournament_teams',
+        'tournament_groups',
+        'tournaments',
+      ];
+      for (const table of matchTables) {
+        await db.execute(sql.raw(`DELETE FROM "${table}"`));
+      }
+
+      // Ensure test user exists (idempotent)
+      await db.insert(users).values({
+        firebaseUid: 'test-user-e2e-001',
+        phone: '+919999900001',
+        displayName: 'E2E Test Scorer',
+        isVerified: true,
+        playerRole: 'all_rounder',
+        battingStyle: 'right_hand_bat',
+        bowlingStyle: 'right_arm_medium',
+      }).onConflictDoNothing();
+
+      return { success: true, message: 'Match data reset (teams/players preserved)' };
+    } catch (e: any) {
+      return { success: false, message: e.message, stack: e.stack?.slice(0, 500) };
+    }
+  })
+
+  // GET /api/v1/test/teams — list teams with player counts (for skip-creation check)
+  .get('/teams', async () => {
+    const rows = await db.execute(
+      sql`SELECT t.id, t.name, (SELECT COUNT(*)::int FROM team_rosters WHERE team_id = t.id) AS player_count FROM teams t ORDER BY t.name`,
+    );
+
+    return {
+      teams: (rows as any[]).map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        playerCount: r.player_count,
+      })),
+    };
   });
