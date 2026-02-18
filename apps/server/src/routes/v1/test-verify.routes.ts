@@ -163,6 +163,63 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
     };
   })
 
+  // GET /api/v1/test/match-stats/:matchId — batting + bowling stats per innings
+  .get('/match-stats/:matchId', async ({ params }) => {
+    const matchInnings = await db
+      .select({ id: innings.id, inningsNumber: innings.inningsNumber })
+      .from(innings)
+      .where(eq(innings.matchId, params.matchId))
+      .orderBy(innings.inningsNumber);
+
+    if (matchInnings.length === 0) {
+      return { batting: [], bowling: [] };
+    }
+
+    const inningsIds = matchInnings.map((i) => i.id);
+
+    const batting = await db
+      .select({
+        inningsId: battingStats.inningsId,
+        playerId: battingStats.playerId,
+        playerName: users.displayName,
+        runsScored: battingStats.runsScored,
+        ballsFaced: battingStats.ballsFaced,
+        fours: battingStats.fours,
+        sixes: battingStats.sixes,
+        isNotOut: battingStats.isNotOut,
+        battingPosition: battingStats.battingPosition,
+      })
+      .from(battingStats)
+      .innerJoin(users, eq(battingStats.playerId, users.id))
+      .where(sql`${battingStats.inningsId} IN ${inningsIds}`)
+      .orderBy(battingStats.battingPosition);
+
+    const bowling = await db
+      .select({
+        inningsId: bowlingStats.inningsId,
+        playerId: bowlingStats.playerId,
+        playerName: users.displayName,
+        oversBowled: bowlingStats.oversBowled,
+        maidens: bowlingStats.maidens,
+        runsConceded: bowlingStats.runsConceded,
+        wicketsTaken: bowlingStats.wicketsTaken,
+        wides: bowlingStats.wides,
+        noBalls: bowlingStats.noBalls,
+        dotBalls: bowlingStats.dotBalls,
+      })
+      .from(bowlingStats)
+      .innerJoin(users, eq(bowlingStats.playerId, users.id))
+      .where(sql`${bowlingStats.inningsId} IN ${inningsIds}`);
+
+    // Map innings IDs to numbers for easier client consumption
+    const inningsMap = Object.fromEntries(matchInnings.map((i) => [i.id, i.inningsNumber]));
+
+    return {
+      batting: batting.map((b) => ({ ...b, inningsNumber: inningsMap[b.inningsId] })),
+      bowling: bowling.map((b) => ({ ...b, inningsNumber: inningsMap[b.inningsId] })),
+    };
+  })
+
   // GET /api/v1/test/latest-match — latest match created (for test verification)
   .get('/latest-match', async () => {
     const [match] = await db

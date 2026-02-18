@@ -437,6 +437,12 @@ void main() {
           final dbWide = db['isWide'] as bool? ?? false;
           final dbNb = db['isNoBall'] as bool? ?? false;
           final dbWkt = db['isWicket'] as bool? ?? false;
+          final dbLegal = db['isLegal'] as bool? ?? true;
+          final dbOver = db['overNumber'] as int? ?? -1;
+          final dbBall = db['ballNumber'] as int? ?? -1;
+          final dbFour = db['isBoundaryFour'] as bool? ?? false;
+          final dbSix = db['isBoundarySix'] as bool? ?? false;
+          final dbFreeHit = db['isFreeHit'] as bool? ?? false;
 
           final runsOk = dbRuns == ui.totalRuns;
           final wideOk = dbWide == ui.isWide;
@@ -447,7 +453,7 @@ void main() {
           final status = allOk ? '✓' : '✗';
           if (allOk) deliveryMatches++; else deliveryMismatches++;
 
-          final dbDesc = 'r=${dbRuns}${dbWide ? ",WD" : ""}${dbNb ? ",NB" : ""}${dbWkt ? ",W" : ""}';
+          final dbDesc = 'r=$dbRuns o$dbOver.$dbBall${dbWide ? ",WD" : ""}${dbNb ? ",NB" : ""}${dbWkt ? ",W" : ""}${dbFour ? ",4" : ""}${dbSix ? ",6" : ""}${dbFreeHit ? ",FH" : ""}${dbLegal ? "" : ",!L"}';
           print('│$status${(i+1).toString().padLeft(2)} │  $inningsNum  │ $uiDesc│ $dbDesc');
         } else {
           print('│✗${(i+1).toString().padLeft(2)} │  $inningsNum  │ $uiDesc│ MISSING IN DB');
@@ -507,6 +513,44 @@ void main() {
         }
       } catch (e) {
         print('│  ✗ Awards error: $e');
+      }
+      print('└─────────────────────────────────────────────────────────────┘');
+
+      // ── Batting & Bowling Stats ──
+      print('\n┌─────────────────────────────────────────────────────────────┐');
+      print('│              BATTING & BOWLING STATS (DB)                   │');
+      print('├─────────────────────────────────────────────────────────────┤');
+      try {
+        final r = await testDio.get('/api/v1/test/match-stats/$matchId');
+        final battingList = r.data['batting'] as List? ?? [];
+        final bowlingList = r.data['bowling'] as List? ?? [];
+
+        print('│  BATTING (${battingList.length} records):');
+        for (final b in battingList) {
+          final name = (b['playerName'] as String? ?? '?').padRight(20);
+          final runs = b['runsScored'] ?? 0;
+          final balls = b['ballsFaced'] ?? 0;
+          final fours = b['fours'] ?? 0;
+          final sixes = b['sixes'] ?? 0;
+          final notOut = (b['isNotOut'] as bool? ?? false) ? '*' : '';
+          final inn = b['inningsNumber'] ?? '?';
+          print('│    Inn$inn $name $runs$notOut ($balls) 4s:$fours 6s:$sixes');
+        }
+
+        print('│  BOWLING (${bowlingList.length} records):');
+        for (final b in bowlingList) {
+          final name = (b['playerName'] as String? ?? '?').padRight(20);
+          final overs = b['oversBowled'] ?? '0.0';
+          final runs = b['runsConceded'] ?? 0;
+          final wkts = b['wicketsTaken'] ?? 0;
+          final wides = b['wides'] ?? 0;
+          final noBalls = b['noBalls'] ?? 0;
+          final dots = b['dotBalls'] ?? 0;
+          final inn = b['inningsNumber'] ?? '?';
+          print('│    Inn$inn $name $overs-$runs-$wkts wd:$wides nb:$noBalls dot:$dots');
+        }
+      } catch (e) {
+        print('│  ✗ Stats query error: $e');
       }
       print('└─────────────────────────────────────────────────────────────┘');
 

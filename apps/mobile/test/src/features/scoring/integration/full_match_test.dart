@@ -499,4 +499,127 @@ void main() {
       expect(bowl1.dotBalls, 5);
     });
   });
+
+  // ── Stumping off a wide ────────────────────────────────────────────
+  group('Full match — stumping off wide', () {
+    test('wide + stumped: wide runs scored, wicket counted, bowler credited',
+        () {
+      final n = makeMatchNotifier(totalOvers: 2, playersPerSide: 3);
+
+      // Record a stumping off a wide
+      n.recordWicket(
+        dismissalType: DismissalType.stumped,
+        dismissedPlayerId: 'bat-1',
+        fielderId: 'bowl-2', // keeper
+        isWide: true,
+      );
+
+      // Wide runs should be added to total (1 penalty)
+      expect(n.state.totalRuns, 1); // 1 wide run
+      expect(n.state.totalWides, 1);
+      expect(n.state.totalWickets, 1);
+
+      // The delivery is NOT legal (wide)
+      expect(n.state.totalBalls, 0);
+
+      // Batter dismissed
+      expect(n.state.needsNewBatter, isTrue);
+
+      // Bowler gets credit for stumped
+      final bowler = n.state.bowlerStats['bowl-1']!;
+      expect(bowler.wicketsTaken, 1);
+      expect(bowler.wides, 1);
+    });
+  });
+
+  // ── Declaration triggers innings complete ───────────────────────────
+  group('Full match — declaration flow', () {
+    test('declare 1st innings, then 2nd innings plays normally', () {
+      final n = makeMatchNotifier(totalOvers: 2, playersPerSide: 3);
+
+      // Score some runs in 1st innings
+      n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+      n.recordDelivery(runsFromBat: 6, isBoundarySix: true);
+      // Total: 10 runs from 2 balls
+
+      // Declare
+      n.declareInnings();
+      expect(n.state.isInningsComplete, isTrue);
+      expect(n.state.completionReason, InningsCompletionReason.declared);
+      expect(n.state.totalRuns, 10);
+
+      // Transition to 2nd innings
+      transitionInnings(n);
+      expect(n.state.inningsNumber, 2);
+      expect(n.state.target, 11); // 10 + 1
+
+      // Chase the target
+      n.recordDelivery(runsFromBat: 6, isBoundarySix: true);
+      n.recordDelivery(runsFromBat: 6, isBoundarySix: true);
+
+      // Match complete — target chased (12 >= 11)
+      expect(n.state.isInningsComplete, isTrue);
+      expect(n.state.isMatchComplete, isTrue);
+      expect(n.state.completionReason, InningsCompletionReason.targetChased);
+      expect(n.state.matchResult, isNotNull);
+      expect(n.state.matchResult!.resultType, MatchResultType.wickets);
+    });
+
+    test('declaration is no-op on 2nd innings', () {
+      final n = makeMatchNotifier(totalOvers: 2, playersPerSide: 3);
+
+      // Complete 1st innings by exhausting overs
+      for (var i = 0; i < 12; i++) {
+        n.recordDelivery(runsFromBat: 0);
+        if (i == 5) {
+          n.selectNewBowler(
+              playerId: 'bowl-2', displayName: 'bowl Player 2');
+        }
+      }
+
+      // Start 2nd innings
+      transitionInnings(n);
+      expect(n.state.inningsNumber, 2);
+
+      // Try to declare in 2nd innings — should be no-op
+      n.declareInnings();
+      expect(n.state.isInningsComplete, isFalse);
+    });
+
+    test('declaration is no-op when innings already complete', () {
+      final n = makeMatchNotifier(totalOvers: 2, playersPerSide: 3);
+
+      n.declareInnings();
+      expect(n.state.isInningsComplete, isTrue);
+      expect(n.state.completionReason, InningsCompletionReason.declared);
+
+      // Declare again — should not throw or change state
+      n.declareInnings();
+      expect(n.state.completionReason, InningsCompletionReason.declared);
+    });
+  });
+
+  // ── Free hit with stumping (only run-out valid) ─────────────────────
+  group('Full match — free hit restrictions', () {
+    test('run-out on free hit is valid wicket', () {
+      final n = makeMatchNotifier(totalOvers: 2, playersPerSide: 3);
+
+      // Trigger free hit via no-ball
+      n.recordNoBall(runsFromBat: 0);
+      expect(n.state.isFreeHitPending, isTrue);
+
+      // Run-out on free hit — should be valid
+      n.recordWicket(
+        dismissalType: DismissalType.runOut,
+        dismissedPlayerId: 'bat-1',
+        fielderId: 'bowl-2',
+        runsFromBat: 1,
+      );
+
+      expect(n.state.totalWickets, 1);
+      expect(n.state.needsNewBatter, isTrue);
+      // Free hit consumed
+      expect(n.state.isFreeHitPending, isFalse);
+    });
+  });
 }

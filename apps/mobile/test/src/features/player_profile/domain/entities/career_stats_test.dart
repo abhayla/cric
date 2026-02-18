@@ -172,6 +172,53 @@ void main() {
       );
       expect(stats.totalDismissals, 10);
     });
+
+    test('totalDismissals is zero when all fields are zero', () {
+      const stats = FieldingCareerStats(
+        catches: 0,
+        runOuts: 0,
+        stumpings: 0,
+      );
+      expect(stats.totalDismissals, 0);
+    });
+
+    test('totalDismissals works with only catches', () {
+      const stats = FieldingCareerStats(
+        catches: 7,
+        runOuts: 0,
+        stumpings: 0,
+      );
+      expect(stats.totalDismissals, 7);
+    });
+
+    test('totalDismissals works with only stumpings', () {
+      const stats = FieldingCareerStats(
+        catches: 0,
+        runOuts: 0,
+        stumpings: 4,
+      );
+      expect(stats.totalDismissals, 4);
+    });
+
+    test('totalDismissals works with only run-outs', () {
+      const stats = FieldingCareerStats(
+        catches: 0,
+        runOuts: 5,
+        stumpings: 0,
+      );
+      expect(stats.totalDismissals, 5);
+    });
+
+    test('individual fields are accessible', () {
+      const stats = FieldingCareerStats(
+        catches: 12,
+        runOuts: 3,
+        stumpings: 8,
+      );
+      expect(stats.catches, 12);
+      expect(stats.runOuts, 3);
+      expect(stats.stumpings, 8);
+    });
   });
 
   group('CareerStats', () {
