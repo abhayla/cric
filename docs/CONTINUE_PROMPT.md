@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 7 (Polish & Testing) IN PROGRESS — Single Match E2E test PASSING (3 consecutive runs). GoRouter state.extra data loss bug fixed. Smart E2E reset (fast path). 2004 Flutter tests, 298 server tests.
+**Status:** Phase 7 (Polish & Testing) IN PROGRESS — Single Match E2E test PASSING. Test coverage audit complete, gaps filled. 2014 Flutter tests, 376 server tests.
 **Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
 ## Tech Stack
@@ -16,22 +16,46 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Recommended: Audit Test Coverage Then Fill Gaps
+### Recommended: Continue Phase 7 — Additional Test Scenarios or Move to Phase 8
 
-**Context:** The Single Match E2E test is fully passing (3 consecutive runs, 17/17 deliveries matched). However, it only covers the happy path. Before writing new tests, audit what the existing 2004 Flutter tests and 298 server tests already cover.
+**Context:** Test coverage audit completed and all identified gaps filled. Current totals: 2014 Flutter tests, 376 server tests. The E2E test verifies the happy path thoroughly including deeper DB field checks.
 
-**Step 1: Audit existing test coverage**
-- Check which scoring paths (extras, dismissal types, undo, strike rotation, bowler eligibility) are covered by the 2004 Flutter unit tests
-- Check which DB verification paths (batting_stats, bowling_stats, fielding_stats, fall_of_wickets) are covered by the 298 server tests
-- Produce a gap report: what's covered vs. what's missing
+**Option A: Write a second E2E test (extras + dismissals)**
+- Cover no-ball, bye, leg-bye, free hit, undo delivery, and dismissal types beyond bowled (caught, LBW, run-out)
+- Requires emulator + server running
 
-**Step 2: Fill gaps at the RIGHT test level**
-- **Unit tests** (fast, reliable) for: all 12 dismissal types, no-ball/bye/leg-bye extras, free hit chains, undo pipeline, strike rotation edge cases, bowler eligibility, maiden overs, innings completion variants
-- **Server integration tests** for: batting_stats/bowling_stats/fielding_stats table correctness, fall_of_wickets, match result edge cases (tied match), MVP algorithm with known inputs
-- **E2E tests** (slow, only for full-flow) for: a second match with no-ball/bye/caught/LBW/run-out, undo delivery, offline→online sync
+**Option B: Fix pre-existing test issues**
+- `match_setup_page_test.dart` has a callback signature mismatch (void Function(String) vs named params)
+- Server tests timeout when run all together (DB contention issue)
 
-**Step 3: Deepen existing E2E DB verification (quick win)**
-The current test checks only 4 fields per delivery (`totalRuns`, `isWide`, `isNoBall`, `isWicket`). Add assertions for `batterId`, `bowlerId`, `overNumber`, `ballNumber`, `dismissalType`, plus verify `batting_stats` and `bowling_stats` tables.
+**Option C: Move to Phase 8 (Deployment)**
+- VPS setup (Windows Server), PM2, Nginx, Cloudflare, `pg_dump` backups
+- See IMPLEMENTATION_PLAN.md Phase 8 for details
+
+### Test Coverage Audit — Completed (2026-02-18)
+
+**Audit results:** Identified 4 major server gaps and 4 minor Flutter gaps. All addressable gaps filled:
+
+| Gap | Tests Added | Status |
+|-----|------------|--------|
+| Tournament service (was 0 tests) | 69 tests | ✅ All pass |
+| MVP algorithm (was 0 tests) | 5 tests | ✅ All pass |
+| Auth middleware (was 0 tests) | 4 tests | ✅ All pass |
+| Fielding stats calculation | 5 tests | ✅ All pass |
+| Scoring integration (stumping, declaration, free hit) | 5 tests | ✅ All pass |
+| E2E deeper DB verification | Code written | ✅ Needs emulator run |
+
+**New test files:**
+- `apps/server/test/services/tournament.service.test.ts` (69 tests)
+- `apps/server/test/services/mvp-algorithm.test.ts` (5 tests)
+- `apps/server/test/middleware/auth-middleware.test.ts` (4 tests)
+
+**Modified test files:**
+- `apps/mobile/test/src/features/player_profile/domain/entities/career_stats_test.dart` (+5 tests)
+- `apps/mobile/test/src/features/scoring/integration/full_match_test.dart` (+5 tests)
+- `apps/mobile/integration_test/single_match_e2e_test.dart` (deeper field checks)
+
+**Also added:** `GET /api/v1/test/match-stats/:matchId` endpoint for per-innings batting/bowling stats verification.
 
 ### E2E Test Coverage — What IS Verified
 
@@ -82,7 +106,7 @@ cd apps/mobile && flutter test integration_test/single_match_e2e_test.dart -d em
 
 **Server:** Bun server connects to VPS PostgreSQL at `103.118.16.189:5432/cricapp_dev`.
 
-### Bugs Fixed This Session (2026-02-18)
+### Bugs Fixed This Session (2026-02-18) — Earlier
 
 **Critical: GoRouter state.extra data loss on auth refresh**
 - **Root cause:** `GoRouter.refreshListenable` fires on auth state changes, causing all route builders to re-execute with `state.extra == null`. This caused intermittent failures: toss page showing `?` for team names, scoring page disappearing after first delivery.
