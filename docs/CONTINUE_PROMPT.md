@@ -16,6 +16,39 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-19: Imported & Remediated External Skills & Agents
+
+Imported skills and agents from 4 repositories, then ran a 26-point gap analysis and remediation to align everything with CricApp's actual tech stack.
+
+**Sources:**
+1. `github.com/shinpr/claude-code-workflows` — Process/workflow agents + skills
+2. `github.com/cleydson/flutter-claude-code` — Flutter development agents
+3. `github.com/smurzaliev/flutter-ai-skills` — Flutter patterns + skills
+4. `github.com/VoltAgent/awesome-claude-code-subagents` — typescript-pro, compliance-reviewer
+
+**Final inventory after remediation:**
+
+*Skills kept (14 new):*
+ai-development-guide, coding-principles, documentation-criteria (+refs), implementation-approach, integration-e2e-testing, subagents-orchestration-guide (+refs), task-analyzer (+refs/skills-index.yaml updated with CricApp mappings), testing-principles, flutter-patterns (+5 pattern files updated)
+
+*Agents kept (20 new):*
+requirement-analyzer, work-planner, task-decomposer, task-executor, quality-fixer, technical-designer, rule-advisor, investigator, verifier, solver, scope-discoverer, code-verifier, compliance-reviewer (renamed from code-reviewer), document-reviewer, design-sync, prd-creator, flutter-expert, flutter-firebase, flutter-ui-designer, flutter-ui-implementer, flutter-rest-api, flutter-design-iteration-coordinator, flutter-android-integration, typescript-pro
+
+*Agents deleted (10 — BLoC-contaminated or incompatible):*
+flutter-architect, flutter-state-management, flutter-testing, architecture-reviewer, flutter-code-reviewer, tdd-coach, test-writer, flutter-device-orchestrator, integration-test-reviewer, acceptance-test-generator
+
+*Empty stubs deleted (11 files + 3 dirs):*
+`.claude/skills/architecture/` (5 stubs), `.claude/skills/testing/` (5 stubs), `.claude/skills/generation/` (1 stub)
+
+**Key remediation changes:**
+- All agents: `LS`→`Glob`, `MultiEdit`→`Edit` in frontmatter tools
+- Flutter agents: Riverpod 2.0→3.0, BLoC→Notifier, Navigator→go_router, seed color→#1976D2, iOS→Android only, Mockito→mocktail, added Drift/offline-first patterns
+- firebase agent: Stripped to Phone OTP only (removed Email/Google/Apple, Firestore, Storage, FCM)
+- shinpr agents: Fixed doc paths to `docs/planning/`, added build_runner/drizzle-kit code generation steps
+- typescript-pro: Replaced Express/React with Bun/ElysiaJS/Drizzle/PostgreSQL
+- skills-index.yaml: Added 14 CricApp domain-to-skill mappings
+- Renamed original code-reviewer → CricApp-code-reviewer (updated 3 refs: reviewer.md, fix-loop/SKILL.md, issue-template.md)
+
 ### Recommended: Update UI Wireframes for Magic Over, Then Continue Phase 7/8
 
 **Context:** Magic Over Customization feature fully implemented across client + server. 37 new tests, all passing. Scoring test suite: 1093 passed, 2 pre-existing failures (offline_sync_test, scoring_page_test "Back to Home" — documented below).

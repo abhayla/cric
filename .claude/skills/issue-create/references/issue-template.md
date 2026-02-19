@@ -47,7 +47,7 @@ Wireframe: `docs/ui/XX-name.html`
 ## Agents to Invoke
 - [ ] `cricheroes-comparator` (pre-implementation)
 - [ ] `ui-researcher` (pre-implementation)
-- [ ] `code-reviewer` (post-implementation)
+- [ ] `CricApp-code-reviewer` (post-implementation)
 - [ ] `tester` (post-implementation)
 EOF
 )"
