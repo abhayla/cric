@@ -16,6 +16,25 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-22: Batch Sync Optimized + Hook Fix
+
+Applied 4 server-side optimizations to `scoring.service.ts` reducing batch delivery sync queries by ~37% (~1,440 fewer queries per T20 match). Committed as `c6ace4b`.
+
+**Changes:**
+1. `.returning()` on innings UPDATE (saves ~240 queries)
+2. Career stats refresh moved outside main transaction (reduces lock time)
+3. UNIQUE constraints on stats tables + `INSERT...ON CONFLICT DO UPDATE` upserts (saves ~720 queries)
+4. Precomputed sequence numbers + free-hit state in batch loop (saves ~480 queries)
+5. New migration: `0005_stats_unique_constraints.sql` (already applied to dev DB)
+6. 6 new tests added (81 total, all passing)
+
+Also fixed `PreToolUse:Bash` hook errors in `guard-bash-commands.ps1` and `verify-evidence-artifacts.ps1` — added `[Console]::IsInputRedirected` guard matching the pattern used by other hooks.
+
+**Next steps:**
+1. Run full T20 E2E test to verify sync polling fix (from previous session)
+2. Commit E2E test files once green
+3. Continue Phase 7 Must Have E2E scenarios
+
 ### Session 2026-02-21 (later): Full T20 E2E Test — Sync Polling Fix
 
 Modified `full_t20_e2e_test.dart` and `match_flow_helpers.dart` (uncommitted). Previous run showed sync polling timeout was too short — 254 deliveries at ~1 delivery/sec need ~5 minutes, not 60 seconds. Polling window increased from 12 attempts to 60 attempts (5s intervals = 5 min max). Match flow helpers also expanded. Test re-run pending.

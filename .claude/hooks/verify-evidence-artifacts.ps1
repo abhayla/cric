@@ -2,12 +2,14 @@
 # Event: PreToolUse on Bash (git commit commands only)
 # Blocks commits when fixes were applied but post-fix-pipeline was not invoked
 
-$input = $env:CLAUDE_TOOL_INPUT
-if (-not $input) {
-    $input = [Console]::In.ReadToEnd()
-}
-
 try {
+    $input = $env:CLAUDE_TOOL_INPUT
+    if (-not $input) {
+        if ([Console]::IsInputRedirected) {
+            $input = [Console]::In.ReadToEnd()
+        }
+    }
+    if (-not $input) { exit 0 }
     $json = $input | ConvertFrom-Json
 } catch {
     exit 0
