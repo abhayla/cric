@@ -16,9 +16,29 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Session 2026-02-21: Commit Pending Changes + Continue Phase 7
+### Session 2026-02-21: Must Have E2E Tests Created — Review and Run
 
-Previous session's LiveMatchPage viewer parity changes and multi-device E2E script hardening are still uncommitted. Commit first, then continue Phase 7 work.
+Created 4 new E2E integration tests + 4 prompt docs + 1 shared helper covering all 9 Must Have scenarios from `E2E_TEST_SCENARIOS.md`.
+
+**New test files (uncommitted):**
+- `integration_test/full_t20_e2e_test.dart` — Scenarios 12+13+15: Full T20 match, stat verification, scorecard vs DB
+- `integration_test/scoring_edge_cases_e2e_test.dart` — Scenarios 21+22+26: Free hit chain, all dismissal types, overs exhausted
+- `integration_test/persistence_e2e_test.dart` — Scenario 16: Score 3 overs → restart → verify recovery
+- `integration_test/player_profile_e2e_test.dart` — Scenario 20: 2 matches → player profile career stats
+- `integration_test/helpers/scenario_test_data.dart` — Shared 11-player teams (Mumbai Warriors + Chennai Challengers)
+
+**New prompt docs:**
+- `docs/prompt/e2e/FULL_T20_E2E.md`, `SCORING_EDGE_CASES_E2E.md`, `PERSISTENCE_E2E.md`, `PLAYER_PROFILE_E2E.md`
+
+**Next steps:**
+1. Commit these new E2E test files
+2. Run each test on emulator to verify they work (start with persistence test — shortest)
+3. Fix any issues found during runs
+4. Continue to Should Have scenarios if time permits
+
+### Session 2026-02-21 (earlier): Commit Pending Changes + Continue Phase 7
+
+Previous session's LiveMatchPage viewer parity changes and multi-device E2E script hardening were committed and pushed as `237b319`.
 
 ### Session 2026-02-20 (Night #3): LiveMatchPage Viewer — Full Parity with Scorer
 
