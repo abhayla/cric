@@ -26,7 +26,7 @@ apps/mobile/
 │   │   │   │   └── exceptions.dart               # Custom exception classes
 │   │   │   ├── extensions/                       # Dart extension methods
 │   │   │   ├── theme/
-│   │   │   │   ├── app_theme.dart                # Material 3 dark theme definition
+│   │   │   │   ├── app_theme.dart                # Material 3 light theme definition
 │   │   │   │   └── app_colors.dart               # Color palette
 │   │   │   └── utils/
 │   │   │       ├── cricket_utils.dart            # Strike rotation, over calculation helpers

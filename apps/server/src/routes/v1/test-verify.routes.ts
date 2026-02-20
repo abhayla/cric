@@ -237,7 +237,14 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
   // POST /api/v1/test/run-migration — apply pending schema changes
   .post('/run-migration', async () => {
     try {
-      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_number" integer`);
+      // Apply 0004 magic over customization migration
+      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_numbers" jsonb`);
+      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_run_multiplier" integer NOT NULL DEFAULT 2`);
+      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_wicket_penalty" integer NOT NULL DEFAULT -5`);
+      await db.execute(sql`ALTER TABLE "matches" DROP COLUMN IF EXISTS "magic_over_number"`);
+      await db.execute(sql`ALTER TABLE "tournaments" ADD COLUMN IF NOT EXISTS "magic_over_numbers" jsonb`);
+      await db.execute(sql`ALTER TABLE "tournaments" ADD COLUMN IF NOT EXISTS "magic_over_run_multiplier" integer NOT NULL DEFAULT 2`);
+      await db.execute(sql`ALTER TABLE "tournaments" ADD COLUMN IF NOT EXISTS "magic_over_wicket_penalty" integer NOT NULL DEFAULT -5`);
       return { success: true, message: 'Migration applied' };
     } catch (e: any) {
       return { success: false, message: e.message };
@@ -276,8 +283,11 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
         await db.execute(sql.raw(`DELETE FROM "${table}"`));
       }
 
-      // Apply any pending schema migrations
-      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_number" integer`);
+      // Apply any pending schema migrations (0004 magic over customization)
+      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_numbers" jsonb`);
+      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_run_multiplier" integer NOT NULL DEFAULT 2`);
+      await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_wicket_penalty" integer NOT NULL DEFAULT -5`);
+      await db.execute(sql`ALTER TABLE "matches" DROP COLUMN IF EXISTS "magic_over_number"`);
 
       // Seed test user (matches auth middleware TEST_USER)
       await db.insert(users).values({

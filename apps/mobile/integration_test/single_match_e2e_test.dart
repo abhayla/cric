@@ -248,14 +248,14 @@ void main() {
       await tapExtra(tester, 'WD');
       await confirmExtra(tester);
       inn1.add(const DeliveryRecord(
-        isWide: true, wideRuns: 1, overNumber: 1, ballNumber: 0));
+        isWide: true, wideRuns: 1, overNumber: 1, ballNumber: 4));
       print('  1.WD→ WD (Wide +1)          Score: 11/1  [not legal]');
 
       // ─ Over 1, No Ball — extra, not legal; next ball is free hit
       await tapExtra(tester, 'NB');
       await confirmExtra(tester);
       inn1.add(const DeliveryRecord(
-        isNoBall: true, noBallRuns: 1, overNumber: 1, ballNumber: 0));
+        isNoBall: true, noBallRuns: 1, overNumber: 1, ballNumber: 4));
       print('  1.NB→ NB (No Ball +1)       Score: 12/1  [not legal, free hit next]');
 
       // ─ Over 1, Ball 4: 1 (single, FREE HIT) — Ishan Kishan, swaps to SKY

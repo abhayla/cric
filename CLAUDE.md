@@ -39,7 +39,7 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 
 ## Current Status
 
-**Phases 1–6 COMPLETE.** Foundation, Teams & Match Setup, Tournaments, Scoring Engine (with offline sync + WebSocket broadcast), Analytics (charts + MVP), Player Profiles & Stats, Home Dashboard — all done. 1950 Flutter tests, 298 server tests. See [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) for detailed progress and next steps.
+**Phases 1–6 COMPLETE.** Foundation, Teams & Match Setup, Tournaments, Scoring Engine (with offline sync + WebSocket broadcast), Analytics (charts + MVP), Player Profiles & Stats, Home Dashboard — all done. ~2050 Flutter tests, ~420 server tests. See [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) for detailed progress and next steps.
 
 ## Implementation Phases
 
@@ -79,7 +79,9 @@ cd apps/mobile && dart run build_runner build --delete-conflicting-outputs  # Co
 
 # Bun server
 cd apps/server && bun install              # Install dependencies
-cd apps/server && bun run src/index.ts     # Start server
+cd apps/server && bun run dev              # Start server (watch mode)
+cd apps/server && bun run start            # Start server (production)
+cd apps/server && bun run src/index.ts     # Start server (direct)
 cd apps/server && bun test                 # Run all tests
 cd apps/server && bun test src/path/to.test.ts                 # Run single test file
 cd apps/server && bunx tsc --noEmit        # TypeScript type check (no emit)
