@@ -16,6 +16,15 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-21 (later): Full T20 E2E Test — Sync Polling Fix
+
+Modified `full_t20_e2e_test.dart` and `match_flow_helpers.dart` (uncommitted). Previous run showed sync polling timeout was too short — 254 deliveries at ~1 delivery/sec need ~5 minutes, not 60 seconds. Polling window increased from 12 attempts to 60 attempts (5s intervals = 5 min max). Match flow helpers also expanded. Test re-run pending.
+
+**Next steps:**
+1. Run the full T20 E2E test to verify the sync polling fix works
+2. Commit all E2E test files once green
+3. Continue with other Must Have E2E scenarios
+
 ### Session 2026-02-21: Must Have E2E Tests Created — Review and Run
 
 Created 4 new E2E integration tests + 4 prompt docs + 1 shared helper covering all 9 Must Have scenarios from `E2E_TEST_SCENARIOS.md`.

@@ -77,11 +77,13 @@ cd apps/server && bunx drizzle-kit migrate   # Apply migrations
 ```
 
 ```bash
-# Integration / E2E tests (require running server + emulator)
+# Integration / E2E tests (require running server + emulator/device)
 cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts   # Start test server
 cd apps/mobile && flutter test integration_test/single_match_e2e_test.dart -d emulator-5554  # Single match E2E
 cd apps/mobile && flutter test integration_test/multi_device_viewer_e2e_test.dart -d <device>  # Multi-device WebSocket test
 ```
+
+**E2E test rule: NEVER run E2E/integration tests from Claude's CLI.** Always provide the run command and let the user execute it from their IDE terminal so they can watch the test on the device in real time. E2E tests are visual — the user needs to see them running.
 
 **Environment setup:** Copy `apps/server/.env.example` to `apps/server/.env` and fill in PostgreSQL + Firebase credentials before starting the server.
 

@@ -1,6 +1,8 @@
 # Full T20 E2E Test — Run Prompt
 
-Run this prompt when you want to execute the full T20 E2E test. This test proves a complete 20-over match works end-to-end through the real Flutter UI on an emulator, with all stats verified against PostgreSQL.
+Run this prompt when you want to execute the full T20 E2E test. This test proves a complete 20-over match works end-to-end through the real Flutter UI on a device, with all stats verified against PostgreSQL.
+
+> **IMPORTANT — User-Visible Run:** Always let the user run E2E integration tests themselves from their IDE (Android Studio / VS Code) so they can watch the test execute on the device in real time. Do NOT run these from Claude's CLI in the background. Instead, provide the exact run command and let the user execute it.
 
 ---
 
@@ -35,11 +37,21 @@ Before running, confirm ALL of these:
 
 ## Run Command
 
+**On emulator:**
 ```bash
 cd apps/mobile && flutter test integration_test/full_t20_e2e_test.dart -d emulator-5554
 ```
 
+**On physical device (replace `<DEVICE_ID>` and `<LAN_IP>`):**
+```bash
+cd apps/mobile && flutter test integration_test/full_t20_e2e_test.dart -d <DEVICE_ID> --dart-define=API_BASE_URL=http://<LAN_IP>:3001/api/v1
+```
+
+Find your device ID with `flutter devices` and LAN IP with `ipconfig` (Windows) or `ifconfig` (Mac/Linux).
+
 The test has a 1-hour timeout (`Timeout(Duration(hours: 1))`).
+
+> **Run this from your IDE terminal** — not from Claude's CLI — so you can watch it on your device.
 
 ---
 
