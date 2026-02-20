@@ -2,12 +2,14 @@
 # Event: PreToolUse on Edit|Write
 # Validates file paths against rules.md before any write
 
-$input = $env:CLAUDE_TOOL_INPUT
-if (-not $input) {
-    $input = [Console]::In.ReadToEnd()
-}
-
 try {
+    $input = $env:CLAUDE_TOOL_INPUT
+    if (-not $input) {
+        if ([Console]::IsInputRedirected) {
+            $input = [Console]::In.ReadToEnd()
+        }
+    }
+    if (-not $input) { exit 0 }
     $json = $input | ConvertFrom-Json
 } catch {
     exit 0
@@ -16,8 +18,13 @@ try {
 $filePath = $json.file_path
 if (-not $filePath) { exit 0 }
 
+# Skip files outside the project root
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path -replace '\\','/'
+$normalizedFile = $filePath -replace '\\','/'
+if ($normalizedFile -notlike "$projectRoot*") { exit 0 }
+
 # Normalize path separators
-$filePath = $filePath -replace '\\', '/'
+$filePath = $normalizedFile
 
 # Skip directories that don't need validation
 $skipPatterns = @(

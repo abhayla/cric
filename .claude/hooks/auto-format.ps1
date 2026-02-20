@@ -21,6 +21,10 @@ try {
     }
     if (-not $filePath) { exit 0 }
 
+    # Skip files outside the project root
+    $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path -replace '\\','/'
+    if (($filePath -replace '\\','/') -notlike "$projectRoot*") { exit 0 }
+
     # Skip generated files
     if ($filePath -match '\.(g|freezed|gr)\.dart$') {
         exit 0

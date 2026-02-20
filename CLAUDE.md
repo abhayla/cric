@@ -39,32 +39,19 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 
 ## Current Status
 
-**Phases 1–6 COMPLETE.** Foundation, Teams & Match Setup, Tournaments, Scoring Engine (with offline sync + WebSocket broadcast), Analytics (charts + MVP), Player Profiles & Stats, Home Dashboard — all done. ~2050 Flutter tests, ~420 server tests. See [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) for detailed progress and next steps.
-
-## Implementation Phases
-
-Phases from [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md) — build in order:
-
-1. ~~**Foundation**~~ ✅ — Project init, PostgreSQL + Drizzle, Firebase Auth, M3 light theme, go_router, auth screens
-2. ~~**Teams & Match Setup**~~ ✅ — Teams CRUD, match creation, Drift local DB, offline caching
-3. ~~**Tournament Management**~~ ✅ — Tournament CRUD, fixture generation, standings, knockout bracket, NRR, super over
-4. ~~**Scoring Engine (CRITICAL)**~~ ✅ — Delivery recording, scoring state machine, cricket rules, undo, WebSocket broadcast, innings/match completion, offline sync
-5. ~~**Analytics**~~ ✅ — Wagon wheel, Manhattan chart, Worm graph, MVP algorithm
-6. ~~**Player Profiles & Stats**~~ ✅ — Career stats aggregation, player profile, match history
-7. **Polish & Testing** 🔧 — Scoring engine tests, integration tests, performance testing
-8. **Deployment** — VPS (Windows Server), PM2, Nginx, Cloudflare, `pg_dump` backups
+**Phases 1–6 COMPLETE.** Phase 7 (Polish & Testing) in progress. ~2050 Flutter tests, ~420 server tests. Full phase breakdown in [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md). Session context and next steps in [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md).
 
 ## Key Documentation
 
-Read the planning docs before implementing. Follow the process docs during implementation.
-
-For the full documentation map with purposes and update frequencies, see [PROJECT_MANAGEMENT.md](docs/process/PROJECT_MANAGEMENT.md).
-
-**Session handoff:** [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) — Start here for session context and next steps.
-
-**CricHeroes reference:** [CRICHEROES_REFERENCE.md](docs/planning/CRICHEROES_REFERENCE.md) — Competitive analysis knowledge base for automated CricHeroes comparison.
-
-**Implementation playbook:** [PLAYBOOK.md](docs/process/PLAYBOOK.md) — Step-by-step autonomous implementation workflow with phase gates.
+| Document | Purpose |
+|----------|---------|
+| [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) | Session handoff — start here each session |
+| [PLAYBOOK.md](docs/process/PLAYBOOK.md) | Step-by-step implementation workflow |
+| [SCORING_RULES.md](docs/planning/SCORING_RULES.md) | Cricket domain rules, delivery pipeline, match state machine |
+| [DATABASE.md](docs/planning/DATABASE.md) | PostgreSQL schema (26 tables), enums, relationships |
+| [API.md](docs/planning/API.md) | REST endpoint specs, request/response shapes |
+| [CRICHEROES_REFERENCE.md](docs/planning/CRICHEROES_REFERENCE.md) | Competitive analysis for CricHeroes comparison |
+| [PROJECT_MANAGEMENT.md](docs/process/PROJECT_MANAGEMENT.md) | Full documentation map and update frequencies |
 
 ## Build & Run Commands (once initialized)
 
@@ -89,9 +76,18 @@ cd apps/server && bunx drizzle-kit generate  # Generate migrations
 cd apps/server && bunx drizzle-kit migrate   # Apply migrations
 ```
 
+```bash
+# Integration / E2E tests (require running server + emulator)
+cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts   # Start test server
+cd apps/mobile && flutter test integration_test/single_match_e2e_test.dart -d emulator-5554  # Single match E2E
+cd apps/mobile && flutter test integration_test/multi_device_viewer_e2e_test.dart -d <device>  # Multi-device WebSocket test
+```
+
 **Environment setup:** Copy `apps/server/.env.example` to `apps/server/.env` and fill in PostgreSQL + Firebase credentials before starting the server.
 
 **Code generation:** Files matching `*.g.dart`, `*.freezed.dart`, `*.gr.dart` are auto-generated. Never edit them manually — re-run `build_runner` instead.
+
+**Server test caveat:** Running `bun test` (all tests together) can fail due to DB connection contention from Bun's parallel test runner. Individual test files pass reliably: `bun test src/path/to.test.ts`.
 
 ## CI Pipeline
 
@@ -157,45 +153,20 @@ Key rules in [SCORING_RULES.md](docs/planning/SCORING_RULES.md). Full reference:
 
 - **[IMPORTANT] Do not simulate or mock implementations — always write real, working code.**
 - Fix root causes, not symptoms — loop on test failures until the underlying issue is resolved.
-- **Screenshot verification loop:** After tests, take a screenshot and visually verify UI matches expected output. If it fails, fix and retest in a loop until all tests pass. Do not move on until verified.
-- **Playwright screenshots:** All Playwright MCP screenshots must be saved to `.playwright-mcp/screenshots/` (use the `filename` parameter with relative path `.playwright-mcp/screenshots/<name>.png`). Never save screenshots to the project root.
-- If requirements are ambiguous, ask one clarifying question at a time (with your recommendation based on best practices) until you reach 100% confidence — do not guess.
-- **Session handoff:** Always update [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) before ending work so the next session can resume seamlessly. Read it at the start of each session for context.
-- **CricHeroes comparison:** Before implementing any new feature or screen, automatically invoke the `cricheroes-comparator` agent with the feature/screen name. Review the comparison report. Incorporate ADOPT recommendations into the current implementation. Log DEFER items in CONTINUE_PROMPT.md. When making UI/UX decisions or asking clarifying questions, always include how CricHeroes handles the scenario as one option.
-- **Wireframe comparison:** After building any screen UI, compare against `docs/ui/XX-name.html` using Playwright MCP. See PLAYBOOK.md Section 3 for the full comparison protocol.
+- If requirements are ambiguous, ask one clarifying question at a time (with your recommendation) until 100% confident — do not guess.
+- **Session handoff:** Always update [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) before ending work. Read it at the start of each session.
+- **CricHeroes comparison:** Before implementing any new feature/screen, invoke the `cricheroes-comparator` agent. Incorporate ADOPT recommendations, log DEFER items in CONTINUE_PROMPT.md.
+- **Playwright screenshots:** Save to `.playwright-mcp/screenshots/` (never project root).
 
-**Implementation order:** Always build features inside-out: domain entities → data layer (datasources, repositories) → presentation (notifiers, pages, widgets). Never start with UI.
+**Implementation order:** domain entities → data layer → presentation. Never start with UI.
 
-**TDD workflow:** Use strict Red-Green-Refactor for each layer. Write tests BEFORE implementation (Steps 3/5/7 in PLAYBOOK.md). Use `/tdd <feature> <layer>` skill for guided workflow.
+**TDD workflow:** Red-Green-Refactor per layer. Tests BEFORE implementation. See [PLAYBOOK.md](docs/process/PLAYBOOK.md).
 
-**Detailed workflows:** See [IMPLEMENTATION_PRACTICES.md](docs/process/IMPLEMENTATION_PRACTICES.md) for the full feature implementation workflow, and [CODE_FIXES.md](docs/process/CODE_FIXES.md) for the debugging and fix process.
+**Detailed workflows:** [IMPLEMENTATION_PRACTICES.md](docs/process/IMPLEMENTATION_PRACTICES.md) for features, [CODE_FIXES.md](docs/process/CODE_FIXES.md) for debugging.
 
-## Context Compaction
+## Feature Architecture
 
-When compacting, always preserve: current phase, issue number, modified files, test results (RED/GREEN state), blockers. The `reinject-after-compaction` hook auto-injects critical rules + git state. Full context restorable from `docs/CONTINUE_PROMPT.md`.
-
-## CLAUDE.md Hierarchy (Created During Phase 1)
-
-During Phase 1 project init, split platform-specific rules into per-directory CLAUDE.md files:
-- `apps/mobile/CLAUDE.md` — Flutter naming, Riverpod, Drift, feature architecture (~80 lines)
-- `apps/server/CLAUDE.md` — TypeScript naming, ElysiaJS, Drizzle (~60 lines)
-- `apps/mobile/lib/src/features/scoring/CLAUDE.md` — delivery pipeline, state machine, strike rotation (~100 lines)
-
-## Feature Architecture Pattern
-
-Each feature in `apps/mobile/lib/src/features/<feature>/` follows clean architecture with these exact subdirectories:
-
-- `data/datasources/` — Local (Drift) and remote (Dio) data sources
-- `data/models/` — Freezed data models (serialization layer)
-- `data/repositories/` — Repository implementations
-- `domain/entities/` — Pure Dart entity classes
-- `domain/repositories/` — Abstract repository interfaces
-- `presentation/notifiers/` — Riverpod notifiers (state management)
-- `presentation/pages/` — Full-screen page widgets
-- `presentation/widgets/` — Feature-specific reusable widgets
-- `providers.dart` — All Riverpod provider declarations for this feature
-
-See [.claude/rules.md](.claude/rules.md) for full placement rules and decision tree for where every type of file belongs.
+Each feature in `apps/mobile/lib/src/features/<feature>/` follows clean architecture: `data/` (datasources, models, repositories) + `domain/` (entities, repository interfaces) + `presentation/` (notifiers, pages, widgets) + `providers.dart`. Full placement rules and decision tree in [.claude/rules.md](.claude/rules.md).
 
 ## Naming Conventions
 

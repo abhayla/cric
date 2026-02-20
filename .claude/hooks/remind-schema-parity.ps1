@@ -20,6 +20,10 @@ try {
     }
     if (-not $filePath) { exit 0 }
 
+    # Skip files outside the project root
+    $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path -replace '\\','/'
+    if (($filePath -replace '\\','/') -notlike "$projectRoot*") { exit 0 }
+
     # Check if file is a Drizzle schema file
     $isDrizzle = $filePath -match 'apps[\\/]server[\\/]src[\\/]db[\\/]schema[\\/].*\.ts$'
 
