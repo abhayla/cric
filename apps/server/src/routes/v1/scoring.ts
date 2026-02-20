@@ -5,6 +5,7 @@ import { AppError } from '../../middleware/error-handler.ts';
 import { getUserByFirebaseUid } from '../../services/auth.service.ts';
 import {
   recordDelivery,
+  recordDeliveryBatch,
   undoDelivery,
   getDeliveries,
   abandonMatch,
@@ -87,6 +88,71 @@ async function getCurrentOverBalls(inningsId: string, overNumber: number): Promi
 
 export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
   .use(authMiddleware)
+  .post(
+    '/:id/deliveries/batch',
+    async (ctx) => {
+      const { firebaseUser } = ctx as typeof ctx & {
+        firebaseUser: { uid: string; phone: string | null; email: string | null };
+      };
+      const user = await getUserByFirebaseUid(firebaseUser.uid);
+      if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
+
+      const matchId = ctx.params.id;
+      const result = await recordDeliveryBatch(matchId, user.id, {
+        deliveries: ctx.body.deliveries,
+      });
+
+      // Broadcast full match state once (not per delivery)
+      try {
+        const state = await getMatchState(matchId);
+        broadcastMatchState(matchId, state);
+      } catch (err) {
+        console.error('Broadcast error after batch delivery:', err);
+      }
+
+      ctx.set.status = 201;
+      return result;
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        deliveries: t.Array(
+          t.Object({
+            id: t.Optional(t.String()),
+            inningsId: t.Optional(t.String()),
+            inningsNumber: t.Optional(t.Number({ minimum: 1 })),
+            overNumber: t.Number({ minimum: 0 }),
+            ballNumber: t.Number({ minimum: 1 }),
+            strikerId: t.String(),
+            nonStrikerId: t.String(),
+            bowlerId: t.String(),
+            runsFromBat: t.Number({ minimum: 0 }),
+            isWide: t.Boolean(),
+            isNoBall: t.Boolean(),
+            isBye: t.Boolean(),
+            isLegBye: t.Boolean(),
+            wideRuns: t.Number({ minimum: 0 }),
+            noBallRuns: t.Number({ minimum: 0 }),
+            byeRuns: t.Number({ minimum: 0 }),
+            legByeRuns: t.Number({ minimum: 0 }),
+            isWicket: t.Boolean(),
+            isBoundaryFour: t.Boolean(),
+            isBoundarySix: t.Boolean(),
+            isPenalty: t.Optional(t.Boolean()),
+            wicket: t.Optional(
+              t.Object({
+                dismissedPlayerId: t.String(),
+                dismissalTypeId: t.Number(),
+                fielderId: t.Optional(t.String()),
+                bowlerCredited: t.Boolean(),
+              }),
+            ),
+          }),
+          { maxItems: 300 },
+        ),
+      }),
+    },
+  )
   .post(
     '/:id/deliveries',
     async (ctx) => {

@@ -344,4 +344,195 @@ void main() {
       expect(service.unsyncedCount, 0);
     });
   });
+
+  group('batch sync', () {
+    test('queue < 6 entries → individual POSTs (not batch)', () async {
+      when(() => mockDio.post(any(), data: any(named: 'data')))
+          .thenAnswer((_) async => Response(
+                requestOptions: RequestOptions(),
+                statusCode: 201,
+              ));
+
+      // Insert 3 entries (below batch threshold)
+      for (var i = 0; i < 3; i++) {
+        await dao.enqueueSyncEntry(SyncQueueCompanion.insert(
+          entityType: 'delivery',
+          entityId: 'del-$i',
+          operation: 'create',
+          payload: '{"matchId":"match-1","runs":$i}',
+          createdAt: DateTime.now(),
+        ));
+      }
+
+      await service.processSyncQueue();
+
+      // Should use individual POSTs to /deliveries (not /deliveries/batch)
+      verify(() => mockDio.post(
+            '/api/v1/matches/match-1/deliveries',
+            data: any(named: 'data'),
+          )).called(3);
+      verifyNever(() => mockDio.post(
+            '/api/v1/matches/match-1/deliveries/batch',
+            data: any(named: 'data'),
+          ));
+    });
+
+    test('queue >= 6 entries → single batch POST', () async {
+      when(() => mockDio.post(any(), data: any(named: 'data')))
+          .thenAnswer((_) async => Response(
+                requestOptions: RequestOptions(),
+                statusCode: 201,
+              ));
+
+      // Insert 8 entries (above batch threshold)
+      for (var i = 0; i < 8; i++) {
+        await dao.enqueueSyncEntry(SyncQueueCompanion.insert(
+          entityType: 'delivery',
+          entityId: 'del-$i',
+          operation: 'create',
+          payload: '{"matchId":"match-1","runs":$i}',
+          createdAt: DateTime.now(),
+        ));
+      }
+
+      await service.processSyncQueue();
+
+      // Should use batch endpoint
+      verify(() => mockDio.post(
+            '/api/v1/matches/match-1/deliveries/batch',
+            data: any(named: 'data'),
+          )).called(1);
+      // Should NOT use individual endpoint
+      verifyNever(() => mockDio.post(
+            '/api/v1/matches/match-1/deliveries',
+            data: any(named: 'data'),
+          ));
+      expect(service.status, SyncStatus.allSynced);
+    });
+
+    test('undo entries processed before creates', () async {
+      final callOrder = <String>[];
+
+      when(() => mockDio.delete(any())).thenAnswer((_) async {
+        callOrder.add('delete');
+        return Response(requestOptions: RequestOptions(), statusCode: 200);
+      });
+      when(() => mockDio.post(any(), data: any(named: 'data')))
+          .thenAnswer((_) async {
+        callOrder.add('post');
+        return Response(requestOptions: RequestOptions(), statusCode: 201);
+      });
+
+      // Insert a create entry first (chronologically)
+      await dao.enqueueSyncEntry(SyncQueueCompanion.insert(
+        entityType: 'delivery',
+        entityId: 'del-create',
+        operation: 'create',
+        payload: '{"matchId":"match-1","runs":0}',
+        createdAt: DateTime(2026, 1, 1),
+      ));
+      // Then insert an undo entry later
+      await dao.enqueueSyncEntry(SyncQueueCompanion.insert(
+        entityType: 'delivery',
+        entityId: 'del-undo',
+        operation: 'delete',
+        payload: '{"matchId":"match-1","deliveryId":"del-undo"}',
+        createdAt: DateTime(2026, 1, 2),
+      ));
+
+      await service.processSyncQueue();
+
+      // Undo (delete) should be processed before create (post)
+      expect(callOrder.first, 'delete');
+    });
+
+    test('batch failure increments retry on all entries', () async {
+      when(() => mockDio.post(any(), data: any(named: 'data')))
+          .thenThrow(DioException(requestOptions: RequestOptions()));
+
+      // Insert 8 entries
+      for (var i = 0; i < 8; i++) {
+        await dao.enqueueSyncEntry(SyncQueueCompanion.insert(
+          entityType: 'delivery',
+          entityId: 'del-$i',
+          operation: 'create',
+          payload: '{"matchId":"match-1","runs":$i}',
+          createdAt: DateTime.now(),
+        ));
+      }
+
+      await service.processSyncQueue();
+
+      // All 8 entries should have retryCount = 1
+      final entries = await dao.getPendingSyncEntries();
+      expect(entries.length, 8);
+      for (final entry in entries) {
+        expect(entry.retryCount, 1);
+      }
+    });
+
+    test('entries at maxRetries get status=failed (not synced)', () async {
+      when(() => mockDio.post(any(), data: any(named: 'data')))
+          .thenAnswer((_) async => Response(
+                requestOptions: RequestOptions(),
+                statusCode: 201,
+              ));
+
+      // Insert an entry and manually set retryCount to max
+      await dao.enqueueSyncEntry(SyncQueueCompanion.insert(
+        entityType: 'delivery',
+        entityId: 'del-exhausted',
+        operation: 'create',
+        payload: '{"matchId":"match-1"}',
+        createdAt: DateTime.now(),
+      ));
+      final entries = await dao.getPendingSyncEntries();
+      for (var i = 0; i < 5; i++) {
+        await dao.incrementRetry(entries.first.id);
+      }
+
+      await service.processSyncQueue();
+
+      // Entry should be marked as failed, not synced
+      final failedCount = await dao.getFailedCount();
+      expect(failedCount, 1);
+      expect(service.failedCount, 1);
+
+      // The entry should NOT be in pending queue
+      final pending = await dao.getPendingSyncEntries();
+      expect(pending, isEmpty);
+    });
+
+    test('retryFailed() resets failed entries to pending', () async {
+      // Insert and exhaust an entry
+      await dao.enqueueSyncEntry(SyncQueueCompanion.insert(
+        entityType: 'delivery',
+        entityId: 'del-fail',
+        operation: 'create',
+        payload: '{"matchId":"match-1"}',
+        createdAt: DateTime.now(),
+      ));
+      final entries = await dao.getPendingSyncEntries();
+      await dao.markFailed(entries.first.id);
+
+      expect(await dao.getFailedCount(), 1);
+
+      // Mock success for retry
+      when(() => mockDio.post(any(), data: any(named: 'data')))
+          .thenAnswer((_) async => Response(
+                requestOptions: RequestOptions(),
+                statusCode: 201,
+              ));
+
+      await service.retryFailed();
+
+      // Allow background processSyncQueue to complete
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(await dao.getFailedCount(), 0);
+      final pending = await dao.getPendingSyncEntries();
+      // Should be either synced (if background sync ran) or pending
+      // After retryFailed, entries go back to pending with retryCount=0
+    });
+  });
 }

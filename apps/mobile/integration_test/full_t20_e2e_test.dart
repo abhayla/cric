@@ -5,6 +5,7 @@ library;
 
 import 'dart:math';
 
+import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/match_complete_modal.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
 import 'package:dio/dio.dart';
@@ -246,6 +247,26 @@ void main() {
           '[Phase6] Openers: ${ScenarioTeams.teamBOpener1} (str) + ${ScenarioTeams.teamBOpener2}');
       print('[Phase6] Bowler: ${ScenarioTeams.teamAOpeningBowler}');
 
+      // Ensure transition modal is fully gone before starting 2nd innings
+      await settle(tester);
+      await visualPause(tester, 1000);
+
+      // Verify no stale modals remain
+      final staleTransition =
+          find.byType(InningsTransitionModal).evaluate().isNotEmpty;
+      final staleComplete =
+          find.byType(MatchCompleteModal).evaluate().isNotEmpty;
+      print('[Phase6] Post-transition check: '
+          'InningsTransitionModal=${staleTransition}, '
+          'MatchCompleteModal=${staleComplete}');
+      expect(staleTransition, isFalse,
+          reason: 'InningsTransitionModal must be gone before 2nd innings');
+
+      // Verify scoring controls are ready
+      expect(find.byType(ScoringControls), findsWidgets,
+          reason: 'ScoringControls must be visible for 2nd innings');
+      print('[Phase6] Scoring page ready for 2nd innings');
+
       // ---- PHASE 7: 2nd Innings (Random, 20 overs) ------------------------
       print(
           '\n========== PHASE 7: 2nd Innings -- ${ScenarioTeams.teamBName} (chasing ${inn1Runs + 1}) ==========');
@@ -283,10 +304,8 @@ void main() {
 
       // ---- PHASE 9: Database Verification (Scenario 13) --------------------
       print('\n========== PHASE 9: Database Verification ==========');
-      // Wait for sync to flush all deliveries
-      await Future<void>.delayed(const Duration(seconds: 8));
 
-      // Retrieve latest match ID from test API
+      // Retrieve match ID first
       String matchId = '';
       try {
         final r = await testDio.get('/api/v1/test/latest-match');
@@ -301,16 +320,41 @@ void main() {
         return;
       }
 
-      // ---- Deliveries ----
+      // Wait for sync to flush all deliveries — poll until DB count stabilizes
+      // or we've waited long enough (max 60s with 5s intervals).
+      // Batch sync sends all deliveries in one transaction (~5-10 seconds).
       final allTracked = matchRecord.allDeliveries;
       List<Map<String, dynamic>> dbDeliveries = [];
-      try {
-        final r = await testDio.get('/api/v1/test/deliveries/$matchId');
-        dbDeliveries = (r.data['deliveries'] as List)
-            .map((d) => d as Map<String, dynamic>)
-            .toList();
-      } catch (e) {
-        print('[Phase9] Delivery fetch failed: $e');
+      int prevCount = -1;
+      int stableRounds = 0;
+      for (var attempt = 0; attempt < 12; attempt++) {
+        await Future<void>.delayed(const Duration(seconds: 5));
+        try {
+          final r = await testDio.get('/api/v1/test/deliveries/$matchId');
+          dbDeliveries = (r.data['deliveries'] as List)
+              .map((d) => d as Map<String, dynamic>)
+              .toList();
+        } catch (e) {
+          print('[Phase9] Delivery fetch failed: $e');
+        }
+        final currentCount = dbDeliveries.length;
+        print('[Phase9] Sync poll #${attempt + 1}: DB has $currentCount / '
+            '${allTracked.length} deliveries');
+        if (currentCount == allTracked.length) {
+          print('[Phase9] All deliveries synced!');
+          break;
+        }
+        if (currentCount == prevCount) {
+          stableRounds++;
+          if (stableRounds >= 3) {
+            print('[Phase9] DB count stable at $currentCount for 3 rounds '
+                '— proceeding with verification');
+            break;
+          }
+        } else {
+          stableRounds = 0;
+        }
+        prevCount = currentCount;
       }
 
       print(

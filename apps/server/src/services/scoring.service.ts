@@ -44,7 +44,7 @@ function decrementOvers(currentOvers: string): string {
 // Types
 // ============================================================
 
-interface DeliveryInput {
+export interface DeliveryInput {
   id?: string;
   inningsId?: string;
   inningsNumber?: number;
@@ -74,7 +74,7 @@ interface DeliveryInput {
   };
 }
 
-interface DeliveryResult {
+export interface DeliveryResult {
   delivery: typeof deliveries.$inferSelect;
   inningsComplete: boolean;
   matchComplete: boolean;
@@ -84,6 +84,367 @@ interface DeliveryResult {
 // ============================================================
 // Record Delivery — 10-step pipeline
 // ============================================================
+
+// Transaction handle type used by helper functions
+type TxHandle = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Core delivery recording logic, designed to run inside an existing transaction.
+ * Used by both single `recordDelivery()` and batch `recordDeliveryBatch()`.
+ *
+ * @param tx - Drizzle transaction handle
+ * @param matchId - Match UUID
+ * @param txMatch - Pre-fetched match row (read once per transaction, not per delivery)
+ * @param inningsCache - Shared cache mapping inningsNumber → innings row. Checked before DB query, updated after mutations.
+ * @param input - Delivery input data
+ */
+export async function recordDeliveryInTx(
+  tx: TxHandle,
+  matchId: string,
+  txMatch: typeof matches.$inferSelect,
+  inningsCache: Map<number, typeof innings.$inferSelect>,
+  input: DeliveryInput,
+): Promise<DeliveryResult> {
+  // ── Step 1: VALIDATE (within transaction) ──
+  // Resolve innings: by ID or by innings number
+  let resolvedInningsId = input.inningsId;
+  let inn: typeof innings.$inferSelect | undefined;
+
+  if (!resolvedInningsId && input.inningsNumber) {
+    // Check cache first
+    const cached = inningsCache.get(input.inningsNumber);
+    if (cached && cached.matchId === matchId) {
+      resolvedInningsId = cached.id;
+      inn = cached;
+    } else {
+      const [innByNumber] = await tx
+        .select()
+        .from(innings)
+        .where(and(eq(innings.matchId, matchId), eq(innings.inningsNumber, input.inningsNumber)))
+        .limit(1);
+      if (!innByNumber) {
+        throw new AppError('NOT_FOUND', `Innings #${input.inningsNumber} not found for this match`, 404);
+      }
+      resolvedInningsId = innByNumber.id;
+      inn = innByNumber;
+      inningsCache.set(innByNumber.inningsNumber, innByNumber);
+    }
+  }
+
+  if (!resolvedInningsId) {
+    throw new AppError('VALIDATION_ERROR', 'Either inningsId or inningsNumber is required', 400);
+  }
+
+  // Validate innings exists and belongs to match (if not already resolved from cache)
+  if (!inn) {
+    const [innRow] = await tx
+      .select()
+      .from(innings)
+      .where(and(eq(innings.id, resolvedInningsId), eq(innings.matchId, matchId)))
+      .limit(1);
+
+    if (!innRow) {
+      throw new AppError('NOT_FOUND', 'Innings not found for this match', 404);
+    }
+    inn = innRow;
+    inningsCache.set(innRow.inningsNumber, innRow);
+  }
+
+  if (inn.isCompleted) {
+    throw new AppError('VALIDATION_ERROR', 'Cannot record delivery in a completed innings', 400);
+  }
+
+  // If match is in innings_break and we're recording in the 2nd innings, transition to live
+  if (txMatch.status === 'innings_break' && inn.inningsNumber >= 2) {
+    await tx
+      .update(matches)
+      .set({ status: 'live' })
+      .where(eq(matches.id, matchId));
+  }
+
+  // ── Step 2: CALCULATE ──
+  const isLegal = !input.isWide && !input.isNoBall && !input.isPenalty;
+
+  // Step 2.5: Magic Over — configurable multiplier
+  const magicOverNumbers = txMatch.magicOverNumbers as number[] | null;
+  const isMagicOver = magicOverNumbers != null && magicOverNumbers.includes(input.overNumber);
+  const multiplier = isMagicOver ? txMatch.magicOverRunMultiplier : 1;
+
+  const effectiveRunsFromBat = isMagicOver && input.runsFromBat > 0
+    ? input.runsFromBat * multiplier : input.runsFromBat;
+  const effectiveWideRuns = isMagicOver && input.wideRuns > 0
+    ? input.wideRuns * multiplier : input.wideRuns;
+  const effectiveNoBallRuns = isMagicOver && input.noBallRuns > 0
+    ? input.noBallRuns * multiplier : input.noBallRuns;
+  const effectiveByeRuns = isMagicOver && input.byeRuns > 0
+    ? input.byeRuns * multiplier : input.byeRuns;
+  const effectiveLegByeRuns = isMagicOver && input.legByeRuns > 0
+    ? input.legByeRuns * multiplier : input.legByeRuns;
+
+  // Magic over wicket penalty (negative value)
+  const magicOverPenalty = isMagicOver && input.isWicket ? txMatch.magicOverWicketPenalty : 0;
+  const totalRuns = effectiveRunsFromBat + effectiveWideRuns + effectiveNoBallRuns + effectiveByeRuns + effectiveLegByeRuns + magicOverPenalty;
+
+  // Get next sequence number
+  const [seqResult] = await tx
+    .select({ maxSeq: max(deliveries.sequenceNumber) })
+    .from(deliveries)
+    .where(eq(deliveries.inningsId, resolvedInningsId!));
+
+  const sequenceNumber = (seqResult?.maxSeq ?? 0) + 1;
+
+  // Determine isFreeHit from previous delivery
+  let isFreeHit = false;
+  if (sequenceNumber > 1) {
+    const [prevDelivery] = await tx
+      .select({
+        isNoBall: deliveries.isNoBall,
+        isFreeHit: deliveries.isFreeHit,
+        isLegal: deliveries.isLegal,
+      })
+      .from(deliveries)
+      .where(eq(deliveries.inningsId, resolvedInningsId!))
+      .orderBy(desc(deliveries.sequenceNumber))
+      .limit(1);
+
+    if (prevDelivery) {
+      // Free hit if previous was a no-ball
+      if (prevDelivery.isNoBall) {
+        isFreeHit = true;
+      }
+      // Free hit persists through wides: if previous was free hit AND not a legal delivery
+      // (i.e., it was a wide), free hit carries forward
+      else if (prevDelivery.isFreeHit && !prevDelivery.isLegal) {
+        isFreeHit = true;
+      }
+    }
+  }
+
+  // ── Step 2.5: CHECK DUPLICATE (idempotent retry) ──
+  if (input.id) {
+    const [existing] = await tx
+      .select()
+      .from(deliveries)
+      .where(eq(deliveries.id, input.id))
+      .limit(1);
+    if (existing) {
+      // Already processed — return existing result (idempotent)
+      const [existingInnings] = await tx
+        .select()
+        .from(innings)
+        .where(eq(innings.id, existing.inningsId))
+        .limit(1);
+      return {
+        delivery: existing,
+        inningsComplete: false,
+        matchComplete: false,
+        updatedInnings: existingInnings!,
+      };
+    }
+  }
+
+  // ── Step 3: INSERT DELIVERY ──
+  const [delivery] = await tx
+    .insert(deliveries)
+    .values({
+      ...(input.id ? { id: input.id } : {}),
+      inningsId: resolvedInningsId!,
+      overNumber: input.overNumber,
+      ballNumber: input.ballNumber,
+      sequenceNumber,
+      strikerId: input.strikerId,
+      nonStrikerId: input.nonStrikerId,
+      bowlerId: input.bowlerId,
+      runsFromBat: effectiveRunsFromBat,
+      isWide: input.isWide,
+      wideRuns: effectiveWideRuns,
+      isNoBall: input.isNoBall,
+      noBallRuns: effectiveNoBallRuns,
+      isBye: input.isBye,
+      byeRuns: effectiveByeRuns,
+      isLegBye: input.isLegBye,
+      legByeRuns: effectiveLegByeRuns,
+      totalRuns,
+      isWicket: input.isWicket,
+      isLegal,
+      isBoundaryFour: input.isBoundaryFour,
+      isBoundarySix: input.isBoundarySix,
+      isFreeHit,
+      isPenalty: input.isPenalty ?? false,
+    })
+    .returning();
+
+  // ── Step 4: HANDLE WICKET ──
+  if (input.isWicket && input.wicket) {
+    await tx.insert(wicketsByDelivery).values({
+      deliveryId: delivery!.id,
+      dismissedPlayerId: input.wicket.dismissedPlayerId,
+      dismissalTypeId: input.wicket.dismissalTypeId,
+      fielderId: input.wicket.fielderId ?? null,
+      bowlerCredited: input.wicket.bowlerCredited,
+    });
+
+    // Insert fall of wickets
+    const currentWickets = inn.totalWickets + 1;
+    const currentOvers = computeOversDisplay(inn, isLegal);
+
+    await tx.insert(fallOfWickets).values({
+      inningsId: resolvedInningsId!,
+      wicketNumber: currentWickets,
+      runsAtFall: inn.totalRuns + totalRuns,
+      oversAtFall: currentOvers,
+      dismissedPlayerId: input.wicket.dismissedPlayerId,
+      deliveryId: delivery!.id,
+    });
+
+    // Update fielding stats
+    if (input.wicket.fielderId) {
+      await upsertFieldingStats(tx, resolvedInningsId!, input.wicket);
+    }
+  }
+
+  // ── Step 5: UPDATE BATTING STATS ──
+  // Use effective (magic-over doubled) values for stats
+  const effectiveInput = isMagicOver ? {
+    ...input,
+    runsFromBat: effectiveRunsFromBat,
+    wideRuns: effectiveWideRuns,
+    noBallRuns: effectiveNoBallRuns,
+    byeRuns: effectiveByeRuns,
+    legByeRuns: effectiveLegByeRuns,
+  } : input;
+  await upsertBattingStats(tx, resolvedInningsId!, effectiveInput, delivery!);
+
+  // ── Step 6: UPDATE BOWLING STATS ──
+  await upsertBowlingStats(tx, resolvedInningsId!, effectiveInput, delivery!);
+
+  // ── Step 7: UPDATE INNINGS TOTALS ──
+  const inningsUpdate: Record<string, unknown> = {
+    totalRuns: sql`${innings.totalRuns} + ${totalRuns}`,
+    totalExtras: sql`${innings.totalExtras} + ${effectiveWideRuns + effectiveNoBallRuns + effectiveByeRuns + effectiveLegByeRuns}`,
+  };
+
+  if (input.isWide) {
+    inningsUpdate.totalWides = sql`${innings.totalWides} + ${effectiveWideRuns}`;
+  }
+  if (input.isNoBall) {
+    inningsUpdate.totalNoBalls = sql`${innings.totalNoBalls} + ${effectiveNoBallRuns}`;
+  }
+  if (input.isBye) {
+    inningsUpdate.totalByes = sql`${innings.totalByes} + ${effectiveByeRuns}`;
+  }
+  if (input.isLegBye) {
+    inningsUpdate.totalLegByes = sql`${innings.totalLegByes} + ${effectiveLegByeRuns}`;
+  }
+  if (input.isWicket) {
+    inningsUpdate.totalWickets = sql`${innings.totalWickets} + 1`;
+  }
+
+  // Update total_overs if legal delivery
+  if (isLegal) {
+    // Parse current overs decimal: e.g. "2.3" => 2 overs, 3 balls
+    const currentOversStr = String(inn.totalOvers);
+    const parts = currentOversStr.split('.');
+    let completedOvers = parseInt(parts[0]!, 10);
+    let balls = parseInt(parts[1] || '0', 10);
+    balls += 1;
+    if (balls >= 6) {
+      completedOvers += 1;
+      balls = 0;
+    }
+    inningsUpdate.totalOvers = `${completedOvers}.${balls}`;
+  }
+
+  await tx
+    .update(innings)
+    .set(inningsUpdate)
+    .where(eq(innings.id, resolvedInningsId!));
+
+  // ── Step 8: CHECK OVER COMPLETION ──
+  if (isLegal) {
+    await checkOverCompletion(tx, resolvedInningsId!, input.overNumber, input.bowlerId);
+  }
+
+  // ── Step 9: CHECK INNINGS COMPLETION ──
+  // Re-read innings with updated values
+  const [updatedInnings] = await tx
+    .select()
+    .from(innings)
+    .where(eq(innings.id, resolvedInningsId!))
+    .limit(1);
+
+  // Update the cache with fresh innings data
+  inningsCache.set(updatedInnings!.inningsNumber, updatedInnings!);
+
+  const { inningsComplete, matchComplete, completedReason } = checkInningsCompletion(
+    updatedInnings!,
+    txMatch,
+  );
+
+  if (inningsComplete && completedReason) {
+    await tx
+      .update(innings)
+      .set({
+        isCompleted: true,
+        completedReason,
+      })
+      .where(eq(innings.id, resolvedInningsId!));
+
+    // Update cache to reflect completion
+    inningsCache.set(updatedInnings!.inningsNumber, {
+      ...updatedInnings!,
+      isCompleted: true,
+      completedReason,
+    });
+
+    // Handle match state transition
+    if (matchComplete) {
+      await completeMatch(tx, matchId, txMatch);
+      await refreshMatchPlayerCareerStats(tx, matchId);
+    } else if (updatedInnings!.inningsNumber === 1) {
+      // Transition to innings_break
+      await tx
+        .update(matches)
+        .set({ status: 'innings_break' })
+        .where(eq(matches.id, matchId));
+
+      // Auto-create 2nd innings with teams swapped (skip if already exists, e.g. batch pre-created it)
+      if (!inningsCache.has(2)) {
+        const target = updatedInnings!.totalRuns + 1;
+        const [newInnings] = await tx.insert(innings).values({
+          matchId,
+          inningsNumber: 2,
+          battingTeamId: updatedInnings!.bowlingTeamId,
+          bowlingTeamId: updatedInnings!.battingTeamId,
+          target,
+        }).returning();
+
+        if (newInnings) {
+          inningsCache.set(2, newInnings);
+        }
+      } else {
+        // Update cached innings 2 with target from completed innings 1
+        const cachedInn2 = inningsCache.get(2)!;
+        const target = updatedInnings!.totalRuns + 1;
+        if (cachedInn2.target !== target) {
+          await tx
+            .update(innings)
+            .set({ target })
+            .where(eq(innings.id, cachedInn2.id));
+          inningsCache.set(2, { ...cachedInn2, target });
+        }
+      }
+    }
+  }
+
+  // ── Step 10: RETURN ──
+  return {
+    delivery: delivery!,
+    inningsComplete,
+    matchComplete,
+    updatedInnings: updatedInnings!,
+  };
+}
 
 export async function recordDelivery(
   matchId: string,
@@ -118,8 +479,7 @@ export async function recordDelivery(
   }
 
   return await db.transaction(async (tx) => {
-    // ── Step 1: VALIDATE (within transaction) ──
-    // Re-read match inside tx for consistency
+    // Re-read match inside tx for consistency (once per transaction)
     const [txMatch] = await tx
       .select()
       .from(matches)
@@ -130,301 +490,162 @@ export async function recordDelivery(
       throw new AppError('VALIDATION_ERROR', 'Match must be in live status to record deliveries', 400);
     }
 
-    // Resolve innings: by ID or by innings number
-    let resolvedInningsId = input.inningsId;
-    if (!resolvedInningsId && input.inningsNumber) {
-      const [innByNumber] = await tx
-        .select()
-        .from(innings)
-        .where(and(eq(innings.matchId, matchId), eq(innings.inningsNumber, input.inningsNumber)))
-        .limit(1);
-      if (!innByNumber) {
-        throw new AppError('NOT_FOUND', `Innings #${input.inningsNumber} not found for this match`, 404);
-      }
-      resolvedInningsId = innByNumber.id;
-    }
+    const inningsCache = new Map<number, typeof innings.$inferSelect>();
+    return recordDeliveryInTx(tx, matchId, txMatch, inningsCache, input);
+  });
+}
 
-    if (!resolvedInningsId) {
-      throw new AppError('VALIDATION_ERROR', 'Either inningsId or inningsNumber is required', 400);
-    }
+// ============================================================
+// Record Delivery Batch
+// ============================================================
 
-    // Validate innings exists and belongs to match
-    const [inn] = await tx
+export interface BatchDeliveryInput {
+  deliveries: DeliveryInput[];
+}
+
+export interface BatchDeliveryResult {
+  processed: number;
+  skipped: number;
+  inningsComplete: boolean;
+  matchComplete: boolean;
+}
+
+export async function recordDeliveryBatch(
+  matchId: string,
+  userId: string,
+  input: BatchDeliveryInput,
+): Promise<BatchDeliveryResult> {
+  if (input.deliveries.length === 0) {
+    return { processed: 0, skipped: 0, inningsComplete: false, matchComplete: false };
+  }
+
+  // ── Pre-transaction validation (fail fast) ──
+  const [match] = await db
+    .select()
+    .from(matches)
+    .where(eq(matches.id, matchId))
+    .limit(1);
+
+  if (!match) {
+    throw new AppError('NOT_FOUND', 'Match not found', 404);
+  }
+
+  if (match.status !== 'live' && match.status !== 'innings_break') {
+    throw new AppError('VALIDATION_ERROR', 'Match must be in live status to record deliveries', 400);
+  }
+
+  if (match.scorerId !== userId) {
+    throw new AppError('FORBIDDEN', 'Only the scorer can record deliveries', 403);
+  }
+
+  // Sort deliveries defensively: by inningsNumber → overNumber → ballNumber
+  const sorted = [...input.deliveries].sort((a, b) => {
+    const innDiff = (a.inningsNumber ?? 0) - (b.inningsNumber ?? 0);
+    if (innDiff !== 0) return innDiff;
+    const overDiff = a.overNumber - b.overNumber;
+    if (overDiff !== 0) return overDiff;
+    return a.ballNumber - b.ballNumber;
+  });
+
+  return await db.transaction(async (tx) => {
+    // Re-read match inside tx (once for the whole batch)
+    const [txMatch] = await tx
       .select()
-      .from(innings)
-      .where(and(eq(innings.id, resolvedInningsId), eq(innings.matchId, matchId)))
+      .from(matches)
+      .where(eq(matches.id, matchId))
       .limit(1);
 
-    if (!inn) {
-      throw new AppError('NOT_FOUND', 'Innings not found for this match', 404);
+    if (!txMatch || (txMatch.status !== 'live' && txMatch.status !== 'innings_break')) {
+      throw new AppError('VALIDATION_ERROR', 'Match must be in live status to record deliveries', 400);
     }
 
-    if (inn.isCompleted) {
-      throw new AppError('VALIDATION_ERROR', 'Cannot record delivery in a completed innings', 400);
-    }
+    // Pre-create missing innings: scan batch for unique inningsNumbers
+    const uniqueInningsNumbers = [...new Set(
+      sorted.map(d => d.inningsNumber).filter((n): n is number => n != null),
+    )].sort((a, b) => a - b);
 
-    // If match is in innings_break and we're recording in the 2nd innings, transition to live
-    if (txMatch!.status === 'innings_break' && inn.inningsNumber >= 2) {
-      await tx
-        .update(matches)
-        .set({ status: 'live' })
-        .where(eq(matches.id, matchId));
-    }
-
-    // ── Step 2: CALCULATE ──
-    const isLegal = !input.isWide && !input.isNoBall && !input.isPenalty;
-
-    // Step 2.5: Magic Over — configurable multiplier
-    const magicOverNumbers = txMatch!.magicOverNumbers as number[] | null;
-    const isMagicOver = magicOverNumbers != null && magicOverNumbers.includes(input.overNumber);
-    const multiplier = isMagicOver ? txMatch!.magicOverRunMultiplier : 1;
-
-    const effectiveRunsFromBat = isMagicOver && input.runsFromBat > 0
-      ? input.runsFromBat * multiplier : input.runsFromBat;
-    const effectiveWideRuns = isMagicOver && input.wideRuns > 0
-      ? input.wideRuns * multiplier : input.wideRuns;
-    const effectiveNoBallRuns = isMagicOver && input.noBallRuns > 0
-      ? input.noBallRuns * multiplier : input.noBallRuns;
-    const effectiveByeRuns = isMagicOver && input.byeRuns > 0
-      ? input.byeRuns * multiplier : input.byeRuns;
-    const effectiveLegByeRuns = isMagicOver && input.legByeRuns > 0
-      ? input.legByeRuns * multiplier : input.legByeRuns;
-
-    // Magic over wicket penalty (negative value)
-    const magicOverPenalty = isMagicOver && input.isWicket ? txMatch!.magicOverWicketPenalty : 0;
-    const totalRuns = effectiveRunsFromBat + effectiveWideRuns + effectiveNoBallRuns + effectiveByeRuns + effectiveLegByeRuns + magicOverPenalty;
-
-    // Get next sequence number
-    const [seqResult] = await tx
-      .select({ maxSeq: max(deliveries.sequenceNumber) })
-      .from(deliveries)
-      .where(eq(deliveries.inningsId, resolvedInningsId!));
-
-    const sequenceNumber = (seqResult?.maxSeq ?? 0) + 1;
-
-    // Determine isFreeHit from previous delivery
-    let isFreeHit = false;
-    if (sequenceNumber > 1) {
-      const [prevDelivery] = await tx
-        .select({
-          isNoBall: deliveries.isNoBall,
-          isFreeHit: deliveries.isFreeHit,
-          isLegal: deliveries.isLegal,
-        })
-        .from(deliveries)
-        .where(eq(deliveries.inningsId, resolvedInningsId!))
-        .orderBy(desc(deliveries.sequenceNumber))
-        .limit(1);
-
-      if (prevDelivery) {
-        // Free hit if previous was a no-ball
-        if (prevDelivery.isNoBall) {
-          isFreeHit = true;
-        }
-        // Free hit persists through wides: if previous was free hit AND not a legal delivery
-        // (i.e., it was a wide), free hit carries forward
-        else if (prevDelivery.isFreeHit && !prevDelivery.isLegal) {
-          isFreeHit = true;
-        }
-      }
-    }
-
-    // ── Step 2.5: CHECK DUPLICATE (idempotent retry) ──
-    if (input.id) {
-      const [existing] = await tx
-        .select()
-        .from(deliveries)
-        .where(eq(deliveries.id, input.id))
-        .limit(1);
-      if (existing) {
-        // Already processed — return existing result (idempotent)
-        const [existingInnings] = await tx
-          .select()
-          .from(innings)
-          .where(eq(innings.id, existing.inningsId))
-          .limit(1);
-        return {
-          delivery: existing,
-          inningsComplete: false,
-          matchComplete: false,
-          updatedInnings: existingInnings!,
-        };
-      }
-    }
-
-    // ── Step 3: INSERT DELIVERY ──
-    const [delivery] = await tx
-      .insert(deliveries)
-      .values({
-        ...(input.id ? { id: input.id } : {}),
-        inningsId: resolvedInningsId!,
-        overNumber: input.overNumber,
-        ballNumber: input.ballNumber,
-        sequenceNumber,
-        strikerId: input.strikerId,
-        nonStrikerId: input.nonStrikerId,
-        bowlerId: input.bowlerId,
-        runsFromBat: effectiveRunsFromBat,
-        isWide: input.isWide,
-        wideRuns: effectiveWideRuns,
-        isNoBall: input.isNoBall,
-        noBallRuns: effectiveNoBallRuns,
-        isBye: input.isBye,
-        byeRuns: effectiveByeRuns,
-        isLegBye: input.isLegBye,
-        legByeRuns: effectiveLegByeRuns,
-        totalRuns,
-        isWicket: input.isWicket,
-        isLegal,
-        isBoundaryFour: input.isBoundaryFour,
-        isBoundarySix: input.isBoundarySix,
-        isFreeHit,
-        isPenalty: input.isPenalty ?? false,
-      })
-      .returning();
-
-    // ── Step 4: HANDLE WICKET ──
-    if (input.isWicket && input.wicket) {
-      await tx.insert(wicketsByDelivery).values({
-        deliveryId: delivery!.id,
-        dismissedPlayerId: input.wicket.dismissedPlayerId,
-        dismissalTypeId: input.wicket.dismissalTypeId,
-        fielderId: input.wicket.fielderId ?? null,
-        bowlerCredited: input.wicket.bowlerCredited,
-      });
-
-      // Insert fall of wickets
-      const currentWickets = inn.totalWickets + 1;
-      const currentOvers = computeOversDisplay(inn, isLegal);
-
-      await tx.insert(fallOfWickets).values({
-        inningsId: resolvedInningsId!,
-        wicketNumber: currentWickets,
-        runsAtFall: inn.totalRuns + totalRuns,
-        oversAtFall: currentOvers,
-        dismissedPlayerId: input.wicket.dismissedPlayerId,
-        deliveryId: delivery!.id,
-      });
-
-      // Update fielding stats
-      if (input.wicket.fielderId) {
-        await upsertFieldingStats(tx, resolvedInningsId!, input.wicket);
-      }
-    }
-
-    // ── Step 5: UPDATE BATTING STATS ──
-    // Use effective (magic-over doubled) values for stats
-    const effectiveInput = isMagicOver ? {
-      ...input,
-      runsFromBat: effectiveRunsFromBat,
-      wideRuns: effectiveWideRuns,
-      noBallRuns: effectiveNoBallRuns,
-      byeRuns: effectiveByeRuns,
-      legByeRuns: effectiveLegByeRuns,
-    } : input;
-    await upsertBattingStats(tx, resolvedInningsId!, effectiveInput, delivery!);
-
-    // ── Step 6: UPDATE BOWLING STATS ──
-    await upsertBowlingStats(tx, resolvedInningsId!, effectiveInput, delivery!);
-
-    // ── Step 7: UPDATE INNINGS TOTALS ──
-    const inningsUpdate: Record<string, unknown> = {
-      totalRuns: sql`${innings.totalRuns} + ${totalRuns}`,
-      totalExtras: sql`${innings.totalExtras} + ${effectiveWideRuns + effectiveNoBallRuns + effectiveByeRuns + effectiveLegByeRuns}`,
-    };
-
-    if (input.isWide) {
-      inningsUpdate.totalWides = sql`${innings.totalWides} + ${effectiveWideRuns}`;
-    }
-    if (input.isNoBall) {
-      inningsUpdate.totalNoBalls = sql`${innings.totalNoBalls} + ${effectiveNoBallRuns}`;
-    }
-    if (input.isBye) {
-      inningsUpdate.totalByes = sql`${innings.totalByes} + ${effectiveByeRuns}`;
-    }
-    if (input.isLegBye) {
-      inningsUpdate.totalLegByes = sql`${innings.totalLegByes} + ${effectiveLegByeRuns}`;
-    }
-    if (input.isWicket) {
-      inningsUpdate.totalWickets = sql`${innings.totalWickets} + 1`;
-    }
-
-    // Update total_overs if legal delivery
-    if (isLegal) {
-      // Parse current overs decimal: e.g. "2.3" => 2 overs, 3 balls
-      const currentOversStr = String(inn.totalOvers);
-      const parts = currentOversStr.split('.');
-      let completedOvers = parseInt(parts[0]!, 10);
-      let balls = parseInt(parts[1] || '0', 10);
-      balls += 1;
-      if (balls >= 6) {
-        completedOvers += 1;
-        balls = 0;
-      }
-      inningsUpdate.totalOvers = `${completedOvers}.${balls}`;
-    }
-
-    await tx
-      .update(innings)
-      .set(inningsUpdate)
-      .where(eq(innings.id, resolvedInningsId!));
-
-    // ── Step 8: CHECK OVER COMPLETION ──
-    if (isLegal) {
-      await checkOverCompletion(tx, resolvedInningsId!, input.overNumber, input.bowlerId);
-    }
-
-    // ── Step 9: CHECK INNINGS COMPLETION ──
-    // Re-read innings with updated values
-    const [updatedInnings] = await tx
+    // Load all existing innings for this match into cache
+    const inningsCache = new Map<number, typeof innings.$inferSelect>();
+    const existingInnings = await tx
       .select()
       .from(innings)
-      .where(eq(innings.id, resolvedInningsId!))
-      .limit(1);
+      .where(eq(innings.matchId, matchId));
 
-    const { inningsComplete, matchComplete, completedReason } = checkInningsCompletion(
-      updatedInnings!,
-      txMatch!,
-    );
+    for (const inn of existingInnings) {
+      inningsCache.set(inn.inningsNumber, inn);
+    }
 
-    if (inningsComplete && completedReason) {
-      await tx
-        .update(innings)
-        .set({
-          isCompleted: true,
-          completedReason,
-        })
-        .where(eq(innings.id, resolvedInningsId!));
+    // Pre-create missing innings (innings 2+ only)
+    for (const inningsNum of uniqueInningsNumbers) {
+      if (inningsCache.has(inningsNum)) continue;
 
-      // Handle match state transition
-      if (matchComplete) {
-        await completeMatch(tx, matchId, txMatch!);
-        await refreshMatchPlayerCareerStats(tx, matchId);
-      } else if (updatedInnings!.inningsNumber === 1) {
-        // Transition to innings_break
+      if (inningsNum === 1) {
+        throw new AppError('VALIDATION_ERROR', 'Innings 1 must already exist (created at toss)', 400);
+      }
+
+      // Auto-create innings 2+ by swapping teams from innings 1
+      const inn1 = inningsCache.get(1);
+      if (!inn1) {
+        throw new AppError('VALIDATION_ERROR', 'Cannot create innings 2 — innings 1 not found', 400);
+      }
+
+      const target = inn1.isCompleted ? inn1.totalRuns + 1 : null;
+      const [newInnings] = await tx.insert(innings).values({
+        matchId,
+        inningsNumber: inningsNum,
+        battingTeamId: inn1.bowlingTeamId,
+        bowlingTeamId: inn1.battingTeamId,
+        target,
+      }).returning();
+
+      if (newInnings) {
+        inningsCache.set(inningsNum, newInnings);
+      }
+
+      // If match was in innings_break, transition to live
+      if (txMatch.status === 'innings_break') {
         await tx
           .update(matches)
-          .set({ status: 'innings_break' })
+          .set({ status: 'live' })
           .where(eq(matches.id, matchId));
-
-        // Auto-create 2nd innings with teams swapped
-        const target = updatedInnings!.totalRuns + 1;
-        await tx.insert(innings).values({
-          matchId,
-          inningsNumber: 2,
-          battingTeamId: updatedInnings!.bowlingTeamId,
-          bowlingTeamId: updatedInnings!.battingTeamId,
-          target,
-        });
       }
     }
 
-    // ── Step 10: RETURN ──
+    // Process deliveries sequentially
+    let processed = 0;
+    let skipped = 0;
+    let batchInningsComplete = false;
+    let batchMatchComplete = false;
+
+    for (const delivery of sorted) {
+      // Stop if match already completed mid-batch
+      if (batchMatchComplete) break;
+
+      // Idempotent check: skip if UUID already exists
+      if (delivery.id) {
+        const [existing] = await tx
+          .select({ id: deliveries.id })
+          .from(deliveries)
+          .where(eq(deliveries.id, delivery.id))
+          .limit(1);
+        if (existing) {
+          skipped++;
+          continue;
+        }
+      }
+
+      const result = await recordDeliveryInTx(tx, matchId, txMatch, inningsCache, delivery);
+      processed++;
+
+      if (result.inningsComplete) batchInningsComplete = true;
+      if (result.matchComplete) batchMatchComplete = true;
+    }
+
     return {
-      delivery: delivery!,
-      inningsComplete,
-      matchComplete,
-      updatedInnings: updatedInnings!,
+      processed,
+      skipped,
+      inningsComplete: batchInningsComplete,
+      matchComplete: batchMatchComplete,
     };
   });
 }

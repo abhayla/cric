@@ -10,10 +10,16 @@ import '../database/daos/scoring_dao.dart';
 /// Sync status for the UI indicator.
 enum SyncStatus { allSynced, pending, error }
 
+/// Minimum number of create entries to trigger batch mode.
+const _batchThreshold = 6;
+
 /// Background sync service that pushes locally queued deliveries to the server.
 ///
-/// Maintains FIFO ordering: stops processing on first failure to preserve
-/// delivery sequence.
+/// Two-phase processing:
+///   Phase A: Process undo (delete) entries individually (FIFO, stop on failure)
+///   Phase B: Process create entries — batch if >= 6 entries, single otherwise
+///
+/// Entries exceeding maxRetries are marked as 'failed' (not silently synced).
 class SyncService {
   SyncService({
     required ScoringDao scoringDao,
@@ -29,6 +35,7 @@ class SyncService {
   Timer? _timer;
   SyncStatus _status = SyncStatus.allSynced;
   int _unsyncedCount = 0;
+  int _failedCount = 0;
   bool _isSyncing = false;
 
   /// Current sync status.
@@ -36,6 +43,9 @@ class SyncService {
 
   /// Number of pending (unsynced) entries.
   int get unsyncedCount => _unsyncedCount;
+
+  /// Number of permanently failed entries.
+  int get failedCount => _failedCount;
 
   /// Callback invoked when sync status changes.
   void Function()? onSyncStatusChanged;
@@ -80,44 +90,23 @@ class SyncService {
     unawaited(processSyncQueue());
   }
 
-  /// Process all pending sync entries in FIFO order.
+  /// Process all pending sync entries.
   ///
-  /// Stops on first failure to maintain ordering.
+  /// Phase A: undo entries individually (FIFO, stop on failure)
+  /// Phase B: create entries — batch if >= threshold, single otherwise
   Future<void> processSyncQueue() async {
     if (_isSyncing) return; // Prevent concurrent processing
     _isSyncing = true;
     try {
-      while (true) {
-        final entries = await _dao.getPendingSyncEntries();
-        if (entries.isEmpty) {
-          _updateStatus(SyncStatus.allSynced);
-          return;
-        }
-
-        _updateStatus(SyncStatus.pending);
-
-        var hadFailure = false;
-        for (final entry in entries) {
-          if (entry.retryCount >= maxRetries) {
-            // Skip entries that exceeded retry limit
-            await _dao.markSynced(entry.id); // Mark as "done" to skip
-            continue;
-          }
-
-          final success = await _syncEntry(entry);
-          if (!success) {
-            await _dao.incrementRetry(entry.id);
-            _updateStatus(SyncStatus.error);
-            hadFailure = true;
-            break; // Stop on first failure to maintain FIFO
-          }
-
-          await _dao.markSynced(entry.id);
-        }
-
-        if (hadFailure) break;
-        // Loop to pick up entries enqueued during this sync pass
+      // ── Phase A: Process undo entries individually ──
+      final undoOk = await _processUndoEntries();
+      if (!undoOk) {
+        await _refreshCount();
+        return;
       }
+
+      // ── Phase B: Process create entries ──
+      await _processCreateEntries();
 
       await _refreshCount();
       if (_unsyncedCount == 0) {
@@ -126,6 +115,13 @@ class SyncService {
     } finally {
       _isSyncing = false;
     }
+  }
+
+  /// Reset all failed entries to pending for retry.
+  Future<void> retryFailed() async {
+    await _dao.retryFailedEntries();
+    await _refreshCount();
+    unawaited(processSyncQueue());
   }
 
   /// Start periodic background sync.
@@ -150,7 +146,131 @@ class SyncService {
     stopPeriodicSync();
   }
 
-  // ── Internal ──
+  // ── Internal: Phase A — Undo entries ──
+
+  /// Process undo entries one-by-one (FIFO). Returns false if stopped on failure.
+  Future<bool> _processUndoEntries() async {
+    while (true) {
+      final undoEntries = await _dao.getPendingUndoEntries(limit: 50);
+      if (undoEntries.isEmpty) return true;
+
+      _updateStatus(SyncStatus.pending);
+
+      for (final entry in undoEntries) {
+        if (entry.retryCount >= maxRetries) {
+          await _dao.markFailed(entry.id);
+          _updateStatus(SyncStatus.error);
+          continue;
+        }
+
+        final success = await _syncEntry(entry);
+        if (!success) {
+          await _dao.incrementRetry(entry.id);
+          _updateStatus(SyncStatus.error);
+          return false; // Stop on first failure to maintain FIFO
+        }
+        await _dao.markSynced(entry.id);
+      }
+    }
+  }
+
+  // ── Internal: Phase B — Create entries ──
+
+  Future<void> _processCreateEntries() async {
+    while (true) {
+      final createEntries = await _dao.getPendingCreateEntries(limit: 300);
+      if (createEntries.isEmpty) return;
+
+      _updateStatus(SyncStatus.pending);
+
+      // Filter out entries that exceeded max retries
+      final viable = <SyncQueueData>[];
+      for (final entry in createEntries) {
+        if (entry.retryCount >= maxRetries) {
+          await _dao.markFailed(entry.id);
+          continue;
+        }
+        viable.add(entry);
+      }
+
+      if (viable.isEmpty) return;
+
+      if (viable.length >= _batchThreshold) {
+        final success = await _syncBatch(viable);
+        if (!success) {
+          _updateStatus(SyncStatus.error);
+          return; // Stop — will retry next cycle
+        }
+      } else {
+        // Single mode for small queues (live scoring)
+        var hadFailure = false;
+        for (final entry in viable) {
+          final success = await _syncEntry(entry);
+          if (!success) {
+            await _dao.incrementRetry(entry.id);
+            _updateStatus(SyncStatus.error);
+            hadFailure = true;
+            break; // Stop on first failure to maintain FIFO
+          }
+          await _dao.markSynced(entry.id);
+        }
+        if (hadFailure) return;
+      }
+    }
+  }
+
+  // ── Internal: Batch sync ──
+
+  Future<bool> _syncBatch(List<SyncQueueData> entries) async {
+    // Group entries by matchId
+    final byMatch = <String, List<SyncQueueData>>{};
+    for (final entry in entries) {
+      final payload = jsonDecode(entry.payload) as Map<String, dynamic>;
+      final matchId = payload['matchId'] as String;
+      byMatch.putIfAbsent(matchId, () => []).add(entry);
+    }
+
+    for (final mapEntry in byMatch.entries) {
+      final matchId = mapEntry.key;
+      final matchEntries = mapEntry.value;
+
+      // Build batch payload
+      final deliveryBodies = <Map<String, dynamic>>[];
+      for (final entry in matchEntries) {
+        final payload = jsonDecode(entry.payload) as Map<String, dynamic>;
+        final body = Map<String, dynamic>.from(payload);
+        body.remove('matchId');
+        deliveryBodies.add(body);
+      }
+
+      try {
+        await _dio.post(
+          '/api/v1/matches/$matchId/deliveries/batch',
+          data: {'deliveries': deliveryBodies},
+        );
+        // Success — mark all entries as synced
+        await _dao
+            .markMultipleSynced(matchEntries.map((e) => e.id).toList());
+      } on DioException catch (e) {
+        debugPrint('[SyncService] Batch sync failed for match=$matchId: '
+            'status=${e.response?.statusCode} body=${e.response?.data}');
+        // Increment retry for all entries in this failed batch
+        for (final entry in matchEntries) {
+          await _dao.incrementRetry(entry.id);
+        }
+        return false;
+      } catch (e) {
+        debugPrint('[SyncService] Batch sync error for match=$matchId: $e');
+        for (final entry in matchEntries) {
+          await _dao.incrementRetry(entry.id);
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // ── Internal: Single entry sync ──
 
   Future<bool> _syncEntry(SyncQueueData entry) async {
     try {
@@ -187,6 +307,7 @@ class SyncService {
 
   Future<void> _refreshCount() async {
     _unsyncedCount = await _dao.getUnsyncedCount();
+    _failedCount = await _dao.getFailedCount();
   }
 
   void _updateStatus(SyncStatus newStatus) {
