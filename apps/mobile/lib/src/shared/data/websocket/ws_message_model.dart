@@ -186,6 +186,11 @@ class WsMatchStateData {
     this.bowler,
     required this.currentOver,
     required this.recentDeliveries,
+    this.battingTeamName,
+    this.bowlingTeamName,
+    this.isFreeHitPending,
+    this.isMagicOver,
+    this.magicOverMultiplier,
   });
 
   final String status;
@@ -201,6 +206,11 @@ class WsMatchStateData {
   final WsPlayerBowlingSnapshot? bowler;
   final List<WsOverBallDisplay> currentOver;
   final List<WsOverBallDisplay> recentDeliveries;
+  final String? battingTeamName;
+  final String? bowlingTeamName;
+  final bool? isFreeHitPending;
+  final bool? isMagicOver;
+  final int? magicOverMultiplier;
 
   factory WsMatchStateData.fromJson(Map<String, dynamic> json) {
     return WsMatchStateData(
@@ -230,6 +240,11 @@ class WsMatchStateData {
       recentDeliveries: (json['recentDeliveries'] as List)
           .map((e) => WsOverBallDisplay.fromJson(e as Map<String, dynamic>))
           .toList(),
+      battingTeamName: json['battingTeamName'] as String?,
+      bowlingTeamName: json['bowlingTeamName'] as String?,
+      isFreeHitPending: json['isFreeHitPending'] as bool?,
+      isMagicOver: json['isMagicOver'] as bool?,
+      magicOverMultiplier: json['magicOverMultiplier'] as int?,
     );
   }
 }
@@ -260,6 +275,11 @@ class WsScoreUpdateData {
     this.nonStriker,
     this.bowler,
     required this.currentOver,
+    this.battingTeamName,
+    this.bowlingTeamName,
+    this.isFreeHitPending,
+    this.isMagicOver,
+    this.magicOverMultiplier,
   });
 
   final int totalRuns;
@@ -272,6 +292,11 @@ class WsScoreUpdateData {
   final WsPlayerBattingSnapshot? nonStriker;
   final WsPlayerBowlingSnapshot? bowler;
   final List<WsOverBallDisplay> currentOver;
+  final String? battingTeamName;
+  final String? bowlingTeamName;
+  final bool? isFreeHitPending;
+  final bool? isMagicOver;
+  final int? magicOverMultiplier;
 
   factory WsScoreUpdateData.fromJson(Map<String, dynamic> json) {
     return WsScoreUpdateData(
@@ -297,6 +322,11 @@ class WsScoreUpdateData {
       currentOver: (json['currentOver'] as List)
           .map((e) => WsOverBallDisplay.fromJson(e as Map<String, dynamic>))
           .toList(),
+      battingTeamName: json['battingTeamName'] as String?,
+      bowlingTeamName: json['bowlingTeamName'] as String?,
+      isFreeHitPending: json['isFreeHitPending'] as bool?,
+      isMagicOver: json['isMagicOver'] as bool?,
+      magicOverMultiplier: json['magicOverMultiplier'] as int?,
     );
   }
 }

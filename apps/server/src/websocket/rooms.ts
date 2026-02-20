@@ -5,6 +5,7 @@ import { innings } from '../db/schema/innings.ts';
 import { deliveries } from '../db/schema/deliveries.ts';
 import { battingStats, bowlingStats } from '../db/schema/stats.ts';
 import { users } from '../db/schema/users.ts';
+import { teams } from '../db/schema/teams.ts';
 import type {
   MatchStateMessage,
   ScoreUpdateMessage,
@@ -51,6 +52,10 @@ export async function getMatchState(matchId: string): Promise<MatchStateMessage>
 
   const currentInnings = allInnings[0];
 
+  // Fetch team names
+  const [homeTeam] = await db.select({ name: teams.name }).from(teams).where(eq(teams.id, match.homeTeamId)).limit(1);
+  const [awayTeam] = await db.select({ name: teams.name }).from(teams).where(eq(teams.id, match.awayTeamId)).limit(1);
+
   if (!currentInnings) {
     // Match exists but no innings yet (still in setup/toss)
     return {
@@ -70,6 +75,11 @@ export async function getMatchState(matchId: string): Promise<MatchStateMessage>
         bowler: null,
         currentOver: [],
         recentDeliveries: [],
+        battingTeamName: undefined,
+        bowlingTeamName: undefined,
+        isFreeHitPending: false,
+        isMagicOver: false,
+        magicOverMultiplier: match.magicOverRunMultiplier,
       },
     };
   }
@@ -208,6 +218,21 @@ export async function getMatchState(matchId: string): Promise<MatchStateMessage>
     }
   }
 
+  // Derive team names based on batting team
+  const battingTeamName = currentInnings.battingTeamId === match.homeTeamId
+    ? homeTeam?.name
+    : awayTeam?.name;
+  const bowlingTeamName = currentInnings.battingTeamId === match.homeTeamId
+    ? awayTeam?.name
+    : homeTeam?.name;
+
+  // Derive free hit: last delivery was a no-ball
+  const isFreeHitPending = lastDelivery?.isNoBall === true;
+
+  // Derive magic over
+  const magicOverNumbers = (match.magicOverNumbers as number[] | null) ?? [];
+  const isMagicOver = magicOverNumbers.includes(currentOverNumber);
+
   return {
     type: 'match_state',
     matchId,
@@ -225,6 +250,11 @@ export async function getMatchState(matchId: string): Promise<MatchStateMessage>
       bowler,
       currentOver,
       recentDeliveries,
+      battingTeamName: battingTeamName ?? undefined,
+      bowlingTeamName: bowlingTeamName ?? undefined,
+      isFreeHitPending,
+      isMagicOver,
+      magicOverMultiplier: match.magicOverRunMultiplier,
     },
   };
 }
@@ -240,6 +270,8 @@ export function buildScoreUpdate(
   batterStat: { playerId: string; name: string; runs: number; balls: number; fours: number; sixes: number } | null,
   bowlerStat: { playerId: string; name: string; overs: string; maidens: number; runs: number; wickets: number } | null,
   currentOver: OverBallDisplay[],
+  nonStrikerStat?: { playerId: string; name: string; runs: number; balls: number; fours: number; sixes: number } | null,
+  extras?: { battingTeamName?: string; bowlingTeamName?: string; isFreeHitPending?: boolean; isMagicOver?: boolean; magicOverMultiplier?: number },
 ): ScoreUpdateMessage {
   const oversStr = String(updatedInnings.totalOvers);
   const parsedOvers = parseFloat(oversStr);
@@ -281,7 +313,17 @@ export function buildScoreUpdate(
           ? parseFloat(((batterStat.runs / batterStat.balls) * 100).toFixed(2))
           : 0,
       } : null,
-      nonStriker: null, // Simplified for broadcast — full state via match_state
+      nonStriker: nonStrikerStat ? {
+        id: nonStrikerStat.playerId,
+        name: nonStrikerStat.name,
+        runs: nonStrikerStat.runs,
+        balls: nonStrikerStat.balls,
+        fours: nonStrikerStat.fours,
+        sixes: nonStrikerStat.sixes,
+        strikeRate: nonStrikerStat.balls > 0
+          ? parseFloat(((nonStrikerStat.runs / nonStrikerStat.balls) * 100).toFixed(2))
+          : 0,
+      } : null,
       bowler: bowlerStat ? {
         id: bowlerStat.playerId,
         name: bowlerStat.name,
@@ -294,6 +336,7 @@ export function buildScoreUpdate(
           : 0,
       } : null,
       currentOver,
+      ...(extras ?? {}),
     },
   };
 }

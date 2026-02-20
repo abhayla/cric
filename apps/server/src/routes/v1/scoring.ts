@@ -18,7 +18,7 @@ import { innings } from '../../db/schema/innings.ts';
 import { battingStats, bowlingStats } from '../../db/schema/stats.ts';
 import { users } from '../../db/schema/users.ts';
 import { teams } from '../../db/schema/teams.ts';
-import { matchResult } from '../../db/schema/matches.ts';
+import { matches, matchResult } from '../../db/schema/matches.ts';
 import { wicketsByDelivery } from '../../db/schema/deliveries.ts';
 import { dismissalTypes } from '../../db/schema/master-data.ts';
 import {
@@ -171,7 +171,65 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
           )
           .limit(1);
 
+        // Get non-striker batting stat + name
+        const [nonStrikerStat] = await db
+          .select({
+            playerId: battingStats.playerId,
+            runs: battingStats.runsScored,
+            balls: battingStats.ballsFaced,
+            fours: battingStats.fours,
+            sixes: battingStats.sixes,
+            name: users.displayName,
+          })
+          .from(battingStats)
+          .innerJoin(users, eq(users.id, battingStats.playerId))
+          .where(
+            and(
+              eq(battingStats.inningsId, resultInningsId),
+              eq(battingStats.playerId, ctx.body.nonStrikerId),
+            ),
+          )
+          .limit(1);
+
         const currentOver = await getCurrentOverBalls(resultInningsId, ctx.body.overNumber);
+
+        // Fetch match info for team names + magic over
+        const [matchInfo] = await db
+          .select({
+            homeTeamId: matches.homeTeamId,
+            awayTeamId: matches.awayTeamId,
+            magicOverNumbers: matches.magicOverNumbers,
+            magicOverRunMultiplier: matches.magicOverRunMultiplier,
+          })
+          .from(matches)
+          .where(eq(matches.id, matchId))
+          .limit(1);
+
+        // Fetch innings for batting team
+        const [inn] = await db
+          .select({ battingTeamId: innings.battingTeamId })
+          .from(innings)
+          .where(eq(innings.id, resultInningsId))
+          .limit(1);
+
+        // Resolve team names
+        let battingTeamName: string | undefined;
+        let bowlingTeamName: string | undefined;
+        if (matchInfo && inn) {
+          const [homeTeam] = matchInfo.homeTeamId
+            ? await db.select({ name: teams.name }).from(teams).where(eq(teams.id, matchInfo.homeTeamId)).limit(1)
+            : [undefined];
+          const [awayTeam] = matchInfo.awayTeamId
+            ? await db.select({ name: teams.name }).from(teams).where(eq(teams.id, matchInfo.awayTeamId)).limit(1)
+            : [undefined];
+          battingTeamName = inn.battingTeamId === matchInfo.homeTeamId ? homeTeam?.name : awayTeam?.name;
+          bowlingTeamName = inn.battingTeamId === matchInfo.homeTeamId ? awayTeam?.name : homeTeam?.name;
+        }
+
+        // Derive free hit and magic over
+        const isFreeHitPending = result.delivery.isNoBall === true;
+        const magicOverNumbers = (matchInfo?.magicOverNumbers as number[] | null) ?? [];
+        const isMagicOver = magicOverNumbers.includes(ctx.body.overNumber);
 
         const scoreUpdateMsg = buildScoreUpdate(
           matchId,
@@ -180,6 +238,8 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
           strikerStat ? { playerId: strikerStat.playerId, name: strikerStat.name, runs: strikerStat.runs, balls: strikerStat.balls, fours: strikerStat.fours, sixes: strikerStat.sixes } : null,
           bowlerStat ? { playerId: bowlerStat.playerId, name: bowlerStat.name, overs: String(bowlerStat.overs), maidens: bowlerStat.maidens, runs: bowlerStat.runs, wickets: bowlerStat.wickets } : null,
           currentOver,
+          nonStrikerStat ? { playerId: nonStrikerStat.playerId, name: nonStrikerStat.name, runs: nonStrikerStat.runs, balls: nonStrikerStat.balls, fours: nonStrikerStat.fours, sixes: nonStrikerStat.sixes } : null,
+          { battingTeamName, bowlingTeamName, isFreeHitPending, isMagicOver, magicOverMultiplier: matchInfo?.magicOverRunMultiplier },
         );
         broadcastScoreUpdate(matchId, scoreUpdateMsg);
 

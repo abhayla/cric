@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Live Match Viewer</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .phone-frame { display: flex; flex-direction: column; }
+    .viewer-middle { flex: 1; overflow-y: auto; }
+    .spectator-badge {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 6px var(--page-margin);
+      background: var(--primary-light); color: var(--primary-dark);
+      font-size: var(--caption); font-weight: var(--fw-bold);
+    }
+    .connection-banner {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 6px var(--page-margin);
+      font-size: var(--caption); font-weight: var(--fw-bold);
+    }
+    .connection-banner.connected { background: #e8f5e9; color: #2e7d32; }
+    .connection-banner.reconnecting { background: #fff3e0; color: #e65100; }
+    .connection-banner.disconnected { background: #ffebee; color: #c62828; }
+    .delivery-banner {
+      display: flex; align-items: center; justify-content: center;
+      padding: 8px var(--page-margin);
+      font-size: var(--body-sm); font-weight: var(--fw-bold);
+      background: var(--surface); color: var(--text);
+    }
+    .delivery-banner.four { background: #1565c0; color: white; }
+    .delivery-banner.six { background: #6a1b9a; color: white; }
+    .delivery-banner.wicket { background: var(--danger); color: white; }
+    .wicket-notification {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px var(--page-margin);
+      background: var(--danger); color: white;
+      font-size: var(--body-sm); font-weight: var(--fw-bold);
+    }
+    .stat-header-row {
+      display: flex; align-items: center;
+      padding: 4px var(--page-margin);
+      font-size: var(--caption-sm); color: var(--text-secondary);
+      font-weight: var(--fw-bold);
+    }
+    .stat-header-row .name-col { flex: 3; }
+    .stat-header-row .stat-col { width: 36px; text-align: center; }
+    .stat-header-row .stat-col-sm { width: 28px; text-align: center; }
+    .stat-header-row .stat-col-lg { width: 64px; text-align: right; }
+    .stat-header-row .stat-col-ec { width: 48px; text-align: right; }
+    .badge-magic {
+      display: inline-block; padding: 2px 6px; border-radius: 4px;
+      background: #ffc107; color: #000; font-size: var(--caption-sm);
+      font-weight: var(--fw-bold); margin-left: 8px;
+    }
+    .badge-freehit {
+      display: inline-block; padding: 2px 6px; border-radius: 4px;
+      background: #4caf50; color: white; font-size: var(--caption-sm);
+      font-weight: var(--fw-bold); margin-left: 8px;
+    }
+    .innings-badge {
+      display: inline-block; padding: 2px 8px; border-radius: var(--radius-full);
+      font-size: var(--caption-sm); font-weight: var(--fw-bold);
+      background: var(--primary-light); color: var(--primary-dark);
+    }
+    .score-header-row2 {
+      display: flex; gap: 16px; align-items: center;
+      padding: 4px var(--page-margin) 8px;
+      background: var(--header); color: rgba(255,255,255,0.7);
+      font-size: var(--caption);
+    }
+    .result-card {
+      margin: 16px var(--page-margin); padding: 16px;
+      background: var(--primary-light); border-radius: var(--radius-md);
+      text-align: center; font-weight: var(--fw-bold);
+      color: var(--primary-dark);
+    }
+    .innings-complete-card {
+      margin: 16px var(--page-margin); padding: 16px;
+      background: var(--surface); border-radius: var(--radius-md);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>
+        <span class="material-icon">signal_cellular_alt</span>
+        <span class="material-icon">wifi</span>
+        <span class="material-icon">battery_full</span>
+      </span>
+    </div>
+
+    <!-- App Bar -->
+    <div class="app-bar">
+      <button class="icon-btn" title="Back"><span class="material-icon">arrow_back</span></button>
+      <div class="app-bar-title">Live Match</div>
+    </div>
+
+    <!-- Connection Status Banner -->
+    <div class="connection-banner connected">
+      <span class="material-icon" style="font-size:14px">wifi</span> Connected
+    </div>
+
+    <!-- Score Header (same as scoring page) -->
+    <div style="background:var(--header);color:white;padding:12px var(--page-margin) 4px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <span style="font-weight:var(--fw-bold);font-size:var(--body);">Mumbai XI</span>
+          <span class="innings-badge" style="margin-left:8px;">1st</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px;">
+        <span style="font-size:28px;font-weight:var(--fw-black);">87/3</span>
+        <span style="font-size:var(--body);opacity:0.7;">(12.4)</span>
+      </div>
+    </div>
+    <div class="score-header-row2">
+      <span>CRR: 6.87</span>
+      <span>RRR: 8.24</span>
+      <span>Target: 156</span>
+      <span>Need: 69</span>
+    </div>
+
+    <!-- Last Delivery Banner -->
+    <div class="delivery-banner four">FOUR!</div>
+
+    <!-- Wicket Notification (dismissible) -->
+    <div class="wicket-notification" style="display:none;">
+      <span>R. Sharma c Kohli b Bumrah</span>
+      <span class="material-icon" style="font-size:16px;cursor:pointer;">close</span>
+    </div>
+
+    <!-- Scrollable middle -->
+    <div class="viewer-middle">
+      <!-- Batter Stat Headers -->
+      <div class="stat-header-row">
+        <span class="name-col">Batter</span>
+        <span class="stat-col">R</span>
+        <span class="stat-col">B</span>
+        <span class="stat-col-sm">4s</span>
+        <span class="stat-col-sm">6s</span>
+        <span class="stat-col-lg">SR</span>
+      </div>
+
+      <!-- Striker Card -->
+      <div class="player-card" style="border-left:3px solid var(--primary);">
+        <div class="player-card-row">
+          <div class="player-card-info">
+            <span class="player-card-name">V. Kohli</span>
+            <span style="font-size:var(--caption);color:var(--primary);">*</span>
+          </div>
+          <div class="player-card-stats">
+            <div class="stat-mini"><div class="stat-value">45</div></div>
+            <div class="stat-mini"><div class="stat-value">32</div></div>
+            <div class="stat-mini"><div class="stat-value">5</div></div>
+            <div class="stat-mini"><div class="stat-value">2</div></div>
+            <div class="stat-mini"><div class="stat-value">140.62</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Non-Striker Card -->
+      <div class="player-card" style="opacity:0.7;border-left:3px solid var(--border);">
+        <div class="player-card-row">
+          <div class="player-card-info">
+            <span class="player-card-name">S. Iyer</span>
+          </div>
+          <div class="player-card-stats">
+            <div class="stat-mini"><div class="stat-value">22</div></div>
+            <div class="stat-mini"><div class="stat-value">18</div></div>
+            <div class="stat-mini"><div class="stat-value">2</div></div>
+            <div class="stat-mini"><div class="stat-value">1</div></div>
+            <div class="stat-mini"><div class="stat-value">122.22</div></div>
+          </div>
+        </div>
+      </div>
+
+      <hr style="margin:8px var(--page-margin);border:none;border-top:1px solid var(--border);">
+
+      <!-- Bowler Stat Headers -->
+      <div class="stat-header-row">
+        <span class="name-col">Bowler</span>
+        <span class="stat-col">O</span>
+        <span class="stat-col-sm">M</span>
+        <span class="stat-col">R</span>
+        <span class="stat-col-sm">W</span>
+        <span class="stat-col-ec">Ec</span>
+      </div>
+
+      <!-- Bowler Card -->
+      <div class="player-card">
+        <div class="player-card-row">
+          <div class="player-card-info">
+            <span class="player-card-name">J. Bumrah</span>
+          </div>
+          <div class="player-card-stats">
+            <div class="stat-mini"><div class="stat-value">3.4</div></div>
+            <div class="stat-mini"><div class="stat-value">0</div></div>
+            <div class="stat-mini"><div class="stat-value">24</div></div>
+            <div class="stat-mini"><div class="stat-value">2</div></div>
+            <div class="stat-mini"><div class="stat-value">6.55</div></div>
+          </div>
+        </div>
+      </div>
+
+      <hr style="margin:8px var(--page-margin);border:none;border-top:1px solid var(--border);">
+
+      <!-- Current Over Display -->
+      <div style="padding:12px var(--page-margin);">
+        <div style="display:flex;align-items:center;margin-bottom:8px;">
+          <span style="font-size:var(--caption);color:var(--text-secondary);font-weight:var(--fw-bold);">Over 13</span>
+          <span class="badge-magic">MAGIC 2x</span>
+          <span class="badge-freehit">FREE HIT</span>
+        </div>
+        <div class="over-balls" style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="ball-pip dot">.</div>
+          <div class="ball-pip four">4</div>
+          <div class="ball-pip">1</div>
+          <div class="ball-pip nb">Nb</div>
+        </div>
+      </div>
+
+      <!-- Match Result Card (shown when match complete) -->
+      <!--
+      <div class="result-card">
+        Mumbai XI won by 5 wickets
+      </div>
+      -->
+
+      <!-- Innings Complete Card (shown between innings) -->
+      <!--
+      <div class="innings-complete-card">
+        <div style="font-weight:var(--fw-bold);margin-bottom:4px;">Innings Complete</div>
+        <div>Delhi XI: 155/7 (20.0)</div>
+        <div style="font-weight:var(--fw-bold);margin-top:4px;">Target: 156</div>
+      </div>
+      -->
+    </div>
+
+    <!-- No bottom controls — viewer is read-only -->
+
+    <!-- Nav bar (home) -->
+    <div class="nav-bar">
+      <div class="nav-item active">
+        <span class="material-icon">home</span>
+        <span>Home</span>
+      </div>
+      <div class="nav-item">
+        <span class="material-icon">groups</span>
+        <span>Teams</span>
+      </div>
+      <div class="nav-item">
+        <span class="material-icon">emoji_events</span>
+        <span>Tourneys</span>
+      </div>
+      <div class="nav-item">
+        <span class="material-icon">person</span>
+        <span>Profile</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

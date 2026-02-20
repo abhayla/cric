@@ -16,6 +16,120 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-20 (Night #3): LiveMatchPage Viewer — Full Parity with Scorer
+
+Fixed 13 gaps between scorer and viewer UIs. Server now sends team names, non-striker stats, free hit, and magic over data in WS messages. Client renders all data with stat headers, last delivery banner, wicket notification, over number, and magic/free-hit badges.
+
+**Changes (UNCOMMITTED):**
+
+1. **Server WS types** (`types/websocket.ts`) — Added `battingTeamName`, `bowlingTeamName`, `isFreeHitPending`, `isMagicOver`, `magicOverMultiplier` to `MatchStateMessage` and `ScoreUpdateMessage` data.
+
+2. **Server rooms.ts** — `getMatchState()` now queries team names, derives free hit from last delivery's `isNoBall`, derives magic over from `magicOverNumbers`. `buildScoreUpdate()` accepts `nonStrikerStat` and `extras` params, builds full non-striker snapshot.
+
+3. **Server scoring.ts** — Broadcast block now queries non-striker stats, match info (teams + magic over config), derives `battingTeamName`/`bowlingTeamName`, `isFreeHitPending`, `isMagicOver`, passes all to `buildScoreUpdate()`.
+
+4. **Client WS models** (`ws_message_model.dart`) — Mirrored 5 new nullable fields on `WsMatchStateData` and `WsScoreUpdateData`.
+
+5. **Client `LiveMatchState` + `MatchLiveNotifier`** — Added 5 new state fields. All handlers map new fields. `_handleInningsComplete` and `_handleDeliveryUndone` reset free hit/magic over.
+
+6. **Client `LiveMatchPage`** — Full UI overhaul: team name in ScoreHeader, free hit/magic over badges in header AND over display, last delivery description banner (color-coded), dismissible wicket notification, stat column headers for batters and bowlers, dividers, over number derived from overs display, scrollable middle content, proper `dispose()` calling `leaveMatch()`.
+
+7. **Wireframe** — New `docs/ui/29-live-match.html` with link in `index.html`.
+
+8. **Docs** — Updated `MULTI_DEVICE_E2E.md` with viewer capabilities.
+
+**Next steps:** Commit these changes, then run multi-device E2E test to verify viewer renders all new data correctly.
+
+---
+
+### Session 2026-02-20 (Night #2): Multi-Device E2E — Full Signal Handshake + Script Hardening
+
+Extended the scorer↔viewer coordination with a **bidirectional handshake** (scorer waits for viewer before scoring) and hardened the orchestration script. All changes are uncommitted — commit and test in next session.
+
+**Changes (ALL UNCOMMITTED):**
+
+1. **Server signal endpoints** — Added `POST/GET /api/v1/test/signal/:name` and `DELETE /api/v1/test/signals` for in-memory test coordination. Signals cleared on both `reset-db` and `reset-match-data` endpoints.
+
+2. **`AppTestWrapper.pumpAppAndWaitForHome()`** — New helper in `app_test_wrapper.dart` that polls for Home page with 180s timeout (accommodates slow Firebase init on real devices). Both scorer and viewer now use this instead of `pumpApp()` + manual `expect`.
+
+3. **`ServerManager.baseUrl` dynamic resolution** — Now checks `AppConstants.apiBaseUrl` for `--dart-define` override. If custom URL provided (real device), strips `/api/v1` to get server root. Falls back to `10.0.2.2` for emulator.
+
+4. **Scorer bidirectional handshake** (`multi_device_scorer_e2e_test.dart`):
+   - After toss, POSTs `scorer-ready` signal
+   - **Polls for `viewer-ready` signal** (up to 120s) before starting to score
+   - Falls back to 5s wait if signal endpoint unavailable
+   - Ensures viewer is connected via WebSocket before first delivery
+
+5. **Single match test also signals** (`single_match_e2e_test.dart`):
+   - After toss, POSTs `scorer-ready` signal (fire-and-forget, doesn't wait for viewer)
+   - Allows viewer test to coordinate even when using single_match_e2e as scorer
+
+6. **Viewer polls scorer-ready then handshakes** (`multi_device_viewer_e2e_test.dart`):
+   - Phase 3: Polls `scorer-ready` signal (180s timeout, replaces blind `/latest-match` polling)
+   - After signal received, fetches `/latest-match` for matchId
+   - After WebSocket connected, POSTs `viewer-ready` signal
+   - Viewer threshold raised from 2 to 8 (expects at least half the 18 deliveries)
+   - MISS counter added (separate from FAIL) — MISS = viewer wasn't connected, FAIL = data mismatch
+   - `expect(failCount, equals(0))` — only real data mismatches fail the test
+
+7. **Viewer UI alignment** — Added `crossAxisAlignment: CrossAxisAlignment.stretch` to main body Column in `LiveMatchPage`.
+
+8. **Orchestration script hardened** (`scripts/multi-device-e2e.sh`):
+   - **Stale process cleanup**: Pre-flight kills stale `dart.exe` integration test processes (Windows via `wmic.exe`, Linux/Mac via `pgrep`)
+   - **`SWAP_DEVICES=1` support**: Swap scorer/viewer device assignment (default: scorer=emulator, viewer=real device)
+   - **Signal-based polling**: Step 6 polls `scorer-ready` signal (up to 5 minutes) instead of `sleep 15`
+   - **Gradle grace period**: 5s sleep after scorer-ready before launching viewer (lets Gradle daemon idle)
+   - **Signal cleanup**: Step 4 clears signals alongside DB reset
+   - **Dynamic labels**: Report shows device role labels not hardcoded "emulator"/"real device"
+
+**Files Modified (uncommitted):**
+- `apps/server/src/routes/v1/test-verify.routes.ts` — Signal endpoints + clear on reset
+- `apps/mobile/integration_test/helpers/app_test_wrapper.dart` — `pumpAppAndWaitForHome()` with 180s timeout
+- `apps/mobile/integration_test/helpers/server_manager.dart` — Dynamic `baseUrl` from dart-define
+- `apps/mobile/integration_test/multi_device_scorer_e2e_test.dart` — Bidirectional handshake (scorer waits for viewer)
+- `apps/mobile/integration_test/multi_device_viewer_e2e_test.dart` — Signal polling, MISS counter, viewer-ready post
+- `apps/mobile/integration_test/single_match_e2e_test.dart` — Scorer-ready signal after toss
+- `apps/mobile/lib/src/features/scoring/presentation/pages/live_match_page.dart` — Column stretch alignment
+- `scripts/multi-device-e2e.sh` — Stale cleanup, SWAP_DEVICES, signal polling, Gradle grace
+
+**Also modified (non-E2E):**
+- `CLAUDE.md` — Slimmed down (85 lines reduced)
+- `.claude/hooks/*.ps1` — 6 hook scripts updated
+
+**How to run multi-device test:**
+```bash
+# Option A: Automated script (recommended)
+./scripts/multi-device-e2e.sh
+# or swap devices:
+SWAP_DEVICES=1 ./scripts/multi-device-e2e.sh
+
+# Option B: Manual 3-terminal approach
+# Terminal 1: Start test server
+cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts
+
+# Terminal 2: Start scorer FIRST (on emulator by default)
+cd apps/mobile && flutter test integration_test/multi_device_scorer_e2e_test.dart -d emulator-5554
+
+# Terminal 3: Start viewer AFTER scorer signals ready (~60s for Gradle build)
+cd apps/mobile && flutter test integration_test/multi_device_viewer_e2e_test.dart -d <real-device> \
+  --dart-define=API_BASE_URL=http://<LAN_IP>:3001/api/v1 \
+  --dart-define=WS_BASE_URL=ws://<LAN_IP>:3001/ws
+```
+
+**Coordination flow:**
+1. Scorer boots → creates teams → match → toss → POSTs `scorer-ready` signal
+2. Scorer polls for `viewer-ready` (up to 120s)
+3. Viewer boots → polls for `scorer-ready` → fetches matchId → navigates to live page → connects WebSocket → POSTs `viewer-ready`
+4. Scorer sees `viewer-ready` → starts scoring 18 deliveries
+5. Viewer monitors WebSocket updates in real-time
+
+**Important:** Both tests share `apps/mobile/build/` — don't launch simultaneously. Wait for scorer's Gradle build to finish (~60s) before launching viewer. The `multi-device-e2e.sh` script handles this via signal polling.
+
+**What to do in next session:**
+1. Commit all uncommitted changes (16 files, +451/-138 lines)
+2. Run the multi-device E2E test to verify the bidirectional handshake works
+3. If green, the coordination is solid and both tests reliably sync
+
 ### Session 2026-02-20 (Late PM): Multi-Device E2E Test — First Green Run
 
 Ran the multi-device WebSocket live match E2E test (scorer on emulator + viewer on real device). Fixed 3 bugs to get both tests passing.

@@ -29,6 +29,11 @@ class LiveMatchState {
     this.inningsCompleteInfo,
     this.matchResult,
     this.error,
+    this.battingTeamName = '',
+    this.bowlingTeamName = '',
+    this.isFreeHitPending = false,
+    this.isMagicOver = false,
+    this.magicOverMultiplier = 2,
   });
 
   final ConnectionStatus connectionStatus;
@@ -51,6 +56,11 @@ class LiveMatchState {
   final WsInningsCompleteData? inningsCompleteInfo;
   final WsMatchCompleteData? matchResult;
   final String? error;
+  final String battingTeamName;
+  final String bowlingTeamName;
+  final bool isFreeHitPending;
+  final bool isMagicOver;
+  final int magicOverMultiplier;
 
   bool get isMatchComplete => matchResult != null;
 
@@ -75,6 +85,11 @@ class LiveMatchState {
     WsInningsCompleteData? inningsCompleteInfo,
     WsMatchCompleteData? matchResult,
     String? error,
+    String? battingTeamName,
+    String? bowlingTeamName,
+    bool? isFreeHitPending,
+    bool? isMagicOver,
+    int? magicOverMultiplier,
     // Sentinel flags for nullable fields.
     bool clearMatchId = false,
     bool clearStatus = false,
@@ -122,6 +137,11 @@ class LiveMatchState {
       matchResult:
           clearMatchResult ? null : (matchResult ?? this.matchResult),
       error: clearError ? null : (error ?? this.error),
+      battingTeamName: battingTeamName ?? this.battingTeamName,
+      bowlingTeamName: bowlingTeamName ?? this.bowlingTeamName,
+      isFreeHitPending: isFreeHitPending ?? this.isFreeHitPending,
+      isMagicOver: isMagicOver ?? this.isMagicOver,
+      magicOverMultiplier: magicOverMultiplier ?? this.magicOverMultiplier,
     );
   }
 }
@@ -227,6 +247,11 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
       clearBowler: d.bowler == null,
       currentOver: d.currentOver,
       recentDeliveries: d.recentDeliveries,
+      battingTeamName: d.battingTeamName ?? '',
+      bowlingTeamName: d.bowlingTeamName ?? '',
+      isFreeHitPending: d.isFreeHitPending ?? false,
+      isMagicOver: d.isMagicOver ?? false,
+      magicOverMultiplier: d.magicOverMultiplier ?? 2,
       clearError: true,
     );
   }
@@ -249,6 +274,11 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
       clearBowler: d.bowler == null,
       currentOver: d.currentOver,
       lastDeliveryDescription: d.lastDelivery.description,
+      battingTeamName: d.battingTeamName ?? state.battingTeamName,
+      bowlingTeamName: d.bowlingTeamName ?? state.bowlingTeamName,
+      isFreeHitPending: d.isFreeHitPending ?? false,
+      isMagicOver: d.isMagicOver ?? false,
+      magicOverMultiplier: d.magicOverMultiplier ?? state.magicOverMultiplier,
       clearError: true,
     );
   }
@@ -276,12 +306,16 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
         clearCurrentRunRate: true,
         clearRequiredRunRate: true,
         currentOver: const [],
+        isFreeHitPending: false,
+        isMagicOver: false,
       );
     } else {
       // Final innings — just record the completion info and target.
       state = state.copyWith(
         target: msg.data.target,
         inningsCompleteInfo: msg.data,
+        isFreeHitPending: false,
+        isMagicOver: false,
       );
     }
   }
@@ -297,6 +331,7 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
       totalWickets: score.wickets,
       oversDisplay: score.overs,
       currentOver: msg.data.currentOver,
+      isFreeHitPending: false,
     );
   }
 }

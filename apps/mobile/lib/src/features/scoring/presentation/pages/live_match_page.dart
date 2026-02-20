@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/data/websocket/websocket_client.dart';
 import '../../../../shared/data/websocket/ws_message_model.dart';
-import '../../domain/entities/batter_innings.dart';
-import '../../domain/entities/bowler_spell.dart';
+import '../notifiers/match_live_notifier.dart';
 import '../../providers.dart';
 import '../widgets/batter_card.dart';
 import '../widgets/bowler_card.dart';
@@ -34,8 +33,7 @@ class _LiveMatchPageState extends ConsumerState<LiveMatchPage> {
 
   @override
   void dispose() {
-    // Leave match when navigating away.
-    // Use read since dispose happens after the widget is removed.
+    ref.read(matchLiveNotifierProvider.notifier).leaveMatch();
     super.dispose();
   }
 
@@ -78,6 +76,7 @@ class _LiveMatchPageState extends ConsumerState<LiveMatchPage> {
         ),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ConnectionStatusBanner(
             status: state.connectionStatus,
@@ -88,7 +87,7 @@ class _LiveMatchPageState extends ConsumerState<LiveMatchPage> {
                 : null,
           ),
           ScoreHeader(
-            battingTeamName: '',
+            battingTeamName: state.battingTeamName,
             inningsNumber: state.inningsNumber,
             totalRuns: state.totalRuns,
             totalWickets: state.totalWickets,
@@ -99,31 +98,160 @@ class _LiveMatchPageState extends ConsumerState<LiveMatchPage> {
             runsNeeded: state.target != null
                 ? state.target! - state.totalRuns
                 : null,
+            isFreeHitPending: state.isFreeHitPending,
+            isMagicOver: state.isMagicOver,
+            magicOverMultiplier: state.magicOverMultiplier,
             onBack: () {
               ref.read(matchLiveNotifierProvider.notifier).leaveMatch();
               Navigator.of(context).maybePop();
             },
           ),
-          // Batters section.
-          if (state.striker != null || state.nonStriker != null)
-            _buildBattersSection(state, theme),
-          // Bowler section.
-          if (state.bowler != null) _buildBowlerSection(state, theme),
-          // Current over display.
-          if (state.currentOver.isNotEmpty)
-            _buildCurrentOver(state.currentOver, theme),
-          // Match result.
-          if (state.matchResult != null)
-            _buildMatchResult(state.matchResult!, theme),
-          // Innings complete.
-          if (state.inningsCompleteInfo != null && state.matchResult == null)
-            _buildInningsComplete(state.inningsCompleteInfo!, theme),
+          // Scrollable middle content.
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Last delivery description banner.
+                  if (state.lastDeliveryDescription != null)
+                    _buildLastDeliveryBanner(
+                        state.lastDeliveryDescription!, theme),
+                  // Wicket notification banner.
+                  if (state.wicketNotification != null)
+                    _buildWicketNotification(state.wicketNotification!, theme),
+                  // Batters section with stat headers.
+                  if (state.striker != null || state.nonStriker != null) ...[
+                    _buildBatterStatHeaders(theme),
+                    _buildBattersSection(state, theme),
+                  ],
+                  // Divider between batters and bowler.
+                  if ((state.striker != null || state.nonStriker != null) &&
+                      state.bowler != null)
+                    const Divider(height: 16),
+                  // Bowler section with stat headers.
+                  if (state.bowler != null) ...[
+                    _buildBowlerStatHeaders(theme),
+                    _buildBowlerSection(state, theme),
+                  ],
+                  // Divider between bowler and over display.
+                  if (state.bowler != null && state.currentOver.isNotEmpty)
+                    const Divider(height: 16),
+                  // Current over display.
+                  if (state.currentOver.isNotEmpty)
+                    _buildCurrentOver(state, theme),
+                  // Match result.
+                  if (state.matchResult != null)
+                    _buildMatchResult(state.matchResult!, theme),
+                  // Innings complete.
+                  if (state.inningsCompleteInfo != null &&
+                      state.matchResult == null)
+                    _buildInningsComplete(state.inningsCompleteInfo!, theme),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBattersSection(dynamic state, ThemeData theme) {
+  Widget _buildLastDeliveryBanner(String description, ThemeData theme) {
+    Color bgColor;
+    if (description.contains('FOUR')) {
+      bgColor = AppColors.four;
+    } else if (description.contains('SIX')) {
+      bgColor = AppColors.six;
+    } else if (description.contains('WICKET')) {
+      bgColor = AppColors.wicket;
+    } else {
+      bgColor = theme.colorScheme.surfaceContainerHighest;
+    }
+
+    final isHighlight = description.contains('FOUR') ||
+        description.contains('SIX') ||
+        description.contains('WICKET');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: bgColor,
+      child: Text(
+        description,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: isHighlight ? Colors.white : theme.colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildWicketNotification(WsWicketData wicket, ThemeData theme) {
+    return Dismissible(
+      key: ValueKey('wicket_${wicket.dismissedPlayer}_${wicket.overs}'),
+      onDismissed: (_) {
+        ref.read(matchLiveNotifierProvider.notifier).dismissWicketNotification();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        color: AppColors.wicket,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${wicket.dismissedPlayer} ${wicket.description}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                ref
+                    .read(matchLiveNotifierProvider.notifier)
+                    .dismissWicketNotification();
+              },
+              child: const Icon(Icons.close, color: Colors.white, size: 18),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBatterStatHeaders(ThemeData theme) {
+    final style = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w500,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: Text('Batter', style: style)),
+          SizedBox(
+              width: 36,
+              child: Text('R', style: style, textAlign: TextAlign.center)),
+          SizedBox(
+              width: 36,
+              child: Text('B', style: style, textAlign: TextAlign.center)),
+          SizedBox(
+              width: 28,
+              child: Text('4s', style: style, textAlign: TextAlign.center)),
+          SizedBox(
+              width: 28,
+              child: Text('6s', style: style, textAlign: TextAlign.center)),
+          SizedBox(
+              width: 64,
+              child: Text('SR', style: style, textAlign: TextAlign.end)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBattersSection(LiveMatchState state, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
@@ -143,30 +271,107 @@ class _LiveMatchPageState extends ConsumerState<LiveMatchPage> {
     );
   }
 
-  Widget _buildBowlerSection(dynamic state, ThemeData theme) {
+  Widget _buildBowlerStatHeaders(ThemeData theme) {
+    final style = theme.textTheme.labelSmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w500,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: Text('Bowler', style: style)),
+          SizedBox(
+              width: 36,
+              child: Text('O', style: style, textAlign: TextAlign.center)),
+          SizedBox(
+              width: 28,
+              child: Text('M', style: style, textAlign: TextAlign.center)),
+          SizedBox(
+              width: 36,
+              child: Text('R', style: style, textAlign: TextAlign.center)),
+          SizedBox(
+              width: 28,
+              child: Text('W', style: style, textAlign: TextAlign.center)),
+          SizedBox(
+              width: 48,
+              child: Text('Ec', style: style, textAlign: TextAlign.end)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBowlerSection(LiveMatchState state, ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: BowlerCard(bowler: state.bowler!.toBowlerSpell()),
     );
   }
 
-  Widget _buildCurrentOver(
-      List<WsOverBallDisplay> balls, ThemeData theme) {
+  Widget _buildCurrentOver(LiveMatchState state, ThemeData theme) {
+    // Derive over number from oversDisplay: "1.3" → over 2 (0-indexed overNumber = 1)
+    final oversParts = state.oversDisplay.split('.');
+    final completedOvers = int.tryParse(oversParts[0]) ?? 0;
+    final ballsInOver =
+        oversParts.length > 1 ? int.tryParse(oversParts[1]) ?? 0 : 0;
+    final displayOverNumber =
+        ballsInOver > 0 ? completedOvers + 1 : completedOvers;
+
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'This Over',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          Row(
+            children: [
+              Text(
+                'Over $displayOverNumber',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (state.isMagicOver) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.amber,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'MAGIC ${state.magicOverMultiplier}x',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+              if (state.isFreeHitPending) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'FREE HIT',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
-            children: balls.map((ball) {
+            children: state.currentOver.map((ball) {
               Color bgColor;
               Color textColor;
               if (ball.isWicket) {

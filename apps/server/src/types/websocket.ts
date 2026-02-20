@@ -75,6 +75,11 @@ export interface MatchStateMessage {
     bowler: PlayerBowlingSnapshot | null;
     currentOver: OverBallDisplay[];
     recentDeliveries: OverBallDisplay[];
+    battingTeamName?: string;
+    bowlingTeamName?: string;
+    isFreeHitPending?: boolean;
+    isMagicOver?: boolean;
+    magicOverMultiplier?: number;
   };
 }
 
@@ -92,6 +97,11 @@ export interface ScoreUpdateMessage {
     nonStriker: PlayerBattingSnapshot | null;
     bowler: PlayerBowlingSnapshot | null;
     currentOver: OverBallDisplay[];
+    battingTeamName?: string;
+    bowlingTeamName?: string;
+    isFreeHitPending?: boolean;
+    isMagicOver?: boolean;
+    magicOverMultiplier?: number;
   };
 }
 
