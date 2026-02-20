@@ -7,7 +7,7 @@ import { matches, matchResult, matchAnalytics } from '../../db/schema/matches.ts
 import { tournamentStandings } from '../../db/schema/tournaments.ts';
 import { battingStats, bowlingStats } from '../../db/schema/stats.ts';
 import { users } from '../../db/schema/users.ts';
-import { teams } from '../../db/schema/teams.ts';
+
 
 // In-memory signal store for multi-device test coordination.
 // Signals are ephemeral — cleared on server restart or via reset endpoints.
