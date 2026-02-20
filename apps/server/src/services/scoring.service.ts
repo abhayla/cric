@@ -10,6 +10,37 @@ import { AppError } from '../middleware/error-handler.ts';
 import { refreshMatchPlayerCareerStats } from './career-stats.service.ts';
 
 // ============================================================
+// Cricket Overs Arithmetic Helpers
+// ============================================================
+
+/** Increment cricket overs decimal by 1 ball: "2.3" → "2.4", "2.5" → "3.0" */
+function incrementOvers(currentOvers: string): string {
+  const parts = String(currentOvers).split('.');
+  let completedOvers = parseInt(parts[0]!, 10);
+  let balls = parseInt(parts[1] || '0', 10);
+  balls += 1;
+  if (balls >= 6) {
+    completedOvers += 1;
+    balls = 0;
+  }
+  return `${completedOvers}.${balls}`;
+}
+
+/** Decrement cricket overs decimal by 1 ball: "2.3" → "2.2", "3.0" → "2.5" */
+function decrementOvers(currentOvers: string): string {
+  const parts = String(currentOvers).split('.');
+  let completedOvers = parseInt(parts[0]!, 10);
+  let balls = parseInt(parts[1] || '0', 10);
+  balls -= 1;
+  if (balls < 0) {
+    completedOvers -= 1;
+    balls = 5;
+  }
+  if (completedOvers < 0) return '0.0';
+  return `${completedOvers}.${balls}`;
+}
+
+// ============================================================
 // Types
 // ============================================================
 
@@ -529,6 +560,11 @@ export async function undoDelivery(
           bowlerUpdates.dotBalls = sql`${bowlingStats.dotBalls} - 1`;
         }
 
+        // Reverse overs bowled for legal deliveries
+        if (delivery.isLegal) {
+          bowlerUpdates.oversBowled = decrementOvers(String(bowlerStat.oversBowled));
+        }
+
         if (delivery.isBoundaryFour) {
           bowlerUpdates.foursConceded = sql`${bowlingStats.foursConceded} - 1`;
         }
@@ -1022,6 +1058,11 @@ async function upsertBowlingStats(
       updates.wicketsTaken = sql`${bowlingStats.wicketsTaken} + 1`;
     }
 
+    // Update overs bowled for legal deliveries
+    if (delivery.isLegal) {
+      updates.oversBowled = incrementOvers(String(existing.oversBowled));
+    }
+
     await tx
       .update(bowlingStats)
       .set(updates)
@@ -1030,6 +1071,7 @@ async function upsertBowlingStats(
     await tx.insert(bowlingStats).values({
       inningsId,
       playerId: input.bowlerId,
+      oversBowled: delivery.isLegal ? '0.1' : '0.0',
       runsConceded: runsConcededByBowler,
       wides: input.isWide ? 1 : 0,
       noBalls: input.isNoBall ? 1 : 0,
