@@ -258,10 +258,32 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
   }
 
   void _handleInningsComplete(WsInningsCompleteMessage msg) {
-    state = state.copyWith(
-      target: msg.data.target,
-      inningsCompleteInfo: msg.data,
-    );
+    // Only bump innings and reset score if this is NOT the final innings
+    // (innings 2+ completion = match over, don't create phantom innings 3).
+    if (msg.data.inningsNumber < 2) {
+      final nextInnings = msg.data.inningsNumber + 1;
+      state = state.copyWith(
+        target: msg.data.target,
+        inningsNumber: nextInnings,
+        inningsCompleteInfo: msg.data,
+        // Reset score counters for the new innings.
+        totalRuns: 0,
+        totalWickets: 0,
+        oversDisplay: '0.0',
+        clearStriker: true,
+        clearNonStriker: true,
+        clearBowler: true,
+        clearCurrentRunRate: true,
+        clearRequiredRunRate: true,
+        currentOver: const [],
+      );
+    } else {
+      // Final innings — just record the completion info and target.
+      state = state.copyWith(
+        target: msg.data.target,
+        inningsCompleteInfo: msg.data,
+      );
+    }
   }
 
   void _handleMatchComplete(WsMatchCompleteMessage msg) {
