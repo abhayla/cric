@@ -18,10 +18,10 @@ This reference defines the orchestration flow for projects spanning multiple lay
 | 2 | prd-creator | PRD covering entire feature (all layers) | Single PRD |
 | 3 | document-reviewer | PRD review **[Stop]** | Approval |
 | 4 | technical-designer | **Server** Design Doc | Server Design Doc |
-| 5 | technical-designer-frontend | **Mobile** Design Doc (references server Integration Points) | Mobile Design Doc |
+| 5 | technical-designer | **Mobile** Design Doc (references server Integration Points) | Mobile Design Doc |
 | 6 | document-reviewer ×2 | Review each Design Doc (one invocation per doc) | Reviews |
 | 7 | design-sync | Cross-layer consistency verification (source: mobile Design Doc) **[Stop]** | Sync status |
-| 8 | acceptance-test-generator | Integration test skeleton from cross-layer contracts | Test skeletons |
+| 8 | task-executor | Integration test skeleton from cross-layer contracts | Test skeletons |
 | 9 | work-planner | Work plan from all Design Docs **[Stop: Batch approval]** | Work plan |
 
 ### Medium Scale Fullstack (3-5 Files) - 7 Steps
@@ -30,10 +30,10 @@ This reference defines the orchestration flow for projects spanning multiple lay
 |------|-------|---------|--------|
 | 1 | requirement-analyzer | Requirement analysis + scale determination **[Stop]** | Requirements + scale |
 | 2 | technical-designer | **Server** Design Doc | Server Design Doc |
-| 3 | technical-designer-frontend | **Mobile** Design Doc (references server Integration Points) | Mobile Design Doc |
+| 3 | technical-designer | **Mobile** Design Doc (references server Integration Points) | Mobile Design Doc |
 | 4 | document-reviewer ×2 | Review each Design Doc (one invocation per doc) | Reviews |
 | 5 | design-sync | Cross-layer consistency verification (source: mobile Design Doc) **[Stop]** | Sync status |
-| 6 | acceptance-test-generator | Integration test skeleton from cross-layer contracts | Test skeletons |
+| 6 | task-executor | Integration test skeleton from cross-layer contracts | Test skeletons |
 | 7 | work-planner | Work plan from all Design Docs **[Stop: Batch approval]** | Work plan |
 
 ### Layer Context in Design Doc Creation

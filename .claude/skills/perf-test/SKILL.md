@@ -44,10 +44,13 @@ Guide performance testing across Flutter app, server API, and database.
 
 1. **Install k6 or use curl-based benchmarking:**
    ```bash
-   # Simple load test with curl
+   # Simple load test with curl (bash/Git Bash on Windows)
    for i in $(seq 1 100); do
      curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" https://api.yourdomain.com/api/v1/matches
    done
+
+   # PowerShell alternative:
+   # 1..100 | ForEach-Object { Invoke-WebRequest -Uri "https://api.yourdomain.com/api/v1/matches" -UseBasicParsing | Select-Object StatusCode, @{N='Time';E={$_.Headers['X-Response-Time']}} }
    ```
 
 2. **Key endpoints to test:**

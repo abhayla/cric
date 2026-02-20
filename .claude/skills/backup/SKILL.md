@@ -11,6 +11,8 @@ metadata:
 
 Guide PostgreSQL backup configuration with pg_dump, retention, and restore testing.
 
+> **Platform note:** CricApp deploys on Windows Server. The examples below use Linux/bash syntax as reference. On Windows, replace cron with Task Scheduler, use PowerShell scripts (`.ps1`) instead of `.sh`, and adjust paths (e.g., `C:\backups\cricapp\` instead of `/var/backups/cricapp/`).
+
 ## Arguments
 
 `$ARGUMENTS` can be: `setup`, `run`, `restore-test`, or `status`.

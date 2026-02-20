@@ -91,7 +91,7 @@ Produce a summary table:
 
 ## Step 3: Update Memory Topic Files
 
-Memory lives in `C:\Users\itsab\.claude\projects\D--Abhay-VibeCoding-cric\memory\`.
+Memory lives in the Claude Code auto-memory directory (the `memory/` folder alongside your project's `.claude/` config).
 
 ### 3a. Update `testing-lessons.md`
 

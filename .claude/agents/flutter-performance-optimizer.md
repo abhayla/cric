@@ -1,6 +1,7 @@
 ---
 name: flutter-performance-optimizer
 description: Use this agent when implementing performance optimizations in Flutter apps. Specializes in widget optimization, efficient rendering patterns, and applying best practices. Examples: <example>Context: User has performance issues identified user: 'Fix the jank in my list - analyzer found ListView needs .builder and missing const' assistant: 'I'll use the flutter-performance-optimizer agent to implement these optimizations' <commentary>Performance optimization requires applying specific patterns like const constructors, keys, RepaintBoundary</commentary></example> <example>Context: User wants to optimize app user: 'Optimize my Flutter app for 60fps performance' assistant: 'I'll use the flutter-performance-optimizer agent to apply comprehensive performance optimizations' <commentary>Comprehensive optimization requires systematic application of performance best practices</commentary></example>
+tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 color: orange
 ---
@@ -313,60 +314,60 @@ void _isolateEntry(SendPort sendPort) async {
 
 ## Advanced Optimization Patterns
 
-### Selective Widget Rebuilds
+### Selective Widget Rebuilds (Riverpod 3.0)
 
 ```dart
-// ❌ BAD: Entire screen rebuilds
-class CartPage extends StatelessWidget {
+// ❌ BAD: Entire screen rebuilds — watching full state in one place
+class CartPage extends ConsumerWidget {
+  const CartPage({super.key});
+
   @override
-  Widget build(BuildContext context) {
-    final cart = context.watch<CartProvider>(); // Rebuilds everything!
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cart = ref.watch(cartNotifierProvider); // Rebuilds everything!
 
     return Column(
       children: [
         AppBar(title: Text('Cart (${cart.itemCount})')), // Rebuilds
         Expanded(child: CartList(cart.items)), // Rebuilds
         CartSummary(cart.total), // Rebuilds
-        CheckoutButton(), // Rebuilds
+        const CheckoutButton(), // Rebuilds
       ],
     );
   }
 }
 
-// ✅ GOOD: Only necessary parts rebuild
+// ✅ GOOD: Split into smaller ConsumerWidgets for targeted rebuilds
 class CartPage extends StatelessWidget {
+  const CartPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         // Only title rebuilds on item count change
-        AppBar(
-          title: Consumer<CartProvider>(
-            builder: (context, cart, child) => Text('Cart (${cart.itemCount})'),
-          ),
-        ),
+        AppBar(title: const CartItemCount()),
         // Only list rebuilds on items change
-        Expanded(
-          child: Consumer<CartProvider>(
-            builder: (context, cart, child) => CartList(cart.items),
-          ),
-        ),
+        const Expanded(child: CartItemList()),
         // Only summary rebuilds on total change
-        Consumer<CartProvider>(
-          builder: (context, cart, child) => CartSummary(cart.total),
-        ),
-        // Never rebuilds (const)
+        const CartSummaryWidget(),
+        // Never rebuilds (const, no ref.watch)
         const CheckoutButton(),
       ],
     );
   }
 }
 
-// ✅ BETTER: Use Selector for precise rebuilds
-Selector<CartProvider, int>(
-  selector: (context, cart) => cart.itemCount,
-  builder: (context, itemCount, child) => Text('Cart ($itemCount)'),
-)
+class CartItemCount extends ConsumerWidget {
+  const CartItemCount({super.key});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(cartNotifierProvider.select((c) => c.itemCount));
+    return Text('Cart ($count)');
+  }
+}
+
+// ✅ BETTER: Use ref.watch with .select() for precise rebuilds
+ref.watch(cartNotifierProvider.select((cart) => cart.itemCount))
 ```
 
 ### Extract Static Content
@@ -519,11 +520,11 @@ RepaintBoundary(
 - [ ] Cache computed values
 - [ ] Avoid creating objects in build()
 
-### State Management
-- [ ] Use Consumer/Selector for targeted rebuilds
-- [ ] Avoid context.watch() in large widgets
+### State Management (Riverpod 3.0)
+- [ ] Use ref.watch() with .select() for targeted rebuilds
+- [ ] Split large ConsumerWidgets into smaller ones
 - [ ] Use const widgets where possible
-- [ ] Minimize setState() scope
+- [ ] Minimize state scope in Notifiers
 
 ### Memory Management
 - [ ] Dispose controllers in dispose()
@@ -613,7 +614,7 @@ ValueKey(item.id) // Better!
 
 **Outside this agent's scope:**
 - Performance profiling → Use `flutter-performance-analyzer`
-- Architecture design → Use `flutter-architect`
+- Architecture design → Use `flutter-expert`
 - UI implementation → Use `flutter-ui-implementer`
 
 ## Output Standards

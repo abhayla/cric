@@ -5,7 +5,7 @@ description: >
   against acceptance criteria, planning docs, wireframes, and domain rules. Produces
   a requirements traceability matrix and unified PASS/WARN/BLOCK verdict.
   Use at PLAYBOOK Step 11 (Stage 3).
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Write, Grep, Glob, WebFetch, WebSearch
 ---
 
 # CricApp Reviewer

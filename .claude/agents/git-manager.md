@@ -4,7 +4,7 @@ description: >
   Git operations specialist for staging, committing, and pushing code changes safely.
   Use when you need to commit completed work with proper conventional commit messages,
   push to remote branches, or handle git workflow operations securely.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
 model: haiku
 ---
 

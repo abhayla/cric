@@ -1,7 +1,7 @@
 ---
 name: scoring-researcher
 description: Research and analyze cricket scoring logic, delivery processing pipeline, strike rotation rules, and undo mechanics. Use when investigating scoring bugs, planning scoring features, or verifying cricket rule implementation correctness.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Write, Grep, Glob, WebFetch, WebSearch
 ---
 
 # Scoring Engine Researcher

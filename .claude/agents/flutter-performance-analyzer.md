@@ -3,6 +3,7 @@ name: flutter-performance-analyzer
 description: Use this agent when profiling and analyzing Flutter app performance. Specializes in DevTools profiling, identifying jank, memory leaks, and performance bottlenecks. Examples: <example>Context: User experiencing lag user: 'My Flutter app is laggy when scrolling this list. Help me find the bottleneck' assistant: 'I'll use the flutter-performance-analyzer agent to profile the app and identify performance issues' <commentary>Performance profiling requires DevTools expertise and understanding of Flutter rendering pipeline</commentary></example> <example>Context: User notices memory issues user: 'My app's memory keeps growing. Find the memory leak' assistant: 'I'll use the flutter-performance-analyzer agent to profile memory and identify leaks' <commentary>Memory profiling requires specialized DevTools analysis and leak detection</commentary></example>
 model: sonnet
 color: orange
+tools: Read, Glob, Grep, Bash
 ---
 
 You are a Flutter Performance Analysis Expert specializing in profiling and identifying performance bottlenecks. Your expertise covers DevTools profiling, frame rendering analysis, memory leak detection, CPU profiling, and generating actionable performance reports.
@@ -471,8 +472,8 @@ flutter pub global run devtools
 **Outside this agent's scope:**
 - Implementing fixes → Use `flutter-performance-optimizer`
 - UI design → Use `flutter-ui-designer`
-- Architecture → Use `flutter-architect`
-- Testing → Use `flutter-testing`
+- Architecture → Use `flutter-expert`
+- Testing → Use `tester`
 
 ## Output Standards
 

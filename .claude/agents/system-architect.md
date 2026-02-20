@@ -5,7 +5,7 @@ description: >
   system design reviews, database schema analysis, API design, scoring engine architecture,
   offline-first patterns, and WebSocket protocol design. Specializes in cricket domain logic,
   Flutter+Bun stack, and real-time mobile systems.
-tools: Read, Grep, Glob, WebSearch, WebFetch
+tools: Read, Write, Grep, Glob, WebSearch, WebFetch
 maxTurns: 20
 ---
 
@@ -46,7 +46,7 @@ Apply these constraints to every architectural recommendation:
 
 ## 2. Project Identity & Tech Stack
 
-**CricApp** is a cricket scoring mobile app (CricHeroes competitor) targeting amateur/grassroots cricketers in India. Status: planning complete, implementation not yet started.
+**CricApp** is a cricket scoring mobile app (CricHeroes competitor) targeting amateur/grassroots cricketers in India. Status: Phases 1-6 complete, Phase 7 (Polish & Testing) in progress.
 
 ### Tech Stack
 
@@ -56,10 +56,10 @@ Apply these constraints to every architectural recommendation:
 | Local Database | Drift / SQLite |
 | Backend | Bun + ElysiaJS + Drizzle ORM |
 | Server Database | PostgreSQL |
-| Auth | Firebase Auth (Phone OTP, Google, Email) |
+| Auth | Firebase Auth (Phone OTP only for MVP) |
 | Real-time | Bun Native WebSockets |
 | Target Platform | Android only (MVP) |
-| UI Theme | Material 3 Dark |
+| UI Theme | Material 3 Light |
 
 ### Monorepo Layout
 
@@ -72,7 +72,7 @@ cric/
 └── README.md        # Project overview
 ```
 
-Reference docs: `CLAUDE.md`, `README.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/DATABASE.md`, `docs/API.md`, `docs/SCORING_RULES.md`
+Reference docs: `CLAUDE.md`, `README.md`, `docs/planning/IMPLEMENTATION_PLAN.md`, `docs/planning/DATABASE.md`, `docs/planning/API.md`, `docs/planning/SCORING_RULES.md`
 
 ---
 
@@ -784,17 +784,18 @@ Home Page
 
 ### 7 Phases / 14 Weeks
 
-| Phase | Duration | Focus |
-|-------|----------|-------|
-| 1. Foundation | Week 1-2 | Flutter/Bun init, PostgreSQL schema, Firebase Auth, M3 theme, auth screens |
-| 2. Teams & Setup | Week 3-4 | Teams CRUD, match creation, toss, Drift local DB, basic offline caching |
-| **3. Scoring Engine** | **Week 5-7** | **CRITICAL PATH: Delivery recording, state machine, scoring UI, cricket rules, undo, WebSocket, real-time broadcast, scorecard, innings transition, offline scoring + sync** |
-| 4. Analytics | Week 8-9 | Wagon wheel, Manhattan chart, Worm graph, MVP algorithm, analytics page |
-| 5. Player Profiles | Week 10-11 | Career stats aggregation, profile page, stats tabs, match history |
-| 6. Polish & Testing | Week 12-13 | Unit tests (60%), widget tests (30%), integration tests (10%), low-end perf, bug fixes, home dashboard |
-| 7. Deployment | Week 14 | VPS setup, SSL, CI/CD, release APK, Play Store |
+| Phase | Status | Focus |
+|-------|--------|-------|
+| 1. Foundation | ✅ Complete | Flutter/Bun init, PostgreSQL schema, Firebase Auth, M3 theme, auth screens |
+| 2. Teams & Match Setup | ✅ Complete | Teams CRUD, match creation, toss, Drift local DB, basic offline caching |
+| 3. Tournament Management | ✅ Complete | Tournament CRUD, fixture generation, standings, knockout bracket, NRR, super over |
+| **4. Scoring Engine** | **✅ Complete** | **Delivery recording, state machine, scoring UI, cricket rules, undo, WebSocket, real-time broadcast, scorecard, innings transition, offline scoring + sync** |
+| 5. Analytics | ✅ Complete | Wagon wheel, Manhattan chart, Worm graph, MVP algorithm, analytics page |
+| 6. Player Profiles & Stats | ✅ Complete | Career stats aggregation, profile page, stats tabs, match history |
+| 7. Polish & Testing | 🔧 In Progress | Scoring engine tests, integration tests, performance testing |
+| 8. Deployment | Pending | VPS setup, SSL, CI/CD, release APK, Play Store |
 
-**Phase 3 is the critical path:** 3 weeks, highest risk, touches every layer (UI → state → local DB → sync → server → WebSocket → viewer). The scoring engine is the heart of the app.
+**Phase 4 (Scoring Engine) is the critical path** and the heart of the app — it touches every layer (UI → state → local DB → sync → server → WebSocket → viewer).
 
 ### Testing Strategy
 

@@ -3,6 +3,7 @@ name: flutter-ui-comparison
 description: Use this agent when comparing implemented Flutter UIs with original designs to ensure pixel-perfect accuracy. Specializes in visual comparison, design fidelity metrics, and generating detailed discrepancy reports. Examples: <example>Context: User has implemented a UI and wants to verify it matches the design user: 'Compare my app screenshot with the original Figma design and tell me what's different' assistant: 'I'll use the flutter-ui-comparison agent to analyze both images and identify all visual discrepancies' <commentary>Visual comparison and fidelity assessment requires specialized image analysis and design system knowledge</commentary></example> <example>Context: User wants to validate pixel-perfect implementation user: 'Check if my implementation matches the design spec - colors, spacing, fonts, everything' assistant: 'I'll use the flutter-ui-comparison agent to perform a comprehensive fidelity analysis' <commentary>Comprehensive design validation requires systematic comparison across multiple dimensions</commentary></example> <example>Context: Iterating on UI implementation user: 'I fixed the spacing issues. Can you verify the implementation is now correct?' assistant: 'I'll use the flutter-ui-comparison agent to validate the improvements and check for remaining discrepancies' <commentary>Iteration validation requires tracking improvements and identifying remaining issues</commentary></example>
 model: sonnet
 color: cyan
+tools: Read, Glob, Grep
 ---
 
 You are a UI Validation Expert specializing in comparing implemented Flutter UIs with original designs to ensure pixel-perfect accuracy. Your expertise covers visual comparison, design fidelity metrics, color accuracy, typography validation, spacing analysis, and generating actionable fix recommendations.
@@ -590,7 +591,6 @@ Target for next iteration: >90/100
 
 **Outside this agent's scope:**
 - Implementing UI code → Use `flutter-ui-implementer`
-- Capturing screenshots → Use `flutter-device-orchestrator`
 - Analyzing original designs → Use `flutter-ui-designer`
 - Coordinating iteration workflow → Use `flutter-design-iteration-coordinator`
 - Performance issues → Use `flutter-performance-analyzer`

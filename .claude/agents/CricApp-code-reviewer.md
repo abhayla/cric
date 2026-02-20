@@ -4,7 +4,7 @@ description: >
   Comprehensive code review and quality assessment agent. Use after implementing features,
   before merging PRs, when investigating code quality or technical debt, for security
   vulnerability assessment, or when optimizing performance bottlenecks.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Write, Grep, Glob, WebFetch, WebSearch
 model: sonnet
 ---
 

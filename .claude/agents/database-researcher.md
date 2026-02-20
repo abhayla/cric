@@ -1,7 +1,7 @@
 ---
 name: database-researcher
 description: Research and analyze database schemas, migrations, sync engine logic, and data access patterns. Use when planning database changes, investigating sync issues, or verifying schema correctness against DATABASE.md.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Write, Grep, Glob, WebFetch, WebSearch
 model: sonnet
 ---
 

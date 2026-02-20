@@ -4,7 +4,7 @@ description: >
   Database administration and performance optimization specialist. Use when diagnosing
   performance bottlenecks, optimizing database structures, managing indexes, analyzing
   query performance, designing backup strategies, or performing database health assessments.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
 model: sonnet
 ---
 

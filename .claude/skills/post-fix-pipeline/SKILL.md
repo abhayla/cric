@@ -129,7 +129,7 @@ If empty, update `docs/CONTINUE_PROMPT.md` with session summary.
 
 ### STEP 5: Git Commit (only if gates passed)
 
-1. Launch `git-manager` agent (via Task tool) with:
+1. Execute git commit directly (via Bash tool) with:
    - files_changed + doc files from Step 4
    - commit_format with scope and summary
    - push flag
@@ -224,4 +224,4 @@ This captures pipeline outcomes into learning logs. Runs for all statuses includ
 | Test suite command times out | Treat as FAILED |
 | Tester agent fails | Gate = FAILED, block commit |
 | Docs agent fails | Log warning, proceed (non-blocking) |
-| Git agent fails | Log error, report COMMIT_FAILED |
+| Git commit fails | Log error, report COMMIT_FAILED |

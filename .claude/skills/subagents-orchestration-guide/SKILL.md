@@ -52,7 +52,7 @@ The following subagents are available:
 1. **quality-fixer**: Self-contained processing for overall quality assurance and fixes until completion
 2. **task-decomposer**: Appropriate task decomposition of work plans
 3. **task-executor**: Individual task execution and structured response
-4. **integration-test-reviewer**: Review integration/E2E tests for skeleton compliance and quality
+4. **reviewer**: Review integration/E2E tests for skeleton compliance and quality
 
 ### Document Creation Agents
 5. **requirement-analyzer**: Requirement analysis and work scale determination
@@ -61,7 +61,7 @@ The following subagents are available:
 8. **work-planner**: Work plan creation from Design Doc and test skeletons
 9. **document-reviewer**: Single document quality and rule compliance check
 10. **design-sync**: Design Doc consistency verification across multiple documents
-11. **acceptance-test-generator**: Generate integration and E2E test skeletons from Design Doc ACs
+11. **task-executor**: Generate integration and E2E test skeletons from Design Doc ACs (as part of implementation)
 
 ## Orchestration Principles
 
@@ -136,8 +136,7 @@ Subagents respond in JSON format. Key fields for orchestrator decisions:
 - **quality-fixer**: approved (true/false)
 - **document-reviewer**: approvalReady (true/false)
 - **design-sync**: sync_status (synced/conflicts_found)
-- **integration-test-reviewer**: status (approved/needs_revision/blocked), requiredFixes
-- **acceptance-test-generator**: status, generatedFiles
+- **reviewer**: status (approved/needs_revision/blocked), requiredFixes
 
 
 ## Handling Requirement Changes
@@ -186,7 +185,7 @@ According to scale determination:
 6. technical-designer → Design Doc creation
 7. document-reviewer → Design Doc review
 8. design-sync → Consistency verification **[Stop: Design Doc Approval]**
-9. acceptance-test-generator → Test skeleton generation, pass to work-planner (*1)
+9. task-executor → Test skeleton generation, pass to work-planner (*1)
 10. work-planner → Work plan creation **[Stop: Batch approval]**
 11. task-decomposer → Autonomous execution → Completion report
 
@@ -196,7 +195,7 @@ According to scale determination:
 2. technical-designer → Design Doc creation
 3. document-reviewer → Design Doc review
 4. design-sync → Consistency verification **[Stop: Design Doc Approval]**
-5. acceptance-test-generator → Test skeleton generation, pass to work-planner (*1)
+5. task-executor → Test skeleton generation, pass to work-planner (*1)
 6. work-planner → Work plan creation **[Stop: Batch approval]**
 7. task-decomposer → Autonomous execution → Completion report
 
@@ -237,7 +236,7 @@ graph TD
     LOOP --> TE[task-executor: Implementation]
     TE --> ESCJUDGE{Escalation judgment}
     ESCJUDGE -->|escalation_needed/blocked| USERESC[Escalate to user]
-    ESCJUDGE -->|testsAdded has int/e2e| ITR[integration-test-reviewer]
+    ESCJUDGE -->|testsAdded has int/e2e| ITR[reviewer]
     ESCJUDGE -->|No issues| QF
     ITR -->|needs_revision| TE
     ITR -->|approved| QF
@@ -284,7 +283,7 @@ Stop autonomous execution and escalate to user in the following cases:
 
 **Step 2 Execution Details**:
 - `status: escalation_needed` or `status: blocked` → Escalate to user
-- `testsAdded` contains `*.int.test.ts` or `*.e2e.test.ts` → Execute **integration-test-reviewer**
+- `testsAdded` contains `*.int.test.ts` or `*.e2e.test.ts` → Execute **reviewer**
   - If verdict is `needs_revision` → Return to task-executor with `requiredFixes`
   - If verdict is `approved` → Proceed to quality-fixer
 

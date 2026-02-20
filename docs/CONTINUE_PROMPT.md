@@ -16,6 +16,21 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-20: Deep Audit & Fix of All Skills & Agents
+
+Ran comprehensive audit of all 42 agents and 33 skills, then fixed all issues found:
+
+**Fixed (4 categories, all complete):**
+1. **Critical agent issues** — `system-architect.md` (auth, theme, status, phases, doc paths), `flutter-performance-optimizer.md` (Provider→Riverpod 3.0), `git-manager`/`tester` (added Bash tool), `post-fix-pipeline` (broken git-manager ref), `subagents-orchestration-guide` (9 non-existent agent refs), `skills-index.yaml` (removed 3 legacy skills, added 5 mappings), `task-analyzer` (fixed implicit relationships)
+2. **Missing tools in frontmatter** — 9 flutter agents got tools added, 6 agents got Write for memory writing, `debugger` got model:sonnet, `database-admin` got Bash
+3. **Non-existent agent refs** — Cleaned ~30 references across 13 files (flutter-expert, flutter-android-deployment, flutter-android-integration, flutter-performance-analyzer, flutter-rest-api, flutter-firebase, flutter-ui-designer, flutter-ui-implementer, flutter-ui-comparison, flutter-design-iteration-coordinator, typescript-pro, design-sync, flutter-testing-patterns)
+4. **Paths & platform compat** — `reflect/SKILL.md` (removed hardcoded Windows path), `backup/SKILL.md` (added Windows Server note), `perf-test/SKILL.md` (added PowerShell alternative)
+
+**Still pending (blocked by edit permissions):**
+- `CLAUDE.md` line 6: test counts "1950 Flutter tests, 298 server tests" → should be "~1130 scoring tests, ~420 server tests"
+- `CLAUDE.md` server commands: missing `bun run dev`, `bun run start` npm script aliases
+- `.claude/rules.md` line 29: "Material 3 dark theme" → should be "Material 3 light theme"
+
 ### Session 2026-02-19: Imported & Remediated External Skills & Agents
 
 Imported skills and agents from 4 repositories, then ran a 26-point gap analysis and remediation to align everything with CricApp's actual tech stack.

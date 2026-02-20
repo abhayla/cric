@@ -4,7 +4,7 @@ description: >
   Testing and quality assurance specialist. Use after implementing features or making
   code changes to run test suites, analyze coverage, validate error handling, check
   performance requirements, or verify build processes.
-tools: Read, Grep, Glob, WebFetch, WebSearch
+tools: Read, Grep, Glob, Bash, WebFetch, WebSearch
 model: sonnet
 ---
 

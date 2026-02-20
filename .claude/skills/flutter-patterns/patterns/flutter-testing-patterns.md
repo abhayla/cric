@@ -1,6 +1,6 @@
 ---
 name: flutter-testing-patterns
-description: Flutter testing templates and best practices. Quick reference for unit tests, widget tests, integration tests, BLoC testing, and mocking patterns.
+description: Flutter testing templates and best practices. Quick reference for unit tests, widget tests, integration tests, Riverpod notifier testing, and mocking patterns.
 ---
 
 # Flutter Testing Patterns - Quick Reference

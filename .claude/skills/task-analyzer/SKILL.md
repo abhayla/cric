@@ -73,7 +73,7 @@ Consider hidden dependencies:
 | Error handling | debugging, testing |
 | New features | design, implementation, documentation |
 | Performance | profiling, optimization, testing |
-| Frontend | typescript-rules, typescript-testing |
+| Flutter/Mobile | flutter-patterns, tdd |
 | API/Integration | integration-e2e-testing |
 
 ## Output Format
