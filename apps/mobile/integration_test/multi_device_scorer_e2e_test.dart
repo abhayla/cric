@@ -1,7 +1,9 @@
 // ignore_for_file: avoid_print
 
+import 'package:cricapp/src/core/constants/app_constants.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/match_complete_modal.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -91,10 +93,7 @@ void main() {
 
       // ── PHASE 1: Boot ──
       print('\n[SCORER] ══════════ PHASE 1: Boot App ══════════');
-      await AppTestWrapper.pumpApp(tester);
-      await settle(tester);
-      await visualPause(tester, 1000);
-      expect(find.text('Home'), findsWidgets);
+      await AppTestWrapper.pumpAppAndWaitForHome(tester);
       print('[SCORER] Home page loaded');
 
       // ── PHASE 2: Create Teams ──
@@ -172,9 +171,48 @@ void main() {
       expect(find.byType(ScoringControls), findsWidgets);
       print('[SCORER] Toss complete — scoring page ready');
 
-      // Give viewer time to discover the match and connect
-      print('[SCORER] Waiting 5s for viewer to connect...');
-      await Future<void>.delayed(const Duration(seconds: 5));
+      // Signal viewer that scorer is ready, then wait for viewer to connect
+      final serverRoot =
+          AppConstants.apiBaseUrl.replaceAll('/api/v1', '');
+      final signalDio = Dio(BaseOptions(
+        baseUrl: serverRoot,
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
+      ));
+
+      try {
+        await signalDio.post('/api/v1/test/signal/scorer-ready',
+            data: {'value': 'true'});
+        print('[SCORER] Signal: scorer-ready posted');
+
+        // Wait for viewer to connect (poll viewer-ready signal, up to 120s)
+        final viewerDeadline =
+            DateTime.now().add(const Duration(seconds: 120));
+        var viewerReady = false;
+        while (DateTime.now().isBefore(viewerDeadline)) {
+          try {
+            final r =
+                await signalDio.get('/api/v1/test/signal/viewer-ready');
+            if (r.data['value'] != null) {
+              viewerReady = true;
+              print('[SCORER] Signal: viewer-ready received');
+              break;
+            }
+          } catch (_) {}
+          await Future<void>.delayed(const Duration(seconds: 2));
+          if (DateTime.now().second % 10 == 0) {
+            print('[SCORER] Waiting for viewer-ready...');
+          }
+        }
+        if (!viewerReady) {
+          print(
+              '[SCORER] WARNING: Viewer not ready after 120s — proceeding anyway');
+        }
+      } catch (e) {
+        print(
+            '[SCORER] Signal endpoint not available — falling back to 5s wait: $e');
+        await Future<void>.delayed(const Duration(seconds: 5));
+      }
 
       // ── PHASE 5: 1st Innings ──
       print(

@@ -218,6 +218,17 @@ void main() {
           reason: 'ScoringControls must be visible after toss');
       print('✓ Scoring page ready');
 
+      // ── Signal viewer that scorer is ready ──
+      // Posts scorer-ready signal so the viewer test can find the match.
+      // Does NOT wait for viewer — Gradle lock contention prevents
+      // concurrent builds from the same project directory.
+      try {
+        await testDio.post('/api/v1/test/signal/scorer-ready',
+            data: {'value': 'true'});
+        print('[SCORER] Signal: scorer-ready posted');
+      } catch (e) {
+        print('[SCORER] Signal endpoint not available: $e');
+      }
 
       // ── PHASE 5: 1st Innings ──────────────────────────────────────
       print('\n══════════ PHASE 5: 1st Innings — ${teamA.name} ══════════');

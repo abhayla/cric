@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cricapp/src/core/constants/app_constants.dart';
 import 'package:dio/dio.dart';
 
 /// Manages connectivity to an externally-running Bun test server for E2E tests.
 ///
 /// On Android emulator, `localhost` refers to the emulator itself.
 /// Use `10.0.2.2` to reach the host machine where the server runs.
+/// On real device, pass `--dart-define=API_BASE_URL=http://<LAN_IP>:3001/api/v1`.
 ///
 /// Start the server manually BEFORE running E2E tests:
 /// ```bash
@@ -23,9 +25,17 @@ class ServerManager {
 
   late final Dio _dio;
 
-  /// On Android emulator, 10.0.2.2 maps to host machine's localhost.
-  /// On real device or desktop, use localhost.
+  /// Resolves server base URL. Priority:
+  /// 1. If API_BASE_URL dart-define is set, strip /api/v1 suffix to get root.
+  /// 2. On Android emulator (default), use 10.0.2.2.
+  /// 3. On desktop, use localhost.
   String get baseUrl {
+    // Check if API_BASE_URL was overridden via --dart-define
+    const apiBaseUrl = AppConstants.apiBaseUrl;
+    if (!apiBaseUrl.contains('10.0.2.2')) {
+      // Custom URL provided — extract server root
+      return apiBaseUrl.replaceAll('/api/v1', '');
+    }
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:$port';
     }

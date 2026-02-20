@@ -4,8 +4,11 @@
 # ═══════════════════════════════════════════════════════════════════════════
 #
 # Runs the CricApp multi-device E2E test:
-#   - Scorer on Android emulator (scores a full predetermined match)
-#   - Viewer on real Android device (verifies WebSocket live updates)
+#   - Scorer on one Android device (scores a full predetermined match)
+#   - Viewer on another Android device (verifies WebSocket live updates)
+#
+# By default: scorer=emulator, viewer=real device.
+# Set SWAP_DEVICES=1 to swap (scorer=real device, viewer=emulator).
 #
 # Prerequisites:
 #   - Android emulator running
@@ -16,6 +19,7 @@
 # Usage:
 #   ./scripts/multi-device-e2e.sh
 #   LAN_IP=192.168.1.100 ./scripts/multi-device-e2e.sh
+#   SWAP_DEVICES=1 ./scripts/multi-device-e2e.sh
 #
 set -euo pipefail
 
@@ -57,6 +61,43 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Pre-flight: Kill stale integration test processes
+# ═══════════════════════════════════════════════════════════════════════════
+log "Pre-flight: Cleaning stale integration test processes..."
+
+if command -v wmic.exe &>/dev/null; then
+  # Windows/Git Bash: find dart.exe processes running integration tests
+  stale_pids=$(wmic.exe process where "name='dart.exe'" get processid,commandline 2>/dev/null \
+    | grep -i "integration_test" \
+    | awk '{print $NF}' \
+    | tr -d '\r' || true)
+
+  if [[ -n "$stale_pids" ]]; then
+    while IFS= read -r pid; do
+      if [[ -n "$pid" ]] && [[ "$pid" =~ ^[0-9]+$ ]]; then
+        log_warn "Killing stale dart.exe integration test process (PID $pid)"
+        taskkill.exe /PID "$pid" /F 2>/dev/null || true
+      fi
+    done <<< "$stale_pids"
+  else
+    log_ok "No stale integration test processes found"
+  fi
+else
+  # Linux/Mac: find dart processes running integration tests
+  stale_pids=$(pgrep -f "dart.*integration_test" 2>/dev/null || true)
+  if [[ -n "$stale_pids" ]]; then
+    while IFS= read -r pid; do
+      if [[ -n "$pid" ]]; then
+        log_warn "Killing stale dart integration test process (PID $pid)"
+        kill "$pid" 2>/dev/null || true
+      fi
+    done <<< "$stale_pids"
+  else
+    log_ok "No stale integration test processes found"
+  fi
+fi
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Step 1: Detect devices
@@ -142,6 +183,34 @@ fi
 
 log_ok "LAN IP: $LAN_IP"
 
+# ── Device assignment (supports SWAP_DEVICES=1) ──
+if [[ "${SWAP_DEVICES:-0}" == "1" ]]; then
+  SCORER_DEVICE_ID="$REAL_DEVICE_ID"
+  VIEWER_DEVICE_ID="$EMULATOR_ID"
+  SCORER_LABEL="real device"
+  VIEWER_LABEL="emulator"
+  # Real device scorer needs LAN IP dart-defines
+  SCORER_DART_DEFINES=(
+    --dart-define="API_BASE_URL=http://$LAN_IP:$SERVER_PORT/api/v1"
+    --dart-define="WS_BASE_URL=ws://$LAN_IP:$SERVER_PORT/ws"
+  )
+  # Emulator viewer uses default 10.0.2.2 — no dart-defines needed
+  VIEWER_DART_DEFINES=()
+  log_warn "SWAP_DEVICES=1 — scorer on real device, viewer on emulator"
+else
+  SCORER_DEVICE_ID="$EMULATOR_ID"
+  VIEWER_DEVICE_ID="$REAL_DEVICE_ID"
+  SCORER_LABEL="emulator"
+  VIEWER_LABEL="real device"
+  # Emulator scorer uses default 10.0.2.2 — no dart-defines needed
+  SCORER_DART_DEFINES=()
+  # Real device viewer needs LAN IP dart-defines
+  VIEWER_DART_DEFINES=(
+    --dart-define="API_BASE_URL=http://$LAN_IP:$SERVER_PORT/api/v1"
+    --dart-define="WS_BASE_URL=ws://$LAN_IP:$SERVER_PORT/ws"
+  )
+fi
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Step 3: Start server (if not running)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -178,41 +247,80 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Step 4: Reset test database
+# Step 4: Reset test database + clear stale signals
 # ═══════════════════════════════════════════════════════════════════════════
-log "Step 4: Resetting test database..."
+log "Step 4: Resetting test database and clearing signals..."
 curl -sf -X POST "http://localhost:$SERVER_PORT/api/v1/test/reset-match-data" >/dev/null 2>&1 || true
-log_ok "Database reset"
+curl -sf -X DELETE "http://localhost:$SERVER_PORT/api/v1/test/signals" >/dev/null 2>&1 || true
+log_ok "Database reset, signals cleared"
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Step 5: Launch scorer on emulator
+# Step 5: Launch scorer
 # ═══════════════════════════════════════════════════════════════════════════
-log "Step 5: Launching SCORER on emulator ($EMULATOR_ID)..."
+log "Step 5: Launching SCORER on $SCORER_LABEL ($SCORER_DEVICE_ID)..."
 
 cd "$MOBILE_DIR"
 flutter test integration_test/multi_device_scorer_e2e_test.dart \
-  -d "$EMULATOR_ID" 2>&1 | sed "s/^/[scorer] /" &
+  -d "$SCORER_DEVICE_ID" ${SCORER_DART_DEFINES[@]+"${SCORER_DART_DEFINES[@]}"} 2>&1 | sed "s/^/[scorer] /" &
 SCORER_PID=$!
 cd "$PROJECT_ROOT"
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Step 6: Wait for scorer to create match
+# Step 6: Poll for scorer-ready signal (replaces hardcoded sleep)
 # ═══════════════════════════════════════════════════════════════════════════
-log "Step 6: Waiting 15s for scorer to create match..."
-sleep 15
+log "Step 6: Polling for scorer-ready signal (up to 5 minutes)..."
+
+POLL_DEADLINE=$((SECONDS + 300))
+SCORER_READY=false
+
+while (( SECONDS < POLL_DEADLINE )); do
+  # Check scorer process is still alive
+  if ! kill -0 "$SCORER_PID" 2>/dev/null; then
+    log_err "Scorer process died before signaling ready"
+    wait "$SCORER_PID" 2>/dev/null || true
+    SCORER_PID=""
+    exit 1
+  fi
+
+  # Poll the scorer-ready signal
+  SIGNAL_VALUE=$(curl -sf "http://localhost:$SERVER_PORT/api/v1/test/signal/scorer-ready" 2>/dev/null \
+    | sed -n 's/.*"value": *"\([^"]*\)".*/\1/p' || true)
+
+  if [[ "$SIGNAL_VALUE" == "true" ]]; then
+    SCORER_READY=true
+    log_ok "Scorer-ready signal received!"
+    break
+  fi
+
+  # Progress indicator every 10s
+  if (( SECONDS % 10 < 2 )); then
+    log "Waiting for scorer-ready... (${SECONDS}s elapsed)"
+  fi
+
+  sleep 2
+done
+
+if [[ "$SCORER_READY" != "true" ]]; then
+  log_err "Scorer did not signal ready within 5 minutes"
+  exit 1
+fi
+
+# Grace period: let Gradle daemon fully release locks before viewer build
+log "Waiting 5s grace period for Gradle daemon to idle..."
+sleep 5
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Step 7: Launch viewer on real device
+# Step 7: Launch viewer
 # ═══════════════════════════════════════════════════════════════════════════
-log "Step 7: Launching VIEWER on real device ($REAL_DEVICE_ID)..."
-log "  API_BASE_URL=http://$LAN_IP:$SERVER_PORT/api/v1"
-log "  WS_BASE_URL=ws://$LAN_IP:$SERVER_PORT/ws"
+log "Step 7: Launching VIEWER on $VIEWER_LABEL ($VIEWER_DEVICE_ID)..."
+if [[ "$VIEWER_LABEL" == "real device" ]]; then
+  log "  API_BASE_URL=http://$LAN_IP:$SERVER_PORT/api/v1"
+  log "  WS_BASE_URL=ws://$LAN_IP:$SERVER_PORT/ws"
+fi
 
 cd "$MOBILE_DIR"
 flutter test integration_test/multi_device_viewer_e2e_test.dart \
-  -d "$REAL_DEVICE_ID" \
-  --dart-define="API_BASE_URL=http://$LAN_IP:$SERVER_PORT/api/v1" \
-  --dart-define="WS_BASE_URL=ws://$LAN_IP:$SERVER_PORT/ws" 2>&1 | sed "s/^/[viewer] /" &
+  -d "$VIEWER_DEVICE_ID" ${VIEWER_DART_DEFINES[@]+"${VIEWER_DART_DEFINES[@]}"} 2>&1 | sed "s/^/[viewer] /" &
 VIEWER_PID=$!
 cd "$PROJECT_ROOT"
 
@@ -241,15 +349,15 @@ echo "  MULTI-DEVICE E2E TEST REPORT"
 echo "═══════════════════════════════════════════════════════════════════"
 
 if [[ $SCORER_EXIT -eq 0 ]]; then
-  echo -e "  Scorer (emulator):     ${GREEN}PASSED${NC}"
+  echo -e "  Scorer ($SCORER_LABEL):     ${GREEN}PASSED${NC}"
 else
-  echo -e "  Scorer (emulator):     ${RED}FAILED (exit $SCORER_EXIT)${NC}"
+  echo -e "  Scorer ($SCORER_LABEL):     ${RED}FAILED (exit $SCORER_EXIT)${NC}"
 fi
 
 if [[ $VIEWER_EXIT -eq 0 ]]; then
-  echo -e "  Viewer (real device):  ${GREEN}PASSED${NC}"
+  echo -e "  Viewer ($VIEWER_LABEL):  ${GREEN}PASSED${NC}"
 else
-  echo -e "  Viewer (real device):  ${RED}FAILED (exit $VIEWER_EXIT)${NC}"
+  echo -e "  Viewer ($VIEWER_LABEL):  ${RED}FAILED (exit $VIEWER_EXIT)${NC}"
 fi
 
 echo "───────────────────────────────────────────────────────────────────"

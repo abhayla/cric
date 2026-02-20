@@ -9,6 +9,10 @@ import { battingStats, bowlingStats } from '../../db/schema/stats.ts';
 import { users } from '../../db/schema/users.ts';
 import { teams } from '../../db/schema/teams.ts';
 
+// In-memory signal store for multi-device test coordination.
+// Signals are ephemeral — cleared on server restart or via reset endpoints.
+const testSignals = new Map<string, { value: string; timestamp: number }>();
+
 /**
  * Test verification API routes — ONLY enabled when NODE_ENV=test.
  *
@@ -289,6 +293,9 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
       await db.execute(sql`ALTER TABLE "matches" ADD COLUMN IF NOT EXISTS "magic_over_wicket_penalty" integer NOT NULL DEFAULT -5`);
       await db.execute(sql`ALTER TABLE "matches" DROP COLUMN IF EXISTS "magic_over_number"`);
 
+      // Clear test coordination signals
+      testSignals.clear();
+
       // Seed test user (matches auth middleware TEST_USER)
       await db.insert(users).values({
         firebaseUid: 'test-user-e2e-001',
@@ -334,6 +341,9 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
         await db.execute(sql.raw(`DELETE FROM "${table}"`));
       }
 
+      // Clear test coordination signals
+      testSignals.clear();
+
       // Ensure test user exists (idempotent)
       await db.insert(users).values({
         firebaseUid: 'test-user-e2e-001',
@@ -364,4 +374,27 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
         playerCount: r.player_count,
       })),
     };
+  })
+
+  // ── Multi-device test coordination signals ──
+
+  // POST /api/v1/test/signal/:name — set a signal with optional value
+  .post('/signal/:name', ({ params, body }) => {
+    const { name } = params;
+    const value = (body as any)?.value ?? 'true';
+    testSignals.set(name, { value, timestamp: Date.now() });
+    return { signal: name, value, set: true };
+  })
+
+  // GET /api/v1/test/signal/:name — read a signal (returns null if not set)
+  .get('/signal/:name', ({ params }) => {
+    const { name } = params;
+    const signal = testSignals.get(name);
+    return { signal: name, value: signal?.value ?? null, timestamp: signal?.timestamp ?? null };
+  })
+
+  // DELETE /api/v1/test/signals — clear all signals (called during reset)
+  .delete('/signals', () => {
+    testSignals.clear();
+    return { cleared: true };
   });
