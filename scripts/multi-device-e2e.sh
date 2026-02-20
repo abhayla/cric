@@ -23,6 +23,24 @@
 #
 set -euo pipefail
 
+# Ensure Android SDK platform-tools (adb) is on PATH
+if ! command -v adb &>/dev/null; then
+  for candidate in \
+    "${LOCALAPPDATA:-}/Android/Sdk/platform-tools" \
+    "$HOME/AppData/Local/Android/Sdk/platform-tools" \
+    "${ANDROID_HOME:-}/platform-tools" \
+    "${ANDROID_SDK_ROOT:-}/platform-tools"; do
+    if [[ -n "$candidate" ]] && [[ -f "$candidate/adb" || -f "$candidate/adb.exe" ]]; then
+      # On Git Bash/MSYS, convert Windows paths to Unix paths for PATH
+      if command -v cygpath &>/dev/null; then
+        candidate="$(cygpath -u "$candidate")"
+      fi
+      export PATH="$PATH:$candidate"
+      break
+    fi
+  done
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SERVER_DIR="$PROJECT_ROOT/apps/server"

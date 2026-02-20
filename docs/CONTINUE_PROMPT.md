@@ -16,6 +16,10 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-21: Commit Pending Changes + Continue Phase 7
+
+Previous session's LiveMatchPage viewer parity changes and multi-device E2E script hardening are still uncommitted. Commit first, then continue Phase 7 work.
+
 ### Session 2026-02-20 (Night #3): LiveMatchPage Viewer — Full Parity with Scorer
 
 Fixed 13 gaps between scorer and viewer UIs. Server now sends team names, non-striker stats, free hit, and magic over data in WS messages. Client renders all data with stat headers, last delivery banner, wicket notification, over number, and magic/free-hit badges.

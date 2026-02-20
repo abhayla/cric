@@ -22,18 +22,29 @@ class LiveMatchPage extends ConsumerStatefulWidget {
 }
 
 class _LiveMatchPageState extends ConsumerState<LiveMatchPage> {
+  // Saved during initState so dispose() doesn't need ref.read() (which throws
+  // when the widget is already unmounted).
+  MatchLiveNotifier? _notifier;
+
   @override
   void initState() {
     super.initState();
     // Join the match room after first build.
     Future.microtask(() {
-      ref.read(matchLiveNotifierProvider.notifier).joinMatch(widget.matchId);
+      _notifier = ref.read(matchLiveNotifierProvider.notifier);
+      _notifier!.joinMatch(widget.matchId);
     });
   }
 
   @override
   void dispose() {
-    ref.read(matchLiveNotifierProvider.notifier).leaveMatch();
+    // Leave the WS match room on dispose.
+    // Fire-and-forget — don't await or reset state since the widget tree
+    // is being torn down and state changes would cause framework errors.
+    final notifier = _notifier;
+    if (notifier != null) {
+      Future.microtask(() => notifier.leaveMatch());
+    }
     super.dispose();
   }
 
