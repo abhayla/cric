@@ -39,8 +39,9 @@ import 'helpers/tournament_flow_helpers.dart';
 //  1st Innings (Mumbai Warriors) — Random scoring, 20 overs or all out
 //  2nd Innings (Chennai Challengers) — Random scoring, 20 overs or target chased
 //
-// Run:
-//   flutter test integration_test/full_t20_e2e_test.dart -d emulator-5554
+// Run (USER should run from IDE terminal — not Claude CLI — to watch on device):
+//   Emulator:  flutter test integration_test/full_t20_e2e_test.dart -d emulator-5554
+//   Device:    flutter test integration_test/full_t20_e2e_test.dart -d <DEVICE_ID> --dart-define=API_BASE_URL=http://<LAN_IP>:3001/api/v1
 //
 // =============================================================================
 
@@ -210,6 +211,34 @@ void main() {
       expect(find.byType(ScoringControls), findsWidgets,
           reason: 'ScoringControls must be visible after toss');
       print('[Phase4] Scoring page ready');
+
+      // ---- Signal viewer (if running on second emulator) ------------------
+      try {
+        await testDio.post('/api/v1/test/signal/scorer-ready',
+            data: {'value': 'true'});
+        print('[Phase4] Signal: scorer-ready posted');
+
+        // Wait for viewer to connect (up to 30s, non-blocking after that)
+        final viewerDeadline =
+            DateTime.now().add(const Duration(seconds: 30));
+        var viewerReady = false;
+        while (DateTime.now().isBefore(viewerDeadline)) {
+          try {
+            final r = await testDio.get('/api/v1/test/signal/viewer-ready');
+            if (r.data['value'] != null) {
+              viewerReady = true;
+              print('[Phase4] Signal: viewer-ready received');
+              break;
+            }
+          } catch (_) {}
+          await Future<void>.delayed(const Duration(seconds: 2));
+        }
+        if (!viewerReady) {
+          print('[Phase4] No viewer connected -- proceeding (solo mode)');
+        }
+      } catch (e) {
+        print('[Phase4] Signal endpoint not available -- proceeding solo: $e');
+      }
 
       // ---- PHASE 5: 1st Innings (Random, 20 overs) ------------------------
       print(

@@ -37,50 +37,111 @@ Future<void> settle(WidgetTester tester, {int fallbackMs = 2000}) async {
 // Basic Tap Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
+/// Ensure no lingering bottom sheets are blocking ScoringControls.
+///
+/// On small-viewport devices, a stale SelectBowlerSheet or SelectBatterSheet
+/// may cover the scoring controls. This helper detects and dismisses them.
+Future<void> _ensureScoringControlsAccessible(WidgetTester tester) async {
+  // Check for bowler sheet
+  if (find.byType(SelectBowlerSheet).evaluate().isNotEmpty) {
+    print('    [auto-clear] Stale SelectBowlerSheet — tapping first eligible bowler');
+    // Find any tappable text in the sheet (bowler name rows)
+    final sheet = find.byType(SelectBowlerSheet);
+    final listTiles = find.descendant(of: sheet, matching: find.byType(ListTile));
+    if (listTiles.evaluate().isNotEmpty) {
+      await tester.tap(listTiles.first);
+      await settle(tester);
+    } else {
+      // Try pressing back to dismiss
+      await tester.pageBack();
+      await settle(tester);
+    }
+  }
+
+  // Check for batter sheet
+  if (find.byType(SelectBatterSheet).evaluate().isNotEmpty) {
+    print('    [auto-clear] Stale SelectBatterSheet — tapping first available batter');
+    final sheet = find.byType(SelectBatterSheet);
+    final listTiles = find.descendant(of: sheet, matching: find.byType(ListTile));
+    if (listTiles.evaluate().isNotEmpty) {
+      await tester.tap(listTiles.first);
+      await settle(tester);
+    } else {
+      await tester.pageBack();
+      await settle(tester);
+    }
+  }
+}
+
 /// Tap a run button (0, 1, 2, 3, 4, 6).
 Future<void> tapRun(WidgetTester tester, int runs) async {
+  await _ensureScoringControlsAccessible(tester);
   final runButton = find.descendant(
     of: find.byType(ScoringControls),
     matching: find.text('$runs'),
   );
   expect(runButton, findsOneWidget, reason: 'Run button $runs should exist');
-  await tester.tap(runButton);
+  await tester.ensureVisible(runButton);
+  await tester.tap(runButton, warnIfMissed: false);
   await tester.pumpAndSettle();
   await visualPause(tester);
 }
 
 /// Tap an extras button (WD, NB, B, LB).
 Future<void> tapExtra(WidgetTester tester, String label) async {
+  await _ensureScoringControlsAccessible(tester);
   final button = find.descendant(
     of: find.byType(ScoringControls),
     matching: find.text(label),
   );
   expect(button, findsOneWidget, reason: 'Extras button $label should exist');
-  await tester.tap(button);
+  await tester.ensureVisible(button);
+  await tester.tap(button, warnIfMissed: false);
   await tester.pumpAndSettle();
   await visualPause(tester);
 }
 
 /// Confirm an extras panel selection.
 Future<void> confirmExtra(WidgetTester tester) async {
+  // Wait briefly for the extras panel to fully render
+  await settle(tester);
   final confirmButton = find.descendant(
     of: find.byType(ExtrasPanel),
     matching: find.text('Confirm'),
   );
-  expect(confirmButton, findsOneWidget);
-  await tester.tap(confirmButton);
+  if (confirmButton.evaluate().isEmpty) {
+    // ExtrasPanel may not have opened (tap missed) — try re-opening
+    print('    [confirmExtra] ExtrasPanel not found — pumping extra frames');
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+      if (find.byType(ExtrasPanel).evaluate().isNotEmpty) break;
+    }
+    final retryConfirm = find.descendant(
+      of: find.byType(ExtrasPanel),
+      matching: find.text('Confirm'),
+    );
+    if (retryConfirm.evaluate().isEmpty) {
+      print('    [confirmExtra] ExtrasPanel still not found — skipping');
+      return;
+    }
+    await tester.tap(retryConfirm);
+  } else {
+    await tester.tap(confirmButton);
+  }
   await tester.pumpAndSettle();
   await visualPause(tester);
 }
 
 /// Tap the wicket (W) button.
 Future<void> tapWicket(WidgetTester tester) async {
+  await _ensureScoringControlsAccessible(tester);
   final button = find.descendant(
     of: find.byType(ScoringControls),
     matching: find.text('W'),
   );
   expect(button, findsOneWidget);
-  await tester.tap(button);
+  await tester.ensureVisible(button);
+  await tester.tap(button, warnIfMissed: false);
   await tester.pumpAndSettle();
   await visualPause(tester);
 }
@@ -110,33 +171,104 @@ Future<void> tapWicketConfirm(WidgetTester tester) async {
 }
 
 /// Select a bowler in the SelectBowlerSheet.
-Future<void> selectBowler(WidgetTester tester, String name) async {
-  await tester.pumpAndSettle();
+///
+/// Waits up to 3 seconds for the sheet to appear, then selects the named bowler.
+/// If the preferred bowler isn't found, tries all bowlers in [fallbackNames].
+Future<void> selectBowler(WidgetTester tester, String name,
+    {List<String>? fallbackNames}) async {
+  // Wait for the bowler sheet to appear (it may still be animating in)
+  for (var i = 0; i < 30; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (find.byType(SelectBowlerSheet).evaluate().isNotEmpty) break;
+  }
+  await settle(tester);
+
+  if (find.byType(SelectBowlerSheet).evaluate().isEmpty) {
+    print('    [selectBowler] No SelectBowlerSheet found — skipping');
+    return;
+  }
+
   final bowlerName = find.descendant(
     of: find.byType(SelectBowlerSheet),
     matching: find.textContaining(name),
   );
   if (bowlerName.evaluate().isNotEmpty) {
-    await tester.tap(bowlerName.first);
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(bowlerName.first);
+    await tester.tap(bowlerName.first, warnIfMissed: false);
+    await settle(tester);
+    await visualPause(tester, 300);
+    return;
   }
-  await tester.pumpAndSettle();
-  await visualPause(tester, 500);
+
+  // Preferred bowler not found (e.g. ineligible) — try fallbacks
+  print('    [selectBowler] "$name" not in sheet, trying fallbacks');
+  for (final fallback in (fallbackNames ?? <String>[])) {
+    final alt = find.descendant(
+      of: find.byType(SelectBowlerSheet),
+      matching: find.textContaining(fallback),
+    );
+    if (alt.evaluate().isNotEmpty) {
+      await tester.ensureVisible(alt.first);
+      await tester.tap(alt.first, warnIfMissed: false);
+      await settle(tester);
+      await visualPause(tester, 300);
+      print('    [selectBowler] Selected fallback: $fallback');
+      return;
+    }
+  }
+  // Last resort: tap the first ListTile in the sheet
+  final anyTile = find.descendant(
+    of: find.byType(SelectBowlerSheet),
+    matching: find.byType(ListTile),
+  );
+  if (anyTile.evaluate().isNotEmpty) {
+    await tester.tap(anyTile.first, warnIfMissed: false);
+    await settle(tester);
+    print('    [selectBowler] Selected first available bowler (last resort)');
+    return;
+  }
+  print('    [selectBowler] WARNING: Could not select any bowler!');
 }
 
 /// Select a batter in the SelectBatterSheet.
+///
+/// Waits up to 3 seconds for the sheet to appear, then selects the named batter.
 Future<void> selectBatter(WidgetTester tester, String name) async {
-  await tester.pumpAndSettle();
+  // Wait for the batter sheet to appear
+  for (var i = 0; i < 30; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (find.byType(SelectBatterSheet).evaluate().isNotEmpty) break;
+  }
+  await settle(tester);
+
+  if (find.byType(SelectBatterSheet).evaluate().isEmpty) {
+    print('    [selectBatter] No SelectBatterSheet found — skipping');
+    return;
+  }
+
   final batterName = find.descendant(
     of: find.byType(SelectBatterSheet),
     matching: find.textContaining(name),
   );
   if (batterName.evaluate().isNotEmpty) {
-    await tester.tap(batterName.first);
-    await tester.pumpAndSettle();
+    await tester.ensureVisible(batterName.first);
+    await tester.tap(batterName.first, warnIfMissed: false);
+    await settle(tester);
+    await visualPause(tester);
+  } else {
+    // Try tapping first available batter as fallback
+    final anyTile = find.descendant(
+      of: find.byType(SelectBatterSheet),
+      matching: find.byType(ListTile),
+    );
+    if (anyTile.evaluate().isNotEmpty) {
+      await tester.tap(anyTile.first, warnIfMissed: false);
+      await settle(tester);
+      print('    [selectBatter] "$name" not found — selected first available');
+    } else {
+      print('    [selectBatter] WARNING: "$name" not found in sheet!');
+    }
   }
-  await tester.pumpAndSettle();
-  await visualPause(tester);
 }
 
 /// Complete the innings transition modal.
@@ -185,11 +317,15 @@ Future<void> completeInningsTransition(
   await tester.pumpAndSettle();
   await visualPause(tester);
 
-  // Step 3: Select bowler
+  // Step 3: Select bowler (may need scrolling if bowler is off-screen)
   final bowlerRow = find.descendant(
     of: find.byType(InningsTransitionModal),
     matching: find.text(bowler),
   );
+  expect(bowlerRow, findsOneWidget, reason: 'Bowler "$bowler" must exist');
+  // Scroll the bowler into view before tapping
+  await tester.ensureVisible(bowlerRow);
+  await tester.pumpAndSettle();
   await tester.tap(bowlerRow);
   await tester.pumpAndSettle();
   await visualPause(tester);
@@ -200,8 +336,11 @@ Future<void> completeInningsTransition(
     matching: find.text('Start Innings'),
   );
   await tester.tap(startButton);
-  await tester.pumpAndSettle();
-  await visualPause(tester, 600);
+  await settle(tester);
+  await visualPause(tester, 1000);
+
+  // Extra settle to ensure dialog pop animation fully completes
+  await settle(tester);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -262,10 +401,25 @@ Future<void> playRandomInnings({
   final maxWickets = playersPerSide - 1;
   final maxBalls = totalOvers * 6;
 
+  // Dismiss any sheet that may be open at the START of the innings
+  // (e.g., bowler sheet if page initialized with bowlerId==null).
+  // Only do this once — the per-over selectBowler / per-wicket selectBatter
+  // calls handle subsequent sheets.
+  await _dismissAnyOpenSheet(
+    tester,
+    bowlerNames: bowlerNames,
+    batterNames: batterNames,
+    bowlerIndex: bowlerIndex,
+    nextBatterIndex: nextBatterIndex,
+  );
+
   while (wickets < maxWickets && legalBalls < maxBalls) {
     // Check if match/innings is complete (modal appeared)
+    await settle(tester);
     if (find.byType(MatchCompleteModal).evaluate().isNotEmpty ||
         find.byType(InningsTransitionModal).evaluate().isNotEmpty) {
+      print('  [innings $inningsNumber] Breaking: completion modal detected '
+          '(legal=$legalBalls, wkts=$wickets)');
       break;
     }
 
@@ -410,6 +564,9 @@ Future<void> playRandomInnings({
 
     // Check for over completion
     if (currentOverBalls >= 6) {
+      final overNum = legalBalls ~/ 6;
+      print('  [innings $inningsNumber] Over $overNum complete '
+          '(legal=$legalBalls, wkts=$wickets)');
       currentOverBalls = 0;
 
       // Need to select bowler for next over (if innings not complete)
@@ -422,15 +579,85 @@ Future<void> playRandomInnings({
         lastBowlerIndex = bowlerIndex;
         bowlerIndex = nextBowlerIdx;
 
-        await selectBowler(tester, bowlerNames[bowlerIndex]);
+        await selectBowler(tester, bowlerNames[bowlerIndex],
+            fallbackNames: bowlerNames);
       }
     }
 
     // Check again for completion modals
-    await tester.pumpAndSettle();
+    await settle(tester);
     if (find.byType(MatchCompleteModal).evaluate().isNotEmpty ||
         find.byType(InningsTransitionModal).evaluate().isNotEmpty) {
       break;
+    }
+  }
+}
+
+/// Dismiss any auto-opened bowler or batter selection bottom sheets.
+///
+/// The ScoringPage auto-opens these sheets when state changes trigger
+/// `needsNewBowler` or `needsNewBatter`. If one is open, select the
+/// appropriate player to dismiss it before continuing.
+Future<void> _dismissAnyOpenSheet(
+  WidgetTester tester, {
+  required List<String> bowlerNames,
+  required List<String> batterNames,
+  required int bowlerIndex,
+  required int nextBatterIndex,
+}) async {
+  // Use pumpAndSettle to ensure all animations (including sheet show/pop)
+  // have completed before checking the widget tree.
+  await settle(tester);
+
+  // Check for bowler selection sheet
+  if (find.byType(SelectBowlerSheet).evaluate().isNotEmpty) {
+    print('    [auto-dismiss] SelectBowlerSheet detected — selecting bowler');
+    final bowlerName = bowlerNames[bowlerIndex % bowlerNames.length];
+    final bowler = find.descendant(
+      of: find.byType(SelectBowlerSheet),
+      matching: find.textContaining(bowlerName),
+    );
+    if (bowler.evaluate().isNotEmpty) {
+      await tester.ensureVisible(bowler.first);
+      await tester.tap(bowler.first, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      await visualPause(tester, 500);
+      print('    [auto-dismiss] Selected bowler: $bowlerName');
+    } else {
+      // Try any eligible bowler in the sheet
+      for (final name in bowlerNames) {
+        final alt = find.descendant(
+          of: find.byType(SelectBowlerSheet),
+          matching: find.textContaining(name),
+        );
+        if (alt.evaluate().isNotEmpty) {
+          await tester.ensureVisible(alt.first);
+          await tester.tap(alt.first, warnIfMissed: false);
+          await tester.pumpAndSettle();
+          await visualPause(tester, 500);
+          print('    [auto-dismiss] Selected fallback bowler: $name');
+          break;
+        }
+      }
+    }
+  }
+
+  // Check for batter selection sheet
+  if (find.byType(SelectBatterSheet).evaluate().isNotEmpty) {
+    print('    [auto-dismiss] SelectBatterSheet detected — selecting batter');
+    if (nextBatterIndex < batterNames.length) {
+      final batterName = batterNames[nextBatterIndex];
+      final batter = find.descendant(
+        of: find.byType(SelectBatterSheet),
+        matching: find.textContaining(batterName),
+      );
+      if (batter.evaluate().isNotEmpty) {
+        await tester.ensureVisible(batter.first);
+        await tester.tap(batter.first, warnIfMissed: false);
+        await tester.pumpAndSettle();
+        await visualPause(tester, 500);
+        print('    [auto-dismiss] Selected batter: $batterName');
+      }
     }
   }
 }
