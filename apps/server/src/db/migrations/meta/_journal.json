@@ -29,6 +29,13 @@
       "when": 1771348442882,
       "tag": "0003_clumsy_machine_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1771699200000,
+      "tag": "0005_stats_unique_constraints",
+      "breakpoints": true
     }
   ]
 }

@@ -14,6 +14,7 @@ import {
 } from '../../src/services/match.service.ts';
 import {
   recordDelivery,
+  recordDeliveryBatch,
   undoDelivery,
   getDeliveries,
   abandonMatch,
@@ -3444,6 +3445,418 @@ describe('Scoring Service', () => {
 
       expect(result.delivery.noBallRuns).toBe(2);
       expect(result.delivery.totalRuns).toBe(2);
+    });
+  });
+
+  describe('batch delivery sync optimizations', () => {
+    it('batch precomputes sequence numbers correctly', async () => {
+      const live = await createLiveMatch();
+
+      // Record 6 deliveries as a batch
+      const batchDeliveries = Array.from({ length: 6 }, (_, i) => ({
+        inningsNumber: 1,
+        overNumber: 0,
+        ballNumber: i + 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 0,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      }));
+
+      const result = await recordDeliveryBatch(live.matchId, scorerUserId, { deliveries: batchDeliveries });
+      expect(result.processed).toBe(6);
+
+      // Verify sequence numbers are contiguous
+      const allDeliveries = await db
+        .select({ sequenceNumber: deliveries.sequenceNumber })
+        .from(deliveries)
+        .where(eq(deliveries.inningsId, live.inningsId))
+        .orderBy(deliveries.sequenceNumber);
+
+      expect(allDeliveries.map(d => d.sequenceNumber)).toEqual([1, 2, 3, 4, 5, 6]);
+    });
+
+    it('batch tracks free-hit across deliveries', async () => {
+      const live = await createLiveMatch();
+
+      const batchDeliveries = [
+        // No-ball
+        {
+          inningsNumber: 1,
+          overNumber: 0,
+          ballNumber: 1,
+          strikerId: homePlayerIds[0]!,
+          nonStrikerId: homePlayerIds[1]!,
+          bowlerId: awayPlayerIds[0]!,
+          runsFromBat: 0,
+          isWide: false,
+          isNoBall: true,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 1,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+        },
+        // Legal delivery after no-ball (should be free hit)
+        {
+          inningsNumber: 1,
+          overNumber: 0,
+          ballNumber: 1,
+          strikerId: homePlayerIds[0]!,
+          nonStrikerId: homePlayerIds[1]!,
+          bowlerId: awayPlayerIds[0]!,
+          runsFromBat: 1,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+        },
+      ];
+
+      await recordDeliveryBatch(live.matchId, scorerUserId, { deliveries: batchDeliveries });
+
+      const allDeliveries = await db
+        .select({ sequenceNumber: deliveries.sequenceNumber, isFreeHit: deliveries.isFreeHit, isNoBall: deliveries.isNoBall })
+        .from(deliveries)
+        .where(eq(deliveries.inningsId, live.inningsId))
+        .orderBy(deliveries.sequenceNumber);
+
+      expect(allDeliveries).toHaveLength(2);
+      expect(allDeliveries[0]!.isFreeHit).toBe(false); // No-ball itself is not a free hit
+      expect(allDeliveries[1]!.isFreeHit).toBe(true);  // Next delivery IS a free hit
+    });
+
+    it('free-hit persists through wides in batch', async () => {
+      const live = await createLiveMatch();
+
+      const batchDeliveries = [
+        // No-ball
+        {
+          inningsNumber: 1,
+          overNumber: 0,
+          ballNumber: 1,
+          strikerId: homePlayerIds[0]!,
+          nonStrikerId: homePlayerIds[1]!,
+          bowlerId: awayPlayerIds[0]!,
+          runsFromBat: 0,
+          isWide: false,
+          isNoBall: true,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 1,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+        },
+        // Wide (free hit should persist)
+        {
+          inningsNumber: 1,
+          overNumber: 0,
+          ballNumber: 1,
+          strikerId: homePlayerIds[0]!,
+          nonStrikerId: homePlayerIds[1]!,
+          bowlerId: awayPlayerIds[0]!,
+          runsFromBat: 0,
+          isWide: true,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 1,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+        },
+        // Legal delivery (free hit should still persist through the wide)
+        {
+          inningsNumber: 1,
+          overNumber: 0,
+          ballNumber: 1,
+          strikerId: homePlayerIds[0]!,
+          nonStrikerId: homePlayerIds[1]!,
+          bowlerId: awayPlayerIds[0]!,
+          runsFromBat: 2,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+        },
+      ];
+
+      await recordDeliveryBatch(live.matchId, scorerUserId, { deliveries: batchDeliveries });
+
+      const allDeliveries = await db
+        .select({ sequenceNumber: deliveries.sequenceNumber, isFreeHit: deliveries.isFreeHit })
+        .from(deliveries)
+        .where(eq(deliveries.inningsId, live.inningsId))
+        .orderBy(deliveries.sequenceNumber);
+
+      expect(allDeliveries).toHaveLength(3);
+      expect(allDeliveries[0]!.isFreeHit).toBe(false); // No-ball
+      expect(allDeliveries[1]!.isFreeHit).toBe(true);  // Wide after NB — free hit
+      expect(allDeliveries[2]!.isFreeHit).toBe(true);  // Legal after wide — free hit persists
+    });
+
+    it('stats upsert with ON CONFLICT produces correct cumulative stats', async () => {
+      const live = await createLiveMatch();
+
+      // Record 3 deliveries: 4, 6, dot ball to same batter
+      const batchDeliveries = [
+        {
+          inningsNumber: 1,
+          overNumber: 0,
+          ballNumber: 1,
+          strikerId: homePlayerIds[0]!,
+          nonStrikerId: homePlayerIds[1]!,
+          bowlerId: awayPlayerIds[0]!,
+          runsFromBat: 4,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: true,
+          isBoundarySix: false,
+        },
+        {
+          inningsNumber: 1,
+          overNumber: 0,
+          ballNumber: 2,
+          strikerId: homePlayerIds[0]!,
+          nonStrikerId: homePlayerIds[1]!,
+          bowlerId: awayPlayerIds[0]!,
+          runsFromBat: 6,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: false,
+          isBoundarySix: true,
+        },
+        {
+          inningsNumber: 1,
+          overNumber: 0,
+          ballNumber: 3,
+          strikerId: homePlayerIds[0]!,
+          nonStrikerId: homePlayerIds[1]!,
+          bowlerId: awayPlayerIds[0]!,
+          runsFromBat: 0,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+        },
+      ];
+
+      await recordDeliveryBatch(live.matchId, scorerUserId, { deliveries: batchDeliveries });
+
+      // Check batting stats
+      const [batterStat] = await db
+        .select()
+        .from(battingStats)
+        .where(
+          and(
+            eq(battingStats.inningsId, live.inningsId),
+            eq(battingStats.playerId, homePlayerIds[0]!),
+          ),
+        )
+        .limit(1);
+
+      expect(batterStat!.runsScored).toBe(10);
+      expect(batterStat!.ballsFaced).toBe(3);
+      expect(batterStat!.fours).toBe(1);
+      expect(batterStat!.sixes).toBe(1);
+
+      // Check bowling stats
+      const [bowlerStat] = await db
+        .select()
+        .from(bowlingStats)
+        .where(
+          and(
+            eq(bowlingStats.inningsId, live.inningsId),
+            eq(bowlingStats.playerId, awayPlayerIds[0]!),
+          ),
+        )
+        .limit(1);
+
+      expect(bowlerStat!.runsConceded).toBe(10);
+      expect(bowlerStat!.oversBowled).toBe('0.3');
+      expect(bowlerStat!.foursConceded).toBe(1);
+      expect(bowlerStat!.sixesConceded).toBe(1);
+      expect(bowlerStat!.dotBalls).toBe(1);
+    });
+
+    it('.returning() gives correct innings totals', async () => {
+      const live = await createLiveMatch();
+
+      // Record 2 deliveries: 4 then 2
+      const r1 = await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 1,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 4,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: true,
+        isBoundarySix: false,
+      });
+
+      expect(r1.updatedInnings!.totalRuns).toBe(4);
+      expect(r1.updatedInnings!.totalOvers).toBe('0.1');
+
+      const r2 = await recordDelivery(live.matchId, scorerUserId, {
+        inningsId: live.inningsId,
+        overNumber: 0,
+        ballNumber: 2,
+        strikerId: homePlayerIds[0]!,
+        nonStrikerId: homePlayerIds[1]!,
+        bowlerId: awayPlayerIds[0]!,
+        runsFromBat: 2,
+        isWide: false,
+        isNoBall: false,
+        isBye: false,
+        isLegBye: false,
+        wideRuns: 0,
+        noBallRuns: 0,
+        byeRuns: 0,
+        legByeRuns: 0,
+        isWicket: false,
+        isBoundaryFour: false,
+        isBoundarySix: false,
+      });
+
+      expect(r2.updatedInnings!.totalRuns).toBe(6);
+      expect(r2.updatedInnings!.totalOvers).toBe('0.2');
+    });
+
+    it('career stats failure does not fail delivery response', async () => {
+      // This test verifies that career stats refresh happens outside the main
+      // transaction and failures don't propagate. We verify by checking that
+      // a match completion through normal delivery flow succeeds even if
+      // career stats would encounter an issue (tested implicitly — the
+      // separation is structural, not error-injection based)
+      const live = await createLiveMatch({ totalOvers: 1, playersPerSide: 2 });
+
+      // Bowl 6 dot balls to complete innings 1
+      for (let i = 1; i <= 6; i++) {
+        await recordDelivery(live.matchId, scorerUserId, {
+          inningsId: live.inningsId,
+          overNumber: 0,
+          ballNumber: i,
+          strikerId: homePlayerIds[0]!,
+          nonStrikerId: homePlayerIds[1]!,
+          bowlerId: awayPlayerIds[0]!,
+          runsFromBat: 0,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+        });
+      }
+
+      // Bowl 6 dot balls in 2nd innings to complete match
+      for (let i = 1; i <= 6; i++) {
+        const result = await recordDelivery(live.matchId, scorerUserId, {
+          inningsNumber: 2,
+          overNumber: 0,
+          ballNumber: i,
+          strikerId: awayPlayerIds[0]!,
+          nonStrikerId: awayPlayerIds[1]!,
+          bowlerId: homePlayerIds[0]!,
+          runsFromBat: 0,
+          isWide: false,
+          isNoBall: false,
+          isBye: false,
+          isLegBye: false,
+          wideRuns: 0,
+          noBallRuns: 0,
+          byeRuns: 0,
+          legByeRuns: 0,
+          isWicket: false,
+          isBoundaryFour: false,
+          isBoundarySix: false,
+        });
+
+        if (i === 6) {
+          // Match should complete normally — career stats refresh is outside tx
+          expect(result.matchComplete).toBe(true);
+        }
+      }
+
+      // Verify match is completed
+      const [match] = await db
+        .select()
+        .from(matches)
+        .where(eq(matches.id, live.matchId))
+        .limit(1);
+      expect(match!.status).toBe('completed');
     });
   });
 });

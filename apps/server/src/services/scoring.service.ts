@@ -13,19 +13,6 @@ import { refreshMatchPlayerCareerStats } from './career-stats.service.ts';
 // Cricket Overs Arithmetic Helpers
 // ============================================================
 
-/** Increment cricket overs decimal by 1 ball: "2.3" → "2.4", "2.5" → "3.0" */
-function incrementOvers(currentOvers: string): string {
-  const parts = String(currentOvers).split('.');
-  let completedOvers = parseInt(parts[0]!, 10);
-  let balls = parseInt(parts[1] || '0', 10);
-  balls += 1;
-  if (balls >= 6) {
-    completedOvers += 1;
-    balls = 0;
-  }
-  return `${completedOvers}.${balls}`;
-}
-
 /** Decrement cricket overs decimal by 1 ball: "2.3" → "2.2", "3.0" → "2.5" */
 function decrementOvers(currentOvers: string): string {
   const parts = String(currentOvers).split('.');
@@ -104,6 +91,7 @@ export async function recordDeliveryInTx(
   txMatch: typeof matches.$inferSelect,
   inningsCache: Map<number, typeof innings.$inferSelect>,
   input: DeliveryInput,
+  precomputed?: { sequenceNumber?: number; isFreeHit?: boolean },
 ): Promise<DeliveryResult> {
   // ── Step 1: VALIDATE (within transaction) ──
   // Resolve innings: by ID or by innings number
@@ -185,17 +173,23 @@ export async function recordDeliveryInTx(
   const magicOverPenalty = isMagicOver && input.isWicket ? txMatch.magicOverWicketPenalty : 0;
   const totalRuns = effectiveRunsFromBat + effectiveWideRuns + effectiveNoBallRuns + effectiveByeRuns + effectiveLegByeRuns + magicOverPenalty;
 
-  // Get next sequence number
-  const [seqResult] = await tx
-    .select({ maxSeq: max(deliveries.sequenceNumber) })
-    .from(deliveries)
-    .where(eq(deliveries.inningsId, resolvedInningsId!));
+  // Get next sequence number (skip DB query if precomputed by batch caller)
+  let sequenceNumber: number;
+  if (precomputed?.sequenceNumber != null) {
+    sequenceNumber = precomputed.sequenceNumber;
+  } else {
+    const [seqResult] = await tx
+      .select({ maxSeq: max(deliveries.sequenceNumber) })
+      .from(deliveries)
+      .where(eq(deliveries.inningsId, resolvedInningsId!));
+    sequenceNumber = (seqResult?.maxSeq ?? 0) + 1;
+  }
 
-  const sequenceNumber = (seqResult?.maxSeq ?? 0) + 1;
-
-  // Determine isFreeHit from previous delivery
+  // Determine isFreeHit from previous delivery (skip DB query if precomputed by batch caller)
   let isFreeHit = false;
-  if (sequenceNumber > 1) {
+  if (precomputed?.isFreeHit != null) {
+    isFreeHit = precomputed.isFreeHit;
+  } else if (sequenceNumber > 1) {
     const [prevDelivery] = await tx
       .select({
         isNoBall: deliveries.isNoBall,
@@ -355,10 +349,11 @@ export async function recordDeliveryInTx(
     inningsUpdate.totalOvers = `${completedOvers}.${balls}`;
   }
 
-  await tx
+  const [updatedInnings] = await tx
     .update(innings)
     .set(inningsUpdate)
-    .where(eq(innings.id, resolvedInningsId!));
+    .where(eq(innings.id, resolvedInningsId!))
+    .returning();
 
   // ── Step 8: CHECK OVER COMPLETION ──
   if (isLegal) {
@@ -366,12 +361,6 @@ export async function recordDeliveryInTx(
   }
 
   // ── Step 9: CHECK INNINGS COMPLETION ──
-  // Re-read innings with updated values
-  const [updatedInnings] = await tx
-    .select()
-    .from(innings)
-    .where(eq(innings.id, resolvedInningsId!))
-    .limit(1);
 
   // Update the cache with fresh innings data
   inningsCache.set(updatedInnings!.inningsNumber, updatedInnings!);
@@ -400,7 +389,6 @@ export async function recordDeliveryInTx(
     // Handle match state transition
     if (matchComplete) {
       await completeMatch(tx, matchId, txMatch);
-      await refreshMatchPlayerCareerStats(tx, matchId);
     } else if (updatedInnings!.inningsNumber === 1) {
       // Transition to innings_break
       await tx
@@ -478,7 +466,7 @@ export async function recordDelivery(
     throw new AppError('VALIDATION_ERROR', 'Wide cannot be combined with bye or leg-bye', 400);
   }
 
-  return await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // Re-read match inside tx for consistency (once per transaction)
     const [txMatch] = await tx
       .select()
@@ -532,6 +520,18 @@ export async function recordDelivery(
 
     return recordDeliveryInTx(tx, matchId, txMatch, inningsCache, input);
   });
+
+  if (result.matchComplete) {
+    try {
+      await db.transaction(async (tx) => {
+        await refreshMatchPlayerCareerStats(tx, matchId);
+      });
+    } catch (err) {
+      console.error(`[Scoring] Career stats refresh failed for match=${matchId}:`, err);
+    }
+  }
+
+  return result;
 }
 
 // ============================================================
@@ -586,7 +586,7 @@ export async function recordDeliveryBatch(
     return a.ballNumber - b.ballNumber;
   });
 
-  return await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // Re-read match inside tx (once for the whole batch)
     const [txMatch] = await tx
       .select()
@@ -650,6 +650,52 @@ export async function recordDeliveryBatch(
       }
     }
 
+    // ── Precompute sequence numbers and free-hit state per innings ──
+    // Query MAX(sequence_number) ONCE per unique innings in the batch
+    const sequenceCounters = new Map<string, number>();
+    const freeHitByInnings = new Map<string, boolean>();
+
+    for (const inningsNum of uniqueInningsNumbers) {
+      const inn = inningsCache.get(inningsNum);
+      if (!inn) continue;
+
+      const [seqResult] = await tx
+        .select({ maxSeq: max(deliveries.sequenceNumber) })
+        .from(deliveries)
+        .where(eq(deliveries.inningsId, inn.id));
+
+      sequenceCounters.set(inn.id, (seqResult?.maxSeq ?? 0) + 1);
+
+      // Get last delivery's state for initial free-hit determination
+      const lastSeq = seqResult?.maxSeq ?? 0;
+      if (lastSeq > 0) {
+        const [prevDelivery] = await tx
+          .select({
+            isNoBall: deliveries.isNoBall,
+            isFreeHit: deliveries.isFreeHit,
+            isLegal: deliveries.isLegal,
+          })
+          .from(deliveries)
+          .where(eq(deliveries.inningsId, inn.id))
+          .orderBy(desc(deliveries.sequenceNumber))
+          .limit(1);
+
+        if (prevDelivery) {
+          if (prevDelivery.isNoBall) {
+            freeHitByInnings.set(inn.id, true);
+          } else if (prevDelivery.isFreeHit && !prevDelivery.isLegal) {
+            freeHitByInnings.set(inn.id, true);
+          } else {
+            freeHitByInnings.set(inn.id, false);
+          }
+        } else {
+          freeHitByInnings.set(inn.id, false);
+        }
+      } else {
+        freeHitByInnings.set(inn.id, false);
+      }
+    }
+
     // Process deliveries sequentially
     let processed = 0;
     let skipped = 0;
@@ -673,8 +719,35 @@ export async function recordDeliveryBatch(
         }
       }
 
-      const result = await recordDeliveryInTx(tx, matchId, txMatch, inningsCache, delivery);
+      // Resolve innings ID for precomputed lookups
+      let deliveryInningsId: string | undefined;
+      if (delivery.inningsId) {
+        deliveryInningsId = delivery.inningsId;
+      } else if (delivery.inningsNumber) {
+        deliveryInningsId = inningsCache.get(delivery.inningsNumber)?.id;
+      }
+
+      // Build precomputed values if we have them for this innings
+      const precomputed = deliveryInningsId && sequenceCounters.has(deliveryInningsId)
+        ? {
+            sequenceNumber: sequenceCounters.get(deliveryInningsId)!,
+            isFreeHit: freeHitByInnings.get(deliveryInningsId) ?? false,
+          }
+        : undefined;
+
+      const result = await recordDeliveryInTx(tx, matchId, txMatch, inningsCache, delivery, precomputed);
       processed++;
+
+      // Update precomputed counters for next delivery in this innings
+      if (deliveryInningsId && precomputed) {
+        sequenceCounters.set(deliveryInningsId, precomputed.sequenceNumber + 1);
+
+        // Update free-hit state: NB triggers free-hit, free-hit persists through illegals
+        const currentFreeHit = freeHitByInnings.get(deliveryInningsId) ?? false;
+        const isLegal = !delivery.isWide && !delivery.isNoBall;
+        const nextFreeHit = delivery.isNoBall || (currentFreeHit && !isLegal);
+        freeHitByInnings.set(deliveryInningsId, nextFreeHit);
+      }
 
       if (result.inningsComplete) batchInningsComplete = true;
       if (result.matchComplete) batchMatchComplete = true;
@@ -687,6 +760,18 @@ export async function recordDeliveryBatch(
       matchComplete: batchMatchComplete,
     };
   });
+
+  if (result.matchComplete) {
+    try {
+      await db.transaction(async (tx) => {
+        await refreshMatchPlayerCareerStats(tx, matchId);
+      });
+    } catch (err) {
+      console.error(`[Scoring] Career stats refresh failed for match=${matchId}:`, err);
+    }
+  }
+
+  return result;
 }
 
 // ============================================================
@@ -1162,106 +1247,83 @@ async function upsertBattingStats(
     return;
   }
 
-  const [existing] = await tx
-    .select()
-    .from(battingStats)
-    .where(
-      and(
-        eq(battingStats.inningsId, inningsId),
-        eq(battingStats.playerId, input.strikerId),
-      ),
-    )
-    .limit(1);
+  // Build ON CONFLICT SET clause for striker
+  const strikerConflictSet: Record<string, unknown> = {};
 
-  if (existing) {
-    const updates: Record<string, unknown> = {};
-
-    if (!input.isWide) {
-      updates.runsScored = sql`${battingStats.runsScored} + ${input.runsFromBat}`;
-      if (delivery.isLegal) {
-        updates.ballsFaced = sql`${battingStats.ballsFaced} + 1`;
-      }
-      if (input.isBoundaryFour) {
-        updates.fours = sql`${battingStats.fours} + 1`;
-      }
-      if (input.isBoundarySix) {
-        updates.sixes = sql`${battingStats.sixes} + 1`;
-      }
+  if (!input.isWide) {
+    strikerConflictSet.runsScored = sql`${battingStats.runsScored} + ${input.runsFromBat}`;
+    if (delivery.isLegal) {
+      strikerConflictSet.ballsFaced = sql`${battingStats.ballsFaced} + 1`;
     }
-
-    if (input.isWicket && input.wicket?.dismissedPlayerId === input.strikerId) {
-      updates.isNotOut = false;
-      updates.dismissalTypeId = input.wicket.dismissalTypeId;
-      if (input.wicket.bowlerCredited) {
-        updates.dismissedById = input.bowlerId;
-      }
-      if (input.wicket.fielderId) {
-        updates.fielderId = input.wicket.fielderId;
-      }
+    if (input.isBoundaryFour) {
+      strikerConflictSet.fours = sql`${battingStats.fours} + 1`;
     }
-
-    if (Object.keys(updates).length > 0) {
-      await tx
-        .update(battingStats)
-        .set(updates)
-        .where(eq(battingStats.id, existing.id));
+    if (input.isBoundarySix) {
+      strikerConflictSet.sixes = sql`${battingStats.sixes} + 1`;
     }
-  } else {
-    // Create new batting stat entry
-    // Determine batting position
-    const [posResult] = await tx
-      .select({ maxPos: max(battingStats.battingPosition) })
-      .from(battingStats)
-      .where(eq(battingStats.inningsId, inningsId));
+  }
 
-    const battingPosition = (posResult?.maxPos ?? 0) + 1;
+  const isStrikerDismissed = input.isWicket && input.wicket?.dismissedPlayerId === input.strikerId;
+  if (isStrikerDismissed && input.wicket) {
+    strikerConflictSet.isNotOut = false;
+    strikerConflictSet.dismissalTypeId = input.wicket.dismissalTypeId;
+    if (input.wicket.bowlerCredited) {
+      strikerConflictSet.dismissedById = input.bowlerId;
+    }
+    if (input.wicket.fielderId) {
+      strikerConflictSet.fielderId = input.wicket.fielderId;
+    }
+  }
 
-    const isNotOut = !(input.isWicket && input.wicket?.dismissedPlayerId === input.strikerId);
+  // Batting position for new inserts: use subquery for next available position
+  const nextBattingPosition = sql<number>`(SELECT COALESCE(MAX(${battingStats.battingPosition}), 0) + 1 FROM ${battingStats} WHERE ${battingStats.inningsId} = ${inningsId})`;
 
+  if (Object.keys(strikerConflictSet).length > 0) {
     await tx.insert(battingStats).values({
       inningsId,
       playerId: input.strikerId,
-      battingPosition,
+      battingPosition: nextBattingPosition as unknown as number,
       runsScored: input.isWide ? 0 : input.runsFromBat,
       ballsFaced: (!input.isWide && delivery.isLegal) ? 1 : 0,
       fours: input.isBoundaryFour ? 1 : 0,
       sixes: input.isBoundarySix ? 1 : 0,
-      isNotOut,
-      dismissalTypeId: (!isNotOut && input.wicket) ? input.wicket.dismissalTypeId : null,
-      dismissedById: (!isNotOut && input.wicket?.bowlerCredited) ? input.bowlerId : null,
-      fielderId: (!isNotOut && input.wicket?.fielderId) ? input.wicket.fielderId : null,
+      isNotOut: !isStrikerDismissed,
+      dismissalTypeId: (isStrikerDismissed && input.wicket) ? input.wicket.dismissalTypeId : null,
+      dismissedById: (isStrikerDismissed && input.wicket?.bowlerCredited) ? input.bowlerId : null,
+      fielderId: (isStrikerDismissed && input.wicket?.fielderId) ? input.wicket.fielderId : null,
+    }).onConflictDoUpdate({
+      target: [battingStats.inningsId, battingStats.playerId],
+      set: strikerConflictSet,
     });
-  }
-
-  // Also create batting stat for non-striker if they don't have one
-  const [nonStrikerStat] = await tx
-    .select({ id: battingStats.id })
-    .from(battingStats)
-    .where(
-      and(
-        eq(battingStats.inningsId, inningsId),
-        eq(battingStats.playerId, input.nonStrikerId),
-      ),
-    )
-    .limit(1);
-
-  if (!nonStrikerStat) {
-    const [posResult] = await tx
-      .select({ maxPos: max(battingStats.battingPosition) })
-      .from(battingStats)
-      .where(eq(battingStats.inningsId, inningsId));
-
+  } else {
+    // Wide with no wicket on striker — just ensure row exists
     await tx.insert(battingStats).values({
       inningsId,
-      playerId: input.nonStrikerId,
-      battingPosition: (posResult?.maxPos ?? 0) + 1,
+      playerId: input.strikerId,
+      battingPosition: nextBattingPosition as unknown as number,
       runsScored: 0,
       ballsFaced: 0,
       fours: 0,
       sixes: 0,
       isNotOut: true,
+    }).onConflictDoNothing({
+      target: [battingStats.inningsId, battingStats.playerId],
     });
   }
+
+  // Non-striker: ensure row exists (INSERT...ON CONFLICT DO NOTHING)
+  await tx.insert(battingStats).values({
+    inningsId,
+    playerId: input.nonStrikerId,
+    battingPosition: nextBattingPosition as unknown as number,
+    runsScored: 0,
+    ballsFaced: 0,
+    fours: 0,
+    sixes: 0,
+    isNotOut: true,
+  }).onConflictDoNothing({
+    target: [battingStats.inningsId, battingStats.playerId],
+  });
 }
 
 // ============================================================
@@ -1279,68 +1341,54 @@ async function upsertBowlingStats(
   // Runs conceded by bowler: bat runs + wide/NB penalty runs (NOT byes/legByes)
   const runsConcededByBowler = input.runsFromBat + input.wideRuns + input.noBallRuns;
 
-  const [existing] = await tx
-    .select()
-    .from(bowlingStats)
-    .where(
-      and(
-        eq(bowlingStats.inningsId, inningsId),
-        eq(bowlingStats.playerId, input.bowlerId),
-      ),
-    )
-    .limit(1);
+  // Build ON CONFLICT SET clause
+  const conflictSet: Record<string, unknown> = {
+    runsConceded: sql`${bowlingStats.runsConceded} + ${runsConcededByBowler}`,
+  };
 
-  if (existing) {
-    const updates: Record<string, unknown> = {
-      runsConceded: sql`${bowlingStats.runsConceded} + ${runsConcededByBowler}`,
-    };
-
-    if (input.isWide) {
-      updates.wides = sql`${bowlingStats.wides} + 1`;
-    }
-    if (input.isNoBall) {
-      updates.noBalls = sql`${bowlingStats.noBalls} + 1`;
-    }
-
-    // Dot ball: total runs for the delivery is 0 AND it's a legal delivery
-    if (delivery.totalRuns === 0 && delivery.isLegal) {
-      updates.dotBalls = sql`${bowlingStats.dotBalls} + 1`;
-    }
-
-    if (input.isBoundaryFour) {
-      updates.foursConceded = sql`${bowlingStats.foursConceded} + 1`;
-    }
-    if (input.isBoundarySix) {
-      updates.sixesConceded = sql`${bowlingStats.sixesConceded} + 1`;
-    }
-
-    if (input.isWicket && input.wicket?.bowlerCredited) {
-      updates.wicketsTaken = sql`${bowlingStats.wicketsTaken} + 1`;
-    }
-
-    // Update overs bowled for legal deliveries
-    if (delivery.isLegal) {
-      updates.oversBowled = incrementOvers(String(existing.oversBowled));
-    }
-
-    await tx
-      .update(bowlingStats)
-      .set(updates)
-      .where(eq(bowlingStats.id, existing.id));
-  } else {
-    await tx.insert(bowlingStats).values({
-      inningsId,
-      playerId: input.bowlerId,
-      oversBowled: delivery.isLegal ? '0.1' : '0.0',
-      runsConceded: runsConcededByBowler,
-      wides: input.isWide ? 1 : 0,
-      noBalls: input.isNoBall ? 1 : 0,
-      dotBalls: (delivery.totalRuns === 0 && delivery.isLegal) ? 1 : 0,
-      foursConceded: input.isBoundaryFour ? 1 : 0,
-      sixesConceded: input.isBoundarySix ? 1 : 0,
-      wicketsTaken: (input.isWicket && input.wicket?.bowlerCredited) ? 1 : 0,
-    });
+  if (input.isWide) {
+    conflictSet.wides = sql`${bowlingStats.wides} + 1`;
   }
+  if (input.isNoBall) {
+    conflictSet.noBalls = sql`${bowlingStats.noBalls} + 1`;
+  }
+  if (delivery.totalRuns === 0 && delivery.isLegal) {
+    conflictSet.dotBalls = sql`${bowlingStats.dotBalls} + 1`;
+  }
+  if (input.isBoundaryFour) {
+    conflictSet.foursConceded = sql`${bowlingStats.foursConceded} + 1`;
+  }
+  if (input.isBoundarySix) {
+    conflictSet.sixesConceded = sql`${bowlingStats.sixesConceded} + 1`;
+  }
+  if (input.isWicket && input.wicket?.bowlerCredited) {
+    conflictSet.wicketsTaken = sql`${bowlingStats.wicketsTaken} + 1`;
+  }
+
+  // Cricket overs math via SQL CASE: 0.5 → 1.0, otherwise increment tenths digit
+  if (delivery.isLegal) {
+    conflictSet.oversBowled = sql`CASE
+      WHEN (${bowlingStats.oversBowled}::numeric * 10) % 10 >= 5
+      THEN ((${bowlingStats.oversBowled}::numeric)::int + 1)::decimal(4,1)
+      ELSE (${bowlingStats.oversBowled}::numeric + 0.1)::decimal(4,1)
+    END`;
+  }
+
+  await tx.insert(bowlingStats).values({
+    inningsId,
+    playerId: input.bowlerId,
+    oversBowled: delivery.isLegal ? '0.1' : '0.0',
+    runsConceded: runsConcededByBowler,
+    wides: input.isWide ? 1 : 0,
+    noBalls: input.isNoBall ? 1 : 0,
+    dotBalls: (delivery.totalRuns === 0 && delivery.isLegal) ? 1 : 0,
+    foursConceded: input.isBoundaryFour ? 1 : 0,
+    sixesConceded: input.isBoundarySix ? 1 : 0,
+    wicketsTaken: (input.isWicket && input.wicket?.bowlerCredited) ? 1 : 0,
+  }).onConflictDoUpdate({
+    target: [bowlingStats.inningsId, bowlingStats.playerId],
+    set: conflictSet,
+  });
 }
 
 // ============================================================
@@ -1361,41 +1409,24 @@ async function upsertFieldingStats(
     .where(eq(dismissalTypes.id, wicket.dismissalTypeId))
     .limit(1);
 
-  const [existing] = await tx
-    .select()
-    .from(fieldingStats)
-    .where(
-      and(
-        eq(fieldingStats.inningsId, inningsId),
-        eq(fieldingStats.playerId, wicket.fielderId),
-      ),
-    )
-    .limit(1);
-
   const fieldName = dt?.name;
   const isCatch = fieldName === 'caught' || fieldName === 'caught_and_bowled';
   const isRunOut = fieldName === 'run_out';
   const isStumping = fieldName === 'stumped';
 
-  if (existing) {
-    const updates: Record<string, unknown> = {};
-    if (isCatch) {
-      updates.catches = sql`${fieldingStats.catches} + 1`;
-    }
-    if (isRunOut) {
-      updates.runOuts = sql`${fieldingStats.runOuts} + 1`;
-    }
-    if (isStumping) {
-      updates.stumpings = sql`${fieldingStats.stumpings} + 1`;
-    }
+  // Build ON CONFLICT SET clause
+  const conflictSet: Record<string, unknown> = {};
+  if (isCatch) {
+    conflictSet.catches = sql`${fieldingStats.catches} + 1`;
+  }
+  if (isRunOut) {
+    conflictSet.runOuts = sql`${fieldingStats.runOuts} + 1`;
+  }
+  if (isStumping) {
+    conflictSet.stumpings = sql`${fieldingStats.stumpings} + 1`;
+  }
 
-    if (Object.keys(updates).length > 0) {
-      await tx
-        .update(fieldingStats)
-        .set(updates)
-        .where(eq(fieldingStats.id, existing.id));
-    }
-  } else {
+  if (Object.keys(conflictSet).length > 0) {
     await tx.insert(fieldingStats).values({
       inningsId,
       playerId: wicket.fielderId,
@@ -1403,6 +1434,20 @@ async function upsertFieldingStats(
       runOuts: isRunOut ? 1 : 0,
       stumpings: isStumping ? 1 : 0,
       directHits: 0,
+    }).onConflictDoUpdate({
+      target: [fieldingStats.inningsId, fieldingStats.playerId],
+      set: conflictSet,
+    });
+  } else {
+    await tx.insert(fieldingStats).values({
+      inningsId,
+      playerId: wicket.fielderId,
+      catches: 0,
+      runOuts: 0,
+      stumpings: 0,
+      directHits: 0,
+    }).onConflictDoNothing({
+      target: [fieldingStats.inningsId, fieldingStats.playerId],
     });
   }
 }

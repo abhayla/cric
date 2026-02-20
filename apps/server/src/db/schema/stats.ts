@@ -24,6 +24,7 @@ export const battingStats = pgTable('batting_stats', {
 }, (table) => [
   index('idx_batting_stats_innings').on(table.inningsId),
   index('idx_batting_stats_player').on(table.playerId),
+  unique('uq_batting_stats_innings_player').on(table.inningsId, table.playerId),
 ]);
 
 export const bowlingStats = pgTable('bowling_stats', {
@@ -45,6 +46,7 @@ export const bowlingStats = pgTable('bowling_stats', {
 }, (table) => [
   index('idx_bowling_stats_innings').on(table.inningsId),
   index('idx_bowling_stats_player').on(table.playerId),
+  unique('uq_bowling_stats_innings_player').on(table.inningsId, table.playerId),
 ]);
 
 export const fieldingStats = pgTable('fielding_stats', {
@@ -60,6 +62,7 @@ export const fieldingStats = pgTable('fielding_stats', {
 }, (table) => [
   index('idx_fielding_stats_innings').on(table.inningsId),
   index('idx_fielding_stats_player').on(table.playerId),
+  unique('uq_fielding_stats_innings_player').on(table.inningsId, table.playerId),
 ]);
 
 export const playerCareerStats = pgTable('player_career_stats', {
