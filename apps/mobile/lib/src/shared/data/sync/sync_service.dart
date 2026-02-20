@@ -221,6 +221,9 @@ class SyncService {
 
   // ── Internal: Batch sync ──
 
+  /// Max deliveries per single batch HTTP request to avoid huge transactions.
+  static const _maxBatchChunkSize = 30;
+
   Future<bool> _syncBatch(List<SyncQueueData> entries) async {
     // Group entries by matchId
     final byMatch = <String, List<SyncQueueData>>{};
@@ -234,37 +237,46 @@ class SyncService {
       final matchId = mapEntry.key;
       final matchEntries = mapEntry.value;
 
-      // Build batch payload
-      final deliveryBodies = <Map<String, dynamic>>[];
-      for (final entry in matchEntries) {
-        final payload = jsonDecode(entry.payload) as Map<String, dynamic>;
-        final body = Map<String, dynamic>.from(payload);
-        body.remove('matchId');
-        deliveryBodies.add(body);
-      }
-
-      try {
-        await _dio.post(
-          '/api/v1/matches/$matchId/deliveries/batch',
-          data: {'deliveries': deliveryBodies},
+      // Chunk entries to avoid huge transactions
+      for (var i = 0; i < matchEntries.length; i += _maxBatchChunkSize) {
+        final chunk = matchEntries.sublist(
+          i,
+          (i + _maxBatchChunkSize).clamp(0, matchEntries.length),
         );
-        // Success — mark all entries as synced
-        await _dao
-            .markMultipleSynced(matchEntries.map((e) => e.id).toList());
-      } on DioException catch (e) {
-        debugPrint('[SyncService] Batch sync failed for match=$matchId: '
-            'status=${e.response?.statusCode} body=${e.response?.data}');
-        // Increment retry for all entries in this failed batch
-        for (final entry in matchEntries) {
-          await _dao.incrementRetry(entry.id);
+
+        // Build batch payload for this chunk
+        final deliveryBodies = <Map<String, dynamic>>[];
+        for (final entry in chunk) {
+          final payload = jsonDecode(entry.payload) as Map<String, dynamic>;
+          final body = Map<String, dynamic>.from(payload);
+          body.remove('matchId');
+          deliveryBodies.add(body);
         }
-        return false;
-      } catch (e) {
-        debugPrint('[SyncService] Batch sync error for match=$matchId: $e');
-        for (final entry in matchEntries) {
-          await _dao.incrementRetry(entry.id);
+
+        try {
+          await _dio.post(
+            '/api/v1/matches/$matchId/delivery-batch',
+            data: {'deliveries': deliveryBodies},
+          );
+          // Success — mark chunk entries as synced
+          await _dao
+              .markMultipleSynced(chunk.map((e) => e.id).toList());
+        } on DioException catch (e) {
+          debugPrint('[SyncService] Batch sync failed for match=$matchId '
+              '(chunk ${i ~/ _maxBatchChunkSize + 1}, ${chunk.length} items): '
+              'status=${e.response?.statusCode} body=${e.response?.data}');
+          // Increment retry for entries in this failed chunk only
+          for (final entry in chunk) {
+            await _dao.incrementRetry(entry.id);
+          }
+          return false;
+        } catch (e) {
+          debugPrint('[SyncService] Batch sync error for match=$matchId: $e');
+          for (final entry in chunk) {
+            await _dao.incrementRetry(entry.id);
+          }
+          return false;
         }
-        return false;
       }
     }
     return true;

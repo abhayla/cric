@@ -365,13 +365,13 @@ void main() {
 
       await service.processSyncQueue();
 
-      // Should use individual POSTs to /deliveries (not /deliveries/batch)
+      // Should use individual POSTs to /deliveries (not /delivery-batch)
       verify(() => mockDio.post(
             '/api/v1/matches/match-1/deliveries',
             data: any(named: 'data'),
           )).called(3);
       verifyNever(() => mockDio.post(
-            '/api/v1/matches/match-1/deliveries/batch',
+            '/api/v1/matches/match-1/delivery-batch',
             data: any(named: 'data'),
           ));
     });
@@ -398,7 +398,7 @@ void main() {
 
       // Should use batch endpoint
       verify(() => mockDio.post(
-            '/api/v1/matches/match-1/deliveries/batch',
+            '/api/v1/matches/match-1/delivery-batch',
             data: any(named: 'data'),
           )).called(1);
       // Should NOT use individual endpoint

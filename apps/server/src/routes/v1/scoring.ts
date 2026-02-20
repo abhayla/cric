@@ -89,7 +89,7 @@ async function getCurrentOverBalls(inningsId: string, overNumber: number): Promi
 export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
   .use(authMiddleware)
   .post(
-    '/:id/deliveries/batch',
+    '/:id/delivery-batch',
     async (ctx) => {
       const { firebaseUser } = ctx as typeof ctx & {
         firebaseUser: { uid: string; phone: string | null; email: string | null };
@@ -98,9 +98,15 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
       const matchId = ctx.params.id;
-      const result = await recordDeliveryBatch(matchId, user.id, {
-        deliveries: ctx.body.deliveries,
-      });
+      let result;
+      try {
+        result = await recordDeliveryBatch(matchId, user.id, {
+          deliveries: ctx.body.deliveries,
+        });
+      } catch (err) {
+        console.error(`[Scoring] recordDeliveryBatch failed for match=${matchId} (${ctx.body.deliveries.length} deliveries):`, err);
+        throw err;
+      }
 
       // Broadcast full match state once (not per delivery)
       try {

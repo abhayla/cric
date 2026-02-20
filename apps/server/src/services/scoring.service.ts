@@ -490,7 +490,46 @@ export async function recordDelivery(
       throw new AppError('VALIDATION_ERROR', 'Match must be in live status to record deliveries', 400);
     }
 
+    // Load existing innings into cache
     const inningsCache = new Map<number, typeof innings.$inferSelect>();
+    const existingInnings = await tx
+      .select()
+      .from(innings)
+      .where(eq(innings.matchId, matchId));
+
+    for (const inn of existingInnings) {
+      inningsCache.set(inn.inningsNumber, inn);
+    }
+
+    // Pre-create missing innings (same logic as batch endpoint)
+    if (input.inningsNumber && input.inningsNumber > 1 && !inningsCache.has(input.inningsNumber)) {
+      const inn1 = inningsCache.get(1);
+      if (!inn1) {
+        throw new AppError('VALIDATION_ERROR', 'Cannot create innings 2 — innings 1 not found', 400);
+      }
+
+      const target = inn1.isCompleted ? inn1.totalRuns + 1 : null;
+      const [newInnings] = await tx.insert(innings).values({
+        matchId,
+        inningsNumber: input.inningsNumber,
+        battingTeamId: inn1.bowlingTeamId,
+        bowlingTeamId: inn1.battingTeamId,
+        target,
+      }).returning();
+
+      if (newInnings) {
+        inningsCache.set(input.inningsNumber, newInnings);
+      }
+
+      // If match was in innings_break, transition to live
+      if (txMatch.status === 'innings_break') {
+        await tx
+          .update(matches)
+          .set({ status: 'live' })
+          .where(eq(matches.id, matchId));
+      }
+    }
+
     return recordDeliveryInTx(tx, matchId, txMatch, inningsCache, input);
   });
 }
