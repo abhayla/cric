@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 7 (Polish & Testing) IN PROGRESS — Dual-path real-time broadcast complete. E2E passing (single match + multi-device viewer). ~2050 Flutter tests, ~420 server tests.
+**Status:** Phase 7 (Polish & Testing) IN PROGRESS — Full T20 E2E passing (scorer + viewer dual-emulator, 254 deliveries, 0 mismatches). ~2050 Flutter tests, ~420 server tests.
 **Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
 ## Tech Stack
@@ -15,6 +15,38 @@ See [CLAUDE.md](../CLAUDE.md#tech-stack) for tech stack.
 See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full documentation map with all planning and process docs.
 
 ## What to Do Next
+
+### Session 2026-02-22: Full T20 E2E — Dual-Emulator Green Run
+
+**Full T20 E2E test passed on both emulators** (scorer emulator-5554, viewer emulator-5556). 254 deliveries, 0 mismatches, 0 invariant violations.
+
+**Match result:** Mumbai Warriors 175/8 (20 ov) vs Chennai Challengers 175/8 (20 ov) — **Match Tied**
+
+**Scorer (Phase 9-10 verification):**
+- 254/254 deliveries matched UI vs PostgreSQL — PERFECT
+- 20 batting records, 12 bowling records verified
+- Cross-check: Batting runs Inn1=168, Inn2=168; Bowling wickets Inn1=8, Inn2=8
+- Match result (tie), MOTM, MVP scores all recorded correctly
+- Scorecard vs DB cross-reference: 6 players verified
+
+**Viewer sync report:**
+- 197 WebSocket updates received
+- 1 innings transition detected
+- 35 per-over reports generated, all scores matching scorer
+- 0 invariant violations (FAIL count = 0)
+
+**Sync gap analysis (screenshot-based):**
+- One transient gap observed: Scorer 159/8 (18.2) vs Viewer 159/7 (18.1) — 1 ball behind during wicket processing
+- Root cause: Scorer UI updates synchronously, then shows "Select New Batter" dialog, while WS `publish_score` is fire-and-forget (`sink.add`). Screenshot captured the ~100-500ms transit window. Viewer self-heals via `match_state` reconciliation or gap detection `joinMatch()` refresh.
+- All over-boundary reports showed identical scores — zero persistent mismatches
+
+**Skipped viewer over reports (6 of 40 overs):** Over 1 (late join), Over 8/10/20 (Inn 1), Over 12/20 (Inn 2) — fast-path coalesced past boundary between checks. Not data loss.
+
+**Runtime:** Scorer 9m35s, Viewer 7m59s (includes Gradle build)
+
+**Next steps:**
+1. Continue Phase 7 remaining E2E scenarios
+2. Update remaining docs mentioned in plan
 
 ### Session 2026-02-22: WebSocket Viewer Gap Detection
 
