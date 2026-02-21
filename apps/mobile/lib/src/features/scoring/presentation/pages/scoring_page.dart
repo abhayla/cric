@@ -20,6 +20,7 @@ import '../widgets/select_bowler_sheet.dart';
 import '../widgets/this_over_display.dart';
 import '../widgets/innings_transition_modal.dart';
 import '../widgets/match_complete_modal.dart';
+import '../widgets/super_over_setup_wizard.dart';
 import '../widgets/wicket_dialog.dart';
 
 /// Arguments for initializing the scoring page.
@@ -266,16 +267,51 @@ class _ScoringPageState extends State<ScoringPage> {
         extraType: extraType,
         wideRunsPenalty: _state.wideRunsPenalty,
         noBallRunsPenalty: _state.noBallRunsPenalty,
-        onConfirm: (runs) {
+        onConfirm: (runs, {bool withWicket = false, NoBallRunType? noBallRunType}) {
           Navigator.of(ctx).pop();
-          _recordExtra(extraType, runs);
+          if (withWicket) {
+            _showExtraWicketDialog(extraType, runs, noBallRunType: noBallRunType);
+          } else {
+            _recordExtra(extraType, runs, noBallRunType: noBallRunType);
+          }
         },
         onClose: () => Navigator.of(ctx).pop(),
       ),
     );
   }
 
-  void _recordExtra(ExtraType type, int runs) {
+  void _showExtraWicketDialog(ExtraType extraType, int runs, {NoBallRunType? noBallRunType}) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => WicketDialog(
+        bowlingTeamPlayers: _state.bowlingTeamPlayers,
+        strikerName: _state.striker?.displayName ?? '',
+        strikerId: _state.strikerId ?? '',
+        nonStrikerName: _state.nonStriker?.displayName ?? '',
+        nonStrikerId: _state.nonStrikerId ?? '',
+        isFreeHitPending: false,
+        isWide: extraType == ExtraType.wide,
+        isNoBall: extraType == ExtraType.noBall,
+        onConfirm: (result) {
+          Navigator.of(ctx).pop();
+          if (extraType == ExtraType.wide) {
+            _recordWicket(result, isWide: true, wideRuns: runs);
+          } else if (extraType == ExtraType.noBall) {
+            _recordNoBallWicket(result);
+          }
+        },
+      ),
+    );
+  }
+
+  void _recordNoBallWicket(WicketDialogResult result) {
+    // NB + wicket (run out): the NB penalty is handled by recordWicket's
+    // isNoBall flag. Runs from the result go as runsFromBat.
+    _recordWicket(result, isNoBall: true, noBallRuns: 0);
+  }
+
+  void _recordExtra(ExtraType type, int runs, {NoBallRunType? noBallRunType}) {
     final prevNeedsBowler = _state.needsNewBowler;
     final prevNeedsBatter = _state.needsNewBatter;
     final prevIsInningsComplete = _state.isInningsComplete;
@@ -284,7 +320,14 @@ class _ScoringPageState extends State<ScoringPage> {
         case ExtraType.wide:
           _service!.recordWide(additionalRuns: runs);
         case ExtraType.noBall:
-          _service!.recordNoBall(runsFromBat: runs);
+          switch (noBallRunType ?? NoBallRunType.batRuns) {
+            case NoBallRunType.batRuns:
+              _service!.recordNoBall(runsFromBat: runs);
+            case NoBallRunType.byes:
+              _service!.recordNoBall(byeRuns: runs);
+            case NoBallRunType.legByes:
+              _service!.recordNoBall(legByeRuns: runs);
+          }
         case ExtraType.bye:
           _service!.recordBye(byeRuns: runs);
         case ExtraType.legBye:
@@ -295,7 +338,14 @@ class _ScoringPageState extends State<ScoringPage> {
         case ExtraType.wide:
           _notifier!.recordWide(additionalRuns: runs);
         case ExtraType.noBall:
-          _notifier!.recordNoBall(runsFromBat: runs);
+          switch (noBallRunType ?? NoBallRunType.batRuns) {
+            case NoBallRunType.batRuns:
+              _notifier!.recordNoBall(runsFromBat: runs);
+            case NoBallRunType.byes:
+              _notifier!.recordNoBall(byeRuns: runs);
+            case NoBallRunType.legByes:
+              _notifier!.recordNoBall(legByeRuns: runs);
+          }
         case ExtraType.bye:
           _notifier!.recordBye(byeRuns: runs);
         case ExtraType.legBye:
@@ -311,6 +361,12 @@ class _ScoringPageState extends State<ScoringPage> {
     bool prevNeedsBowler,
     bool prevIsInningsComplete,
   ) {
+    // Super over needed — show setup wizard
+    if (_state.needsSuperOver) {
+      _showSuperOverSetupWizard();
+      return;
+    }
+
     // Innings just completed — show transition modal or match complete
     if (!prevIsInningsComplete && _state.isInningsComplete) {
       if (_state.inningsNumber == 1) {
@@ -410,6 +466,8 @@ class _ScoringPageState extends State<ScoringPage> {
           secondTotalWickets: _state.totalWickets,
           secondOversDisplay: _state.oversDisplay,
           matchResult: result,
+          showSuperOverButton: result.resultType == MatchResultType.tie &&
+              _state.isKnockoutMatch,
           onAction: (action) {
             Navigator.of(ctx).pop();
             _handleMatchCompleteAction(action);
@@ -425,6 +483,9 @@ class _ScoringPageState extends State<ScoringPage> {
     }
 
     switch (action) {
+      case MatchCompleteAction.startSuperOver:
+        _showSuperOverSetupWizard();
+        return;
       case MatchCompleteAction.viewScorecard:
         final firstInnings = _state.firstInnings;
         final matchResult = _state.matchResult;
@@ -448,6 +509,45 @@ class _ScoringPageState extends State<ScoringPage> {
           if (mounted) GoRouter.of(context).go('/home');
         });
     }
+  }
+
+  void _showSuperOverSetupWizard() {
+    // The team that batted second bats first in the super over
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => SuperOverSetupWizard(
+        battingTeamName: _state.bowlingTeamName,
+        bowlingTeamName: _state.battingTeamName,
+        battingTeamPlayers: _state.bowlingTeamPlayers,
+        bowlingTeamPlayers: _state.battingTeamPlayers,
+        superOverNumber: _state.superOverNumber + 1,
+        previousSuperOverBowlerIds: _state.previousSuperOverBowlerIds,
+        onConfirm: (result) {
+          Navigator.of(ctx).pop();
+          if (_hasPersistence) {
+            _service!.startSuperOver(
+              strikerId: result.strikerId,
+              strikerName: result.strikerName,
+              nonStrikerId: result.nonStrikerId,
+              nonStrikerName: result.nonStrikerName,
+              bowlerId: result.bowlerId,
+              bowlerName: result.bowlerName,
+            );
+          } else {
+            _notifier!.startSuperOver(
+              strikerId: result.strikerId,
+              strikerName: result.strikerName,
+              nonStrikerId: result.nonStrikerId,
+              nonStrikerName: result.nonStrikerName,
+              bowlerId: result.bowlerId,
+              bowlerName: result.bowlerName,
+            );
+          }
+          setState(() {});
+        },
+      ),
+    );
   }
 
   void _showSelectBatterSheet() {
@@ -606,7 +706,13 @@ class _ScoringPageState extends State<ScoringPage> {
     );
   }
 
-  void _recordWicket(WicketDialogResult result) {
+  void _recordWicket(
+    WicketDialogResult result, {
+    bool isWide = false,
+    int wideRuns = 0,
+    bool isNoBall = false,
+    int noBallRuns = 0,
+  }) {
     final prevNeedsBowler = _state.needsNewBowler;
     final prevNeedsBatter = _state.needsNewBatter;
     final prevIsInningsComplete = _state.isInningsComplete;
@@ -618,7 +724,12 @@ class _ScoringPageState extends State<ScoringPage> {
         fielderId: result.fielderId,
         fielderName: result.fielderName,
         runsFromBat: result.runsFromBat,
+        isWide: isWide,
+        wideRuns: wideRuns,
+        isNoBall: isNoBall,
+        noBallRuns: noBallRuns,
         battersCrossed: result.battersCrossed,
+        isDirectHit: result.isDirectHit,
       );
     } else {
       _notifier!.recordWicket(
@@ -627,7 +738,12 @@ class _ScoringPageState extends State<ScoringPage> {
         fielderId: result.fielderId,
         fielderName: result.fielderName,
         runsFromBat: result.runsFromBat,
+        isWide: isWide,
+        wideRuns: wideRuns,
+        isNoBall: isNoBall,
+        noBallRuns: noBallRuns,
         battersCrossed: result.battersCrossed,
+        isDirectHit: result.isDirectHit,
       );
     }
     setState(() {});

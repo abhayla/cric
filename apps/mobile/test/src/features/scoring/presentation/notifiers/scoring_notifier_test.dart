@@ -2485,4 +2485,434 @@ void main() {
       expect(n.state.totalRuns, 5); // 2nd innings runs
     });
   });
+
+  // ── Issue #93: Direct Hit Toggle ─────────────────────────────────────
+
+  group('recordWicket: isDirectHit', () {
+    test('recordWicket with isDirectHit=true stores in wicketInfo', () {
+      final n = makeNotifier();
+      n.recordWicket(
+        dismissalType: DismissalType.runOut,
+        dismissedPlayerId: 'bat-1',
+        fielderId: 'fielder-1',
+        isDirectHit: true,
+      );
+
+      final delivery = n.state.deliveryHistory.last;
+      expect(delivery.isWicket, true);
+      expect(delivery.wicketInfo, isNotNull);
+      expect(delivery.wicketInfo!.isDirectHit, true);
+    });
+
+    test('recordWicket with default isDirectHit stores false', () {
+      final n = makeNotifier();
+      n.recordWicket(
+        dismissalType: DismissalType.runOut,
+        dismissedPlayerId: 'bat-1',
+        fielderId: 'fielder-1',
+      );
+
+      final delivery = n.state.deliveryHistory.last;
+      expect(delivery.wicketInfo, isNotNull);
+      expect(delivery.wicketInfo!.isDirectHit, false);
+    });
+  });
+
+  // ── Issue #90: Wide + Wicket ─────────────────────────────────────────
+
+  group('recordWicket: wide + wicket', () {
+    test('wide + stumped credits bowler wicket', () {
+      final n = makeNotifier();
+      n.recordWicket(
+        dismissalType: DismissalType.stumped,
+        dismissedPlayerId: 'bat-1',
+        fielderId: 'keeper-1',
+        isWide: true,
+      );
+
+      final delivery = n.state.deliveryHistory.last;
+      expect(delivery.isWide, true);
+      expect(delivery.isWicket, true);
+      expect(n.state.totalWickets, 1);
+      expect(n.state.bowlerStats['bowl-1']?.wicketsTaken, 1);
+      // Wide is not legal
+      expect(n.state.totalBalls, 0);
+    });
+
+    test('wide + runOut does NOT credit bowler wicket', () {
+      final n = makeNotifier();
+      n.recordWicket(
+        dismissalType: DismissalType.runOut,
+        dismissedPlayerId: 'bat-1',
+        fielderId: 'fielder-1',
+        isWide: true,
+      );
+
+      final delivery = n.state.deliveryHistory.last;
+      expect(delivery.isWide, true);
+      expect(delivery.isWicket, true);
+      expect(n.state.totalWickets, 1);
+      expect(n.state.bowlerStats['bowl-1']?.wicketsTaken, 0);
+    });
+  });
+
+  // ── Issue #91: No-Ball + Bye / Leg-Bye ──────────────────────────────
+
+  group('recordNoBall: bye and leg-bye params', () {
+    test('NB + bye: isNoBall=true, isBye=true, bye runs not charged to bowler or batter', () {
+      final n = makeNotifier();
+      n.recordNoBall(byeRuns: 2);
+
+      final delivery = n.state.deliveryHistory.last;
+      expect(delivery.isNoBall, true);
+      expect(delivery.isBye, true);
+      expect(delivery.byeRuns, 2);
+      // Total: 1 NB penalty + 2 bye = 3
+      expect(n.state.totalRuns, 3);
+      // Bowler concedes only NB penalty, not byes
+      expect(n.state.bowlerStats['bowl-1']?.runsConceded, 1);
+      // Batter not credited with bye runs
+      expect(n.state.batterStats['bat-1']?.runsScored, 0);
+      // NB extras
+      expect(n.state.totalNoBalls, 1);
+      expect(n.state.totalByes, 2);
+      // Not legal
+      expect(n.state.totalBalls, 0);
+    });
+
+    test('NB + legBye: isNoBall=true, isLegBye=true, works correctly', () {
+      final n = makeNotifier();
+      n.recordNoBall(legByeRuns: 3);
+
+      final delivery = n.state.deliveryHistory.last;
+      expect(delivery.isNoBall, true);
+      expect(delivery.isLegBye, true);
+      expect(delivery.legByeRuns, 3);
+      // Total: 1 NB penalty + 3 leg bye = 4
+      expect(n.state.totalRuns, 4);
+      // Bowler concedes only NB penalty
+      expect(n.state.bowlerStats['bowl-1']?.runsConceded, 1);
+      // Batter not credited
+      expect(n.state.batterStats['bat-1']?.runsScored, 0);
+      expect(n.state.totalLegByes, 3);
+    });
+
+    test('NB cannot have both byeRuns and legByeRuns > 0', () {
+      final n = makeNotifier();
+      expect(
+        () => n.recordNoBall(byeRuns: 1, legByeRuns: 1),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+  });
+
+  // ── Issue #92: NB + Wicket via recordWicket ─────────────────────────
+
+  group('recordWicket: NB + wicket', () {
+    test('NB + runOut: delivery has isNoBall=true and isWicket=true', () {
+      final n = makeNotifier();
+      n.recordWicket(
+        dismissalType: DismissalType.runOut,
+        dismissedPlayerId: 'bat-1',
+        fielderId: 'fielder-1',
+        isNoBall: true,
+      );
+
+      final delivery = n.state.deliveryHistory.last;
+      expect(delivery.isNoBall, true);
+      expect(delivery.isWicket, true);
+      expect(n.state.totalWickets, 1);
+      // Run out does not credit bowler
+      expect(n.state.bowlerStats['bowl-1']?.wicketsTaken, 0);
+      // NB is not legal
+      expect(n.state.totalBalls, 0);
+      // Free hit should be pending after NB
+      expect(n.state.isFreeHitPending, true);
+    });
+  });
+
+  // ── Issue #94: Super Over ───────────────────────────────────────────
+
+  group('ScoringState: super over defaults', () {
+    test('defaults: isKnockoutMatch=false, isSuperOver=false, superOverNumber=0, needsSuperOver=false', () {
+      final s = makeState();
+      expect(s.isKnockoutMatch, false);
+      expect(s.isSuperOver, false);
+      expect(s.superOverNumber, 0);
+      expect(s.needsSuperOver, false);
+      expect(s.previousSuperOverBowlerIds, isEmpty);
+    });
+  });
+
+  group('Super Over: tied knockout sets needsSuperOver', () {
+    test('tied knockout match sets needsSuperOver=true, NOT isMatchComplete', () {
+      // Set up a 2-over, 2-player knockout match in 2nd innings
+      // First innings scored 5 runs, so target = 6
+      const firstSummary = FirstInningsSummary(
+        teamName: 'Team Alpha',
+        teamId: 'team-a',
+        totalRuns: 5,
+        totalWickets: 0,
+        totalBalls: 12,
+        oversDisplay: '2.0',
+      );
+      final state = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-2',
+        battingTeamId: 'team-b',
+        bowlingTeamId: 'team-a',
+        inningsNumber: 2,
+        totalOvers: 2,
+        playersPerSide: 2,
+        isKnockoutMatch: true,
+        target: 6, // need 6 to win
+        firstInningsSummary: firstSummary,
+        strikerId: 'bat-1',
+        nonStrikerId: 'bat-2',
+        bowlerId: 'bowl-1',
+        batterStats: {
+          'bat-1': const BatterInnings(
+            playerId: 'bat-1',
+            displayName: 'Batter 1',
+            isOnStrike: true,
+          ),
+          'bat-2': const BatterInnings(
+            playerId: 'bat-2',
+            displayName: 'Batter 2',
+          ),
+        },
+        bowlerStats: {
+          'bowl-1': const BowlerSpell(
+            playerId: 'bowl-1',
+            displayName: 'Bowler 1',
+          ),
+        },
+      );
+      final n = ScoringNotifier(state);
+
+      // Score exactly 5 runs (to tie with first innings) then exhaust overs
+      n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+      n.recordDelivery(runsFromBat: 1);
+      // 5 runs after 2 balls, need 4 more dot balls to exhaust 1st over
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      // Over 1 done (6 balls), select new bowler for over 2
+      n.selectNewBowler(playerId: 'bowl-2', displayName: 'Bowler 2');
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+
+      // Overs exhausted, score = 5 = first innings score (tie)
+      expect(n.state.totalRuns, 5);
+      expect(n.state.isInningsComplete, true);
+      expect(n.state.needsSuperOver, true);
+      expect(n.state.isMatchComplete, false);
+    });
+
+    test('tied league match sets isMatchComplete=true as normal', () {
+      // Same setup but isKnockoutMatch=false
+      const firstSummary = FirstInningsSummary(
+        teamName: 'Team Alpha',
+        teamId: 'team-a',
+        totalRuns: 5,
+        totalWickets: 0,
+        totalBalls: 12,
+        oversDisplay: '2.0',
+      );
+      final state = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-2',
+        battingTeamId: 'team-b',
+        bowlingTeamId: 'team-a',
+        inningsNumber: 2,
+        totalOvers: 2,
+        playersPerSide: 2,
+        isKnockoutMatch: false, // League match
+        target: 6,
+        firstInningsSummary: firstSummary,
+        strikerId: 'bat-1',
+        nonStrikerId: 'bat-2',
+        bowlerId: 'bowl-1',
+        batterStats: {
+          'bat-1': const BatterInnings(
+            playerId: 'bat-1',
+            displayName: 'Batter 1',
+            isOnStrike: true,
+          ),
+          'bat-2': const BatterInnings(
+            playerId: 'bat-2',
+            displayName: 'Batter 2',
+          ),
+        },
+        bowlerStats: {
+          'bowl-1': const BowlerSpell(
+            playerId: 'bowl-1',
+            displayName: 'Bowler 1',
+          ),
+        },
+      );
+      final n = ScoringNotifier(state);
+
+      // Score 5 runs to tie, then exhaust overs
+      n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+      n.recordDelivery(runsFromBat: 1);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.selectNewBowler(playerId: 'bowl-2', displayName: 'Bowler 2');
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+      n.recordDelivery(runsFromBat: 0);
+
+      expect(n.state.totalRuns, 5);
+      expect(n.state.isInningsComplete, true);
+      expect(n.state.isMatchComplete, true);
+      expect(n.state.needsSuperOver, false);
+    });
+  });
+
+  group('Super Over: startSuperOver', () {
+    ScoringNotifier makeTiedKnockoutNotifier() {
+      // Create a state that represents a tied knockout match needing super over
+      const firstSummary = FirstInningsSummary(
+        teamName: 'Team Alpha',
+        teamId: 'team-a',
+        totalRuns: 10,
+        totalWickets: 1,
+        totalBalls: 12,
+        oversDisplay: '2.0',
+      );
+      final state = ScoringState(
+        matchId: 'match-1',
+        inningsId: 'inn-2',
+        battingTeamId: 'team-b',
+        bowlingTeamId: 'team-a',
+        battingTeamName: 'Team Beta',
+        bowlingTeamName: 'Team Alpha',
+        battingTeamPlayers: [
+          const PlayingXIPlayer(playerId: 'b-1', displayName: 'B1'),
+          const PlayingXIPlayer(playerId: 'b-2', displayName: 'B2'),
+          const PlayingXIPlayer(playerId: 'b-3', displayName: 'B3'),
+        ],
+        bowlingTeamPlayers: [
+          const PlayingXIPlayer(playerId: 'a-1', displayName: 'A1'),
+          const PlayingXIPlayer(playerId: 'a-2', displayName: 'A2'),
+          const PlayingXIPlayer(playerId: 'a-3', displayName: 'A3'),
+        ],
+        inningsNumber: 2,
+        totalOvers: 2,
+        playersPerSide: 3,
+        isKnockoutMatch: true,
+        target: 11,
+        totalRuns: 10,
+        totalBalls: 12,
+        isInningsComplete: true,
+        needsSuperOver: true,
+        firstInningsSummary: firstSummary,
+        strikerId: 'b-1',
+        nonStrikerId: 'b-2',
+        bowlerId: 'a-1',
+        batterStats: {
+          'b-1': const BatterInnings(playerId: 'b-1', displayName: 'B1'),
+          'b-2': const BatterInnings(playerId: 'b-2', displayName: 'B2'),
+        },
+        bowlerStats: {
+          'a-1': const BowlerSpell(playerId: 'a-1', displayName: 'A1'),
+        },
+      );
+      return ScoringNotifier(state);
+    }
+
+    test('startSuperOver resets to 1-over, 3-player state with isSuperOver=true', () {
+      final n = makeTiedKnockoutNotifier();
+      n.startSuperOver(
+        strikerId: 'a-1',
+        strikerName: 'A1',
+        nonStrikerId: 'a-2',
+        nonStrikerName: 'A2',
+        bowlerId: 'b-1',
+        bowlerName: 'B1',
+      );
+
+      expect(n.state.isSuperOver, true);
+      expect(n.state.isKnockoutMatch, true);
+      expect(n.state.superOverNumber, 1);
+      expect(n.state.totalOvers, 1);
+      expect(n.state.playersPerSide, 3);
+      expect(n.state.inningsNumber, 1);
+      // Teams swap: team that batted 2nd now bats first in SO
+      // battingTeamId was 'team-b', bowlingTeamId was 'team-a'
+      // After SO: bowlingTeamId becomes battingTeamId → 'team-a' bats
+      expect(n.state.battingTeamId, 'team-a');
+      expect(n.state.bowlingTeamId, 'team-b');
+      // Reset totals
+      expect(n.state.totalRuns, 0);
+      expect(n.state.totalBalls, 0);
+      expect(n.state.totalWickets, 0);
+      // Opening players set
+      expect(n.state.strikerId, 'a-1');
+      expect(n.state.nonStrikerId, 'a-2');
+      expect(n.state.bowlerId, 'b-1');
+    });
+
+    test('SO innings completes at 6 balls (1 over)', () {
+      final n = makeTiedKnockoutNotifier();
+      n.startSuperOver(
+        strikerId: 'a-1',
+        strikerName: 'A1',
+        nonStrikerId: 'a-2',
+        nonStrikerName: 'A2',
+        bowlerId: 'b-1',
+        bowlerName: 'B1',
+      );
+
+      // Bowl 6 dot balls
+      for (var i = 0; i < 6; i++) {
+        n.recordDelivery(runsFromBat: 0);
+      }
+
+      expect(n.state.totalBalls, 6);
+      expect(n.state.isInningsComplete, true);
+      expect(n.state.completionReason, InningsCompletionReason.oversExhausted);
+    });
+
+    test('SO innings completes at 2 wickets (playersPerSide=3 means all out)', () {
+      final n = makeTiedKnockoutNotifier();
+      n.startSuperOver(
+        strikerId: 'a-1',
+        strikerName: 'A1',
+        nonStrikerId: 'a-2',
+        nonStrikerName: 'A2',
+        bowlerId: 'b-1',
+        bowlerName: 'B1',
+      );
+
+      // First wicket
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'a-1',
+      );
+      expect(n.state.isInningsComplete, false);
+
+      // Bring in 3rd player
+      n.selectNewBatter(playerId: 'a-3', displayName: 'A3');
+
+      // Second wicket → all out (3 players, 2 wickets = all out)
+      n.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'a-3',
+      );
+      expect(n.state.isInningsComplete, true);
+      expect(n.state.completionReason, InningsCompletionReason.allOut);
+    });
+  });
 }

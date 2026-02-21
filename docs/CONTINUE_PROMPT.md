@@ -16,6 +16,39 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-27: Implemented Issues #90, #91, #92, #93, #94 (Scoring Polish)
+
+**5 GitHub issues implemented** — all 1152 scoring tests passing, flutter analyze clean, server typecheck clean.
+
+| Issue | Title | Scope | Status |
+|-------|-------|-------|--------|
+| #93 | Direct Hit Toggle on Run Out | `isDirectHit` boolean on WicketInfo, toggle in wicket dialog step 3, server fielding stats | DONE |
+| #90 | Wide + Wicket Combination | WicketDialog accepts `isWide` param, filters to stumped/runOut/hitWicket | DONE |
+| #91 | No-Ball + Bye Combination | `recordNoBall()` extended with `byeRuns`/`legByeRuns` params | DONE |
+| #92 | Wicket-on-Extras Toggle | ExtrasPanel "Wicket?" switch + NB run type selector, flows into WicketDialog | DONE |
+| #94 | Super Over Flow | `startSuperOver()`, `needsSuperOver` detection, SuperOverSetupWizard, MatchCompleteModal button | DONE |
+
+**Files changed:**
+- **Domain:** `wicket_info.dart` (isDirectHit), `delivery.dart` (isValidOnNoBall, toSyncPayload)
+- **Notifier:** `scoring_notifier.dart` (recordNoBall byeRuns/legByeRuns, recordWicket isNoBall/isDirectHit, super over state fields + startSuperOver)
+- **Persistence:** `scoring_persistence_service.dart` (pass-through for all new params + startSuperOver)
+- **Widgets:** `wicket_dialog.dart` (isWide/isNoBall/isDirectHit), `extras_panel.dart` (NoBallRunType enum, wicket toggle, NB run type selector), `match_complete_modal.dart` (startSuperOver action + button), `super_over_setup_wizard.dart` (NEW — 3-step wizard)
+- **Page:** `scoring_page.dart` (_showExtraWicketDialog, _recordNoBallWicket, super over flow)
+- **Data:** `scoring_state_converter.dart` (isDirectHit + super over fields serialization)
+- **Server:** `scoring.service.ts` (isDirectHit in wicket type, directHits increment in fielding stats)
+- **Tests:** ~31 new tests across scoring_notifier, wicket_dialog, extras_panel, scoring_state_converter
+
+**Key architectural notes:**
+- ExtrasPanel `onConfirm` signature changed: `void Function(int runs, {bool withWicket, NoBallRunType? noBallRunType})`
+- Super over resets state to 1-over, 3-player (2 wickets = all out) mini-match
+- Tied knockout match sets `needsSuperOver: true` instead of `isMatchComplete: true`
+- `_processDelivery` already handled all extra+wicket flag combos — changes were mostly UI wiring
+
+**Next steps:**
+1. Commit all changes
+2. Close GitHub issues #90, #91, #92, #93, #94
+3. Continue Phase 7 polish items
+
 ### Session 2026-02-25: Implemented Issues #84, #87, #88, #89
 
 **4 GitHub issues implemented** — all tests passing.

@@ -86,6 +86,10 @@ enum DismissalType {
   /// Only stumped and run out are possible on a wide.
   bool get isValidOnWide => this == stumped || this == runOut;
 
+  /// Whether this dismissal is valid on a no-ball delivery.
+  /// Only run out is possible on a no-ball.
+  bool get isValidOnNoBall => this == runOut;
+
   /// Create from server seed data ID.
   static DismissalType fromId(int id) {
     return DismissalType.values.firstWhere(
@@ -231,6 +235,7 @@ class Delivery {
             'dismissalTypeId': wicketInfo!.dismissalType.id,
             if (wicketInfo!.fielderId != null) 'fielderId': wicketInfo!.fielderId,
             'bowlerCredited': wicketInfo!.bowlerCredited,
+            if (wicketInfo!.isDirectHit) 'isDirectHit': true,
           },
       };
 

@@ -8,6 +8,7 @@ class WicketInfo {
     required this.bowlerCredited,
     this.fielderId,
     this.battersCrossed,
+    this.isDirectHit = false,
   });
 
   /// The player who was dismissed.
@@ -25,6 +26,10 @@ class WicketInfo {
   /// Whether batters had crossed when run out occurred.
   /// Only relevant for run out dismissals.
   final bool? battersCrossed;
+
+  /// Whether this was a direct hit run out (vs relay throw).
+  /// Only relevant for run out dismissals.
+  final bool isDirectHit;
 
   /// Whether this dismissal requires a fielder.
   bool get requiresFielder => dismissalType.requiresFielder;

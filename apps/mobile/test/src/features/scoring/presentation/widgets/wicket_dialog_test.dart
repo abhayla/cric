@@ -427,7 +427,8 @@ void main() {
     testWidgets('batters crossed toggle present', (tester) async {
       await navigateToStep3(tester);
       expect(find.text('Had batters crossed?'), findsOneWidget);
-      expect(find.byType(Switch), findsOneWidget);
+      // Step 3 has 2 switches: batters crossed + direct hit
+      expect(find.byType(Switch), findsNWidgets(2));
     });
 
     testWidgets('runs 0-3 buttons with 0 default', (tester) async {
@@ -516,7 +517,8 @@ void main() {
       // Step 3: select non-striker, toggle crossed, set runs to 1
       await tester.tap(find.text('Rohit Sharma'));
       await tester.pump();
-      await tester.tap(find.byType(Switch));
+      // Toggle "Had batters crossed?" (first Switch)
+      await tester.tap(find.byType(Switch).first);
       await tester.pump();
       // Tap runs "1" button in the run out details step
       final runsButton = find.descendant(
@@ -564,6 +566,176 @@ void main() {
       expect(captured!.dismissalType, DismissalType.caughtAndBowled);
       expect(captured!.dismissedPlayerId, 'striker-1');
       expect(captured!.fielderId, isNull);
+    });
+  });
+
+  // ── New helper for isWide / isNoBall params ──
+
+  Widget buildDialogWithExtras({
+    List<PlayingXIPlayer>? bowlingTeamPlayers,
+    String strikerName = 'Virat Kohli',
+    String strikerId = 'striker-1',
+    String nonStrikerName = 'Rohit Sharma',
+    String nonStrikerId = 'non-striker-1',
+    bool isFreeHitPending = false,
+    bool isWide = false,
+    bool isNoBall = false,
+    ValueChanged<WicketDialogResult>? onConfirm,
+  }) {
+    return MaterialApp(
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.seed,
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+      ),
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => Center(
+            child: ElevatedButton(
+              onPressed: () {
+                showDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (ctx) => WicketDialog(
+                    bowlingTeamPlayers:
+                        bowlingTeamPlayers ?? makeBowlingTeam(),
+                    strikerName: strikerName,
+                    strikerId: strikerId,
+                    nonStrikerName: nonStrikerName,
+                    nonStrikerId: nonStrikerId,
+                    isFreeHitPending: isFreeHitPending,
+                    isWide: isWide,
+                    isNoBall: isNoBall,
+                    onConfirm: (result) {
+                      Navigator.of(ctx).pop();
+                      (onConfirm ?? (_) {})(result);
+                    },
+                  ),
+                );
+              },
+              child: const Text('Open Dialog'),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> openDialogExtras(WidgetTester tester) async {
+    await tester.tap(find.text('Open Dialog'));
+    await tester.pumpAndSettle();
+  }
+
+  group('WicketDialog isWide mode', () {
+    testWidgets('isWide=true — only Stumped and Run Out are tappable',
+        (tester) async {
+      await tester.pumpWidget(buildDialogWithExtras(isWide: true));
+      await openDialogExtras(tester);
+
+      // Without any selection, Next button should be disabled
+      final nextButton = find.widgetWithText(FilledButton, 'Next');
+      expect(tester.widget<FilledButton>(nextButton).onPressed, isNull);
+
+      // Bowled should be disabled — tapping it should not enable Next
+      await tapDismissalType(tester, 'Bowled');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(nextButton).onPressed, isNull);
+
+      // Caught should be disabled
+      await tapDismissalType(tester, 'Caught');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(nextButton).onPressed, isNull);
+
+      // Stumped should be tappable — tap it and verify Next is enabled
+      await tapDismissalType(tester, 'Stumped');
+      final nextAfterStumped = find.widgetWithText(FilledButton, 'Next');
+      expect(
+          tester.widget<FilledButton>(nextAfterStumped).onPressed, isNotNull);
+    });
+
+    testWidgets('isWide=true — Run Out is also tappable', (tester) async {
+      await tester.pumpWidget(buildDialogWithExtras(isWide: true));
+      await openDialogExtras(tester);
+
+      await tapDismissalType(tester, 'Run Out');
+      final nextButton = find.widgetWithText(FilledButton, 'Next');
+      expect(tester.widget<FilledButton>(nextButton).onPressed, isNotNull);
+    });
+  });
+
+  group('WicketDialog isNoBall mode', () {
+    testWidgets('isNoBall=true — only Run Out is tappable', (tester) async {
+      await tester.pumpWidget(buildDialogWithExtras(isNoBall: true));
+      await openDialogExtras(tester);
+
+      // Next button should be disabled without selection
+      final nextButton = find.widgetWithText(FilledButton, 'Next');
+      expect(tester.widget<FilledButton>(nextButton).onPressed, isNull);
+
+      // Stumped should be disabled on no-ball
+      await tapDismissalType(tester, 'Stumped');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(nextButton).onPressed, isNull);
+
+      // Bowled should also be disabled
+      await tapDismissalType(tester, 'Bowled');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(nextButton).onPressed, isNull);
+
+      // Run Out should be tappable
+      await tapDismissalType(tester, 'Run Out');
+      final nextAfterRunOut = find.widgetWithText(FilledButton, 'Next');
+      expect(
+          tester.widget<FilledButton>(nextAfterRunOut).onPressed, isNotNull);
+    });
+  });
+
+  group('WicketDialog Direct Hit toggle', () {
+    testWidgets('Direct hit toggle visible on step 3', (tester) async {
+      await tester.pumpWidget(buildDialogWithExtras());
+      await openDialogExtras(tester);
+      // Step 1: select Run Out
+      await tapDismissalType(tester, 'Run Out');
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      // Step 2: select fielder
+      await tester.tap(find.text('Bowler 1'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      // Step 3: verify Direct hit? text is visible
+      expect(find.text('Direct hit?'), findsOneWidget);
+    });
+
+    testWidgets('Direct hit toggle sets isDirectHit=true in result',
+        (tester) async {
+      WicketDialogResult? captured;
+      await tester.pumpWidget(buildDialogWithExtras(
+        onConfirm: (r) => captured = r,
+      ));
+      await openDialogExtras(tester);
+      // Step 1: select Run Out
+      await tapDismissalType(tester, 'Run Out');
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      // Step 2: select fielder
+      await tester.tap(find.text('Bowler 1'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+      // Step 3: toggle Direct hit on — find the Switch widgets, the direct hit one
+      // There are multiple switches (batters crossed + direct hit)
+      final switches = find.byType(Switch);
+      // Direct hit switch is the second one
+      await tester.tap(switches.last);
+      await tester.pump();
+      // Confirm
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirm Wicket'));
+      await tester.pumpAndSettle();
+      expect(captured, isNotNull);
+      expect(captured!.isDirectHit, true);
     });
   });
 }

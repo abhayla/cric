@@ -9,7 +9,7 @@ void main() {
     ExtraType extraType = ExtraType.wide,
     int wideRunsPenalty = 1,
     int noBallRunsPenalty = 1,
-    void Function(int runs)? onConfirm,
+    void Function(int runs, {bool withWicket, NoBallRunType? noBallRunType})? onConfirm,
     VoidCallback? onClose,
   }) {
     return MaterialApp(
@@ -25,7 +25,7 @@ void main() {
           extraType: extraType,
           wideRunsPenalty: wideRunsPenalty,
           noBallRunsPenalty: noBallRunsPenalty,
-          onConfirm: onConfirm ?? (_) {},
+          onConfirm: onConfirm ?? (_, {bool withWicket = false, NoBallRunType? noBallRunType}) {},
           onClose: onClose ?? () {},
         ),
       ),
@@ -248,7 +248,7 @@ void main() {
         int? confirmedRuns;
         await tester.pumpWidget(buildPanel(
           extraType: ExtraType.wide,
-          onConfirm: (runs) => confirmedRuns = runs,
+          onConfirm: (runs, {bool withWicket = false, NoBallRunType? noBallRunType}) => confirmedRuns = runs,
         ));
         // Default wide runs = 0 (additional)
         await tester.tap(find.text('Confirm'));
@@ -261,7 +261,7 @@ void main() {
         int? confirmedRuns;
         await tester.pumpWidget(buildPanel(
           extraType: ExtraType.wide,
-          onConfirm: (runs) => confirmedRuns = runs,
+          onConfirm: (runs, {bool withWicket = false, NoBallRunType? noBallRunType}) => confirmedRuns = runs,
         ));
         await tester.tap(find.ancestor(
           of: find.text('3'),
@@ -277,7 +277,7 @@ void main() {
         int? confirmedRuns;
         await tester.pumpWidget(buildPanel(
           extraType: ExtraType.bye,
-          onConfirm: (runs) => confirmedRuns = runs,
+          onConfirm: (runs, {bool withWicket = false, NoBallRunType? noBallRunType}) => confirmedRuns = runs,
         ));
         // Default bye = 1
         await tester.tap(find.text('Confirm'));
@@ -339,6 +339,55 @@ void main() {
       testWidgets('Leg Bye shows Leg Bye Runs label', (tester) async {
         await tester.pumpWidget(buildPanel(extraType: ExtraType.legBye));
         expect(find.text('Leg Bye Runs'), findsOneWidget);
+      });
+    });
+
+    group('wicket toggle per type', () {
+      testWidgets('Wide panel shows Wicket? toggle text', (tester) async {
+        await tester.pumpWidget(buildPanel(extraType: ExtraType.wide));
+        expect(find.text('Wicket?'), findsOneWidget);
+      });
+
+      testWidgets('No Ball panel shows Wicket? toggle text', (tester) async {
+        await tester.pumpWidget(buildPanel(extraType: ExtraType.noBall));
+        expect(find.text('Wicket?'), findsOneWidget);
+      });
+
+      testWidgets('Bye panel does NOT show Wicket? toggle', (tester) async {
+        await tester.pumpWidget(buildPanel(extraType: ExtraType.bye));
+        expect(find.text('Wicket?'), findsNothing);
+      });
+
+      testWidgets('Leg Bye panel does NOT show Wicket? toggle',
+          (tester) async {
+        await tester.pumpWidget(buildPanel(extraType: ExtraType.legBye));
+        expect(find.text('Wicket?'), findsNothing);
+      });
+
+      testWidgets(
+          'toggling wicket changes confirm button text to Next: Select Wicket',
+          (tester) async {
+        await tester.pumpWidget(buildPanel(extraType: ExtraType.wide));
+        // Initially shows Confirm
+        expect(find.text('Confirm'), findsOneWidget);
+        // Toggle wicket switch on
+        await tester.tap(find.byType(Switch));
+        await tester.pump();
+        // Button text should change
+        expect(find.text('Next: Select Wicket'), findsOneWidget);
+        expect(find.text('Confirm'), findsNothing);
+      });
+    });
+
+    group('no ball run type selector', () {
+      testWidgets('NB panel shows Run Type with 3 ChoiceChips',
+          (tester) async {
+        await tester.pumpWidget(buildPanel(extraType: ExtraType.noBall));
+        expect(find.text('Run Type'), findsOneWidget);
+        expect(find.byType(ChoiceChip), findsNWidgets(3));
+        expect(find.text('Bat Runs'), findsOneWidget);
+        expect(find.text('Byes'), findsOneWidget);
+        expect(find.text('Leg Byes'), findsOneWidget);
       });
     });
   });

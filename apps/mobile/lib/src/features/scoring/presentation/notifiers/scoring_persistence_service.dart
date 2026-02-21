@@ -100,8 +100,8 @@ class ScoringPersistenceService {
     _publishScoreUpdate();
   }
 
-  void recordNoBall({int runsFromBat = 0}) {
-    _notifier.recordNoBall(runsFromBat: runsFromBat);
+  void recordNoBall({int runsFromBat = 0, int byeRuns = 0, int legByeRuns = 0}) {
+    _notifier.recordNoBall(runsFromBat: runsFromBat, byeRuns: byeRuns, legByeRuns: legByeRuns);
     _persistState();
     _enqueueLastDelivery();
     _publishScoreUpdate();
@@ -129,7 +129,10 @@ class ScoringPersistenceService {
     int runsFromBat = 0,
     bool isWide = false,
     int wideRuns = 0,
+    bool isNoBall = false,
+    int noBallRuns = 0,
     bool battersCrossed = false,
+    bool isDirectHit = false,
   }) {
     _notifier.recordWicket(
       dismissalType: dismissalType,
@@ -139,7 +142,10 @@ class ScoringPersistenceService {
       runsFromBat: runsFromBat,
       isWide: isWide,
       wideRuns: wideRuns,
+      isNoBall: isNoBall,
+      noBallRuns: noBallRuns,
       battersCrossed: battersCrossed,
+      isDirectHit: isDirectHit,
     );
     _persistState();
     _enqueueLastDelivery();
@@ -194,6 +200,25 @@ class ScoringPersistenceService {
     required String bowlerName,
   }) {
     _notifier.startSecondInnings(
+      strikerId: strikerId,
+      strikerName: strikerName,
+      nonStrikerId: nonStrikerId,
+      nonStrikerName: nonStrikerName,
+      bowlerId: bowlerId,
+      bowlerName: bowlerName,
+    );
+    _persistState();
+  }
+
+  void startSuperOver({
+    required String strikerId,
+    required String strikerName,
+    required String nonStrikerId,
+    required String nonStrikerName,
+    required String bowlerId,
+    required String bowlerName,
+  }) {
+    _notifier.startSuperOver(
       strikerId: strikerId,
       strikerName: strikerName,
       nonStrikerId: nonStrikerId,

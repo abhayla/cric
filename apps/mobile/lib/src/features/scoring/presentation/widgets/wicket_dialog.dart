@@ -12,6 +12,7 @@ class WicketDialogResult {
     this.fielderName,
     this.runsFromBat = 0,
     this.battersCrossed = false,
+    this.isDirectHit = false,
   });
 
   final DismissalType dismissalType;
@@ -20,6 +21,7 @@ class WicketDialogResult {
   final String? fielderName;
   final int runsFromBat;
   final bool battersCrossed;
+  final bool isDirectHit;
 }
 
 /// Multi-step wicket dialog for recording dismissal information.
@@ -38,6 +40,8 @@ class WicketDialog extends StatefulWidget {
     required this.nonStrikerId,
     required this.isFreeHitPending,
     required this.onConfirm,
+    this.isWide = false,
+    this.isNoBall = false,
   });
 
   final List<PlayingXIPlayer> bowlingTeamPlayers;
@@ -47,6 +51,8 @@ class WicketDialog extends StatefulWidget {
   final String nonStrikerId;
   final bool isFreeHitPending;
   final ValueChanged<WicketDialogResult> onConfirm;
+  final bool isWide;
+  final bool isNoBall;
 
   @override
   State<WicketDialog> createState() => _WicketDialogState();
@@ -59,6 +65,7 @@ class _WicketDialogState extends State<WicketDialog> {
   String? _selectedFielderName;
   String? _dismissedPlayerId;
   bool _battersCrossed = false;
+  bool _isDirectHit = false;
   int _runsBeforeRunOut = 0;
   String _searchQuery = '';
 
@@ -119,6 +126,8 @@ class _WicketDialogState extends State<WicketDialog> {
   bool _isTypeEnabled(DismissalType type) {
     if (!type.isMvpActive) return false;
     if (widget.isFreeHitPending && !type.isValidOnFreeHit) return false;
+    if (widget.isWide && !type.isValidOnWide) return false;
+    if (widget.isNoBall && !type.isValidOnNoBall) return false;
     return true;
   }
 
@@ -151,6 +160,7 @@ class _WicketDialogState extends State<WicketDialog> {
       fielderName: _selectedFielderName,
       runsFromBat: _selectedType == DismissalType.runOut ? _runsBeforeRunOut : 0,
       battersCrossed: _battersCrossed,
+      isDirectHit: _isDirectHit,
     ));
   }
 
@@ -355,6 +365,19 @@ class _WicketDialogState extends State<WicketDialog> {
               Switch(
                 value: _battersCrossed,
                 onChanged: (v) => setState(() => _battersCrossed = v),
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Direct hit?',
+                style: theme.textTheme.bodyMedium,
+              ),
+              Switch(
+                value: _isDirectHit,
+                onChanged: (v) => setState(() => _isDirectHit = v),
               ),
             ],
           ),

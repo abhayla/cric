@@ -80,6 +80,11 @@ Map<String, dynamic> _scoringStateToMap(ScoringState state) {
     'firstInnings': state.firstInnings != null
         ? _inningsDataToMap(state.firstInnings!)
         : null,
+    'isKnockoutMatch': state.isKnockoutMatch,
+    'isSuperOver': state.isSuperOver,
+    'superOverNumber': state.superOverNumber,
+    'needsSuperOver': state.needsSuperOver,
+    'previousSuperOverBowlerIds': state.previousSuperOverBowlerIds,
   };
 }
 
@@ -162,6 +167,15 @@ ScoringState _scoringStateFromMap(Map<String, dynamic> m) {
     firstInnings: m['firstInnings'] != null
         ? _inningsDataFromMap(m['firstInnings'] as Map<String, dynamic>)
         : null,
+    isKnockoutMatch: m['isKnockoutMatch'] as bool? ?? false,
+    isSuperOver: m['isSuperOver'] as bool? ?? false,
+    superOverNumber: m['superOverNumber'] as int? ?? 0,
+    needsSuperOver: m['needsSuperOver'] as bool? ?? false,
+    previousSuperOverBowlerIds:
+        (m['previousSuperOverBowlerIds'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            const [],
   );
 }
 
@@ -269,6 +283,7 @@ Map<String, dynamic> _wicketInfoToMap(WicketInfo w) {
     'bowlerCredited': w.bowlerCredited,
     'fielderId': w.fielderId,
     'battersCrossed': w.battersCrossed,
+    'isDirectHit': w.isDirectHit,
   };
 }
 
@@ -279,6 +294,7 @@ WicketInfo _wicketInfoFromMap(Map<String, dynamic> m) {
     bowlerCredited: m['bowlerCredited'] as bool,
     fielderId: m['fielderId'] as String?,
     battersCrossed: m['battersCrossed'] as bool?,
+    isDirectHit: m['isDirectHit'] as bool? ?? false,
   );
 }
 

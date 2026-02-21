@@ -179,6 +179,12 @@ class ScoringState {
     // 1st innings snapshot (populated after startSecondInnings)
     this.firstInningsSummary,
     this.firstInnings,
+    // Super over
+    this.isKnockoutMatch = false,
+    this.isSuperOver = false,
+    this.superOverNumber = 0,
+    this.needsSuperOver = false,
+    this.previousSuperOverBowlerIds = const [],
   })  : batterStats = batterStats ?? const {},
         bowlerStats = bowlerStats ?? const {};
 
@@ -258,6 +264,23 @@ class ScoringState {
 
   /// Full 1st innings data for scorecard (populated after startSecondInnings).
   final InningsData? firstInnings;
+
+  // ── Super Over ──
+
+  /// Whether this is a knockout/tournament match (enables super over on tie).
+  final bool isKnockoutMatch;
+
+  /// Whether this innings is part of a super over.
+  final bool isSuperOver;
+
+  /// Current super over number (1-based, 0 = not a super over).
+  final int superOverNumber;
+
+  /// Whether the match needs a super over (set when tied knockout).
+  final bool needsSuperOver;
+
+  /// Bowler IDs from previous super overs (ineligible for next SO).
+  final List<String> previousSuperOverBowlerIds;
 
   // ── Computed properties ──
 
@@ -476,6 +499,11 @@ class ScoringState {
     bool? undoBlockedByTransition,
     Object? firstInningsSummary = _unset,
     Object? firstInnings = _unset,
+    bool? isKnockoutMatch,
+    bool? isSuperOver,
+    int? superOverNumber,
+    bool? needsSuperOver,
+    List<String>? previousSuperOverBowlerIds,
   }) {
     return ScoringState(
       matchId: matchId,
@@ -543,6 +571,12 @@ class ScoringState {
       firstInnings: identical(firstInnings, _unset)
           ? this.firstInnings
           : firstInnings as InningsData?,
+      isKnockoutMatch: isKnockoutMatch ?? this.isKnockoutMatch,
+      isSuperOver: isSuperOver ?? this.isSuperOver,
+      superOverNumber: superOverNumber ?? this.superOverNumber,
+      needsSuperOver: needsSuperOver ?? this.needsSuperOver,
+      previousSuperOverBowlerIds:
+          previousSuperOverBowlerIds ?? this.previousSuperOverBowlerIds,
     );
   }
 }
@@ -586,11 +620,26 @@ class ScoringNotifier {
   }
 
   /// Record a no-ball delivery.
-  void recordNoBall({int runsFromBat = 0}) {
+  ///
+  /// Supports optional [byeRuns] or [legByeRuns] for NB+bye/leg-bye combos
+  /// (ball doesn't hit bat on a no-ball). Cannot have both bye and leg-bye,
+  /// and cannot have bat runs with bye/leg-bye runs simultaneously.
+  void recordNoBall({
+    int runsFromBat = 0,
+    int byeRuns = 0,
+    int legByeRuns = 0,
+  }) {
+    assert(!(byeRuns > 0 && legByeRuns > 0), 'Cannot have both bye and leg-bye');
+    assert(!(runsFromBat > 0 && (byeRuns > 0 || legByeRuns > 0)),
+        'Cannot have bat runs with bye/leg-bye runs');
     _processDelivery(
       isNoBall: true,
       noBallRuns: _state.noBallRunsPenalty,
       runsFromBat: runsFromBat,
+      isBye: byeRuns > 0,
+      byeRuns: byeRuns,
+      isLegBye: legByeRuns > 0,
+      legByeRuns: legByeRuns,
     );
   }
 
@@ -613,7 +662,10 @@ class ScoringNotifier {
     int runsFromBat = 0,
     bool isWide = false,
     int wideRuns = 0,
+    bool isNoBall = false,
+    int noBallRuns = 0,
     bool battersCrossed = false,
+    bool isDirectHit = false,
   }) {
     final wicketInfo = WicketInfo(
       dismissedPlayerId: dismissedPlayerId,
@@ -621,12 +673,15 @@ class ScoringNotifier {
       bowlerCredited: dismissalType.bowlerCredited,
       fielderId: fielderId,
       battersCrossed: battersCrossed,
+      isDirectHit: isDirectHit,
     );
 
     _processDelivery(
       runsFromBat: runsFromBat,
       isWide: isWide,
       wideRuns: isWide ? (_state.wideRunsPenalty + wideRuns) : 0,
+      isNoBall: isNoBall,
+      noBallRuns: isNoBall ? (_state.noBallRunsPenalty + noBallRuns) : 0,
       isWicket: true,
       wicketInfo: wicketInfo,
     );
@@ -998,6 +1053,63 @@ class ScoringNotifier {
     }
   }
 
+  /// Start a super over after a tied knockout match.
+  ///
+  /// Resets state for a 1-over, 3-player (2 wickets = all out) mini-match.
+  /// The team that batted second in the main match bats first in the SO.
+  void startSuperOver({
+    required String strikerId,
+    required String strikerName,
+    required String nonStrikerId,
+    required String nonStrikerName,
+    required String bowlerId,
+    required String bowlerName,
+  }) {
+    if (!_state.needsSuperOver && !_state.isMatchComplete) return;
+
+    final newSuperOverNumber = _state.superOverNumber + 1;
+    final prevBowlerIds = [..._state.previousSuperOverBowlerIds];
+    if (_state.bowlerId != null && _state.isSuperOver) {
+      prevBowlerIds.add(_state.bowlerId!);
+    }
+
+    // Capture current innings summary for the SO
+    final firstSummary = FirstInningsSummary(
+      teamName: _state.battingTeamName,
+      teamId: _state.battingTeamId,
+      totalRuns: _state.totalRuns,
+      totalWickets: _state.totalWickets,
+      totalBalls: _state.totalBalls,
+      oversDisplay: _state.oversDisplay,
+    );
+
+    _state = ScoringState(
+      matchId: _state.matchId,
+      inningsId: '${_state.matchId}-so$newSuperOverNumber-1',
+      battingTeamId: _state.bowlingTeamId,
+      bowlingTeamId: _state.battingTeamId,
+      battingTeamName: _state.bowlingTeamName,
+      bowlingTeamName: _state.battingTeamName,
+      battingTeamPlayers: _state.bowlingTeamPlayers,
+      bowlingTeamPlayers: _state.battingTeamPlayers,
+      inningsNumber: 1,
+      totalOvers: 1,
+      playersPerSide: 3, // 2 wickets = all out
+      wideRunsPenalty: _state.wideRunsPenalty,
+      noBallRunsPenalty: _state.noBallRunsPenalty,
+      isKnockoutMatch: true,
+      isSuperOver: true,
+      superOverNumber: newSuperOverNumber,
+      previousSuperOverBowlerIds: prevBowlerIds,
+      firstInningsSummary: firstSummary,
+    );
+
+    // Set up opening players
+    selectNewBatter(playerId: strikerId, displayName: strikerName);
+    selectNewBatter(playerId: nonStrikerId, displayName: nonStrikerName);
+    selectNewBowler(playerId: bowlerId, displayName: bowlerName);
+  }
+
   // ── Internal pipeline ──
 
   void _processDelivery({
@@ -1278,7 +1390,18 @@ class ScoringNotifier {
     );
 
     final isInningsComplete = completionReason != null;
-    final isMatchComplete = isInningsComplete && _state.inningsNumber >= 2;
+    var isMatchComplete = isInningsComplete && _state.inningsNumber >= 2;
+
+    // Check for super over: if match is complete, it's a tie, and knockout
+    bool triggerSuperOver = false;
+    if (isMatchComplete && _state.isKnockoutMatch && _state.firstInningsSummary != null) {
+      final firstRuns = _state.firstInningsSummary!.totalRuns;
+      if (newTotalRuns == firstRuns) {
+        // Tie in a knockout — need super over instead of completing
+        triggerSuperOver = true;
+        isMatchComplete = false;
+      }
+    }
 
     // Commit state
     _state = _state.copyWith(
@@ -1305,6 +1428,7 @@ class ScoringNotifier {
       completionReason: completionReason,
       deliveryHistory: [..._state.deliveryHistory, delivery],
       undoBlockedByTransition: false,
+      needsSuperOver: triggerSuperOver,
     );
   }
 }

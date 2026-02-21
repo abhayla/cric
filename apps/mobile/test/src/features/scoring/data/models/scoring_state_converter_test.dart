@@ -1143,4 +1143,103 @@ void main() {
       expect(restored.totalLegByes, 3);
     });
   });
+
+  group('isDirectHit round-trip', () {
+    test('preserves isDirectHit=true in WicketInfo', () {
+      final wicket = WicketInfo(
+        dismissedPlayerId: 'p1',
+        dismissalType: DismissalType.runOut,
+        bowlerCredited: false,
+        fielderId: 'fielder-1',
+        battersCrossed: false,
+        isDirectHit: true,
+      );
+      final delivery = makeDelivery(isWicket: true, wicketInfo: wicket);
+      final state = ScoringState(
+        matchId: 'x',
+        inningsId: 'x',
+        battingTeamId: 'x',
+        bowlingTeamId: 'x',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        deliveryHistory: [delivery],
+      );
+      final json = scoringStateToJsonString(state);
+      final restored = scoringStateFromJsonString(json);
+      final w = restored.deliveryHistory.first.wicketInfo!;
+      expect(w.isDirectHit, true);
+    });
+
+    test('backward compatibility: missing isDirectHit defaults to false', () {
+      // Build JSON manually without isDirectHit field in wicketInfo
+      final state = ScoringState(
+        matchId: 'x',
+        inningsId: 'x',
+        battingTeamId: 'x',
+        bowlingTeamId: 'x',
+        inningsNumber: 1,
+        totalOvers: 20,
+        playersPerSide: 11,
+        deliveryHistory: [
+          makeDelivery(
+            isWicket: true,
+            wicketInfo: makeWicketInfo(),
+          ),
+        ],
+      );
+      final jsonStr = scoringStateToJsonString(state);
+      // Remove isDirectHit from the JSON to simulate old data
+      final modified = jsonStr.replaceAll('"isDirectHit":false,', '');
+      final restored = scoringStateFromJsonString(modified);
+      final w = restored.deliveryHistory.first.wicketInfo!;
+      expect(w.isDirectHit, false);
+    });
+  });
+
+  group('Super over fields round-trip', () {
+    test('preserves all super over fields', () {
+      final state = ScoringState(
+        matchId: 'match-so',
+        inningsId: 'inn-so',
+        battingTeamId: 'team-a',
+        bowlingTeamId: 'team-b',
+        inningsNumber: 1,
+        totalOvers: 1,
+        playersPerSide: 3,
+        isKnockoutMatch: true,
+        isSuperOver: true,
+        superOverNumber: 2,
+        needsSuperOver: true,
+        previousSuperOverBowlerIds: ['bowl-1', 'bowl-2'],
+      );
+      final json = scoringStateToJsonString(state);
+      final restored = scoringStateFromJsonString(json);
+      expect(restored.isKnockoutMatch, true);
+      expect(restored.isSuperOver, true);
+      expect(restored.superOverNumber, 2);
+      expect(restored.needsSuperOver, true);
+      expect(restored.previousSuperOverBowlerIds, ['bowl-1', 'bowl-2']);
+    });
+
+    test('backward compatibility: missing super over fields default correctly',
+        () {
+      // Use minimal state which has defaults, serialize, strip the SO fields
+      final state = makeMinimalState();
+      final jsonStr = scoringStateToJsonString(state);
+      // Remove super over keys to simulate old data
+      final modified = jsonStr
+          .replaceAll('"isKnockoutMatch":false,', '')
+          .replaceAll('"isSuperOver":false,', '')
+          .replaceAll('"superOverNumber":0,', '')
+          .replaceAll('"needsSuperOver":false,', '')
+          .replaceAll('"previousSuperOverBowlerIds":[],', '');
+      final restored = scoringStateFromJsonString(modified);
+      expect(restored.isKnockoutMatch, false);
+      expect(restored.isSuperOver, false);
+      expect(restored.superOverNumber, 0);
+      expect(restored.needsSuperOver, false);
+      expect(restored.previousSuperOverBowlerIds, isEmpty);
+    });
+  });
 }

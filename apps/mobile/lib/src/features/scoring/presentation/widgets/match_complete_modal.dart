@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../notifiers/scoring_notifier.dart';
 
 /// Actions available from the match complete modal.
-enum MatchCompleteAction { viewScorecard, backToHome }
+enum MatchCompleteAction { viewScorecard, backToHome, startSuperOver }
 
 /// Modal displayed when a match is complete, showing side-by-side score
 /// comparison and result text.
@@ -17,6 +17,7 @@ class MatchCompleteModal extends StatelessWidget {
     required this.secondOversDisplay,
     required this.matchResult,
     required this.onAction,
+    this.showSuperOverButton = false,
   });
 
   final FirstInningsSummary firstInnings;
@@ -26,6 +27,9 @@ class MatchCompleteModal extends StatelessWidget {
   final String secondOversDisplay;
   final MatchResult matchResult;
   final ValueChanged<MatchCompleteAction> onAction;
+
+  /// Whether to show the "Start Super Over" button (tied knockout match).
+  final bool showSuperOverButton;
 
   /// Extract initials from team name (first letter of each word).
   static String _initials(String name) {
@@ -130,6 +134,17 @@ class MatchCompleteModal extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (showSuperOverButton) ...[
+                    FilledButton(
+                      onPressed: () =>
+                          onAction(MatchCompleteAction.startSuperOver),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colorScheme.tertiary,
+                      ),
+                      child: const Text('Start Super Over'),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   FilledButton(
                     onPressed: () =>
                         onAction(MatchCompleteAction.viewScorecard),

@@ -43,6 +43,9 @@ enum ExtraType {
       };
 }
 
+/// No-ball run type when wicket is toggled.
+enum NoBallRunType { batRuns, byes, legByes }
+
 /// Bottom sheet panel for recording extra deliveries (wide, no ball, bye, leg bye).
 class ExtrasPanel extends StatefulWidget {
   const ExtrasPanel({
@@ -57,7 +60,7 @@ class ExtrasPanel extends StatefulWidget {
   final ExtraType extraType;
   final int wideRunsPenalty;
   final int noBallRunsPenalty;
-  final void Function(int runs) onConfirm;
+  final void Function(int runs, {bool withWicket, NoBallRunType? noBallRunType}) onConfirm;
   final VoidCallback onClose;
 
   @override
@@ -66,12 +69,17 @@ class ExtrasPanel extends StatefulWidget {
 
 class _ExtrasPanelState extends State<ExtrasPanel> {
   late int _selectedRuns;
+  bool _wicketToggled = false;
+  NoBallRunType _noBallRunType = NoBallRunType.batRuns;
 
   @override
   void initState() {
     super.initState();
     _selectedRuns = widget.extraType.defaultRuns;
   }
+
+  bool get _canToggleWicket =>
+      widget.extraType == ExtraType.wide || widget.extraType == ExtraType.noBall;
 
   int get _totalRuns => switch (widget.extraType) {
         ExtraType.wide => widget.wideRunsPenalty + _selectedRuns,
@@ -170,6 +178,61 @@ class _ExtrasPanelState extends State<ExtrasPanel> {
           const Divider(),
           const SizedBox(height: 8),
 
+          // NB run type selector (only for no-ball)
+          if (type == ExtraType.noBall) ...[
+            Text(
+              'Run Type',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text('Bat Runs'),
+                  selected: _noBallRunType == NoBallRunType.batRuns,
+                  onSelected: (_) =>
+                      setState(() => _noBallRunType = NoBallRunType.batRuns),
+                ),
+                ChoiceChip(
+                  label: const Text('Byes'),
+                  selected: _noBallRunType == NoBallRunType.byes,
+                  onSelected: (_) =>
+                      setState(() => _noBallRunType = NoBallRunType.byes),
+                ),
+                ChoiceChip(
+                  label: const Text('Leg Byes'),
+                  selected: _noBallRunType == NoBallRunType.legByes,
+                  onSelected: (_) =>
+                      setState(() => _noBallRunType = NoBallRunType.legByes),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Wicket toggle (only for wide / no-ball)
+          if (_canToggleWicket) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Wicket?',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Switch(
+                  value: _wicketToggled,
+                  onChanged: (v) => setState(() => _wicketToggled = v),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+
           // Total row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -192,11 +255,17 @@ class _ExtrasPanelState extends State<ExtrasPanel> {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () => widget.onConfirm(_selectedRuns),
-              style: FilledButton.styleFrom(
-                backgroundColor: type.color,
+              onPressed: () => widget.onConfirm(
+                _selectedRuns,
+                withWicket: _wicketToggled,
+                noBallRunType: type == ExtraType.noBall ? _noBallRunType : null,
               ),
-              child: const Text('Confirm'),
+              style: FilledButton.styleFrom(
+                backgroundColor: _wicketToggled
+                    ? const Color(0xFFC62828)
+                    : type.color,
+              ),
+              child: Text(_wicketToggled ? 'Next: Select Wicket' : 'Confirm'),
             ),
           ),
         ],

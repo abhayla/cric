@@ -58,6 +58,7 @@ export interface DeliveryInput {
     dismissalTypeId: number;
     fielderId?: string;
     bowlerCredited: boolean;
+    isDirectHit?: boolean;
   };
 }
 
@@ -1425,6 +1426,10 @@ async function upsertFieldingStats(
   if (isStumping) {
     conflictSet.stumpings = sql`${fieldingStats.stumpings} + 1`;
   }
+  const isDirectHit = isRunOut && (wicket.isDirectHit ?? false);
+  if (isDirectHit) {
+    conflictSet.directHits = sql`${fieldingStats.directHits} + 1`;
+  }
 
   if (Object.keys(conflictSet).length > 0) {
     await tx.insert(fieldingStats).values({
@@ -1433,7 +1438,7 @@ async function upsertFieldingStats(
       catches: isCatch ? 1 : 0,
       runOuts: isRunOut ? 1 : 0,
       stumpings: isStumping ? 1 : 0,
-      directHits: 0,
+      directHits: isDirectHit ? 1 : 0,
     }).onConflictDoUpdate({
       target: [fieldingStats.inningsId, fieldingStats.playerId],
       set: conflictSet,
