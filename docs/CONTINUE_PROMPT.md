@@ -18,32 +18,43 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ### Session 2026-02-22: E2E Test Fixes (Tests 2, 3, 4-viewer, 5)
 
-**Fixed 3 root causes** across 4 failing E2E test suites. Only integration test helpers changed — no production code.
+**Fixed 6 issues** across 4 failing E2E test suites. Test 2 verified GREEN (3/3 scenarios).
 
 **Fix 1: `pageBack()` crash (Tests 2, 3, 5)**
-- `_ensureScoringControlsAccessible()` in `match_flow_helpers.dart` used `tester.pageBack()` which looks for `CupertinoNavigationBarBackButton` — doesn't exist in Material app
-- Replaced with `tester.tapAt(Offset(10, 10))` to tap outside bottom sheet to dismiss it
+- `_ensureScoringControlsAccessible()` used `tester.pageBack()` → CupertinoNavigationBarBackButton not found
+- Replaced with `tester.tapAt(Offset(10, 10))` to dismiss sheets
 
 **Fix 2: Toss wizard XI selection (Test 5)**
-- `completeTossWizard()` in `tournament_flow_helpers.dart` assumed all players pre-selected (roster == playersPerSide)
-- Player profile test has roster=11 but playersPerSide=6, so Next button was disabled
-- Added optional `playersPerSide` param + `_selectPlayingXIIfNeeded()` helper that taps ListTiles when Next is disabled
-- `player_profile_e2e_test.dart` now passes `playersPerSide: 6` to both `completeTossWizard` calls
+- Added `playersPerSide` param to `completeTossWizard` + `_selectPlayingXIIfNeeded()` helper using InkWell taps
 
 **Fix 3: Viewer staleness timeout (Test 4)**
-- Short match (18 deliveries, ~30s) completed before viewer could detect `isMatchComplete`
-- Monitoring loop ran until 5-min deadline → infrastructure timeout (exit 79)
-- Added staleness guard: if no updates for 15s and 8+ states received, re-read state and break
+- Added 15s staleness guard in monitoring loop to break on short matches
 
-**Files changed (4):**
-- `integration_test/helpers/match_flow_helpers.dart` — 2x `pageBack()` → `tapAt()`
-- `integration_test/helpers/tournament_flow_helpers.dart` — `playersPerSide` param + `_selectPlayingXIIfNeeded`
-- `integration_test/multi_device_viewer_e2e_test.dart` — staleness guard in monitoring loop
+**Fix 4: ListTile → InkWell mismatch (Test 2 root cause)**
+- `SelectBowlerSheet`/`SelectBatterSheet` use InkWell, not ListTile — test helpers searched for ListTile (0 matches)
+- Non-dismissible bowler sheet stayed permanently, blocking all scoring taps
+- Fixed 4 locations in `match_flow_helpers.dart` + 1 in `tournament_flow_helpers.dart`
+
+**Fix 5: Off-screen fielder in WicketDialog (Test 2 Scenario 22)**
+- "Ishan Kishan" (index 10) was off-screen in `ListView.builder` — added search field fallback
+
+**Fix 6: DB verification field mismatch (Test 2 Scenario 22)**
+- Test checked `dismissalType` (nonexistent on deliveries); dismissal info is in `wickets_by_delivery`
+- Added `/api/v1/test/wickets/:matchId` endpoint, test now checks `dismissalTypeId`
+
+**Test 2 result: ALL 3 SCENARIOS PASS** (5m37s)
+
+**Files changed (6):**
+- `integration_test/helpers/match_flow_helpers.dart` — `pageBack()` → `tapAt()`, `ListTile` → `InkWell`
+- `integration_test/helpers/tournament_flow_helpers.dart` — `playersPerSide` param, `ListTile` → `InkWell`
+- `integration_test/scoring_edge_cases_e2e_test.dart` — fielder search fallback, wickets DB verification
+- `integration_test/multi_device_viewer_e2e_test.dart` — staleness guard
 - `integration_test/player_profile_e2e_test.dart` — pass `playersPerSide: 6`
+- `apps/server/src/routes/v1/test-verify.routes.ts` — wickets endpoint
 
 **Next steps:**
-1. Run all 5 E2E tests to verify fixes (commands in plan)
-2. Test 1 (Single Match) regression check — should still pass
+1. Run Tests 3, 4, 5 to verify remaining fixes
+2. Test 1 regression check
 
 ### Session 2026-02-22: Full T20 E2E — Dual-Emulator Green Run
 

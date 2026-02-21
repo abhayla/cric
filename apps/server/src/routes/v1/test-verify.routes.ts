@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '../../db/index.ts';
-import { deliveries } from '../../db/schema/deliveries.ts';
+import { deliveries, wicketsByDelivery } from '../../db/schema/deliveries.ts';
 import { innings } from '../../db/schema/innings.ts';
 import { matches, matchResult, matchAnalytics } from '../../db/schema/matches.ts';
 import { tournamentStandings } from '../../db/schema/tournaments.ts';
@@ -78,6 +78,37 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
       .orderBy(innings.inningsNumber, deliveries.sequenceNumber);
 
     return { deliveries: allDeliveries };
+  })
+
+  // GET /api/v1/test/wickets/:matchId — all wickets for a match (joined with delivery)
+  .get('/wickets/:matchId', async ({ params }) => {
+    const matchInnings = await db
+      .select({ id: innings.id })
+      .from(innings)
+      .where(eq(innings.matchId, params.matchId));
+    if (matchInnings.length === 0) {
+      return { wickets: [] };
+    }
+    const inningsIds = matchInnings.map((i) => i.id);
+    const allWickets = await db
+      .select({
+        id: wicketsByDelivery.id,
+        deliveryId: wicketsByDelivery.deliveryId,
+        dismissedPlayerId: wicketsByDelivery.dismissedPlayerId,
+        dismissalTypeId: wicketsByDelivery.dismissalTypeId,
+        fielderId: wicketsByDelivery.fielderId,
+        bowlerCredited: wicketsByDelivery.bowlerCredited,
+        overNumber: deliveries.overNumber,
+        ballNumber: deliveries.ballNumber,
+        inningsNumber: innings.inningsNumber,
+      })
+      .from(wicketsByDelivery)
+      .innerJoin(deliveries, eq(wicketsByDelivery.deliveryId, deliveries.id))
+      .innerJoin(innings, eq(deliveries.inningsId, innings.id))
+      .where(sql`${deliveries.inningsId} IN ${inningsIds}`)
+      .orderBy(innings.inningsNumber, deliveries.sequenceNumber);
+
+    return { wickets: allWickets };
   })
 
   // GET /api/v1/test/standings/:tournamentId — raw standings

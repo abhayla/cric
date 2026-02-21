@@ -42,14 +42,13 @@ Future<void> settle(WidgetTester tester, {int fallbackMs = 2000}) async {
 /// On small-viewport devices, a stale SelectBowlerSheet or SelectBatterSheet
 /// may cover the scoring controls. This helper detects and dismisses them.
 Future<void> _ensureScoringControlsAccessible(WidgetTester tester) async {
-  // Check for bowler sheet
+  // Check for bowler sheet (uses InkWell rows, not ListTile)
   if (find.byType(SelectBowlerSheet).evaluate().isNotEmpty) {
     print('    [auto-clear] Stale SelectBowlerSheet — tapping first eligible bowler');
-    // Find any tappable text in the sheet (bowler name rows)
     final sheet = find.byType(SelectBowlerSheet);
-    final listTiles = find.descendant(of: sheet, matching: find.byType(ListTile));
-    if (listTiles.evaluate().isNotEmpty) {
-      await tester.tap(listTiles.first);
+    final inkWells = find.descendant(of: sheet, matching: find.byType(InkWell));
+    if (inkWells.evaluate().isNotEmpty) {
+      await tester.tap(inkWells.first, warnIfMissed: false);
       await settle(tester);
     } else {
       // Tap outside the sheet to dismiss it
@@ -58,13 +57,13 @@ Future<void> _ensureScoringControlsAccessible(WidgetTester tester) async {
     }
   }
 
-  // Check for batter sheet
+  // Check for batter sheet (uses InkWell rows, not ListTile)
   if (find.byType(SelectBatterSheet).evaluate().isNotEmpty) {
     print('    [auto-clear] Stale SelectBatterSheet — tapping first available batter');
     final sheet = find.byType(SelectBatterSheet);
-    final listTiles = find.descendant(of: sheet, matching: find.byType(ListTile));
-    if (listTiles.evaluate().isNotEmpty) {
-      await tester.tap(listTiles.first);
+    final inkWells = find.descendant(of: sheet, matching: find.byType(InkWell));
+    if (inkWells.evaluate().isNotEmpty) {
+      await tester.tap(inkWells.first, warnIfMissed: false);
       await settle(tester);
     } else {
       // Tap outside the sheet to dismiss it
@@ -217,13 +216,13 @@ Future<void> selectBowler(WidgetTester tester, String name,
       return;
     }
   }
-  // Last resort: tap the first ListTile in the sheet
-  final anyTile = find.descendant(
+  // Last resort: tap the first InkWell in the sheet (bowler rows use InkWell)
+  final anyRow = find.descendant(
     of: find.byType(SelectBowlerSheet),
-    matching: find.byType(ListTile),
+    matching: find.byType(InkWell),
   );
-  if (anyTile.evaluate().isNotEmpty) {
-    await tester.tap(anyTile.first, warnIfMissed: false);
+  if (anyRow.evaluate().isNotEmpty) {
+    await tester.tap(anyRow.first, warnIfMissed: false);
     await settle(tester);
     print('    [selectBowler] Selected first available bowler (last resort)');
     return;
@@ -257,13 +256,13 @@ Future<void> selectBatter(WidgetTester tester, String name) async {
     await settle(tester);
     await visualPause(tester);
   } else {
-    // Try tapping first available batter as fallback
-    final anyTile = find.descendant(
+    // Try tapping first available batter as fallback (batter rows use InkWell)
+    final anyRow = find.descendant(
       of: find.byType(SelectBatterSheet),
-      matching: find.byType(ListTile),
+      matching: find.byType(InkWell),
     );
-    if (anyTile.evaluate().isNotEmpty) {
-      await tester.tap(anyTile.first, warnIfMissed: false);
+    if (anyRow.evaluate().isNotEmpty) {
+      await tester.tap(anyRow.first, warnIfMissed: false);
       await settle(tester);
       print('    [selectBatter] "$name" not found — selected first available');
     } else {

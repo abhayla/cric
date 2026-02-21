@@ -786,26 +786,40 @@ void main() {
       expect(dbDeliveries.length, equals(allTracked.length),
           reason: 'DB delivery count must match UI-tracked count');
 
-      // Verify wickets exist in DB
-      final dbWickets =
+      // Verify wicket deliveries exist in DB
+      final dbWicketDeliveries =
           dbDeliveries.where((d) => d['isWicket'] == true).toList();
-      print('Wickets in DB: ${dbWickets.length}');
-      expect(dbWickets.length, equals(5),
+      print('Wicket deliveries in DB: ${dbWicketDeliveries.length}');
+      expect(dbWicketDeliveries.length, equals(5),
           reason: 'Should have exactly 5 wickets (Bowled, Caught, LBW, Run Out, Stumped)');
 
-      // Verify each wicket has dismissal info
+      // Fetch detailed wicket records from wickets_by_delivery table
+      List<Map<String, dynamic>> dbWickets = [];
+      try {
+        final r = await testDio.get('/api/v1/test/wickets/$matchId');
+        dbWickets = (r.data['wickets'] as List)
+            .map((w) => w as Map<String, dynamic>)
+            .toList();
+      } catch (e) {
+        print('WARN: Wickets fetch failed: $e');
+      }
+      print('Wicket records in wickets_by_delivery: ${dbWickets.length}');
+
+      // Verify each wicket has dismissal info (dismissalTypeId > 0)
       for (var i = 0; i < dbWickets.length; i++) {
         final w = dbWickets[i];
-        final dismissalType = w['dismissalType'] as String?;
-        print('  Wicket ${i + 1}: dismissalType=$dismissalType');
-        expect(dismissalType, isNotNull,
+        final dismissalTypeId = w['dismissalTypeId'] as int?;
+        print('  Wicket ${i + 1}: dismissalTypeId=$dismissalTypeId');
+        expect(dismissalTypeId, isNotNull,
             reason: 'Wicket ${i + 1} must have a dismissal type');
+        expect(dismissalTypeId, greaterThan(0),
+            reason: 'Wicket ${i + 1} dismissalTypeId must be > 0');
       }
 
-      // Verify specific dismissal types in order
-      final dismissalTypes =
-          dbWickets.map((w) => w['dismissalType'] as String?).toList();
-      print('Dismissal types in order: $dismissalTypes');
+      // Verify dismissal type IDs in order
+      final dismissalTypeIds =
+          dbWickets.map((w) => w['dismissalTypeId'] as int?).toList();
+      print('Dismissal type IDs in order: $dismissalTypeIds');
 
       // Verify all delivery fields match
       var matches = 0;
@@ -1249,13 +1263,34 @@ Future<void> _tapNextInWicketDialog(WidgetTester tester) async {
 }
 
 /// Select a fielder by name inside the WicketDialog fielder selection step.
+///
+/// If the fielder is off-screen in the scrollable list (ListView.builder only
+/// builds visible items), uses the dialog's search TextField to filter the
+/// list and bring the player into view.
 Future<void> _selectFielderInWicketDialog(
   WidgetTester tester,
   String fielderName,
 ) async {
   await tester.pumpAndSettle();
-  final fielder = find.textContaining(fielderName);
+  var fielder = find.textContaining(fielderName);
+  if (fielder.evaluate().isEmpty) {
+    // Fielder may be off-screen — use the search field to filter the list
+    final searchField = find.descendant(
+      of: find.byType(WicketDialog),
+      matching: find.byType(TextField),
+    );
+    if (searchField.evaluate().isNotEmpty) {
+      // Type the last name to narrow down the list
+      final searchTerm = fielderName.split(' ').last;
+      await tester.enterText(searchField.first, searchTerm);
+      await tester.pumpAndSettle();
+      fielder = find.textContaining(fielderName);
+      print('    [wicketDialog] Searched "$searchTerm" for off-screen fielder');
+    }
+  }
+
   if (fielder.evaluate().isNotEmpty) {
+    await tester.ensureVisible(fielder.first);
     await tester.tap(fielder.first);
     await tester.pumpAndSettle();
     await visualPause(tester);

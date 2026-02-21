@@ -821,13 +821,14 @@ Future<void> _selectPlayingXIIfNeeded(WidgetTester tester, int? playersPerSide) 
     }
   }
 
-  // Next is disabled — manually select players by tapping ListTiles
+  // Next is disabled — manually select players by tapping InkWell player rows
+  // (toss_page.dart uses InkWell for _buildPlayerSelectRow, not ListTile)
   print('    [toss] Next disabled — selecting $playersPerSide players');
-  final listTiles = find.byType(ListTile);
-  final count = playersPerSide.clamp(0, listTiles.evaluate().length);
+  final inkWells = find.byType(InkWell);
+  final count = playersPerSide.clamp(0, inkWells.evaluate().length);
   for (var i = 0; i < count; i++) {
-    await tester.ensureVisible(listTiles.at(i));
-    await tester.tap(listTiles.at(i), warnIfMissed: false);
+    await tester.ensureVisible(inkWells.at(i));
+    await tester.tap(inkWells.at(i), warnIfMissed: false);
     await tester.pump();
   }
   await settle(tester);
