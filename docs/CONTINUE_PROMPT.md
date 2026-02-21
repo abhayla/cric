@@ -16,6 +16,14 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Pending: Uncommitted E2E fixes from 2026-02-22
+
+4 files modified but never committed. Commit or review before starting new work:
+- `integration_test/helpers/tournament_flow_helpers.dart`
+- `integration_test/scoring_edge_cases_e2e_test.dart`
+- `integration_test/single_match_e2e_test.dart`
+- `lib/src/features/teams/presentation/pages/add_player_page.dart`
+
 ### Session 2026-02-22: E2E Test Fixes (Tests 2, 3, 4-viewer, 5)
 
 **Fixed 6 issues** across 4 failing E2E test suites. Test 2 verified GREEN (3/3 scenarios).

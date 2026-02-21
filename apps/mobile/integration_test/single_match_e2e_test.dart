@@ -191,7 +191,9 @@ void main() {
       // Select players per side: "6" chip
       final players6 = find.text('6');
       if (players6.evaluate().isNotEmpty) {
-        await tester.tap(players6.first);
+        await tester.ensureVisible(players6.first);
+        await tester.pumpAndSettle();
+        await tester.tap(players6.first, warnIfMissed: false);
         await settle(tester);
         print('✓ Players per side: 6');
       }

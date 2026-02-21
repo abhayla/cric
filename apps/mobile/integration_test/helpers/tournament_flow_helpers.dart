@@ -256,6 +256,10 @@ Future<void> _fillAndSubmitPlayer(
     print('    [fillPlayer] Entered phone: $phone');
   }
 
+  // Dismiss keyboard before scrolling to chips (keyboard may cover them)
+  await tester.testTextInput.receiveAction(TextInputAction.done);
+  await tester.pumpAndSettle();
+
   // Select role chip based on player.role
   final roleLabel = switch (player.role) {
     'batter' => 'Batter',
@@ -266,7 +270,9 @@ Future<void> _fillAndSubmitPlayer(
   };
   final roleChip = find.text(roleLabel);
   if (roleChip.evaluate().isNotEmpty) {
-    await tester.tap(roleChip.first);
+    await tester.ensureVisible(roleChip.first);
+    await tester.pumpAndSettle();
+    await tester.tap(roleChip.first, warnIfMissed: false);
     await settle(tester);
   }
 

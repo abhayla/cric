@@ -339,7 +339,7 @@ class _CreateTabState extends State<_CreateTab> {
 
         // Add to Team button
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: SizedBox(
             width: double.infinity,
             height: 48,

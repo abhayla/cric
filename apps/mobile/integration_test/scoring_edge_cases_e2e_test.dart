@@ -162,7 +162,9 @@ void main() {
       // Select players per side: 11
       final players11 = find.text('11');
       if (players11.evaluate().isNotEmpty) {
-        await tester.tap(players11.first);
+        await tester.ensureVisible(players11.first);
+        await tester.pumpAndSettle();
+        await tester.tap(players11.first, warnIfMissed: false);
         await settle(tester);
         print('OK Players per side: 11');
       }
@@ -566,7 +568,9 @@ void main() {
 
       final players11 = find.text('11');
       if (players11.evaluate().isNotEmpty) {
-        await tester.tap(players11.first);
+        await tester.ensureVisible(players11.first);
+        await tester.pumpAndSettle();
+        await tester.tap(players11.first, warnIfMissed: false);
         await settle(tester);
         print('OK Players per side: 11');
       }
@@ -925,7 +929,9 @@ void main() {
 
       final players11 = find.text('11');
       if (players11.evaluate().isNotEmpty) {
-        await tester.tap(players11.first);
+        await tester.ensureVisible(players11.first);
+        await tester.pumpAndSettle();
+        await tester.tap(players11.first, warnIfMissed: false);
         await settle(tester);
         print('OK Players per side: 11');
       }
