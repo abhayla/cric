@@ -191,6 +191,7 @@ class WsMatchStateData {
     this.isFreeHitPending,
     this.isMagicOver,
     this.magicOverMultiplier,
+    this.deliveryCount = 0,
   });
 
   final String status;
@@ -211,6 +212,7 @@ class WsMatchStateData {
   final bool? isFreeHitPending;
   final bool? isMagicOver;
   final int? magicOverMultiplier;
+  final int deliveryCount;
 
   factory WsMatchStateData.fromJson(Map<String, dynamic> json) {
     return WsMatchStateData(
@@ -245,6 +247,7 @@ class WsMatchStateData {
       isFreeHitPending: json['isFreeHitPending'] as bool?,
       isMagicOver: json['isMagicOver'] as bool?,
       magicOverMultiplier: json['magicOverMultiplier'] as int?,
+      deliveryCount: json['deliveryCount'] as int? ?? 0,
     );
   }
 }
@@ -280,6 +283,7 @@ class WsScoreUpdateData {
     this.isFreeHitPending,
     this.isMagicOver,
     this.magicOverMultiplier,
+    this.deliveryCount = 0,
   });
 
   final int totalRuns;
@@ -297,6 +301,7 @@ class WsScoreUpdateData {
   final bool? isFreeHitPending;
   final bool? isMagicOver;
   final int? magicOverMultiplier;
+  final int deliveryCount;
 
   factory WsScoreUpdateData.fromJson(Map<String, dynamic> json) {
     return WsScoreUpdateData(
@@ -327,6 +332,7 @@ class WsScoreUpdateData {
       isFreeHitPending: json['isFreeHitPending'] as bool?,
       isMagicOver: json['isMagicOver'] as bool?,
       magicOverMultiplier: json['magicOverMultiplier'] as int?,
+      deliveryCount: json['deliveryCount'] as int? ?? 0,
     );
   }
 }

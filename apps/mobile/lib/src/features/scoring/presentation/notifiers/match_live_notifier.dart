@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/data/websocket/websocket_client.dart';
@@ -34,6 +35,7 @@ class LiveMatchState {
     this.isFreeHitPending = false,
     this.isMagicOver = false,
     this.magicOverMultiplier = 2,
+    this.lastDeliveryCount = 0,
   });
 
   final ConnectionStatus connectionStatus;
@@ -61,6 +63,7 @@ class LiveMatchState {
   final bool isFreeHitPending;
   final bool isMagicOver;
   final int magicOverMultiplier;
+  final int lastDeliveryCount;
 
   bool get isMatchComplete => matchResult != null;
 
@@ -90,6 +93,7 @@ class LiveMatchState {
     bool? isFreeHitPending,
     bool? isMagicOver,
     int? magicOverMultiplier,
+    int? lastDeliveryCount,
     // Sentinel flags for nullable fields.
     bool clearMatchId = false,
     bool clearStatus = false,
@@ -142,6 +146,7 @@ class LiveMatchState {
       isFreeHitPending: isFreeHitPending ?? this.isFreeHitPending,
       isMagicOver: isMagicOver ?? this.isMagicOver,
       magicOverMultiplier: magicOverMultiplier ?? this.magicOverMultiplier,
+      lastDeliveryCount: lastDeliveryCount ?? this.lastDeliveryCount,
     );
   }
 }
@@ -150,6 +155,7 @@ class LiveMatchState {
 class MatchLiveNotifier extends Notifier<LiveMatchState> {
   StreamSubscription<WsServerMessage>? _messageSubscription;
   StreamSubscription<ConnectionStatus>? _statusSubscription;
+  bool _refreshRequested = false;
 
   @override
   LiveMatchState build() {
@@ -259,6 +265,7 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
 
   void _handleMatchState(WsMatchStateMessage msg) {
     final d = msg.data;
+    _refreshRequested = false;
     state = state.copyWith(
       status: d.status,
       inningsNumber: d.inningsNumber,
@@ -284,12 +291,31 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
       isFreeHitPending: d.isFreeHitPending ?? false,
       isMagicOver: d.isMagicOver ?? false,
       magicOverMultiplier: d.magicOverMultiplier ?? 2,
+      lastDeliveryCount: d.deliveryCount,
       clearError: true,
     );
   }
 
   void _handleScoreUpdate(WsScoreUpdateMessage msg) {
     final d = msg.data;
+    final incoming = d.deliveryCount;
+
+    // Gap detection: if deliveryCount is non-zero, check sequence
+    if (incoming > 0 && incoming != state.lastDeliveryCount + 1) {
+      // Gap detected — request full state refresh
+      if (!_refreshRequested) {
+        _refreshRequested = true;
+        final matchId = state.matchId;
+        if (matchId != null) {
+          debugPrint('[WS] Gap detected: expected '
+              '${state.lastDeliveryCount + 1}, got $incoming. '
+              'Requesting match_state refresh.');
+          _client.joinMatch(matchId);
+        }
+      }
+      return;
+    }
+
     state = state.copyWith(
       totalRuns: d.totalRuns,
       totalWickets: d.totalWickets,
@@ -311,6 +337,7 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
       isFreeHitPending: d.isFreeHitPending ?? false,
       isMagicOver: d.isMagicOver ?? false,
       magicOverMultiplier: d.magicOverMultiplier ?? state.magicOverMultiplier,
+      lastDeliveryCount: incoming > 0 ? incoming : state.lastDeliveryCount,
       clearError: true,
     );
   }
@@ -340,6 +367,7 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
         currentOver: const [],
         isFreeHitPending: false,
         isMagicOver: false,
+        lastDeliveryCount: 0,
       );
     } else {
       // Final innings — just record the completion info and target.

@@ -482,6 +482,229 @@ void main() {
     });
   });
 
+  group('delivery count gap detection', () {
+    Map<String, dynamic> scoreUpdateJson({
+      int totalRuns = 101,
+      int deliveryCount = 0,
+    }) =>
+        {
+          'type': 'score_update',
+          'matchId': 'm1',
+          'data': {
+            'totalRuns': totalRuns,
+            'totalWickets': 2,
+            'overs': '12.4',
+            'currentRunRate': 8.14,
+            'requiredRunRate': null,
+            'lastDelivery': {
+              'runs': 1,
+              'isWide': false,
+              'isNoBall': false,
+              'isBye': false,
+              'isLegBye': false,
+              'isWicket': false,
+              'isBoundaryFour': false,
+              'isBoundarySix': false,
+              'description': 'Single',
+            },
+            'striker': sampleStriker,
+            'nonStriker': null,
+            'bowler': sampleBowler,
+            'currentOver': <Map<String, dynamic>>[],
+            'deliveryCount': deliveryCount,
+          },
+        };
+
+    test('sequential deliveryCount applies normally', () async {
+      final notifier = readNotifier();
+      await notifier.joinMatch('m1');
+
+      // Set initial state with deliveryCount=5
+      sendMessage(matchStateJson(totalRuns: 100));
+      await Future.delayed(Duration.zero);
+
+      // Manually set lastDeliveryCount via match_state with deliveryCount
+      sendMessage({
+        ...matchStateJson(totalRuns: 100),
+        'data': {
+          ...(matchStateJson(totalRuns: 100)['data'] as Map<String, dynamic>),
+          'deliveryCount': 5,
+        },
+      });
+      await Future.delayed(Duration.zero);
+      expect(readState().lastDeliveryCount, 5);
+
+      // Sequential: deliveryCount=6
+      sendMessage(scoreUpdateJson(totalRuns: 104, deliveryCount: 6));
+      await Future.delayed(Duration.zero);
+
+      expect(readState().totalRuns, 104);
+      expect(readState().lastDeliveryCount, 6);
+    });
+
+    test('gap forward triggers join_match refresh', () async {
+      final notifier = readNotifier();
+      await notifier.joinMatch('m1');
+
+      sendMessage({
+        ...matchStateJson(totalRuns: 100),
+        'data': {
+          ...(matchStateJson(totalRuns: 100)['data'] as Map<String, dynamic>),
+          'deliveryCount': 3,
+        },
+      });
+      await Future.delayed(Duration.zero);
+      expect(readState().lastDeliveryCount, 3);
+
+      // Gap: expected 4, got 6
+      sendMessage(scoreUpdateJson(totalRuns: 120, deliveryCount: 6));
+      await Future.delayed(Duration.zero);
+
+      // State should NOT be updated (gap → skip partial update)
+      expect(readState().totalRuns, 100);
+
+      // Should have sent a join_match to request refresh
+      final joinMessages = fakeChannel.sentMessages
+          .map((s) => jsonDecode(s) as Map<String, dynamic>)
+          .where((m) => m['type'] == 'join_match')
+          .toList();
+      // At least 2: initial join + gap-triggered rejoin
+      expect(joinMessages.length, greaterThanOrEqualTo(2));
+    });
+
+    test('gap backward (undo) triggers refresh', () async {
+      final notifier = readNotifier();
+      await notifier.joinMatch('m1');
+
+      sendMessage({
+        ...matchStateJson(totalRuns: 100),
+        'data': {
+          ...(matchStateJson(totalRuns: 100)['data'] as Map<String, dynamic>),
+          'deliveryCount': 5,
+        },
+      });
+      await Future.delayed(Duration.zero);
+
+      // Backward gap: expected 6, got 3 (undo scenario)
+      sendMessage(scoreUpdateJson(totalRuns: 95, deliveryCount: 3));
+      await Future.delayed(Duration.zero);
+
+      // State not updated
+      expect(readState().totalRuns, 100);
+    });
+
+    test('match_state resets counter and clears refresh flag', () async {
+      final notifier = readNotifier();
+      await notifier.joinMatch('m1');
+
+      sendMessage({
+        ...matchStateJson(totalRuns: 100),
+        'data': {
+          ...(matchStateJson(totalRuns: 100)['data'] as Map<String, dynamic>),
+          'deliveryCount': 10,
+        },
+      });
+      await Future.delayed(Duration.zero);
+      expect(readState().lastDeliveryCount, 10);
+
+      // After refresh, next sequential delivery should apply
+      sendMessage(scoreUpdateJson(totalRuns: 104, deliveryCount: 11));
+      await Future.delayed(Duration.zero);
+      expect(readState().totalRuns, 104);
+      expect(readState().lastDeliveryCount, 11);
+    });
+
+    test('deliveryCount=0 (backward compat) applies without gap check',
+        () async {
+      final notifier = readNotifier();
+      await notifier.joinMatch('m1');
+
+      sendMessage({
+        ...matchStateJson(totalRuns: 100),
+        'data': {
+          ...(matchStateJson(totalRuns: 100)['data'] as Map<String, dynamic>),
+          'deliveryCount': 5,
+        },
+      });
+      await Future.delayed(Duration.zero);
+
+      // Old scorer sends deliveryCount=0 → should apply normally
+      sendMessage(scoreUpdateJson(totalRuns: 104, deliveryCount: 0));
+      await Future.delayed(Duration.zero);
+
+      expect(readState().totalRuns, 104);
+    });
+
+    test('multiple gaps do not spam join_match (debounce)', () async {
+      final notifier = readNotifier();
+      await notifier.joinMatch('m1');
+
+      sendMessage({
+        ...matchStateJson(totalRuns: 100),
+        'data': {
+          ...(matchStateJson(totalRuns: 100)['data'] as Map<String, dynamic>),
+          'deliveryCount': 3,
+        },
+      });
+      await Future.delayed(Duration.zero);
+
+      final messagesBeforeGaps = fakeChannel.sentMessages.length;
+
+      // Send multiple gap updates
+      sendMessage(scoreUpdateJson(totalRuns: 110, deliveryCount: 6));
+      await Future.delayed(Duration.zero);
+      sendMessage(scoreUpdateJson(totalRuns: 115, deliveryCount: 7));
+      await Future.delayed(Duration.zero);
+      sendMessage(scoreUpdateJson(totalRuns: 120, deliveryCount: 8));
+      await Future.delayed(Duration.zero);
+
+      // Should only send ONE join_match for multiple gaps
+      final joinMessages = fakeChannel.sentMessages
+          .sublist(messagesBeforeGaps)
+          .map((s) => jsonDecode(s) as Map<String, dynamic>)
+          .where((m) => m['type'] == 'join_match')
+          .toList();
+      expect(joinMessages.length, 1);
+    });
+
+    test('innings complete resets lastDeliveryCount to 0', () async {
+      final notifier = readNotifier();
+      await notifier.joinMatch('m1');
+
+      sendMessage({
+        ...matchStateJson(totalRuns: 185),
+        'data': {
+          ...(matchStateJson(totalRuns: 185)['data'] as Map<String, dynamic>),
+          'deliveryCount': 120,
+        },
+      });
+      await Future.delayed(Duration.zero);
+      expect(readState().lastDeliveryCount, 120);
+
+      sendMessage({
+        'type': 'innings_complete',
+        'matchId': 'm1',
+        'data': {
+          'inningsNumber': 1,
+          'battingTeam': 'India',
+          'totalRuns': 185,
+          'totalWickets': 7,
+          'overs': '20.0',
+          'target': 186,
+        },
+      });
+      await Future.delayed(Duration.zero);
+
+      expect(readState().lastDeliveryCount, 0);
+
+      // 2nd innings first delivery (count=1) should be sequential
+      sendMessage(scoreUpdateJson(totalRuns: 4, deliveryCount: 1));
+      await Future.delayed(Duration.zero);
+      expect(readState().totalRuns, 4);
+      expect(readState().lastDeliveryCount, 1);
+    });
+  });
+
   group('dismissWicketNotification', () {
     test('clears wicket notification', () async {
       final notifier = readNotifier();

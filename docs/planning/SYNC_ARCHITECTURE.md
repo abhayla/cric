@@ -312,6 +312,34 @@ OFFLINE BACKLOG (coming back online with 10+ queued deliveries):
 
 ---
 
+## Viewer Gap Detection via Delivery Counter
+
+During rapid scoring or brief WS disconnects, the fast-path relay can silently drop messages. The viewer detects gaps using an incrementing `deliveryCount` in `score_update` payloads.
+
+### How It Works
+
+1. **Scorer** includes `deliveryCount` (= `deliveryHistory.length`) in every `score_update` payload
+2. **Server** includes `deliveryCount` (= `COUNT(*)` on deliveries table for current innings) in every `match_state` snapshot
+3. **Viewer** tracks `lastDeliveryCount` and checks each incoming `score_update`:
+   - `deliveryCount == 0` → backward-compatible old scorer, apply normally
+   - `deliveryCount == lastDeliveryCount + 1` → sequential, apply normally
+   - Otherwise → gap detected, re-send `join_match` to get full `match_state` snapshot
+4. A `_refreshRequested` flag prevents spamming `join_match` on multiple rapid gaps
+5. `match_state` response resets the counter and clears the refresh flag
+6. Innings change resets `lastDeliveryCount` to 0
+
+### Edge Cases
+
+| Scenario | Behavior |
+|----------|----------|
+| Brief WS disconnect, 2 deliveries dropped | Viewer detects gap, re-joins, gets full state in <500ms |
+| Long disconnect (30s+) | Durable path `match_state` arrives within 2-8s anyway |
+| Undo (deliveryCount goes backward) | Treated as gap, viewer requests refresh |
+| Innings change | `lastDeliveryCount` resets to 0; first 2nd-innings delivery (count=1) is sequential |
+| Old scorer / new viewer | Old scorer sends no deliveryCount → defaults to 0 → gap check skipped |
+
+---
+
 ## Deferred: Option C (WebSocket Bidirectional) — Phase 8+
 
 Option C is a legitimate optimization for a future where CricApp has:

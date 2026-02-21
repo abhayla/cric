@@ -39,6 +39,7 @@ Map<String, dynamic> buildScoreUpdatePayload(ScoringState state) {
       'isFreeHitPending': state.isFreeHitPending,
       'isMagicOver': state.isMagicOver,
       'magicOverMultiplier': state.magicOverRunMultiplier,
+      'deliveryCount': state.deliveryHistory.length,
     },
   };
 }

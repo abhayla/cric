@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -115,7 +116,11 @@ class WebSocketClient {
 
   /// Publish a score update to a match room (fast path for scorer).
   void publishToMatch(String matchId, Map<String, dynamic> payload) {
-    if (_status != ConnectionStatus.connected) return;
+    if (_status != ConnectionStatus.connected) {
+      debugPrint('[WS] Message dropped — not connected '
+          '(status: $_status, type: ${payload['type']})');
+      return;
+    }
     _send({'type': 'publish_score', 'matchId': matchId, 'payload': payload});
   }
 

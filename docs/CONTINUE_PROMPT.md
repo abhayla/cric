@@ -16,7 +16,38 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Session 2026-02-22: Dual-Path Broadcast + E2E Fixes
+### Session 2026-02-22: WebSocket Viewer Gap Detection
+
+**Implemented `deliveryCount`-based gap detection** so viewers detect missed WS messages and auto-recover.
+
+**What was built:**
+- `score_update` payloads now include `deliveryCount` (= total deliveries in current innings)
+- `match_state` snapshots include `deliveryCount` from server-side `COUNT(*)` query
+- Viewer (`MatchLiveNotifier`) tracks `lastDeliveryCount`, detects gaps, and re-sends `join_match` for full state refresh
+- `_refreshRequested` flag prevents spamming `join_match` on multiple rapid gaps
+- `WebSocketClient.publishToMatch()` now logs dropped messages with `debugPrint`
+- Backward-compatible: `deliveryCount=0` (old scorer) skips gap check
+
+**Files changed (8):**
+- `ws_message_model.dart` — added `deliveryCount` to `WsScoreUpdateData` + `WsMatchStateData`
+- `scoring_ws_mapper.dart` — added `deliveryCount: state.deliveryHistory.length`
+- `websocket.ts` (server types) — added `deliveryCount?` to both interfaces
+- `rooms.ts` — added `COUNT(*)` query in `getMatchState()`
+- `match_live_notifier.dart` — gap detection logic, `lastDeliveryCount` in state, innings reset
+- `websocket_client.dart` — `debugPrint` warning on dropped messages
+- `scoring_ws_mapper_test.dart` — assert `deliveryCount` in payload
+- `match_live_notifier_test.dart` — 7 new gap detection tests (all passing)
+
+**Tests:** All 21 notifier tests pass, all 17 mapper tests pass, server `tsc --noEmit` clean.
+
+**Docs updated:** `API.md` (deliveryCount in JSON examples + gap detection note), `SYNC_ARCHITECTURE.md` (Viewer Gap Detection section), `CONTINUE_PROMPT.md`
+
+**Next steps:**
+1. Run full T20 E2E test (scorer + viewer on 2 emulators) to verify gap detection at scale
+2. Continue Phase 7 remaining E2E scenarios
+3. Update remaining docs mentioned in plan
+
+### Session 2026-02-22 (earlier): Dual-Path Broadcast + E2E Fixes
 
 **Dual-path real-time broadcast implemented and E2E verified.** Commit `bf55fa6` (22 files, +1686/-197).
 

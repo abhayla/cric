@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, count } from 'drizzle-orm';
 import { db } from '../db/index.ts';
 import { matches, matchResult } from '../db/schema/matches.ts';
 import { innings } from '../db/schema/innings.ts';
@@ -233,6 +233,13 @@ export async function getMatchState(matchId: string): Promise<MatchStateMessage>
   const magicOverNumbers = (match.magicOverNumbers as number[] | null) ?? [];
   const isMagicOver = magicOverNumbers.includes(currentOverNumber);
 
+  // Count total deliveries in this innings for gap detection
+  const deliveryCountResult = await db
+    .select({ value: count() })
+    .from(deliveries)
+    .where(eq(deliveries.inningsId, currentInnings.id));
+  const deliveryCount = deliveryCountResult[0]?.value ?? 0;
+
   return {
     type: 'match_state',
     matchId,
@@ -255,6 +262,7 @@ export async function getMatchState(matchId: string): Promise<MatchStateMessage>
       isFreeHitPending,
       isMagicOver,
       magicOverMultiplier: match.magicOverRunMultiplier,
+      deliveryCount,
     },
   };
 }

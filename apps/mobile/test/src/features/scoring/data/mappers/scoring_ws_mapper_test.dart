@@ -84,6 +84,9 @@ void main() {
       final lastDel = data['lastDelivery'] as Map<String, dynamic>;
       expect(lastDel['runs'], 0);
       expect(lastDel['description'], 'Dot ball');
+
+      // Delivery count for gap detection
+      expect(data['deliveryCount'], 1);
     });
 
     test('produces correct shape for a boundary four', () {
@@ -137,6 +140,16 @@ void main() {
       final lastDel = data['lastDelivery'] as Map<String, dynamic>;
       expect(lastDel['isNoBall'], true);
       expect(lastDel['description'], 'No Ball + 1 runs');
+    });
+
+    test('deliveryCount increments with each delivery', () {
+      final notifier = makeNotifier();
+      notifier.recordDelivery(runsFromBat: 1);
+      notifier.recordDelivery(runsFromBat: 2);
+      notifier.recordDelivery(runsFromBat: 0);
+      final payload = buildScoreUpdatePayload(notifier.state);
+      final data = payload['data'] as Map<String, dynamic>;
+      expect(data['deliveryCount'], 3);
     });
 
     test('rate formatting matches toFixed(2) pattern', () {

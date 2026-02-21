@@ -86,6 +86,7 @@ export interface MatchStateMessage {
     isFreeHitPending?: boolean;
     isMagicOver?: boolean;
     magicOverMultiplier?: number;
+    deliveryCount?: number;
   };
 }
 
@@ -108,6 +109,7 @@ export interface ScoreUpdateMessage {
     isFreeHitPending?: boolean;
     isMagicOver?: boolean;
     magicOverMultiplier?: number;
+    deliveryCount?: number;
   };
 }
 

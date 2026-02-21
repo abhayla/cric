@@ -1666,10 +1666,13 @@ The scorer sends `publish_score` immediately after each delivery is written to l
       { "runs": 1, "display": "1" },
       { "runs": 4, "display": "4" },
       { "runs": 0, "display": "W", "isWicket": true }
-    ]
+    ],
+    "deliveryCount": 75
   }
 }
 ```
+
+> **Gap detection:** `deliveryCount` is an incrementing counter of total deliveries in the current innings. Viewers track the last seen count and detect gaps (missed messages) when `incoming != lastSeen + 1`. On gap detection, the viewer re-sends `join_match` to get a full `match_state` snapshot. `deliveryCount=0` means backward-compatible (old scorer), no gap check performed. Counter resets to 0 on innings change.
 
 **Wicket notification:**
 ```json
@@ -1802,7 +1805,8 @@ When a viewer or scorer disconnects and reconnects:
       { "runs": 1, "display": "1" },
       { "runs": 4, "display": "4" }
     ],
-    "recentDeliveries": [ "...last 6 deliveries..." ]
+    "recentDeliveries": [ "...last 6 deliveries..." ],
+    "deliveryCount": 75
   }
 }
 ```
