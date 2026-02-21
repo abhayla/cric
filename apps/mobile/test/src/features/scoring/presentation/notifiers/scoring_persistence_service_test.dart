@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,6 +11,10 @@ import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_noti
 import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_persistence_service.dart';
 import 'package:cricapp/src/shared/data/database/app_database.dart';
 import 'package:cricapp/src/shared/data/database/daos/scoring_dao.dart';
+import 'package:cricapp/src/shared/data/websocket/websocket_client.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+// ignore: depend_on_referenced_packages
+import 'package:stream_channel/stream_channel.dart';
 
 void main() {
   late AppDatabase db;
@@ -318,4 +325,212 @@ void main() {
       expect(resumed.state.deliveryHistory.length, 3);
     });
   });
+
+  group('WebSocket fast-path broadcasting', () {
+    late _FakeWsChannel fakeChannel;
+    late WebSocketClient wsClient;
+
+    setUp(() {
+      fakeChannel = _FakeWsChannel();
+      wsClient = WebSocketClient(
+        url: 'ws://localhost:3000/ws',
+        channelFactory: (_) => fakeChannel,
+        reconnectEnabled: false,
+      );
+    });
+
+    tearDown(() {
+      wsClient.dispose();
+    });
+
+    Future<ScoringPersistenceService> makeServiceWithWs() async {
+      await wsClient.connect();
+      final notifier = makeNotifier();
+      return ScoringPersistenceService.createNew(
+        notifier: notifier,
+        datasource: datasource,
+        wsClient: wsClient,
+      );
+    }
+
+    test('recordDelivery calls publishToMatch with score_update', () async {
+      final service = await makeServiceWithWs();
+
+      service.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+
+      // Should have sent at least one publish_score message
+      final publishMsgs = fakeChannel.sentMessages
+          .map((s) => jsonDecode(s) as Map<String, dynamic>)
+          .where((m) => m['type'] == 'publish_score')
+          .toList();
+      expect(publishMsgs, isNotEmpty);
+
+      final payload = publishMsgs.first['payload'] as Map<String, dynamic>;
+      expect(payload['type'], 'score_update');
+      expect((payload['data'] as Map)['totalRuns'], 4);
+    });
+
+    test('recordWicket calls publishToMatch twice (score_update + wicket)', () async {
+      final service = await makeServiceWithWs();
+
+      service.recordWicket(
+        dismissalType: DismissalType.bowled,
+        dismissedPlayerId: 'bat-1',
+      );
+
+      final publishMsgs = fakeChannel.sentMessages
+          .map((s) => jsonDecode(s) as Map<String, dynamic>)
+          .where((m) => m['type'] == 'publish_score')
+          .toList();
+
+      // Should have score_update + wicket
+      expect(publishMsgs.length, greaterThanOrEqualTo(2));
+
+      final types = publishMsgs
+          .map((m) => (m['payload'] as Map<String, dynamic>)['type'])
+          .toList();
+      expect(types, contains('score_update'));
+      expect(types, contains('wicket'));
+    });
+
+    test('undoLastDelivery does NOT publish via WS', () async {
+      final service = await makeServiceWithWs();
+
+      service.recordDelivery(runsFromBat: 2);
+      // Clear sent messages
+      fakeChannel.sentMessages.clear();
+
+      service.undoLastDelivery();
+
+      final publishMsgs = fakeChannel.sentMessages
+          .map((s) => jsonDecode(s) as Map<String, dynamic>)
+          .where((m) => m['type'] == 'publish_score')
+          .toList();
+      expect(publishMsgs, isEmpty);
+    });
+
+    test('WS errors are swallowed and do not interrupt scoring', () async {
+      // Create a client that will throw on publish
+      final brokenChannel = _BrokenWsChannel();
+      final brokenClient = WebSocketClient(
+        url: 'ws://localhost:3000/ws',
+        channelFactory: (_) => brokenChannel,
+        reconnectEnabled: false,
+      );
+      await brokenClient.connect();
+
+      final notifier = makeNotifier();
+      final service = await ScoringPersistenceService.createNew(
+        notifier: notifier,
+        datasource: datasource,
+        wsClient: brokenClient,
+      );
+
+      // Should not throw
+      service.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+      expect(service.state.totalRuns, 4);
+
+      brokenClient.dispose();
+    });
+  });
+}
+
+// ── Test helpers for WebSocket ──
+
+class _FakeWsChannel with StreamChannelMixin implements WebSocketChannel {
+  final _incoming = StreamController<dynamic>();
+  bool _closed = false;
+  final List<String> sentMessages = [];
+
+  @override
+  WebSocketSink get sink => _FakeWsSink(this);
+
+  @override
+  Stream<dynamic> get stream => _incoming.stream;
+
+  @override
+  int? get closeCode => null;
+
+  @override
+  String? get closeReason => null;
+
+  @override
+  Future<void> get ready => Future.value();
+
+  @override
+  String? get protocol => null;
+
+  void _add(dynamic data) {
+    if (!_closed) sentMessages.add(data as String);
+  }
+
+  Future<void> _close([int? code, String? reason]) async {
+    _closed = true;
+    await _incoming.close();
+  }
+}
+
+class _FakeWsSink implements WebSocketSink {
+  _FakeWsSink(this._channel);
+  final _FakeWsChannel _channel;
+
+  @override
+  void add(dynamic data) => _channel._add(data);
+
+  @override
+  Future<void> close([int? closeCode, String? closeReason]) =>
+      _channel._close(closeCode, closeReason);
+
+  @override
+  void addError(Object error, [StackTrace? stackTrace]) {}
+
+  @override
+  Future<dynamic> addStream(Stream<dynamic> stream) async {
+    await for (final data in stream) {
+      add(data);
+    }
+  }
+
+  @override
+  Future<dynamic> get done => Future.value();
+}
+
+/// A broken WS channel whose sink always throws on add.
+class _BrokenWsChannel with StreamChannelMixin implements WebSocketChannel {
+  final _incoming = StreamController<dynamic>();
+
+  @override
+  WebSocketSink get sink => _BrokenSink();
+
+  @override
+  Stream<dynamic> get stream => _incoming.stream;
+
+  @override
+  int? get closeCode => null;
+
+  @override
+  String? get closeReason => null;
+
+  @override
+  Future<void> get ready => Future.value();
+
+  @override
+  String? get protocol => null;
+}
+
+class _BrokenSink implements WebSocketSink {
+  @override
+  void add(dynamic data) => throw Exception('WS broken');
+
+  @override
+  Future<void> close([int? closeCode, String? closeReason]) => Future.value();
+
+  @override
+  void addError(Object error, [StackTrace? stackTrace]) {}
+
+  @override
+  Future<dynamic> addStream(Stream<dynamic> stream) async {}
+
+  @override
+  Future<dynamic> get done => Future.value();
 }

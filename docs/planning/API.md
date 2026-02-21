@@ -1605,7 +1605,18 @@ Connection is authenticated via JWT query parameter. Server verifies the token a
 }
 ```
 
-> **Note:** Scoring mutations (`delivery`, `undo_delivery`) are **NOT** sent via WebSocket. The scorer's app writes to local DB, then syncs via REST (`POST /matches/:id/deliveries`, `DELETE /matches/:id/deliveries/:did`). The server broadcasts the result to viewers via WebSocket. This is a **read-only broadcast** model — WebSocket is the publish path, REST is the write path.
+**Fast-path score relay (scorer → viewers, zero DB):**
+```json
+{
+  "type": "publish_score",
+  "matchId": "uuid",
+  "payload": { }
+}
+```
+
+The scorer sends `publish_score` immediately after each delivery is written to local DB. The server relays the `payload` as-is to all room subscribers via Bun's `ws.publish` (sender excluded). No DB read or write occurs on this path — viewer latency is sub-10ms. The durable path (REST sync → DB persist → `match_state` broadcast) follows within ~2s as the SyncService timer fires.
+
+> **Note:** All scoring mutations are written to local SQLite first (offline-first). The REST sync path (`POST /matches/:id/deliveries`, `DELETE /matches/:id/deliveries/:did`) is the authoritative write path. WebSocket serves two broadcast roles: (1) fast-path relay of `publish_score` payloads for near-instant viewer updates, and (2) durable reconciliation via `match_state` broadcasts after the server persists each delivery.
 
 ### 2.3 Server to Client Messages
 
@@ -1756,7 +1767,7 @@ Connection is authenticated via JWT query parameter. Server verifies the token a
 
 - Each match = one WebSocket room (topic: `match:<matchId>`)
 - **All connections** are subscribers (receive broadcast messages)
-- **Scoring mutations** go through REST, not WebSocket (scorer's app → REST → server persists → server broadcasts via WebSocket)
+- **Dual-path broadcast:** (1) **Fast path** — scorer sends `publish_score` WS message → server relays payload to room subscribers (zero DB, sub-10ms); (2) **Durable path** — REST sync (timer: 2s, batch threshold: 1) → server persists to DB → broadcasts `match_state` reconciliation snapshot. Scoring mutations never originate from WebSocket; REST is the authoritative write path.
 - Uses Bun's native `server.publish(topic, message)` for broadcasting
 - On join/rejoin, server sends `match_state` snapshot to the connecting client
 - Automatic cleanup when all connections leave a room

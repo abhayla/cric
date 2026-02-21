@@ -85,6 +85,15 @@ CricApp uses `ScoringPersistenceService` to save scoring state to local Drift/SQ
    - Over history and current over deliveries
    - Free hit state
 
+## How Sync Works
+
+The `SyncService` pushes locally-queued deliveries to the server:
+
+- **Live (< 6 queued):** Individual `POST /deliveries` per ball — immediate broadcast
+- **Batch (>= 6 queued):** `POST /deliveries/batch` in chunks of 30 — single DB transaction per chunk
+- **Failed entries:** Entries exceeding `maxRetries` are marked `'failed'` (not `'synced'`), preserving them for inspection rather than silently dropping data
+- **After restart:** Unsynced deliveries remain in the `sync_queue` table and are retried on next sync cycle
+
 ---
 
 ## Simulation Limitation
@@ -117,8 +126,9 @@ If persistence recovery re-syncs already-synced deliveries, the count would be >
 ## Debugging Tips
 
 - **No resume prompt after restart?** Check that `ScoringPersistenceService` is correctly saving state. Look for `[Persistence]` log messages.
-- **Duplicate deliveries?** The `synced` flag on each delivery prevents double-sync. Check if the sync queue was flushed before restart.
+- **Duplicate deliveries?** The `synced` flag on each delivery prevents double-sync. Check if the sync queue was flushed before restart. The server also has duplicate detection via `sequenceNumber` within each innings.
 - **Score mismatch after recovery?** Compare the `ScoringState` fields before and after. The persistence service should restore all fields exactly.
+- **Failed sync entries?** Check for entries with status `'failed'` in the sync queue. These are entries that exceeded `maxRetries` — they are preserved (not silently dropped) for debugging.
 
 ---
 
@@ -131,3 +141,5 @@ If persistence recovery re-syncs already-synced deliveries, the count would be >
 | `integration_test/helpers/match_flow_helpers.dart` | Tap helpers |
 | `integration_test/helpers/server_manager.dart` | Server API calls |
 | `integration_test/helpers/app_test_wrapper.dart` | App bootstrapping |
+| `lib/src/shared/data/sync/sync_service.dart` | Batch/individual sync logic (`_batchThreshold = 6`, chunks of 30) |
+| `lib/src/shared/data/database/daos/scoring_dao.dart` | `markSyncFailed()` for entries exceeding maxRetries |

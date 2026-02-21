@@ -83,6 +83,29 @@ export const websocketHandler = new Elysia({ name: 'websocket' }).ws('/ws', {
         break;
       }
 
+      case 'publish_score': {
+        if (!msg.matchId || typeof msg.matchId !== 'string') {
+          const err: ErrorMessage = {
+            type: 'error',
+            message: 'matchId is required',
+          };
+          ws.send(JSON.stringify(err));
+          return;
+        }
+        if (!msg.payload || typeof msg.payload !== 'object') {
+          const err: ErrorMessage = {
+            type: 'error',
+            message: 'payload is required',
+          };
+          ws.send(JSON.stringify(err));
+          return;
+        }
+
+        // Relay payload as-is to all subscribers (excludes sender via Bun's publish)
+        ws.publish(matchTopic(msg.matchId), JSON.stringify(msg.payload));
+        break;
+      }
+
       default: {
         const err: ErrorMessage = {
           type: 'error',

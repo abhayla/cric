@@ -11,7 +11,7 @@ import '../database/daos/scoring_dao.dart';
 enum SyncStatus { allSynced, pending, error }
 
 /// Minimum number of create entries to trigger batch mode.
-const _batchThreshold = 6;
+const _batchThreshold = 1;
 
 /// Background sync service that pushes locally queued deliveries to the server.
 ///
@@ -125,7 +125,7 @@ class SyncService {
   }
 
   /// Start periodic background sync.
-  void startPeriodicSync({Duration interval = const Duration(seconds: 10)}) {
+  void startPeriodicSync({Duration interval = const Duration(seconds: 2)}) {
     stopPeriodicSync();
     _timer = Timer.periodic(interval, (_) => processSyncQueue());
   }

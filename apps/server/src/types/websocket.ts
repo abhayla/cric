@@ -54,7 +54,13 @@ export interface LeaveMatchMessage {
   matchId: string;
 }
 
-export type ClientMessage = JoinMatchMessage | LeaveMatchMessage;
+export interface PublishScoreMessage {
+  type: 'publish_score';
+  matchId: string;
+  payload: object;
+}
+
+export type ClientMessage = JoinMatchMessage | LeaveMatchMessage | PublishScoreMessage;
 
 // --- Server → Client Messages ---
 

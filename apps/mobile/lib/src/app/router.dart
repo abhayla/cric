@@ -32,6 +32,7 @@ import '../features/player_profile/presentation/pages/player_profile_page.dart';
 import '../features/player_profile/presentation/pages/player_match_history_page.dart';
 import '../features/teams/providers.dart' as teams;
 import '../features/scoring/providers.dart' as scoring;
+import '../shared/providers/websocket_provider.dart';
 import 'providers.dart';
 
 /// Route paths.
@@ -546,7 +547,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.scoring,
         builder: (context, state) {
-          final matchId = state.pathParameters['matchId']!;
           final args = _cachedRouteExtra<ScoringPageArgs>(
             state.matchedLocation, state.extra,
           );
@@ -555,6 +555,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               args: args,
               datasource: ref.read(scoring.scoringLocalDatasourceProvider),
               syncService: ref.read(scoring.syncServiceProvider),
+              wsClient: ref.read(websocketClientProvider),
             );
           }
           // Fallback: navigate home if no args (shouldn't happen in normal flow)

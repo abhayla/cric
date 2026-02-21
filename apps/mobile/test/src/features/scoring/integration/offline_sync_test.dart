@@ -167,8 +167,9 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
+      // With batch threshold=1, even single deliveries go through batch endpoint
       verify(() => mockDio.post(
-            '/api/v1/matches/match-offline/deliveries',
+            '/api/v1/matches/match-offline/delivery-batch',
             data: any(named: 'data'),
           )).called(1);
       expect(syncService.status, SyncStatus.allSynced);
@@ -192,13 +193,9 @@ void main() {
     });
 
     test('multiple deliveries sync in FIFO order', () async {
-      final syncedIds = <String>[];
       when(() => mockDio.post(any(), data: any(named: 'data')))
-          .thenAnswer((invocation) async {
-        final data = invocation.namedArguments[#data] as Map<String, dynamic>;
-        syncedIds.add(data['deliveryId'] as String? ?? '');
-        return Response(requestOptions: RequestOptions(), statusCode: 201);
-      });
+          .thenAnswer((_) async =>
+              Response(requestOptions: RequestOptions(), statusCode: 201));
 
       await syncService.enqueueDelivery(
         matchId: 'match-offline',
@@ -218,9 +215,10 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      // All 3 should be synced
+      // With batch threshold=1, deliveries go through batch endpoint
+      // Each enqueue triggers immediate sync, some may batch together
       verify(() => mockDio.post(any(), data: any(named: 'data')))
-          .called(greaterThanOrEqualTo(3));
+          .called(greaterThanOrEqualTo(1));
       expect(syncService.status, SyncStatus.allSynced);
     });
 
@@ -278,10 +276,14 @@ void main() {
       );
 
       // Phase 3: Come back online — process sync queue
+      // With batch threshold=1, enqueueDelivery fires immediate sync.
+      // Allow time for the async fire-and-forget syncs to complete.
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       await syncService.processSyncQueue();
 
+      // With batch threshold=1, deliveries sync via batch endpoint
       verify(() => mockDio.post(any(), data: any(named: 'data')))
-          .called(greaterThanOrEqualTo(2));
+          .called(greaterThanOrEqualTo(1));
       expect(syncService.status, SyncStatus.allSynced);
       expect(syncService.unsyncedCount, 0);
     });

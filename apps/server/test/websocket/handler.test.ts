@@ -270,6 +270,85 @@ describe('leave_match', () => {
 // Invalid Message Tests
 // ============================================================
 
+// ============================================================
+// Publish Score Tests (fast-path relay)
+// ============================================================
+
+describe('publish_score', () => {
+  it('relays payload to room subscribers', async () => {
+    // Scorer joins and publishes
+    const scorer = await connectWs();
+    const joinPromise = waitForMessage(scorer);
+    scorer.send(JSON.stringify({ type: 'join_match', matchId: testMatchId }));
+    await joinPromise; // consume match_state
+
+    // Viewer joins same room
+    const viewer = await connectWs();
+    const viewerJoinPromise = waitForMessage(viewer);
+    viewer.send(JSON.stringify({ type: 'join_match', matchId: testMatchId }));
+    await viewerJoinPromise; // consume match_state
+
+    // Scorer publishes score update
+    const viewerMsgPromise = waitForMessage(viewer);
+    const testPayload = {
+      type: 'score_update',
+      matchId: testMatchId,
+      data: { totalRuns: 42, totalWickets: 2, overs: '5.3' },
+    };
+    scorer.send(JSON.stringify({
+      type: 'publish_score',
+      matchId: testMatchId,
+      payload: testPayload,
+    }));
+
+    const relayed = await viewerMsgPromise as { type: string; data: { totalRuns: number } };
+
+    expect(relayed.type).toBe('score_update');
+    expect(relayed.data.totalRuns).toBe(42);
+
+    scorer.close();
+    viewer.close();
+  });
+
+  it('returns error when matchId is missing', async () => {
+    const ws = await connectWs();
+    const responsePromise = waitForMessage(ws);
+
+    ws.send(JSON.stringify({
+      type: 'publish_score',
+      payload: { type: 'score_update' },
+    }));
+
+    const response = await responsePromise as { type: string; message: string };
+
+    expect(response.type).toBe('error');
+    expect(response.message).toContain('matchId');
+
+    ws.close();
+  });
+
+  it('returns error when payload is missing', async () => {
+    const ws = await connectWs();
+    const responsePromise = waitForMessage(ws);
+
+    ws.send(JSON.stringify({
+      type: 'publish_score',
+      matchId: testMatchId,
+    }));
+
+    const response = await responsePromise as { type: string; message: string };
+
+    expect(response.type).toBe('error');
+    expect(response.message).toContain('payload');
+
+    ws.close();
+  });
+});
+
+// ============================================================
+// Invalid Message Tests
+// ============================================================
+
 describe('invalid messages', () => {
   it('returns error for unknown message type', async () => {
     const ws = await connectWs();

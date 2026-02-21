@@ -199,15 +199,19 @@ Score a magic over delivery (multiplied runs), then undo it.
 
 ### Scenario 13: Full Match Stat Verification
 
-Score a complete match with varied deliveries. After match completion, query the server DB and verify:
+Score a complete match with varied deliveries. After match completion, wait for batch sync to flush all deliveries to the server (SyncService uses `POST /deliveries/batch` with 30 deliveries per chunk when queue >= 6), then query the server DB and verify:
 
 **Verify:**
 - Every delivery record matches what was scored (runs, extras, wickets, ball number)
-- `batting_stats` per player: runs, balls faced, fours, sixes, strike rate, dismissal type
-- `bowling_stats` per player: overs bowled, maidens, runs conceded, wickets, economy
+- `batting_stats` per player: runs, balls faced, fours, sixes, strike rate, dismissal type (upserted via `INSERT...ON CONFLICT DO UPDATE` with UNIQUE constraint on `(innings_id, player_id)`)
+- `bowling_stats` per player: overs bowled, maidens, runs conceded, wickets, economy (same upsert pattern)
 - `match_result`: winner, margin, margin type
 - `fall_of_wickets`: correct score and over at each wicket
 - Scorecard page UI matches all DB values
+- Cross-check: sum of batting runs per innings matches innings total; sum of bowling wickets per innings matches tracked wickets
+- **Sync timing:** Full T20 (254 deliveries) syncs in ~3-8 seconds via batch endpoint (was ~5 minutes with per-delivery sync). Test polls up to 60s for delivery count to stabilize.
+
+**Optional viewer mode:** Run `full_t20_viewer_e2e_test.dart` on a second emulator to verify the WebSocket broadcast pipeline delivers correct, monotonic score data in real time. Viewer prints per-over sync reports with batting/bowling snapshots.
 
 ### Scenario 14: Full Undo Reversal
 

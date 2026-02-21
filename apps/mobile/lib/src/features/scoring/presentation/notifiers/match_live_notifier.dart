@@ -183,8 +183,13 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
 
   /// Leave match room and reset state.
   Future<void> leaveMatch() async {
-    if (state.matchId != null) {
-      _client.leaveMatch(state.matchId!);
+    // Cache matchId and client before any async work — ref/state may be
+    // disposed during teardown (e.g., integration test cleanup).
+    final matchId = _safeMatchId;
+    final client = _safeClient;
+
+    if (matchId != null && client != null) {
+      client.leaveMatch(matchId);
     }
 
     _messageSubscription?.cancel();
@@ -192,9 +197,36 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
     _statusSubscription?.cancel();
     _statusSubscription = null;
 
-    await _client.disconnect();
+    if (client != null) {
+      await client.disconnect();
+    }
 
-    state = const LiveMatchState();
+    // Guard against Riverpod ref being unmounted during async gap.
+    try {
+      state = const LiveMatchState();
+    } catch (_) {
+      // StateError or UnmountedRefException — provider already disposed.
+    }
+  }
+
+  /// Safely read matchId without throwing if ref is already disposed.
+  String? get _safeMatchId {
+    try {
+      return state.matchId;
+    } catch (_) {
+      // StateError or UnmountedRefException — provider already disposed.
+      return null;
+    }
+  }
+
+  /// Safely get WebSocket client without throwing if ref is already disposed.
+  WebSocketClient? get _safeClient {
+    try {
+      return _client;
+    } catch (_) {
+      // UnmountedRefException — provider already disposed.
+      return null;
+    }
   }
 
   /// Clear the wicket notification banner.

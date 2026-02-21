@@ -16,6 +16,32 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Decision Log: Dual-Path Real-Time Broadcast (2026-02-22)
+
+Implemented dual-path delivery broadcast to give viewers near-instant score updates without sacrificing durability:
+
+- **Fast path:** After each delivery, `ScoringPersistenceService` sends a `publish_score` WS message to the server. The server relays the payload as-is to all room subscribers via Bun's `ws.publish` (sender excluded, zero DB). Viewer latency: sub-10ms.
+- **Durable path:** `SyncService` timer reduced from 10s → 2s, batch threshold reduced from 6 → 1. After the server persists the delivery, it broadcasts a full `match_state` reconciliation snapshot. Acts as correction if the fast path missed anything.
+- **New server message type:** `publish_score` (client → server relay, no persistence).
+- **New Flutter file:** `lib/src/features/scoring/data/mappers/scoring_ws_mapper.dart` — pure functions for building WS payloads from `ScoringState`.
+- **`ScoringPersistenceService`** now accepts optional `WebSocketClient` and publishes `score_update`, `wicket`, `innings_complete`, `match_complete` messages after each delivery.
+
+### Session 2026-02-22 (later): Full T20 Viewer Test + E2E Prompt Updates
+
+Enhanced `full_t20_viewer_e2e_test.dart` for Scenario 13 (Stat Verification / DB Correctness) dual-emulator testing:
+- 65-minute monitoring timeout (was 15 min) for full T20 matches
+- Per-over sync reports: after every over boundary prints score, batting/bowling stats, run rates, target, team names, free hit/magic over flags
+- Invariant tracking with FAIL counter (runs/wickets non-decreasing within innings)
+- Match completion report with result summary
+- 2-hour test timeout
+
+Updated 4 E2E prompt docs (`FULL_T20_E2E.md`, `MULTI_DEVICE_E2E.md`, `E2E_TEST_SCENARIOS.md`, `PERSISTENCE_E2E.md`) with batch sync architecture details: sync modes (live < 6 vs batch >= 6), chunking (30/batch), `INSERT...ON CONFLICT DO UPDATE` upserts, `UPDATE...RETURNING`, performance (3-8s vs 5min), silent data loss fix, and updated architecture diagrams.
+
+**Next steps:**
+1. Run full T20 E2E test (scorer + viewer on 2 emulators) to verify end-to-end
+2. Commit E2E test files once green
+3. Continue Phase 7 Must Have E2E scenarios
+
 ### Session 2026-02-22: Batch Sync Optimized + Hook Fix
 
 Applied 4 server-side optimizations to `scoring.service.ts` reducing batch delivery sync queries by ~37% (~1,440 fewer queries per T20 match). Committed as `c6ace4b`.

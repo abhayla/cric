@@ -8,7 +8,9 @@ Run this prompt when you want to execute the multi-device WebSocket live match v
 
 - **Scorer** (default: emulator): Scores a full predetermined match via UI taps with 2s pauses between deliveries
 - **Viewer** (default: real device): Connects via WebSocket, receives live score updates, verifies every field against expected states. Viewer now shows: team names in header, both batter cards with full stats (R/B/4s/6s/SR), bowler card with full stats (O/M/R/W/Ec), non-striker stats updating per delivery, free hit badge, magic over badge, last delivery description banner, wicket notification banner (dismissible), over number, and stat column headers.
-- **Pipeline validated**: Scorer UI -> ScoringNotifier -> SyncService -> Server API -> Broadcaster -> WebSocket pub/sub -> LiveMatchPage on viewer
+- **Pipeline validated (dual-path):**
+  - **Fast path** (~ms): Scorer UI -> ScoringNotifier -> ScoringPersistenceService -> `publish_score` WS message -> Server relay (zero DB) -> LiveMatchPage on viewer
+  - **Durable path** (~2s): Scorer UI -> ScoringNotifier -> Drift/SQLite -> SyncService (timer: 2s, threshold: 1; batch >= 6: `POST /deliveries/batch`) -> Server persists -> `match_state` broadcast -> LiveMatchPage on viewer
 
 ---
 
@@ -199,13 +201,20 @@ Start an emulator: Android Studio -> Virtual Device Manager -> Play
 ```
 ┌─────────────────┐     HTTP/REST      ┌──────────────┐     WebSocket       ┌─────────────────┐
 │   DEVICE A       │ ──────────────────>│  BUN SERVER  │──────────────────-->│  DEVICE B        │
-│   (Scorer)       │   POST delivery    │  port 3001   │   score_update      │   (Viewer)       │
-│                  │                    │              │   wicket             │                  │
-│  Taps scoring UI │   Signal:          │  PostgreSQL  │   innings_complete   │  LiveMatchPage   │
-│  2s between      │   scorer-ready     │  WebSocket   │   match_complete     │  verifies fields │
-│  deliveries      │   viewer-ready     │  pub/sub     │                      │                  │
-└─────────────────┘                    └──────────────┘   ws://<LAN_IP>:3001 └─────────────────┘
+│   (Scorer)       │                    │  port 3001   │   score_update      │   (Viewer)       │
+│                  │  Live (<6 queued): │              │   wicket             │                  │
+│  Taps scoring UI │  POST /delivery    │  PostgreSQL  │   innings_complete   │  LiveMatchPage   │
+│  2s between      │                    │  WebSocket   │   match_complete     │  verifies fields │
+│  deliveries      │  Batch (>=6):      │  pub/sub     │                      │                  │
+│                  │  POST /batch       │              │                      │                  │
+│  SyncService     │  (30/chunk)        │  Single DB   │                      │                  │
+│  (Drift/SQLite)  │                    │  transaction │                      │                  │
+└─────────────────┘   Signals:         └──────────────┘   ws://<LAN_IP>:3001 └─────────────────┘
+                      scorer-ready
+                      viewer-ready
 ```
+
+**Broadcast paths:** Two paths deliver score updates to viewers: (1) **Fast path** — `publish_score` WS message relayed by server immediately after each delivery (zero DB, sub-10ms latency); (2) **Durable path** — REST sync (SyncService timer: 2s, threshold: 1; batch mode at >= 6 queued) followed by server `match_state` broadcast after DB persist. The short multi-device test (18 deliveries) stays below the batch threshold. The full T20 viewer test (`full_t20_viewer_e2e_test.dart`) exercises the batch path at 240+ deliveries. See [SYNC_ARCHITECTURE.md](../../planning/SYNC_ARCHITECTURE.md) for the full decision document.
 
 **Files involved:**
 - `integration_test/helpers/app_test_wrapper.dart` — `pumpAppAndWaitForHome()` (180s timeout for real device Firebase)
@@ -216,5 +225,7 @@ Start an emulator: Android Studio -> Virtual Device Manager -> Play
 - `integration_test/single_match_e2e_test.dart` — Also posts scorer-ready signal (can be used as scorer)
 - `scripts/multi-device-e2e.sh` — Orchestrator script (stale cleanup, SWAP_DEVICES, signal polling)
 - `apps/server/src/routes/v1/test-verify.routes.ts` — Signal endpoints (`POST/GET /signal/:name`, `DELETE /signals`)
+- `lib/src/shared/data/sync/sync_service.dart` — Batch/individual sync logic (`_batchThreshold = 6`)
+- `apps/server/src/services/scoring.service.ts` — `recordDeliveryBatch()` for batch sync
 
 **Match scenario:** Mumbai Lions vs Chennai Kings, 5 overs, 6 players/side. 1st innings: ALL OUT 20/5 in 2.0 overs (includes wide, no-ball, free hit, 5 wickets). 2nd innings: target chased 22/0 in 0.4 overs. Result: Chennai Kings won by 5 wickets.

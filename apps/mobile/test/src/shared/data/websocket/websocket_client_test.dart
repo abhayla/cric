@@ -388,6 +388,26 @@ void main() {
     });
   });
 
+  group('publishToMatch', () {
+    test('sends correct JSON when connected', () async {
+      await client.connect();
+
+      client.publishToMatch('match-1', {'type': 'score_update', 'data': {'totalRuns': 42}});
+
+      expect(fakeChannel.sentMessages, hasLength(1));
+      final sent = jsonDecode(fakeChannel.sentMessages.first) as Map<String, dynamic>;
+      expect(sent['type'], 'publish_score');
+      expect(sent['matchId'], 'match-1');
+      expect(sent['payload']['type'], 'score_update');
+      expect(sent['payload']['data']['totalRuns'], 42);
+    });
+
+    test('does nothing when disconnected', () {
+      client.publishToMatch('match-1', {'type': 'score_update'});
+      expect(fakeChannel.sentMessages, isEmpty);
+    });
+  });
+
   group('activeMatchId', () {
     test('tracks active match', () async {
       await client.connect();

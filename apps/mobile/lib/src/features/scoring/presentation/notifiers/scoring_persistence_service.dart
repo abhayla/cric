@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../../shared/data/sync/sync_service.dart';
+import '../../../../shared/data/websocket/websocket_client.dart';
 import '../../data/datasources/scoring_local_datasource.dart';
+import '../../data/mappers/scoring_ws_mapper.dart';
 import '../../domain/entities/delivery.dart';
-import '../../domain/entities/playing_xi_player.dart';
 import 'scoring_notifier.dart';
 
 /// Wraps [ScoringNotifier] with local persistence and optional server sync.
@@ -15,13 +18,16 @@ class ScoringPersistenceService {
     required ScoringNotifier notifier,
     required ScoringLocalDatasource datasource,
     SyncService? syncService,
+    WebSocketClient? wsClient,
   })  : _notifier = notifier,
         _datasource = datasource,
-        _syncService = syncService;
+        _syncService = syncService,
+        _wsClient = wsClient;
 
   final ScoringNotifier _notifier;
   final ScoringLocalDatasource _datasource;
   final SyncService? _syncService;
+  final WebSocketClient? _wsClient;
 
   /// The current scoring state.
   ScoringState get state => _notifier.state;
@@ -34,11 +40,13 @@ class ScoringPersistenceService {
     required ScoringNotifier notifier,
     required ScoringLocalDatasource datasource,
     SyncService? syncService,
+    WebSocketClient? wsClient,
   }) async {
     final service = ScoringPersistenceService._(
       notifier: notifier,
       datasource: datasource,
       syncService: syncService,
+      wsClient: wsClient,
     );
     await datasource.saveState(notifier.state);
     syncService?.startPeriodicSync();
@@ -52,6 +60,7 @@ class ScoringPersistenceService {
     required String matchId,
     required ScoringLocalDatasource datasource,
     SyncService? syncService,
+    WebSocketClient? wsClient,
   }) async {
     final savedState = await datasource.loadState(matchId);
     if (savedState == null) return null;
@@ -61,6 +70,7 @@ class ScoringPersistenceService {
       notifier: notifier,
       datasource: datasource,
       syncService: syncService,
+      wsClient: wsClient,
     );
     syncService?.startPeriodicSync();
     return service;
@@ -80,30 +90,35 @@ class ScoringPersistenceService {
     );
     _persistState();
     _enqueueLastDelivery();
+    _publishScoreUpdate();
   }
 
   void recordWide({int additionalRuns = 0}) {
     _notifier.recordWide(additionalRuns: additionalRuns);
     _persistState();
     _enqueueLastDelivery();
+    _publishScoreUpdate();
   }
 
   void recordNoBall({int runsFromBat = 0}) {
     _notifier.recordNoBall(runsFromBat: runsFromBat);
     _persistState();
     _enqueueLastDelivery();
+    _publishScoreUpdate();
   }
 
   void recordBye({required int byeRuns}) {
     _notifier.recordBye(byeRuns: byeRuns);
     _persistState();
     _enqueueLastDelivery();
+    _publishScoreUpdate();
   }
 
   void recordLegBye({required int legByeRuns}) {
     _notifier.recordLegBye(legByeRuns: legByeRuns);
     _persistState();
     _enqueueLastDelivery();
+    _publishScoreUpdate();
   }
 
   void recordWicket({
@@ -128,14 +143,16 @@ class ScoringPersistenceService {
     );
     _persistState();
     _enqueueLastDelivery();
+    _publishScoreUpdate(fielderName: fielderName);
   }
 
   void undoLastDelivery() {
     final lastId = _notifier.state.deliveryHistory.lastOrNull?.id;
     _notifier.undoLastDelivery();
     _persistState();
-    if (lastId != null && _syncService != null) {
-      _syncService!.enqueueUndo(
+    final syncService = _syncService;
+    if (lastId != null && syncService != null) {
+      syncService.enqueueUndo(
         matchId: _notifier.state.matchId,
         deliveryId: lastId,
       );
@@ -205,14 +222,53 @@ class ScoringPersistenceService {
     _datasource.saveState(_notifier.state).catchError((_) {});
   }
 
+  /// Publish score update via WebSocket fast path (fire-and-forget).
+  void _publishScoreUpdate({String? fielderName}) {
+    final wsClient = _wsClient;
+    if (wsClient == null) return;
+    try {
+      final state = _notifier.state;
+      final matchId = state.matchId;
+
+      // Always send score_update
+      wsClient.publishToMatch(matchId, buildScoreUpdatePayload(state));
+
+      // Send wicket if the last delivery was a wicket
+      final lastDelivery = state.lastDelivery;
+      if (lastDelivery != null && lastDelivery.isWicket) {
+        wsClient.publishToMatch(
+          matchId,
+          buildWicketPayload(state, lastDelivery, fielderName: fielderName),
+        );
+      }
+
+      // Send innings_complete if innings just ended (but not match)
+      if (state.isInningsComplete && !state.isMatchComplete) {
+        wsClient.publishToMatch(
+          matchId,
+          buildInningsCompletePayload(state),
+        );
+      }
+
+      // Send match_complete if match just ended
+      if (state.isMatchComplete) {
+        wsClient.publishToMatch(matchId, buildMatchCompletePayload(state));
+      }
+    } catch (e) {
+      // Fire-and-forget — never interrupt scoring flow
+      debugPrint('[ScoringPersistenceService] WS publish error: $e');
+    }
+  }
+
   /// Enqueue the most recently recorded delivery for syncing to the server.
   void _enqueueLastDelivery() {
-    if (_syncService == null) return;
+    final syncService = _syncService;
+    if (syncService == null) return;
     final delivery = _notifier.state.deliveryHistory.lastOrNull;
     if (delivery == null) return;
     final payload = delivery.toSyncPayload();
     payload['inningsNumber'] = _notifier.state.inningsNumber;
-    _syncService!.enqueueDelivery(
+    syncService.enqueueDelivery(
       matchId: _notifier.state.matchId,
       deliveryId: delivery.id,
       payload: payload,

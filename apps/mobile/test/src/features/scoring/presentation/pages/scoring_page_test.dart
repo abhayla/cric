@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:cricapp/src/core/theme/app_colors.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
@@ -537,8 +538,55 @@ void main() {
     });
 
     testWidgets('Back to Home dismisses modal and pops page', (tester) async {
-      // Wrap in Navigator to test pop
-      await tester.pumpWidget(MaterialApp(
+      // Wrap with GoRouter since _handleMatchCompleteAction uses GoRouter.of(context).go('/home')
+      bool navigatedHome = false;
+      final router = GoRouter(
+        initialLocation: '/scoring',
+        routes: [
+          GoRoute(
+            path: '/home',
+            builder: (_, __) {
+              navigatedHome = true;
+              return const Scaffold(body: Text('Home'));
+            },
+          ),
+          GoRoute(
+            path: '/scoring',
+            builder: (_, __) => ScoringPage(
+              args: ScoringPageArgs(
+                matchId: 'match-1',
+                inningsId: 'inn-2',
+                battingTeamId: 'bat-team',
+                bowlingTeamId: 'bowl-team',
+                battingTeamName: 'Delhi Strikers',
+                bowlingTeamName: 'Mumbai Warriors',
+                inningsNumber: 2,
+                totalOvers: 20,
+                playersPerSide: 11,
+                target: 5,
+                battingTeamPlayers: makePlayers(prefix: 'bat'),
+                bowlingTeamPlayers: makePlayers(prefix: 'bowl'),
+                openingStrikerId: 'bat-0',
+                openingStrikerName: 'BAT Player 1',
+                openingNonStrikerId: 'bat-1',
+                openingNonStrikerName: 'BAT Player 2',
+                openingBowlerId: 'bowl-0',
+                openingBowlerName: 'BOWL Player 1',
+                firstInningsSummary: const FirstInningsSummary(
+                  teamName: 'Mumbai Warriors',
+                  teamId: 'team-mw',
+                  totalRuns: 4,
+                  totalWickets: 10,
+                  totalBalls: 30,
+                  oversDisplay: '5.0',
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(MaterialApp.router(
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: AppColors.seed,
@@ -546,53 +594,8 @@ void main() {
           ),
           useMaterial3: true,
         ),
-        home: Builder(
-          builder: (context) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => ScoringPage(
-                      args: ScoringPageArgs(
-                        matchId: 'match-1',
-                        inningsId: 'inn-2',
-                        battingTeamId: 'bat-team',
-                        bowlingTeamId: 'bowl-team',
-                        battingTeamName: 'Delhi Strikers',
-                        bowlingTeamName: 'Mumbai Warriors',
-                        inningsNumber: 2,
-                        totalOvers: 20,
-                        playersPerSide: 11,
-                        target: 5,
-                        battingTeamPlayers: makePlayers(prefix: 'bat'),
-                        bowlingTeamPlayers: makePlayers(prefix: 'bowl'),
-                        openingStrikerId: 'bat-0',
-                        openingStrikerName: 'BAT Player 1',
-                        openingNonStrikerId: 'bat-1',
-                        openingNonStrikerName: 'BAT Player 2',
-                        openingBowlerId: 'bowl-0',
-                        openingBowlerName: 'BOWL Player 1',
-                        firstInningsSummary: const FirstInningsSummary(
-                          teamName: 'Mumbai Warriors',
-                          teamId: 'team-mw',
-                          totalRuns: 4,
-                          totalWickets: 10,
-                          totalBalls: 30,
-                          oversDisplay: '5.0',
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Go'),
-            ),
-          ),
-        ),
+        routerConfig: router,
       ));
-
-      // Navigate to scoring page
-      await tester.tap(find.text('Go'));
       await tester.pumpAndSettle();
 
       // Score a six to complete the match
@@ -606,7 +609,8 @@ void main() {
       await tester.tap(find.widgetWithText(OutlinedButton, 'Back to Home'));
       await tester.pumpAndSettle();
 
-      // Modal should be dismissed and page popped (back to home)
+      // Should have navigated to home
+      expect(navigatedHome, isTrue);
       expect(find.byType(MatchCompleteModal), findsNothing);
       expect(find.byType(ScoringPage), findsNothing);
     });
