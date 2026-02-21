@@ -50,6 +50,7 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 | [SCORING_RULES.md](docs/planning/SCORING_RULES.md) | Cricket domain rules, delivery pipeline, match state machine |
 | [DATABASE.md](docs/planning/DATABASE.md) | PostgreSQL schema (26 tables), enums, relationships |
 | [API.md](docs/planning/API.md) | REST endpoint specs, request/response shapes |
+| [SYNC_ARCHITECTURE.md](docs/planning/SYNC_ARCHITECTURE.md) | Dual-path broadcast, gap detection, offline sync queue |
 | [CRICHEROES_REFERENCE.md](docs/planning/CRICHEROES_REFERENCE.md) | Competitive analysis for CricHeroes comparison |
 | [PROJECT_MANAGEMENT.md](docs/process/PROJECT_MANAGEMENT.md) | Full documentation map and update frequencies |
 
@@ -69,11 +70,12 @@ cd apps/server && bun install              # Install dependencies
 cd apps/server && bun run dev              # Start server (watch mode)
 cd apps/server && bun run start            # Start server (production)
 cd apps/server && bun run src/index.ts     # Start server (direct)
-cd apps/server && bun test                 # Run all tests
-cd apps/server && bun test src/path/to.test.ts                 # Run single test file
-cd apps/server && bunx tsc --noEmit        # TypeScript type check (no emit)
-cd apps/server && bunx drizzle-kit generate  # Generate migrations
-cd apps/server && bunx drizzle-kit migrate   # Apply migrations
+cd apps/server && bun test                 # Run all tests (--timeout=60000 --concurrency 1 via package.json)
+cd apps/server && bun test src/path/to.test.ts                 # Run single test file (preferred — avoids DB contention)
+cd apps/server && bun run typecheck        # TypeScript type check (alias for bunx tsc --noEmit)
+cd apps/server && bun run db:generate      # Generate migrations
+cd apps/server && bun run db:migrate       # Apply migrations
+cd apps/server && bun run db:seed          # Seed master data (dismissal types, positions, zones)
 ```
 
 ```bash
@@ -84,6 +86,8 @@ cd apps/mobile && flutter test integration_test/multi_device_viewer_e2e_test.dar
 ```
 
 **E2E test rule: NEVER run E2E/integration tests from Claude's CLI.** Always provide the run command and let the user execute it from their IDE terminal so they can watch the test on the device in real time. E2E tests are visual — the user needs to see them running.
+
+**E2E multi-device coordination:** Scorer and viewer tests synchronize via HTTP signal endpoints (`POST/GET /api/v1/test/signal/:name`). Flow: scorer creates match + toss, posts `scorer-ready` signal, polls for `viewer-ready` (120s). Viewer polls for `scorer-ready`, connects WebSocket, posts `viewer-ready`. Scorer then begins scoring. Orchestration script: `scripts/multi-device-e2e.sh` (supports `SWAP_DEVICES=1` to swap emulator/device roles).
 
 **Environment setup:** Copy `apps/server/.env.example` to `apps/server/.env` and fill in PostgreSQL + Firebase credentials before starting the server.
 
@@ -108,7 +112,9 @@ Jobs only run when their respective `apps/` directory has files (conditional on 
 - **Offline-first:** All scoring writes go to local Drift/SQLite first, then sync to server. Deliveries have a `synced` flag.
 - **Atomic delivery model:** Every ball bowled is stored as a `deliveries` record — the core unit for all stats and analytics.
 - **Pre-computed stats:** `batting_stats`, `bowling_stats`, `fielding_stats` per innings + `player_career_stats` aggregates for fast reads.
-- **WebSocket rooms:** Each match = one pub/sub room. Scorer = publisher, viewers = subscribers. Uses Bun's native `server.publish(topic, message)`.
+- **Dual-path real-time broadcast:** Live scoring uses two parallel paths: (1) **Fast path (~ms):** `ScoringPersistenceService` sends `publish_score` WS message immediately after each delivery — server relays to room subscribers with zero DB access (sender excluded via Bun's `ws.publish`). (2) **Durable path (~2s):** `SyncService` timer fires every 2s (threshold: 1 pending delivery) — REST sync to server — server persists to PostgreSQL — broadcasts `match_state` reconciliation snapshot. Viewers detect missed messages via `deliveryCount` gap detection and auto-recover by re-sending `join_match`.
+- **Scoring engine layering:** `ScoringNotifier` (pure state machine, ~1300 lines) is wrapped by `ScoringPersistenceService` (fire-and-forget JSON snapshots to Drift after each mutation) which coordinates with `SyncService` (FIFO queue processor for server sync). This layering keeps the core notifier testable with no I/O dependencies — all 333+ scoring tests run against the notifier directly.
+- **WebSocket rooms:** Each match = one pub/sub room. Scorer = publisher, viewers = subscribers. Uses Bun's native `server.publish(topic, message)`. 7 server message types: `match_state`, `score_update`, `wicket`, `innings_complete`, `match_complete`, `delivery_undone`, `error`.
 - **UUIDs everywhere:** All primary keys are UUIDs for cross-device sync compatibility.
 
 ## Code Principles (YAGNI, KISS, DRY)
