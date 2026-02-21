@@ -149,63 +149,60 @@ Future<void> addPlayersToRoster(
     await visualPause(tester);
   }
 
-  // Add first player from the empty state "Add Player" button
+  // Try the "Add Player" button from empty state for player[0]
   final addPlayerBtn = find.text('Add Player');
+  bool firstPlayerAdded = false;
   if (addPlayerBtn.evaluate().isNotEmpty) {
     await tester.tap(addPlayerBtn.first);
     await settle(tester);
     await visualPause(tester, 500);
     print('    [addPlayers] Navigated to AddPlayerPage for player[0]');
-  } else {
-    dumpVisibleTexts(tester, 'addPlayers-noAddButton', 25);
-    print('    [addPlayers] WARNING: "Add Player" button not found. '
-        'Are we on the Players tab of TeamDetailPage?');
-  }
-  await _fillAndSubmitPlayer(tester, players[0]);
-  // After submit, we pop back to TeamDetailPage (Players tab)
-  await settle(tester);
-  await visualPause(tester, 500);
-
-  // For remaining players: navigate directly to AddPlayerPage via GoRouter.
-  // We extract the teamId from the current route (which is /teams/:id).
-  if (players.length > 1) {
+    await _fillAndSubmitPlayer(tester, players[0]);
     await settle(tester);
+    await visualPause(tester, 500);
+    firstPlayerAdded = true;
+  } else {
+    print('    [addPlayers] "Add Player" button not found — will use GoRouter for all players');
+  }
 
-    // Extract teamId from current GoRouter location
-    final routerState = GoRouterState.of(
-      tester.element(find.byType(Scaffold).first),
-    );
-    final currentPath = routerState.uri.toString();
-    // Path format: /teams/<teamId> or /teams/<teamId>/...
-    final teamIdMatch = RegExp(r'/teams/([^/]+)').firstMatch(currentPath);
-    final teamId = teamIdMatch?.group(1);
+  // Extract teamId from current GoRouter location for direct navigation
+  await settle(tester);
+  final routerState = GoRouterState.of(
+    tester.element(find.byType(Scaffold).first),
+  );
+  final currentPath = routerState.uri.toString();
+  final teamIdMatch = RegExp(r'/teams/([^/]+)').firstMatch(currentPath);
+  final teamId = teamIdMatch?.group(1);
 
-    if (teamId == null) {
-      print('    [addPlayers] ERROR: Could not extract teamId from $currentPath');
-    } else {
-      print('    [addPlayers] Using GoRouter navigation for remaining players (teamId=$teamId)');
+  if (teamId == null) {
+    print('    [addPlayers] ERROR: Could not extract teamId from $currentPath');
+    return;
+  }
 
-      for (var i = 1; i < players.length; i++) {
-        // Navigate directly to AddPlayerPage
-        final router = GoRouter.of(
-          tester.element(find.byType(Scaffold).first),
-        );
-        router.push('/teams/$teamId/roster/add');
-        await settle(tester);
-        await visualPause(tester, 300);
+  // Use GoRouter navigation for remaining players (or all if first wasn't added)
+  final startIndex = firstPlayerAdded ? 1 : 0;
+  if (startIndex < players.length) {
+    print('    [addPlayers] Using GoRouter navigation for players[$startIndex..${players.length - 1}] (teamId=$teamId)');
 
-        // Wait for AddPlayerPage to appear
-        for (var wait = 0; wait < 10; wait++) {
-          if (find.text('Create New').evaluate().isNotEmpty ||
-              find.byKey(const Key('playerNameField')).evaluate().isNotEmpty) {
-            break;
-          }
-          await tester.pump(const Duration(milliseconds: 200));
+    for (var i = startIndex; i < players.length; i++) {
+      final router = GoRouter.of(
+        tester.element(find.byType(Scaffold).first),
+      );
+      router.push('/teams/$teamId/roster/add');
+      await settle(tester);
+      await visualPause(tester, 300);
+
+      // Wait for AddPlayerPage to appear
+      for (var wait = 0; wait < 10; wait++) {
+        if (find.text('Create New').evaluate().isNotEmpty ||
+            find.byKey(const Key('playerNameField')).evaluate().isNotEmpty) {
+          break;
         }
-
-        await _fillAndSubmitPlayer(tester, players[i]);
-        await settle(tester);
+        await tester.pump(const Duration(milliseconds: 200));
       }
+
+      await _fillAndSubmitPlayer(tester, players[i]);
+      await settle(tester);
     }
   }
 }
