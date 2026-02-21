@@ -30,6 +30,7 @@
   --success:         #4CAF50;
   --dot-ball:        #9E9E9E;
   --live-badge:      #EF4444;
+  --magic-over:      #FF8F00;
 
   /* Typography */
   --font:            'Roboto', system-ui, -apple-system, sans-serif;
@@ -1096,6 +1097,33 @@ select.input-field {
   background: var(--bg);
   color: var(--text-secondary);
   border: 1.5px dashed var(--text-secondary);
+}
+
+/* Magic Over Badge */
+.magic-over-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: var(--magic-over);
+  color: var(--text-on-dark);
+  border-radius: var(--radius-full);
+  font-size: var(--caption);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Commentary item — Magic Over highlight */
+.commentary-item.magic {
+  border-left: 3px solid var(--magic-over);
+  padding-left: 9px;
+  background: #FFF8E1;
+}
+
+.commentary-item.magic .highlight-magic {
+  font-weight: var(--fw-bold);
+  color: var(--magic-over);
 }
 
 /* Free Hit Badge */

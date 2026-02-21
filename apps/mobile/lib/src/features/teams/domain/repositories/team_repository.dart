@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+
 import 'package:cricapp/src/features/teams/domain/entities/team.dart';
 
 /// Paginated team list response.
@@ -89,6 +91,9 @@ abstract class TeamRepository {
 
   /// Search player by phone number.
   Future<PlayerSearchResult?> searchPlayerByPhone(String phone);
+
+  /// Upload an image and return its URL.
+  Future<String> uploadImage(XFile file);
 
   /// Create a placeholder player profile.
   Future<PlayerSearchResult> createPlayer({

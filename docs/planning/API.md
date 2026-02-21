@@ -1011,23 +1011,23 @@ POST   /api/v1/uploads/image
 Upload an image (team logos). Auth required. Multipart/form-data.
 
 **Constraints:**
-- Max file size: 2MB
-- Accepted types: JPEG, PNG only
-- Server-side processing: compress to max 200x200px, < 100KB
+- Max file size: `MAX_UPLOAD_SIZE_MB` env var (default 1MB)
+- Accepted types: JPEG, PNG, WebP
+- Server-side processing: resize to 200x200 cover, JPEG quality 80 via `sharp`
 
-**Storage:** VPS filesystem at `C:\Apps\uploads\teams\{uuid}.jpg`, served via Nginx static file config.
+**Storage:** Filesystem at `UPLOADS_DIR/{uuid}.jpg`, served via `GET /api/v1/uploads/:filename` with 1-year cache header.
 
 **Request:** `multipart/form-data` with `image` field.
 
-**Response (201):**
+**Response (200):**
 ```json
 {
-  "url": "https://domain.com/uploads/teams/{uuid}.jpg"
+  "url": "/uploads/{uuid}.jpg"
 }
 ```
 
 **Errors:**
-- `400` — File exceeds 2MB or unsupported format.
+- `400` — File exceeds size limit, unsupported format, or invalid filename.
 - `401` — Not authenticated.
 
 ---

@@ -16,13 +16,59 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Pending: Uncommitted E2E fixes from 2026-02-22
+### Session 2026-02-25: Implemented Issues #84, #87, #88, #89
 
-4 files modified but never committed. Commit or review before starting new work:
+**4 GitHub issues implemented** — all tests passing.
+
+| Issue | Title | Scope | Status |
+|-------|-------|-------|--------|
+| #89 | Remove player from roster | UI wiring: confirmation dialog + API call on ManageRosterPage | DONE (14/14 tests) |
+| #87 | Search player by phone | UI wiring: `_SearchTab` → ConsumerStatefulWidget, calls `searchPlayerByPhone`, shows result card | DONE (20/20 tests) |
+| #88 | Team logo image picker | Server: `POST /api/v1/uploads/image` (sharp resize), static serving. Flutter: `uploadImage` in data layer, image picker on CreateTeamPage | DONE (7 server + 16 Flutter tests) |
+| #84 | Magic Over wireframes | CSS: `--magic-over`, `.magic-over-badge`, `.commentary-item.magic`. HTML: 4 wireframe files updated | DONE |
+
+**Files changed:**
+- **Server:** `src/routes/v1/uploads.ts` (NEW), `src/index.ts`, `test/routes/uploads.routes.test.ts` (NEW), `package.json` (added `sharp`)
+- **Flutter:** `manage_roster_page.dart`, `add_player_page.dart`, `create_team_page.dart`, `team_repository.dart`, `team_remote_datasource.dart`, `team_repository_impl.dart`, `router.dart`, + 3 test files
+- **Wireframes:** `styles.css`, `10-match-setup.html`, `12-scoring-page.html`, `15-scorecard.html`, `20-create-tournament.html`
+
+**Key architectural notes:**
+- `CreateTeamPage.onSubmit` signature changed: now `(String name, String? location, XFile? logoFile)` — any other callers need updating
+- Upload route handles image resize to 200x200 JPEG via sharp, stores in `UPLOADS_DIR`
+- Logo upload failure is non-fatal (team still creates without logo)
+
+**Next steps:**
+1. Commit all changes
+2. Close GitHub issues #84, #87, #88, #89
+3. Continue Phase 7 E2E test runs
+
+### Session 2026-02-23: Fixed 6 Bugs (Codebase Stabilization)
+
+**Committed as `2ca8c30`** — all 6 bugs fixed and verified.
+
+| Bug | Severity | Fix | Status |
+|-----|----------|-----|--------|
+| #1 Add Player overflow | HIGH | `_CreateTab`: `Column>[Expanded,Button]` → `SingleChildScrollView>[fields,Button]` | VERIFIED (15/15 tests) |
+| #2 offline_sync_test timing | MEDIUM | Delay 100→300ms, added `processSyncQueue()` safety belt, `containsAll` | VERIFIED (11/11 tests) |
+| #3 scoring_page "Back to Home" | MEDIUM | `GoRouter.go()` deferred via `addPostFrameCallback` after dialog pop | VERIFIED (35/35 tests) |
+| #4 Server test timeouts | LOW | `--concurrency 1` in test script, unified DB pool `max: 10` | VERIFIED (individual files pass; full suite still has per-test 5s timeouts on heavy scoring tests — known limitation) |
+| #5 Migration 0004 journal | LOW | Added to `_journal.json`, made 0004+0005 idempotent, deleted stray `0002_add_magic_over_number.sql` | VERIFIED (`drizzle-kit migrate` succeeds) |
+| #6 test-verify API 500s | MEDIUM | try/catch + null guards on standings/leaderboard/match-awards endpoints | VERIFIED (`tsc --noEmit` clean) |
+
+**Files changed (11):** `scoring_page.dart`, `add_player_page.dart`, `offline_sync_test.dart`, `add_player_page_test.dart`, `package.json`, `database.ts`, `0002_add_magic_over_number.sql` (deleted), `0004_magic_over_customization.sql`, `0005_stats_unique_constraints.sql`, `_journal.json`, `test-verify.routes.ts`
+
+**Remaining uncommitted files** (from prior E2E sessions — review before starting new work):
+- `integration_test/helpers/db_verifier.dart`
+- `integration_test/helpers/match_flow_helpers.dart`
 - `integration_test/helpers/tournament_flow_helpers.dart`
 - `integration_test/scoring_edge_cases_e2e_test.dart`
-- `integration_test/single_match_e2e_test.dart`
-- `lib/src/features/teams/presentation/pages/add_player_page.dart`
+- New: `integration_test/match_flow_variations_e2e_test.dart`, `integration_test/scoring_extras_e2e_test.dart`
+- Docs: `docs/prompt/e2e/` (4 new + 2 modified)
+
+**Next steps:**
+1. Commit remaining uncommitted E2E files
+2. Continue Phase 7 E2E test runs (Tests 3, 4, 5)
+3. Address server `bun test` per-test timeout for heavy scoring tests (optional — individual files pass reliably)
 
 ### Session 2026-02-22: E2E Test Fixes (Tests 2, 3, 4-viewer, 5)
 

@@ -1,8 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
+import 'package:cricapp/src/features/teams/domain/repositories/team_repository.dart';
 import 'package:cricapp/src/features/teams/presentation/pages/add_player_page.dart';
+import 'package:cricapp/src/features/teams/providers.dart';
+
+class MockTeamRepository extends Mock implements TeamRepository {}
 
 void main() {
   Widget buildTestWidget({
@@ -220,6 +227,137 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Phone Number *'), findsOneWidget);
+    });
+
+    group('Search tab — phone search', () {
+      late MockTeamRepository mockRepo;
+
+      setUp(() {
+        mockRepo = MockTeamRepository();
+      });
+
+      Widget buildWithMock({
+        void Function(String playerId)? onAddExisting,
+      }) {
+        return ProviderScope(
+          overrides: [
+            teamRepositoryProvider.overrideWithValue(mockRepo),
+          ],
+          child: MaterialApp(
+            home: AddPlayerPage(
+              teamId: 'team-1',
+              onAddExisting: onAddExisting,
+            ),
+          ),
+        );
+      }
+
+      testWidgets('search shows result card on success', (tester) async {
+        when(() => mockRepo.searchPlayerByPhone('+919876543210'))
+            .thenAnswer((_) async => const PlayerSearchResult(
+                  id: 'p-found',
+                  displayName: 'Found Player',
+                  playerRole: 'batter',
+                ));
+
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.widgetWithText(TextFormField, '98765 43210'),
+          '9876543210',
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Search'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Found Player'), findsOneWidget);
+        expect(find.widgetWithText(FilledButton, 'Add to Team'), findsOneWidget);
+      });
+
+      testWidgets('search shows "No player found" when null', (tester) async {
+        when(() => mockRepo.searchPlayerByPhone('+919876543210'))
+            .thenAnswer((_) async => null);
+
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.widgetWithText(TextFormField, '98765 43210'),
+          '9876543210',
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Search'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('No player found'), findsOneWidget);
+      });
+
+      testWidgets('search shows error message on failure', (tester) async {
+        when(() => mockRepo.searchPlayerByPhone('+919876543210'))
+            .thenThrow(Exception('Network error'));
+
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.widgetWithText(TextFormField, '98765 43210'),
+          '9876543210',
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Search'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Search failed'), findsOneWidget);
+      });
+
+      testWidgets('Add to Team calls onAddExisting with player ID',
+          (tester) async {
+        String? addedPlayerId;
+
+        when(() => mockRepo.searchPlayerByPhone('+919876543210'))
+            .thenAnswer((_) async => const PlayerSearchResult(
+                  id: 'p-found',
+                  displayName: 'Found Player',
+                  playerRole: 'batter',
+                ));
+
+        await tester.pumpWidget(buildWithMock(
+          onAddExisting: (id) => addedPlayerId = id,
+        ));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.widgetWithText(TextFormField, '98765 43210'),
+          '9876543210',
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Search'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Add to Team'));
+        await tester.pump();
+
+        expect(addedPlayerId, 'p-found');
+      });
+
+      testWidgets('shows loading indicator during search', (tester) async {
+        final completer = Completer<PlayerSearchResult?>();
+        when(() => mockRepo.searchPlayerByPhone('+919876543210'))
+            .thenAnswer((_) => completer.future);
+
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.widgetWithText(TextFormField, '98765 43210'),
+          '9876543210',
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Search'));
+        await tester.pump();
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Complete the future to clean up
+        completer.complete(null);
+        await tester.pumpAndSettle();
+      });
     });
 
     testWidgets('Create tab calls onCreatePlayer with form data',

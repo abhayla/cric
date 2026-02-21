@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../auth/domain/entities/app_user.dart';
+import '../../domain/repositories/team_repository.dart';
+import '../../providers.dart';
 
 class AddPlayerPage extends StatefulWidget {
   const AddPlayerPage({
@@ -58,22 +61,41 @@ class _AddPlayerPageState extends State<AddPlayerPage> {
   }
 }
 
-class _SearchTab extends StatefulWidget {
+class _SearchTab extends ConsumerStatefulWidget {
   const _SearchTab({this.onAddExisting});
 
   final void Function(String playerId)? onAddExisting;
 
   @override
-  State<_SearchTab> createState() => _SearchTabState();
+  ConsumerState<_SearchTab> createState() => _SearchTabState();
 }
 
-class _SearchTabState extends State<_SearchTab> {
+class _SearchTabState extends ConsumerState<_SearchTab> {
   final _phoneController = TextEditingController();
+  AsyncValue<PlayerSearchResult?>? _searchResult;
 
   @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleSearch() async {
+    final phone = _phoneController.text.trim();
+    if (phone.length != 10) return;
+
+    setState(() => _searchResult = const AsyncValue.loading());
+
+    try {
+      final result = await ref
+          .read(teamRepositoryProvider)
+          .searchPlayerByPhone('+91$phone');
+      if (!mounted) return;
+      setState(() => _searchResult = AsyncValue.data(result));
+    } catch (e, st) {
+      if (!mounted) return;
+      setState(() => _searchResult = AsyncValue.error(e, st));
+    }
   }
 
   @override
@@ -126,13 +148,81 @@ class _SearchTabState extends State<_SearchTab> {
             width: double.infinity,
             height: 48,
             child: FilledButton(
-              onPressed: () {
-                // TODO: Search player by phone
-              },
+              onPressed: _handleSearch,
               child: const Text('Search'),
             ),
           ),
+          if (_searchResult != null) ...[
+            const SizedBox(height: 24),
+            _searchResult!.when(
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error: (_, __) => Text(
+                'Search failed. Please try again.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              data: (player) => player == null
+                  ? Text(
+                      'No player found',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  : _PlayerResultCard(
+                      player: player,
+                      onAdd: () => widget.onAddExisting?.call(player.id),
+                    ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _PlayerResultCard extends StatelessWidget {
+  const _PlayerResultCard({required this.player, required this.onAdd});
+
+  final PlayerSearchResult player;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              player.displayName,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (player.playerRole != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                player.playerRole!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: onAdd,
+                child: const Text('Add to Team'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

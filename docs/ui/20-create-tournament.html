@@ -172,6 +172,14 @@
             <button class="stepper-btn" onclick="stepValue('powerplayOvers', 1)">+</button>
           </div>
         </div>
+        <!-- Magic Over -->
+        <div class="stepper-row" style="border-top: 1px solid var(--border);">
+          <span class="stepper-label" style="display: flex; align-items: center; gap: 6px;">
+            Magic Over
+            <span class="magic-over-badge" style="font-size: 9px; padding: 2px 6px;">⚡</span>
+          </span>
+          <div class="switch" id="tournamentMagicSwitch" onclick="this.classList.toggle('on')"></div>
+        </div>
       </div>
 
       <!-- Points System (hidden for knockout) -->

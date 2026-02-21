@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:cricapp/src/core/constants/app_constants.dart';
 import 'package:cricapp/src/core/errors/exceptions.dart';
@@ -158,6 +159,24 @@ class TeamRemoteDatasource {
         },
       );
       return response.data['player'] as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<String> uploadImage(XFile file) async {
+    try {
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(
+          file.path,
+          filename: file.name,
+        ),
+      });
+      final response = await dio.post(
+        '${AppConstants.apiBaseUrl}/uploads/image',
+        data: formData,
+      );
+      return response.data['url'] as String;
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

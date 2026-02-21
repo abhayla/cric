@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
 import 'package:cricapp/src/features/teams/domain/entities/team.dart';
 import 'package:cricapp/src/features/teams/domain/repositories/team_repository.dart';
 import 'package:cricapp/src/features/teams/presentation/pages/manage_roster_page.dart';
 import 'package:cricapp/src/features/teams/providers.dart';
+
+class MockTeamRepository extends Mock implements TeamRepository {}
 
 void main() {
   final testTeam = Team(
@@ -172,6 +175,93 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    group('remove player', () {
+      late MockTeamRepository mockRepo;
+
+      setUp(() {
+        mockRepo = MockTeamRepository();
+      });
+
+      Widget buildWithMock({TeamDetail? detail}) {
+        return ProviderScope(
+          overrides: [
+            teamDetailProvider('team-1').overrideWith(
+              (ref) => Future.value(detail ?? testDetail),
+            ),
+            teamRepositoryProvider.overrideWithValue(mockRepo),
+          ],
+          child: const MaterialApp(
+            home: ManageRosterPage(teamId: 'team-1'),
+          ),
+        );
+      }
+
+      testWidgets('shows confirmation dialog on delete tap', (tester) async {
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.delete_outline).first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Remove Player'), findsOneWidget);
+        expect(
+          find.textContaining('Remove Arjun Mehta'),
+          findsOneWidget,
+        );
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Remove'), findsOneWidget);
+      });
+
+      testWidgets('Cancel dismisses dialog without calling API',
+          (tester) async {
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.delete_outline).first);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Remove Player'), findsNothing);
+        verifyNever(() => mockRepo.removePlayer(any(), any()));
+      });
+
+      testWidgets('Remove calls removePlayer and shows success SnackBar',
+          (tester) async {
+        when(() => mockRepo.removePlayer('team-1', 'p-1'))
+            .thenAnswer((_) async {});
+
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.delete_outline).first);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Remove'));
+        await tester.pumpAndSettle();
+
+        verify(() => mockRepo.removePlayer('team-1', 'p-1')).called(1);
+        expect(find.text('Player removed'), findsOneWidget);
+      });
+
+      testWidgets('shows error SnackBar on failure', (tester) async {
+        when(() => mockRepo.removePlayer('team-1', 'p-1'))
+            .thenThrow(Exception('Network error'));
+
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.delete_outline).first);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Remove'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Failed to remove player'), findsOneWidget);
+      });
     });
   });
 }

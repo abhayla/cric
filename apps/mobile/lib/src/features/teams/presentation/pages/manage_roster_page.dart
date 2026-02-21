@@ -27,6 +27,46 @@ class _ManageRosterPageState extends ConsumerState<ManageRosterPage> {
     super.dispose();
   }
 
+  Future<void> _confirmRemovePlayer(String playerId) async {
+    final detail = ref.read(teamDetailProvider(widget.teamId)).value;
+    final player = detail?.roster.where((e) => e.playerId == playerId).firstOrNull;
+    final playerName = player?.displayName ?? 'this player';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Player'),
+        content: Text('Remove $playerName from the roster?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(teamRepositoryProvider).removePlayer(widget.teamId, playerId);
+      ref.invalidate(teamDetailProvider(widget.teamId));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Player removed')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to remove player')),
+      );
+    }
+  }
+
   List<RosterEntry> _filterRoster(List<RosterEntry> roster) {
     if (_searchQuery.isEmpty) return roster;
     return roster
@@ -55,7 +95,7 @@ class _ManageRosterPageState extends ConsumerState<ManageRosterPage> {
             context.push(AppRoutes.addPlayerPath(widget.teamId));
           },
           onRemovePlayer: (playerId) {
-            // TODO: Call API to remove player
+            _confirmRemovePlayer(playerId);
           },
         ),
       ),

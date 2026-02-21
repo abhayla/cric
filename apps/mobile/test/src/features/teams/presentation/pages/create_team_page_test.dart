@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:cricapp/src/features/teams/presentation/pages/create_team_page.dart';
 
 void main() {
   Widget buildTestWidget({
-    void Function(String name, String? location)? onSubmit,
+    void Function(String name, String? location, XFile? logoFile)? onSubmit,
   }) {
     return ProviderScope(
       child: MaterialApp(
@@ -44,10 +45,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Tap to upload. Max 100KB, no cropping.'),
-        findsOneWidget,
-      );
+      expect(find.text('Tap to upload'), findsOneWidget);
     });
 
     testWidgets('renders Team Name label and input', (tester) async {
@@ -149,7 +147,7 @@ void main() {
       String? submittedLocation;
 
       await tester.pumpWidget(buildTestWidget(
-        onSubmit: (name, location) {
+        onSubmit: (name, location, _) {
           submittedName = name;
           submittedLocation = location;
         },
@@ -182,7 +180,7 @@ void main() {
       String? submittedLocation = 'initial';
 
       await tester.pumpWidget(buildTestWidget(
-        onSubmit: (name, location) {
+        onSubmit: (name, location, _) {
           submittedName = name;
           submittedLocation = location;
         },
@@ -206,7 +204,7 @@ void main() {
       String? submittedName;
 
       await tester.pumpWidget(buildTestWidget(
-        onSubmit: (name, location) {
+        onSubmit: (name, location, _) {
           submittedName = name;
         },
       ));
@@ -230,6 +228,42 @@ void main() {
 
       // AppBar should have automatic back button since this is pushed onto a stack
       expect(find.byType(AppBar), findsOneWidget);
+    });
+
+    testWidgets('logo area has GestureDetector for tapping', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Camera icon should be inside a GestureDetector
+      expect(find.byIcon(Icons.camera_alt), findsOneWidget);
+      final gestureDetector = find.ancestor(
+        of: find.byIcon(Icons.camera_alt),
+        matching: find.byType(GestureDetector),
+      );
+      expect(gestureDetector, findsOneWidget);
+    });
+
+    testWidgets('onSubmit receives null logoFile when no image picked',
+        (tester) async {
+      XFile? receivedFile = XFile('marker');
+
+      await tester.pumpWidget(buildTestWidget(
+        onSubmit: (name, location, logoFile) {
+          receivedFile = logoFile;
+        },
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Enter team name'),
+        'Mumbai Warriors',
+      );
+      await tester.pump();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Create Team'));
+      await tester.pump();
+
+      expect(receivedFile, isNull);
     });
   });
 }

@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+
 import '../../domain/entities/team.dart';
 import '../../domain/repositories/team_repository.dart';
 import '../datasources/team_local_datasource.dart';
@@ -171,6 +173,11 @@ class TeamRepositoryImpl implements TeamRepository {
       location: m.location,
       avatarUrl: m.avatarUrl,
     );
+  }
+
+  @override
+  Future<String> uploadImage(XFile file) async {
+    return remoteDatasource.uploadImage(file);
   }
 
   @override

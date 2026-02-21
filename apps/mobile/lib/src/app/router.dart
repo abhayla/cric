@@ -245,10 +245,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.createTeam,
         builder: (context, state) => Consumer(
           builder: (context, ref, _) => CreateTeamPage(
-            onSubmit: (name, location) async {
+            onSubmit: (name, location, logoFile) async {
               try {
+                String? logoUrl;
+                if (logoFile != null) {
+                  try {
+                    logoUrl = await ref.read(teams.teamRepositoryProvider)
+                        .uploadImage(logoFile);
+                  } catch (_) {
+                    // Non-fatal: proceed without logo
+                  }
+                }
                 final team = await ref.read(teams.teamRepositoryProvider)
-                    .createTeam(name: name, location: location);
+                    .createTeam(name: name, location: location, logoUrl: logoUrl);
                 // Invalidate the teams list so the picker shows this new team.
                 ref.invalidate(teams.teamsListProvider);
                 if (context.mounted) {
