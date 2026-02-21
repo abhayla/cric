@@ -52,8 +52,8 @@ Future<void> _ensureScoringControlsAccessible(WidgetTester tester) async {
       await tester.tap(listTiles.first);
       await settle(tester);
     } else {
-      // Try pressing back to dismiss
-      await tester.pageBack();
+      // Tap outside the sheet to dismiss it
+      await tester.tapAt(const Offset(10, 10));
       await settle(tester);
     }
   }
@@ -67,7 +67,8 @@ Future<void> _ensureScoringControlsAccessible(WidgetTester tester) async {
       await tester.tap(listTiles.first);
       await settle(tester);
     } else {
-      await tester.pageBack();
+      // Tap outside the sheet to dismiss it
+      await tester.tapAt(const Offset(10, 10));
       await settle(tester);
     }
   }

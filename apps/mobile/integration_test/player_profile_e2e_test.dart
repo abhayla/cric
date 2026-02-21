@@ -149,6 +149,7 @@ void main() {
         battingOpener1: ScenarioTeams.teamAOpener1,
         battingOpener2: ScenarioTeams.teamAOpener2,
         openingBowler: ScenarioTeams.teamBOpeningBowler,
+        playersPerSide: 6,
       );
 
       // Score 1st innings with random deliveries (seed=42)
@@ -249,6 +250,7 @@ void main() {
         battingOpener1: ScenarioTeams.teamAOpener1,
         battingOpener2: ScenarioTeams.teamAOpener2,
         openingBowler: ScenarioTeams.teamBOpeningBowler,
+        playersPerSide: 6,
       );
 
       // Score match 2 with different seed

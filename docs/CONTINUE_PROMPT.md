@@ -16,6 +16,35 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-22: E2E Test Fixes (Tests 2, 3, 4-viewer, 5)
+
+**Fixed 3 root causes** across 4 failing E2E test suites. Only integration test helpers changed — no production code.
+
+**Fix 1: `pageBack()` crash (Tests 2, 3, 5)**
+- `_ensureScoringControlsAccessible()` in `match_flow_helpers.dart` used `tester.pageBack()` which looks for `CupertinoNavigationBarBackButton` — doesn't exist in Material app
+- Replaced with `tester.tapAt(Offset(10, 10))` to tap outside bottom sheet to dismiss it
+
+**Fix 2: Toss wizard XI selection (Test 5)**
+- `completeTossWizard()` in `tournament_flow_helpers.dart` assumed all players pre-selected (roster == playersPerSide)
+- Player profile test has roster=11 but playersPerSide=6, so Next button was disabled
+- Added optional `playersPerSide` param + `_selectPlayingXIIfNeeded()` helper that taps ListTiles when Next is disabled
+- `player_profile_e2e_test.dart` now passes `playersPerSide: 6` to both `completeTossWizard` calls
+
+**Fix 3: Viewer staleness timeout (Test 4)**
+- Short match (18 deliveries, ~30s) completed before viewer could detect `isMatchComplete`
+- Monitoring loop ran until 5-min deadline → infrastructure timeout (exit 79)
+- Added staleness guard: if no updates for 15s and 8+ states received, re-read state and break
+
+**Files changed (4):**
+- `integration_test/helpers/match_flow_helpers.dart` — 2x `pageBack()` → `tapAt()`
+- `integration_test/helpers/tournament_flow_helpers.dart` — `playersPerSide` param + `_selectPlayingXIIfNeeded`
+- `integration_test/multi_device_viewer_e2e_test.dart` — staleness guard in monitoring loop
+- `integration_test/player_profile_e2e_test.dart` — pass `playersPerSide: 6`
+
+**Next steps:**
+1. Run all 5 E2E tests to verify fixes (commands in plan)
+2. Test 1 (Single Match) regression check — should still pass
+
 ### Session 2026-02-22: Full T20 E2E — Dual-Emulator Green Run
 
 **Full T20 E2E test passed on both emulators** (scorer emulator-5554, viewer emulator-5556). 254 deliveries, 0 mismatches, 0 invariant violations.

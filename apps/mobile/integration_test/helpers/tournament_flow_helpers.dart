@@ -613,6 +613,7 @@ Future<void> completeTossWizard(
   required String battingOpener1,
   required String battingOpener2,
   required String openingBowler,
+  int? playersPerSide,
 }) async {
   // Step 1: "Who won the toss?" → tap team card
   await settle(tester);
@@ -635,12 +636,14 @@ Future<void> completeTossWizard(
   }
   await _tapNextButton(tester);
 
-  // Step 3: Playing XI for first team — if pre-selected, just tap Next
+  // Step 3: Playing XI for first team — select players if needed, then Next
   print('    [toss] Step 3: Playing XI Team A');
+  await _selectPlayingXIIfNeeded(tester, playersPerSide);
   await _tapNextButton(tester);
 
-  // Step 4: Playing XI for second team — if pre-selected, just tap Next
+  // Step 4: Playing XI for second team — select players if needed, then Next
   print('    [toss] Step 4: Playing XI Team B');
+  await _selectPlayingXIIfNeeded(tester, playersPerSide);
   await _tapNextButton(tester);
 
   // Step 5: Select openers and bowler
@@ -798,6 +801,36 @@ Future<void> completeTossWizard(
   } else {
     print('    [toss] Scoring page loaded successfully');
   }
+}
+
+/// Select playing XI players if the Next button is disabled (roster > playersPerSide).
+///
+/// When roster size equals playersPerSide, auto-selection kicks in and Next is
+/// already enabled. When roster > playersPerSide, we must manually tap players.
+Future<void> _selectPlayingXIIfNeeded(WidgetTester tester, int? playersPerSide) async {
+  if (playersPerSide == null) return;
+  await settle(tester);
+
+  // Check if Next button is already enabled (players pre-selected)
+  final filledButtons = find.byType(FilledButton);
+  if (filledButtons.evaluate().isNotEmpty) {
+    final button = filledButtons.last.evaluate().first.widget as FilledButton;
+    if (button.onPressed != null) {
+      print('    [toss] XI already pre-selected, Next is enabled');
+      return;
+    }
+  }
+
+  // Next is disabled — manually select players by tapping ListTiles
+  print('    [toss] Next disabled — selecting $playersPerSide players');
+  final listTiles = find.byType(ListTile);
+  final count = playersPerSide.clamp(0, listTiles.evaluate().length);
+  for (var i = 0; i < count; i++) {
+    await tester.ensureVisible(listTiles.at(i));
+    await tester.tap(listTiles.at(i), warnIfMissed: false);
+    await tester.pump();
+  }
+  await settle(tester);
 }
 
 /// Tap the Next/Start Match button in the toss wizard.

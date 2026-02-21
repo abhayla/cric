@@ -158,6 +158,7 @@ void main() {
       }
 
       final monitorDeadline = DateTime.now().add(const Duration(minutes: 5));
+      var lastUpdateTime = DateTime.now();
 
       while (!lastMatchComplete && DateTime.now().isBefore(monitorDeadline)) {
         await tester.pump(const Duration(milliseconds: 300));
@@ -173,6 +174,7 @@ void main() {
 
         if (changed) {
           receivedStates.add(_CapturedState.fromLive(state));
+          lastUpdateTime = DateTime.now();
 
           final prefix = state.inningsNumber != lastInnings
               ? '** INNINGS ${state.inningsNumber} **'
@@ -196,6 +198,23 @@ void main() {
           lastOvers = state.oversDisplay;
           lastInnings = state.inningsNumber;
           lastMatchComplete = matchDone;
+        }
+
+        // Staleness guard: if no updates for 15s and we have enough states,
+        // check once more for match completion and break
+        final staleDuration = DateTime.now().difference(lastUpdateTime);
+        if (staleDuration.inSeconds > 15 && receivedStates.length >= 8) {
+          // Re-read state one final time (match_state reconciliation may have arrived)
+          state = container.read(matchLiveNotifierProvider);
+          final finalDone = state.isMatchComplete || state.status == 'completed';
+          if (finalDone) {
+            lastMatchComplete = true;
+            receivedStates.add(_CapturedState.fromLive(state));
+            print('[VIEWER] Match complete detected after ${staleDuration.inSeconds}s stale period');
+          } else {
+            print('[VIEWER] No updates for ${staleDuration.inSeconds}s with ${receivedStates.length} states — breaking');
+          }
+          break;
         }
       }
 
