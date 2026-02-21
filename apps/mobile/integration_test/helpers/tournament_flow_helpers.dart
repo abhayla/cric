@@ -620,6 +620,7 @@ Future<void> completeTossWizard(
   required String battingOpener2,
   required String openingBowler,
   int? playersPerSide,
+  bool chooseBat = true,
 }) async {
   // Step 1: "Who won the toss?" → tap team card
   await settle(tester);
@@ -633,11 +634,12 @@ Future<void> completeTossWizard(
   }
   await _tapNextButton(tester);
 
-  // Step 2: Toss decision → tap "Bat"
-  print('    [toss] Step 2: Choosing to Bat');
-  final batOption = find.text('Bat');
-  if (batOption.evaluate().isNotEmpty) {
-    await tester.tap(batOption.first);
+  // Step 2: Toss decision → tap "Bat" or "Field"
+  final choice = chooseBat ? 'Bat' : 'Field';
+  print('    [toss] Step 2: Choosing to $choice');
+  final choiceOption = find.text(choice);
+  if (choiceOption.evaluate().isNotEmpty) {
+    await tester.tap(choiceOption.first);
     await tester.pump();
   }
   await _tapNextButton(tester);

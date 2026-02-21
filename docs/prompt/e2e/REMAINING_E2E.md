@@ -15,10 +15,12 @@ This prompt runs **5 E2E test suites** in sequence. Each is an **AUTOMATED integ
 | 3 | Persistence Recovery | `persistence_e2e_test.dart` | 16 | 5554 only | ~10-15 min |
 | 4 | Multi-Device Live | `multi_device_scorer_e2e_test.dart` + `multi_device_viewer_e2e_test.dart` | 18, 19 | 5554 + 5556 | ~15-25 min |
 | 5 | Player Profile | `player_profile_e2e_test.dart` | 20 | 5554 only | ~20-30 min |
+| 6 | Scoring Extras | `scoring_extras_e2e_test.dart` | 23, 28, 11 | 5554 only | ~25-35 min |
+| 7 | Match Flow Variations | `match_flow_variations_e2e_test.dart` | 29, 7, 27 | 5554 only | ~20-30 min |
 
-**Tournament E2E** (`tournament_e2e_test.dart`, scenarios 41/47/50, ~2-3 hours) is excluded by default due to its long runtime. Add it as Test #6 if the user explicitly requests it.
+**Tournament E2E** (`tournament_e2e_test.dart`, scenarios 41/47/50, ~2-3 hours) is excluded by default due to its long runtime. Add it as Test #8 if the user explicitly requests it.
 
-**Total estimated runtime: ~80-120 minutes** (excluding tournament).
+**Total estimated runtime: ~120-180 minutes** (excluding tournament).
 
 ---
 
@@ -249,9 +251,62 @@ Bash tool: cd D:/Abhay/VibeCoding/cric/apps/mobile && flutter test integration_t
 
 ---
 
-## TEST 6 (OPTIONAL): Tournament E2E
+## TEST 6: Scoring Extras E2E
+
+**What it does:** Three test cases:
+1. **Scenario 23 — Bye/Leg-Bye Scoring:** Tests byes and leg-byes with various run values, verifies innings totals and maiden detection
+2. **Scenario 28 — Strike Rotation:** Tests striker swap on odd/even runs, end-of-over swap, bye/LB rotation
+3. **Scenario 11 — Maiden Over:** Scores a maiden over (6 dots), verifies isMaiden flag and bowler stats
+
+**Pre-test reset:**
+```bash
+curl -s -X DELETE http://localhost:3001/api/v1/test/signals
+curl -s -X POST http://localhost:3001/api/v1/test/reset-match-data
+```
+
+**Run command (background, 10 min timeout):**
+```
+Bash tool: cd D:/Abhay/VibeCoding/cric/apps/mobile && flutter test integration_test/scoring_extras_e2e_test.dart -d emulator-5554
+  - run_in_background: true
+  - timeout: 600000
+```
+
+**Expected output:** All 3 scenarios pass. Byes/LBs correctly tracked. Maiden over detected. Strike rotation correct.
+
+**After completion:** Report result, then proceed to Test 7.
+
+---
+
+## TEST 7: Match Flow Variations E2E
+
+**What it does:** Three test cases:
+1. **Scenario 29 — Bowl-First:** Toss winner chooses to field, verifies innings team assignments are swapped
+2. **Scenario 7 — Tied Match:** Both innings score exactly 15 runs, verifies resultType='tied'
+3. **Scenario 27 — Bowler Eligibility:** Verifies consecutive-over rule and max overs enforcement in UI
+
+**Pre-test reset:**
+```bash
+curl -s -X DELETE http://localhost:3001/api/v1/test/signals
+curl -s -X POST http://localhost:3001/api/v1/test/reset-match-data
+```
+
+**Run command (background, 10 min timeout):**
+```
+Bash tool: cd D:/Abhay/VibeCoding/cric/apps/mobile && flutter test integration_test/match_flow_variations_e2e_test.dart -d emulator-5554
+  - run_in_background: true
+  - timeout: 600000
+```
+
+**Expected output:** All 3 scenarios pass. Bowl-first innings correct. Tied match detected. Bowler eligibility enforced.
+
+**After completion:** Report result.
+
+---
+
+## TEST 8 (OPTIONAL): Tournament E2E
 
 **Only run if the user explicitly requests it.** This test takes ~2-3 hours.
+(Previously Test #6, renumbered to #8 after adding Scoring Extras and Match Flow Variations.)
 
 **What it does:**
 - Creates 16 teams (6 players each) via server API
@@ -296,9 +351,11 @@ After all tests complete (or if any test fails), present a consolidated report:
 | 3 | Persistence Recovery  | PASS/FAIL | Xm Ys  |       |
 | 4 | Multi-Device Live     | PASS/FAIL | Xm Ys  |       |
 | 5 | Player Profile        | PASS/FAIL | Xm Ys  |       |
-| 6 | Tournament (optional) | PASS/FAIL/SKIPPED | Xm Ys |  |
+| 6 | Scoring Extras        | PASS/FAIL | Xm Ys  |       |
+| 7 | Match Flow Variations | PASS/FAIL | Xm Ys  |       |
+| 8 | Tournament (optional) | PASS/FAIL/SKIPPED | Xm Ys |  |
 
-Total: X/5 PASSED (or X/6 if tournament included)
+Total: X/7 PASSED (or X/8 if tournament included)
 Total runtime: ~XX minutes
 ```
 
@@ -354,6 +411,8 @@ Total runtime: ~XX minutes
 | `integration_test/multi_device_scorer_e2e_test.dart` | Multi-device scorer (emulator-5554) |
 | `integration_test/multi_device_viewer_e2e_test.dart` | Multi-device viewer (emulator-5556) |
 | `integration_test/player_profile_e2e_test.dart` | Career stats across matches |
+| `integration_test/scoring_extras_e2e_test.dart` | Byes, leg-byes, strike rotation, maiden |
+| `integration_test/match_flow_variations_e2e_test.dart` | Bowl-first, tied match, bowler eligibility |
 | `integration_test/tournament_e2e_test.dart` | Full tournament lifecycle |
 | **Helpers** | |
 | `integration_test/helpers/match_flow_helpers.dart` | `tapRun`, `tapExtra`, `tapWicket`, `selectBowler`, `selectBatter` |
@@ -376,6 +435,10 @@ All under `GET/POST /api/v1/test/...` — only available when `NODE_ENV=test`:
 | `/deliveries/:matchId` | GET | All deliveries for a match |
 | `/match-stats/:matchId` | GET | Batting + bowling stats |
 | `/match-result/:matchId` | GET | Result type, winner, margin, MOTM |
+| `/overs/:matchId` | GET | All overs with maiden flag |
+| `/innings-detail/:matchId` | GET | Innings totals (byes, LBs, extras) |
+| `/fielding-stats/:matchId` | GET | Catches, run outs, stumpings |
+| `/fall-of-wickets/:matchId` | GET | Fall of wickets records |
 | `/signal/:name` | GET/POST | Coordination signals |
 | `/signals` | DELETE | Clear all signals |
 | `/reset-db` | POST | Truncate ALL tables + re-seed |

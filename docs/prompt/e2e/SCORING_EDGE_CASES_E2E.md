@@ -64,33 +64,46 @@ tapExtra('NB') → confirmExtra → tapRun(4) → tapExtra('NB') → confirmExtr
 
 ---
 
-## Test 2: Scenario 22 — All Dismissal Types
+## Test 2: Scenario 22 — All Dismissal Types (9 types)
 
 ### Delivery Sequence
-Score runs between wickets to keep the match going, then take wickets with different dismissal types:
+Take wickets with all 9 dismissal types across 3 overs:
 
-| Wicket | Type | UI Flow |
-|--------|------|---------|
-| 1 | Bowled | tapWicket → selectDismissalType('Bowled') → tapWicketConfirm |
-| 2 | Caught | tapWicket → selectDismissalType('Caught') → [select fielder] → tapWicketConfirm |
-| 3 | LBW | tapWicket → selectDismissalType('LBW') → tapWicketConfirm |
-| 4 | Run Out | tapWicket → selectDismissalType('Run Out') → [select fielder] → tapWicketConfirm |
-| 5 | Stumped | tapWicket → selectDismissalType('Stumped') → [select fielder] → tapWicketConfirm |
+**Over 1 (5 wickets):**
+| Wicket | Type | UI Flow | Fielder? |
+|--------|------|---------|----------|
+| 1 | Bowled | tapWicket → selectDismissalType('Bowled') → tapWicketConfirm | No |
+| 2 | Caught | tapWicket → selectDismissalType('Caught') → [fielder] → tapWicketConfirm | Shubman Gill |
+| 3 | LBW | tapWicket → selectDismissalType('LBW') → tapWicketConfirm | No |
+| 4 | Run Out | tapWicket → selectDismissalType('Run Out') → [fielder] → tapWicketConfirm | Yashasvi Jaiswal |
+| 5 | Stumped | tapWicket → selectDismissalType('Stumped') → [fielder] → tapWicketConfirm | Ishan Kishan |
+| - | dot | Complete the over | - |
 
-### Fielders Used (from Team B)
-- Caught fielder: Shubman Gill
-- Run Out fielder: Yashasvi Jaiswal
-- Stumped fielder: Ishan Kishan (WK)
+**Over 2 (4 more dismissals):**
+| Wicket | Type | UI Flow | Notes |
+|--------|------|---------|-------|
+| - | dot | Gap before wicket | - |
+| 6 | Hit Wicket | tapWicket → selectDismissalType('Hit Wicket') → tapWicketConfirm | Bowler credited |
+| - | dot | Gap | - |
+| 7 | C & B | tapWicket → selectDismissalType('C & B') → tapWicketConfirm | Bowler = fielder |
+| - | dot | Gap | - |
+| 8 | Ret. Hurt | tapWicket → selectDismissalType('Ret. Hurt') → tapWicketConfirm | NOT a wicket |
+| 9 | Ret. Out | tapWicket → selectDismissalType('Ret. Out') → tapWicketConfirm | Counts as wicket |
 
 ### Next Batters (in order)
 After Rohit Sharma and Virat Kohli (openers):
-1. Suryakumar Yadav → 2. KL Rahul → 3. Hardik Pandya → 4. Ravindra Jadeja → 5. Axar Patel → etc.
+1. Suryakumar Yadav → 2. KL Rahul → 3. Hardik Pandya → 4. Ravindra Jadeja → 5. Axar Patel → 6. Jasprit Bumrah → 7. Mohammed Shami → 8. Yuzvendra Chahal → 9. Rishabh Pant
 
 ### Verifications
-- Each wicket delivery has correct dismissal type in DB
-- Bowler gets wicket credit for Bowled, Caught, LBW, Stumped
+- 8 wicket deliveries in DB (Ret. Hurt does NOT produce `isWicket=true`)
+- Bowler gets wicket credit for Bowled, Caught, LBW, Stumped, Hit Wicket, C&B
 - Fielder recorded for Caught, Run Out, Stumped
-- Run Out doesn't credit the bowler with a wicket
+- Run Out doesn't credit the bowler
+- **Fielding stats verification:**
+  - Shubman Gill: catches >= 1
+  - Yashasvi Jaiswal: runOuts >= 1
+  - Ishan Kishan: stumpings >= 1
+- **Fall of wickets:** All wickets fell at 0 runs (all dots)
 
 ---
 

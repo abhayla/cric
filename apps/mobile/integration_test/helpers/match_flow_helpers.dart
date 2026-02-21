@@ -132,6 +132,21 @@ Future<void> confirmExtra(WidgetTester tester) async {
   await visualPause(tester);
 }
 
+/// Confirm extras panel with a specific run value (tap the run chip first).
+Future<void> confirmExtraWithRuns(WidgetTester tester, int runs) async {
+  await settle(tester);
+  // Tap the run chip inside ExtrasPanel
+  final runChip = find.descendant(
+    of: find.byType(ExtrasPanel),
+    matching: find.text('$runs'),
+  );
+  if (runChip.evaluate().isNotEmpty) {
+    await tester.tap(runChip.first);
+    await tester.pumpAndSettle();
+  }
+  await confirmExtra(tester);
+}
+
 /// Tap the wicket (W) button.
 Future<void> tapWicket(WidgetTester tester) async {
   await _ensureScoringControlsAccessible(tester);

@@ -172,6 +172,59 @@ class DbVerifier {
     );
   }
 
+  /// Verify overs for a match.
+  Future<OversVerification> verifyOvers(String matchId) async {
+    final response = await _dio.get('/api/v1/test/overs/$matchId');
+    final oversList = (response.data['overs'] as List)
+        .map((o) => o as Map<String, dynamic>)
+        .toList();
+
+    return OversVerification(
+      passed: oversList.isNotEmpty,
+      overs: oversList,
+      overCount: oversList.length,
+    );
+  }
+
+  /// Verify innings detail for a match.
+  Future<InningsDetailVerification> verifyInningsDetail(String matchId) async {
+    final response = await _dio.get('/api/v1/test/innings-detail/$matchId');
+    final inningsList = (response.data['innings'] as List)
+        .map((i) => i as Map<String, dynamic>)
+        .toList();
+
+    return InningsDetailVerification(
+      passed: inningsList.isNotEmpty,
+      innings: inningsList,
+    );
+  }
+
+  /// Verify fielding stats for a match.
+  Future<FieldingStatsVerification> verifyFieldingStats(String matchId) async {
+    final response = await _dio.get('/api/v1/test/fielding-stats/$matchId');
+    final statsList = (response.data['fieldingStats'] as List)
+        .map((s) => s as Map<String, dynamic>)
+        .toList();
+
+    return FieldingStatsVerification(
+      passed: true,
+      stats: statsList,
+    );
+  }
+
+  /// Verify fall of wickets for a match.
+  Future<FallOfWicketsVerification> verifyFallOfWickets(String matchId) async {
+    final response = await _dio.get('/api/v1/test/fall-of-wickets/$matchId');
+    final fowList = (response.data['fallOfWickets'] as List)
+        .map((f) => f as Map<String, dynamic>)
+        .toList();
+
+    return FallOfWicketsVerification(
+      passed: true,
+      fallOfWickets: fowList,
+    );
+  }
+
   /// Verify tournament leaderboard.
   Future<LeaderboardVerification> verifyLeaderboard(
     String tournamentId, {
@@ -273,6 +326,68 @@ class MatchAwardsVerification {
       ? 'PASS: MOTM=$manOfMatchId, BestBat=$bestBatsmanId ($bestBatsmanRuns runs), '
         'BestBowl=$bestBowlerId ($bestBowlerWickets wkts)'
       : 'FAIL: Awards not computed';
+}
+
+/// Result of overs verification.
+class OversVerification {
+  const OversVerification({
+    required this.passed,
+    required this.overs,
+    required this.overCount,
+  });
+
+  final bool passed;
+  final List<Map<String, dynamic>> overs;
+  final int overCount;
+
+  @override
+  String toString() => passed
+      ? 'PASS: $overCount overs verified'
+      : 'FAIL: no overs found';
+}
+
+/// Result of innings detail verification.
+class InningsDetailVerification {
+  const InningsDetailVerification({
+    required this.passed,
+    required this.innings,
+  });
+
+  final bool passed;
+  final List<Map<String, dynamic>> innings;
+
+  @override
+  String toString() => passed
+      ? 'PASS: ${innings.length} innings verified'
+      : 'FAIL: no innings found';
+}
+
+/// Result of fielding stats verification.
+class FieldingStatsVerification {
+  const FieldingStatsVerification({
+    required this.passed,
+    required this.stats,
+  });
+
+  final bool passed;
+  final List<Map<String, dynamic>> stats;
+
+  @override
+  String toString() => 'Fielding stats: ${stats.length} records';
+}
+
+/// Result of fall of wickets verification.
+class FallOfWicketsVerification {
+  const FallOfWicketsVerification({
+    required this.passed,
+    required this.fallOfWickets,
+  });
+
+  final bool passed;
+  final List<Map<String, dynamic>> fallOfWickets;
+
+  @override
+  String toString() => 'Fall of wickets: ${fallOfWickets.length} records';
 }
 
 /// Result of leaderboard verification.

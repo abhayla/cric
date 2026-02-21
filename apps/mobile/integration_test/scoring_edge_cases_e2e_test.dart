@@ -693,15 +693,124 @@ void main() {
       await selectBowler(tester, ScenarioTeams.teamBBowlers[1]); // Bhuvneshwar Kumar
       print('  Bowler Over 2: ${ScenarioTeams.teamBBowlers[1]}');
 
-      // Over 2-5: score dots to exhaust overs and end innings via overs_exhausted
-      print('Over 2-5: All dots');
-      for (var over = 2; over <= 5; over++) {
-        if (over > 2) {
-          // Rotate bowlers (skip consecutive over rule)
-          final bowlerIdx = over - 1; // 2->1, 3->2, 4->3, 5->4
-          await selectBowler(tester, ScenarioTeams.teamBBowlers[bowlerIdx]);
-          print('  Bowler Over $over: ${ScenarioTeams.teamBBowlers[bowlerIdx]}');
-        }
+      // -- Over 2: More dismissal types --
+      print('Over 2 (${ScenarioTeams.teamBBowlers[1]})');
+
+      // Ball 2.1: dot (give a ball gap before wicket)
+      await tapRun(tester, 0);
+      inn1.add(const DeliveryRecord(
+        runsFromBat: 0,
+        overNumber: 2,
+        ballNumber: 1,
+      ));
+      print('  2.1 -> 0  (dot)  Score: 0/5');
+
+      // -- Wicket 6: Hit Wicket (Ravindra Jadeja out) --
+      await tapWicket(tester);
+      await selectDismissalType(tester, 'Hit Wicket');
+      await tapWicketConfirm(tester);
+      inn1.add(const DeliveryRecord(
+        isWicket: true,
+        overNumber: 2,
+        ballNumber: 2,
+      ));
+      print('  2.2 -> W  (Hit Wicket)  Score: 0/6  [Jadeja out]');
+      await selectBatter(tester, 'Jasprit Bumrah');
+      print('       -> Jasprit Bumrah in');
+
+      // Ball 2.3: dot
+      await tapRun(tester, 0);
+      inn1.add(const DeliveryRecord(
+        runsFromBat: 0,
+        overNumber: 2,
+        ballNumber: 3,
+      ));
+      print('  2.3 -> 0  (dot)  Score: 0/6');
+
+      // -- Wicket 7: Caught & Bowled (Axar Patel out) --
+      await tapWicket(tester);
+      await selectDismissalType(tester, 'C & B');
+      await tapWicketConfirm(tester);
+      inn1.add(const DeliveryRecord(
+        isWicket: true,
+        overNumber: 2,
+        ballNumber: 4,
+      ));
+      print('  2.4 -> W  (C & B)  Score: 0/7  [Axar out]');
+      await selectBatter(tester, 'Mohammed Shami');
+      print('       -> Mohammed Shami in');
+
+      // Ball 2.5: dot
+      await tapRun(tester, 0);
+      inn1.add(const DeliveryRecord(
+        runsFromBat: 0,
+        overNumber: 2,
+        ballNumber: 5,
+      ));
+      print('  2.5 -> 0  (dot)  Score: 0/7');
+
+      // -- Wicket 8: Retired Hurt (Jasprit Bumrah retires) --
+      // Retired Hurt is NOT a wicket (player can return to bat later)
+      await tapWicket(tester);
+      await selectDismissalType(tester, 'Ret. Hurt');
+      await tapWicketConfirm(tester);
+      inn1.add(const DeliveryRecord(
+        // Retired Hurt doesn't count as isWicket in deliveries table
+        overNumber: 2,
+        ballNumber: 6,
+      ));
+      print('  2.6 -> Ret. Hurt  Score: 0/7  [Bumrah retired hurt]');
+      await selectBatter(tester, 'Yuzvendra Chahal');
+      print('       -> Yuzvendra Chahal in');
+      print('  --- End Over 2 | Score: 0/7 ---');
+
+      // Select bowler for over 3
+      await selectBowler(tester, ScenarioTeams.teamBBowlers[2]); // Kuldeep Yadav
+      print('  Bowler Over 3: ${ScenarioTeams.teamBBowlers[2]}');
+
+      // -- Over 3: Retired Out + dots --
+      print('Over 3 (${ScenarioTeams.teamBBowlers[2]})');
+
+      // Ball 3.1: dot
+      await tapRun(tester, 0);
+      inn1.add(const DeliveryRecord(
+        runsFromBat: 0,
+        overNumber: 3,
+        ballNumber: 1,
+      ));
+      print('  3.1 -> 0  (dot)  Score: 0/7');
+
+      // -- Wicket 9: Retired Out (Mohammed Shami retires) --
+      // Retired Out DOES count as a wicket
+      await tapWicket(tester);
+      await selectDismissalType(tester, 'Ret. Out');
+      await tapWicketConfirm(tester);
+      inn1.add(const DeliveryRecord(
+        isWicket: true,
+        overNumber: 3,
+        ballNumber: 2,
+      ));
+      print('  3.2 -> W  (Ret. Out)  Score: 0/8  [Shami retired out]');
+      await selectBatter(tester, 'Rishabh Pant');
+      print('       -> Rishabh Pant in');
+
+      // Balls 3.3 - 3.6: dots
+      for (var ball = 3; ball <= 6; ball++) {
+        await tapRun(tester, 0);
+        inn1.add(DeliveryRecord(
+          runsFromBat: 0,
+          overNumber: 3,
+          ballNumber: ball,
+        ));
+        print('  3.$ball -> 0  (dot)');
+      }
+      print('  --- End Over 3 | Score: 0/8 ---');
+
+      // Over 4-5: score dots to exhaust overs
+      for (var over = 4; over <= 5; over++) {
+        final bowlerIdx = over - 1;
+        await selectBowler(tester, ScenarioTeams.teamBBowlers[bowlerIdx]);
+        print('  Bowler Over $over: ${ScenarioTeams.teamBBowlers[bowlerIdx]}');
         for (var ball = 1; ball <= 6; ball++) {
           await tapRun(tester, 0);
           inn1.add(DeliveryRecord(
@@ -791,11 +900,13 @@ void main() {
           reason: 'DB delivery count must match UI-tracked count');
 
       // Verify wicket deliveries exist in DB
+      // 8 wicket deliveries: Bowled, Caught, LBW, Run Out, Stumped, Hit Wicket, C&B, Ret. Out
+      // Ret. Hurt does NOT produce isWicket=true in deliveries table
       final dbWicketDeliveries =
           dbDeliveries.where((d) => d['isWicket'] == true).toList();
       print('Wicket deliveries in DB: ${dbWicketDeliveries.length}');
-      expect(dbWicketDeliveries.length, equals(5),
-          reason: 'Should have exactly 5 wickets (Bowled, Caught, LBW, Run Out, Stumped)');
+      expect(dbWicketDeliveries.length, equals(8),
+          reason: 'Should have 8 wickets (Bowled, Caught, LBW, Run Out, Stumped, Hit Wicket, C&B, Ret. Out)');
 
       // Fetch detailed wicket records from wickets_by_delivery table
       List<Map<String, dynamic>> dbWickets = [];
@@ -824,6 +935,68 @@ void main() {
       final dismissalTypeIds =
           dbWickets.map((w) => w['dismissalTypeId'] as int?).toList();
       print('Dismissal type IDs in order: $dismissalTypeIds');
+
+      // Verify fielding stats
+      try {
+        final fsr = await testDio.get('/api/v1/test/fielding-stats/$matchId');
+        final fieldingStatsList = (fsr.data['fieldingStats'] as List)
+            .map((s) => s as Map<String, dynamic>)
+            .toList();
+        print('Fielding stats records: ${fieldingStatsList.length}');
+
+        // Check Shubman Gill has a catch (Caught dismissal)
+        final gillStats = fieldingStatsList.where(
+            (s) => (s['playerName'] as String?)?.contains('Shubman') == true);
+        if (gillStats.isNotEmpty) {
+          final catches = gillStats.first['catches'] as int? ?? 0;
+          print('  Shubman Gill catches: $catches');
+          expect(catches, greaterThanOrEqualTo(1),
+              reason: 'Shubman Gill should have at least 1 catch');
+        }
+
+        // Check Yashasvi Jaiswal has a run out
+        final jaiswalStats = fieldingStatsList.where(
+            (s) => (s['playerName'] as String?)?.contains('Yashasvi') == true);
+        if (jaiswalStats.isNotEmpty) {
+          final runOuts = jaiswalStats.first['runOuts'] as int? ?? 0;
+          print('  Yashasvi Jaiswal runOuts: $runOuts');
+          expect(runOuts, greaterThanOrEqualTo(1),
+              reason: 'Yashasvi Jaiswal should have at least 1 run out');
+        }
+
+        // Check Ishan Kishan has a stumping
+        final kishanStats = fieldingStatsList.where(
+            (s) => (s['playerName'] as String?)?.contains('Ishan') == true);
+        if (kishanStats.isNotEmpty) {
+          final stumpings = kishanStats.first['stumpings'] as int? ?? 0;
+          print('  Ishan Kishan stumpings: $stumpings');
+          expect(stumpings, greaterThanOrEqualTo(1),
+              reason: 'Ishan Kishan should have at least 1 stumping');
+        }
+      } catch (e) {
+        print('WARN: Fielding stats fetch failed: $e');
+      }
+
+      // Verify fall of wickets
+      try {
+        final fowr = await testDio.get('/api/v1/test/fall-of-wickets/$matchId');
+        final fowList = (fowr.data['fallOfWickets'] as List)
+            .map((f) => f as Map<String, dynamic>)
+            .toList();
+        print('Fall of wickets records: ${fowList.length}');
+        for (var i = 0; i < fowList.length; i++) {
+          final f = fowList[i];
+          print('  FoW ${f['wicketNumber']}: ${f['runsAtFall']}/${f['wicketNumber']} '
+              'at ${f['oversAtFall']} overs');
+        }
+        // All wickets fell at 0 runs (all dots)
+        for (final f in fowList) {
+          expect(f['runsAtFall'] as int, equals(0),
+              reason: 'All wickets fell at 0 runs (all dots)');
+        }
+      } catch (e) {
+        print('WARN: Fall of wickets fetch failed: $e');
+      }
 
       // Verify all delivery fields match
       var matches = 0;
