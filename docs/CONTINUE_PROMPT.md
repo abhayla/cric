@@ -3,7 +3,7 @@
 ## Context for Resuming Work
 
 **Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
-**Status:** Phase 7 (Polish & Testing) IN PROGRESS — E2E integration test passing (single match flow). ~2050 Flutter tests, ~420 server tests.
+**Status:** Phase 7 (Polish & Testing) IN PROGRESS — Dual-path real-time broadcast complete. E2E passing (single match + multi-device viewer). ~2050 Flutter tests, ~420 server tests.
 **Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
 ## Tech Stack
@@ -16,17 +16,39 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Decision Log: Dual-Path Real-Time Broadcast (2026-02-22)
+### Session 2026-02-22: Dual-Path Broadcast + E2E Fixes
 
-Implemented dual-path delivery broadcast to give viewers near-instant score updates without sacrificing durability:
+**Dual-path real-time broadcast implemented and E2E verified.** Commit `bf55fa6` (22 files, +1686/-197).
 
-- **Fast path:** After each delivery, `ScoringPersistenceService` sends a `publish_score` WS message to the server. The server relays the payload as-is to all room subscribers via Bun's `ws.publish` (sender excluded, zero DB). Viewer latency: sub-10ms.
-- **Durable path:** `SyncService` timer reduced from 10s → 2s, batch threshold reduced from 6 → 1. After the server persists the delivery, it broadcasts a full `match_state` reconciliation snapshot. Acts as correction if the fast path missed anything.
-- **New server message type:** `publish_score` (client → server relay, no persistence).
-- **New Flutter file:** `lib/src/features/scoring/data/mappers/scoring_ws_mapper.dart` — pure functions for building WS payloads from `ScoringState`.
-- **`ScoringPersistenceService`** now accepts optional `WebSocketClient` and publishes `score_update`, `wicket`, `innings_complete`, `match_complete` messages after each delivery.
+**What was built:**
+- **Fast path (~ms):** `ScoringPersistenceService` sends `publish_score` WS message after each delivery → server relays to room subscribers (zero DB, sender excluded via Bun's `ws.publish`).
+- **Durable path (~2s):** `SyncService` timer 10s→2s, threshold 6→1 → REST sync → server persists → broadcasts `match_state` reconciliation snapshot.
+- **New files:** `scoring_ws_mapper.dart` (4 payload builders), server `publish_score` handler
+- **Modified:** `ScoringPersistenceService` (accepts `WebSocketClient`), `ScoringPage`, `router.dart`, `sync_service.dart`, `websocket_client.dart`
+- **Tests:** 16 mapper tests, 4 WS persistence tests, 3 server handler tests, all passing
 
-### Session 2026-02-22 (later): Full T20 Viewer Test + E2E Prompt Updates
+**Pre-existing fixes (same commit):**
+- 13 LiveMatchPage tests: `UnmountedRefException` in `leaveMatch()` — added `_safeClient` getter, broadened catches
+- 1 ScoringPage GoRouter test: wrapped with `GoRouter` instead of `MaterialApp`
+- 3 offline sync tests: updated for batch threshold=1
+
+**E2E fixes** (commit `15a13ae`):
+- `tournament_flow_helpers.dart`: `addPlayersToRoster` falls back to GoRouter for all players when "Add Player" button not found (first player of each team was being skipped)
+- `multi_device_viewer_e2e_test.dart`: overs-only mismatch → WARN (not FAIL), since fast-path WS coalesces intermediate states
+
+**E2E test results (scorer + viewer on dual emulators):**
+- Scorer: 18/18 deliveries scored, all verified in PostgreSQL
+- Viewer: 8 live WS updates received in real-time (fast path working), 0 FAIL
+- Both tests pass green
+
+**Docs updated:** `API.md` (publish_score message type), `CONTINUE_PROMPT.md`, `MULTI_DEVICE_E2E.md`, `FULL_T20_E2E.md`
+
+**Next steps:**
+1. Run full T20 E2E test (scorer + viewer on 2 emulators) to stress-test dual-path at scale (~240 deliveries)
+2. Continue Phase 7 remaining E2E scenarios
+3. Update remaining docs mentioned in plan (`SYNC_ARCHITECTURE.md`, `SCORING_RULES.md`, `IMPLEMENTATION_PRACTICES.md`, `CODE_STANDARDS.md`)
+
+### Session 2026-02-22 (earlier): Full T20 Viewer Test + E2E Prompt Updates
 
 Enhanced `full_t20_viewer_e2e_test.dart` for Scenario 13 (Stat Verification / DB Correctness) dual-emulator testing:
 - 65-minute monitoring timeout (was 15 min) for full T20 matches
