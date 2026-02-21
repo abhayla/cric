@@ -252,7 +252,9 @@ void main() {
       );
       await tester.pump();
 
-      // Tap Add to Team button
+      // Tap Add to Team button (scroll into view since it's inside ScrollView)
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Add to Team'));
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Add to Team'));
       await tester.pump();
 

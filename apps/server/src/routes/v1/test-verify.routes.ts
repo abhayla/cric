@@ -1,11 +1,11 @@
 import { Elysia } from 'elysia';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '../../db/index.ts';
-import { deliveries, wicketsByDelivery } from '../../db/schema/deliveries.ts';
-import { innings } from '../../db/schema/innings.ts';
+import { deliveries, wicketsByDelivery, fallOfWickets } from '../../db/schema/deliveries.ts';
+import { innings, overs } from '../../db/schema/innings.ts';
 import { matches, matchResult, matchAnalytics } from '../../db/schema/matches.ts';
 import { tournamentStandings } from '../../db/schema/tournaments.ts';
-import { battingStats, bowlingStats } from '../../db/schema/stats.ts';
+import { battingStats, bowlingStats, fieldingStats } from '../../db/schema/stats.ts';
 import { users } from '../../db/schema/users.ts';
 
 
@@ -112,13 +112,18 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
   })
 
   // GET /api/v1/test/standings/:tournamentId — raw standings
-  .get('/standings/:tournamentId', async ({ params }) => {
-    const standings = await db
-      .select()
-      .from(tournamentStandings)
-      .where(eq(tournamentStandings.tournamentId, params.tournamentId));
+  .get('/standings/:tournamentId', async ({ params, set }) => {
+    try {
+      const standings = await db
+        .select()
+        .from(tournamentStandings)
+        .where(eq(tournamentStandings.tournamentId, params.tournamentId));
 
-    return { standings };
+      return { standings: standings ?? [] };
+    } catch (e: any) {
+      set.status = 500;
+      return { error: e.message, standings: [] };
+    }
   })
 
   // GET /api/v1/test/match-result/:matchId — match result
@@ -133,69 +138,79 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
   })
 
   // GET /api/v1/test/leaderboard/:tournamentId?category=runs|wickets
-  .get('/leaderboard/:tournamentId', async ({ params, query }) => {
-    const category = (query as any)?.category ?? 'runs';
-    const tournamentId = params.tournamentId;
+  .get('/leaderboard/:tournamentId', async ({ params, query, set }) => {
+    try {
+      const category = (query as any)?.category ?? 'runs';
+      const tournamentId = params.tournamentId;
 
-    if (category === 'runs') {
-      const result = await db
-        .select({
-          playerId: battingStats.playerId,
-          playerName: users.displayName,
-          totalRuns: sql<number>`SUM(${battingStats.runsScored})`,
-        })
-        .from(battingStats)
-        .innerJoin(innings, eq(battingStats.inningsId, innings.id))
-        .innerJoin(matches, eq(innings.matchId, matches.id))
-        .innerJoin(users, eq(battingStats.playerId, users.id))
-        .where(eq(matches.tournamentId, tournamentId))
-        .groupBy(battingStats.playerId, users.displayName)
-        .orderBy(sql`SUM(${battingStats.runsScored}) DESC`)
-        .limit(10);
+      if (category === 'runs') {
+        const result = await db
+          .select({
+            playerId: battingStats.playerId,
+            playerName: users.displayName,
+            totalRuns: sql<number>`SUM(${battingStats.runsScored})`,
+          })
+          .from(battingStats)
+          .innerJoin(innings, eq(battingStats.inningsId, innings.id))
+          .innerJoin(matches, eq(innings.matchId, matches.id))
+          .innerJoin(users, eq(battingStats.playerId, users.id))
+          .where(eq(matches.tournamentId, tournamentId))
+          .groupBy(battingStats.playerId, users.displayName)
+          .orderBy(sql`SUM(${battingStats.runsScored}) DESC`)
+          .limit(10);
 
-      return { category, leaderboard: result };
+        return { category, leaderboard: result ?? [] };
+      }
+
+      if (category === 'wickets') {
+        const result = await db
+          .select({
+            playerId: bowlingStats.playerId,
+            playerName: users.displayName,
+            totalWickets: sql<number>`SUM(${bowlingStats.wicketsTaken})`,
+          })
+          .from(bowlingStats)
+          .innerJoin(innings, eq(bowlingStats.inningsId, innings.id))
+          .innerJoin(matches, eq(innings.matchId, matches.id))
+          .innerJoin(users, eq(bowlingStats.playerId, users.id))
+          .where(eq(matches.tournamentId, tournamentId))
+          .groupBy(bowlingStats.playerId, users.displayName)
+          .orderBy(sql`SUM(${bowlingStats.wicketsTaken}) DESC`)
+          .limit(10);
+
+        return { category, leaderboard: result ?? [] };
+      }
+
+      return { category, leaderboard: [] };
+    } catch (e: any) {
+      set.status = 500;
+      return { error: e.message, leaderboard: [] };
     }
-
-    if (category === 'wickets') {
-      const result = await db
-        .select({
-          playerId: bowlingStats.playerId,
-          playerName: users.displayName,
-          totalWickets: sql<number>`SUM(${bowlingStats.wicketsTaken})`,
-        })
-        .from(bowlingStats)
-        .innerJoin(innings, eq(bowlingStats.inningsId, innings.id))
-        .innerJoin(matches, eq(innings.matchId, matches.id))
-        .innerJoin(users, eq(bowlingStats.playerId, users.id))
-        .where(eq(matches.tournamentId, tournamentId))
-        .groupBy(bowlingStats.playerId, users.displayName)
-        .orderBy(sql`SUM(${bowlingStats.wicketsTaken}) DESC`)
-        .limit(10);
-
-      return { category, leaderboard: result };
-    }
-
-    return { category, leaderboard: [] };
   })
 
   // GET /api/v1/test/match-awards/:matchId — match awards (MOTM, best batsman, best bowler)
-  .get('/match-awards/:matchId', async ({ params }) => {
-    const [result] = await db
-      .select()
-      .from(matchResult)
-      .where(eq(matchResult.matchId, params.matchId))
-      .limit(1);
+  .get('/match-awards/:matchId', async ({ params, set }) => {
+    try {
+      const [result] = await db
+        .select()
+        .from(matchResult)
+        .where(eq(matchResult.matchId, params.matchId))
+        .limit(1);
 
-    const [analytics] = await db
-      .select()
-      .from(matchAnalytics)
-      .where(eq(matchAnalytics.matchId, params.matchId))
-      .limit(1);
+      const [analytics] = await db
+        .select()
+        .from(matchAnalytics)
+        .where(eq(matchAnalytics.matchId, params.matchId))
+        .limit(1);
 
-    return {
-      manOfMatchId: result?.manOfMatchId ?? null,
-      awards: analytics?.mvpScores ?? null,
-    };
+      return {
+        manOfMatchId: result?.manOfMatchId ?? null,
+        awards: analytics?.mvpScores ?? null,
+      };
+    } catch (e: any) {
+      set.status = 500;
+      return { error: e.message, manOfMatchId: null, awards: null };
+    }
   })
 
   // GET /api/v1/test/match-stats/:matchId — batting + bowling stats per innings
@@ -252,6 +267,138 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
     return {
       batting: batting.map((b) => ({ ...b, inningsNumber: inningsMap[b.inningsId] })),
       bowling: bowling.map((b) => ({ ...b, inningsNumber: inningsMap[b.inningsId] })),
+    };
+  })
+
+  // GET /api/v1/test/overs/:matchId — all overs for a match
+  .get('/overs/:matchId', async ({ params }) => {
+    const matchInnings = await db
+      .select({ id: innings.id, inningsNumber: innings.inningsNumber })
+      .from(innings)
+      .where(eq(innings.matchId, params.matchId))
+      .orderBy(innings.inningsNumber);
+
+    if (matchInnings.length === 0) {
+      return { overs: [] };
+    }
+
+    const inningsIds = matchInnings.map((i) => i.id);
+    const inningsMap = Object.fromEntries(matchInnings.map((i) => [i.id, i.inningsNumber]));
+
+    const allOvers = await db
+      .select({
+        id: overs.id,
+        inningsId: overs.inningsId,
+        overNumber: overs.overNumber,
+        bowlerId: overs.bowlerId,
+        runsConceded: overs.runsConceded,
+        wicketsTaken: overs.wicketsTaken,
+        wides: overs.wides,
+        noBalls: overs.noBalls,
+        isMaiden: overs.isMaiden,
+        isCompleted: overs.isCompleted,
+      })
+      .from(overs)
+      .where(sql`${overs.inningsId} IN ${inningsIds}`)
+      .orderBy(overs.overNumber);
+
+    return {
+      overs: allOvers.map((o) => ({ ...o, inningsNumber: inningsMap[o.inningsId] })),
+    };
+  })
+
+  // GET /api/v1/test/innings-detail/:matchId — innings detail for a match
+  .get('/innings-detail/:matchId', async ({ params }) => {
+    const allInnings = await db
+      .select({
+        id: innings.id,
+        inningsNumber: innings.inningsNumber,
+        battingTeamId: innings.battingTeamId,
+        bowlingTeamId: innings.bowlingTeamId,
+        totalRuns: innings.totalRuns,
+        totalWickets: innings.totalWickets,
+        totalOvers: innings.totalOvers,
+        totalExtras: innings.totalExtras,
+        totalWides: innings.totalWides,
+        totalNoBalls: innings.totalNoBalls,
+        totalByes: innings.totalByes,
+        totalLegByes: innings.totalLegByes,
+        isCompleted: innings.isCompleted,
+        completedReason: innings.completedReason,
+        target: innings.target,
+      })
+      .from(innings)
+      .where(eq(innings.matchId, params.matchId))
+      .orderBy(innings.inningsNumber);
+
+    return { innings: allInnings };
+  })
+
+  // GET /api/v1/test/fielding-stats/:matchId — fielding stats for a match
+  .get('/fielding-stats/:matchId', async ({ params }) => {
+    const matchInnings = await db
+      .select({ id: innings.id, inningsNumber: innings.inningsNumber })
+      .from(innings)
+      .where(eq(innings.matchId, params.matchId))
+      .orderBy(innings.inningsNumber);
+
+    if (matchInnings.length === 0) {
+      return { fieldingStats: [] };
+    }
+
+    const inningsIds = matchInnings.map((i) => i.id);
+    const inningsMap = Object.fromEntries(matchInnings.map((i) => [i.id, i.inningsNumber]));
+
+    const allStats = await db
+      .select({
+        id: fieldingStats.id,
+        inningsId: fieldingStats.inningsId,
+        playerId: fieldingStats.playerId,
+        playerName: users.displayName,
+        catches: fieldingStats.catches,
+        runOuts: fieldingStats.runOuts,
+        stumpings: fieldingStats.stumpings,
+        directHits: fieldingStats.directHits,
+      })
+      .from(fieldingStats)
+      .innerJoin(users, eq(fieldingStats.playerId, users.id))
+      .where(sql`${fieldingStats.inningsId} IN ${inningsIds}`);
+
+    return {
+      fieldingStats: allStats.map((s) => ({ ...s, inningsNumber: inningsMap[s.inningsId] })),
+    };
+  })
+
+  // GET /api/v1/test/fall-of-wickets/:matchId — fall of wickets for a match
+  .get('/fall-of-wickets/:matchId', async ({ params }) => {
+    const matchInnings = await db
+      .select({ id: innings.id, inningsNumber: innings.inningsNumber })
+      .from(innings)
+      .where(eq(innings.matchId, params.matchId))
+      .orderBy(innings.inningsNumber);
+
+    if (matchInnings.length === 0) {
+      return { fallOfWickets: [] };
+    }
+
+    const inningsIds = matchInnings.map((i) => i.id);
+    const inningsMap = Object.fromEntries(matchInnings.map((i) => [i.id, i.inningsNumber]));
+
+    const allFoW = await db
+      .select({
+        id: fallOfWickets.id,
+        inningsId: fallOfWickets.inningsId,
+        wicketNumber: fallOfWickets.wicketNumber,
+        runsAtFall: fallOfWickets.runsAtFall,
+        oversAtFall: fallOfWickets.oversAtFall,
+        dismissedPlayerId: fallOfWickets.dismissedPlayerId,
+      })
+      .from(fallOfWickets)
+      .where(sql`${fallOfWickets.inningsId} IN ${inningsIds}`)
+      .orderBy(fallOfWickets.wicketNumber);
+
+    return {
+      fallOfWickets: allFoW.map((f) => ({ ...f, inningsNumber: inningsMap[f.inningsId] })),
     };
   })
 

@@ -10,7 +10,7 @@
     "db:migrate": "bunx drizzle-kit migrate",
     "db:seed": "bun run src/db/seed/master_data.ts",
     "typecheck": "bunx tsc --noEmit",
-    "test": "bun test --timeout=60000"
+    "test": "bun test --timeout=60000 --concurrency 1"
   },
   "dependencies": {
     "elysia": "^1.2.12",

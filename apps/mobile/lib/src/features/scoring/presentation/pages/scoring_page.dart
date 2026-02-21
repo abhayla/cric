@@ -444,7 +444,9 @@ class _ScoringPageState extends State<ScoringPage> {
           ),
         );
       case MatchCompleteAction.backToHome:
-        GoRouter.of(context).go('/home');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) GoRouter.of(context).go('/home');
+        });
     }
   }
 

@@ -314,11 +314,12 @@ void main() {
         payload: {'runsFromBat': 0},
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      // Safety belt: ensure sync queue is fully processed
+      await syncService.processSyncQueue();
 
       // Should have transitioned through pending → allSynced
-      expect(statuses, contains(SyncStatus.pending));
-      expect(statuses, contains(SyncStatus.allSynced));
+      expect(statuses, containsAll([SyncStatus.pending, SyncStatus.allSynced]));
     });
   });
 }

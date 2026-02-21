@@ -191,156 +191,147 @@ class _CreateTabState extends State<_CreateTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Player Name
-                Text(
-                  'Player Name *',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Player Name
+          Text(
+            'Player Name *',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            key: const Key('playerNameField'),
+            controller: _nameController,
+            onChanged: (_) => setState(() {}),
+            maxLength: 50,
+            decoration: const InputDecoration(
+              hintText: 'Enter full name',
+              counterText: '',
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Phone Number (required)
+          Text(
+            'Phone Number *',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  key: const Key('playerNameField'),
-                  controller: _nameController,
+                alignment: Alignment.center,
+                child: Text(
+                  '+91',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  key: const Key('playerPhoneField'),
+                  controller: _phoneController,
                   onChanged: (_) => setState(() {}),
-                  maxLength: 50,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
                   decoration: const InputDecoration(
-                    hintText: 'Enter full name',
+                    hintText: '98765 43210',
                     counterText: '',
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                // Phone Number (required)
-                Text(
-                  'Phone Number *',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+            ],
+          ),
+          if (_phoneController.text.trim().isNotEmpty &&
+              !_isPhoneValid)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Enter a valid 10-digit Indian mobile number',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      height: 52,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '+91',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        key: const Key('playerPhoneField'),
-                        controller: _phoneController,
-                        onChanged: (_) => setState(() {}),
-                        keyboardType: TextInputType.phone,
-                        maxLength: 10,
-                        decoration: const InputDecoration(
-                          hintText: '98765 43210',
-                          counterText: '',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_phoneController.text.trim().isNotEmpty &&
-                    !_isPhoneValid)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      'Enter a valid 10-digit Indian mobile number',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                    ),
-                  ),
+              ),
+            ),
 
-                const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-                // Role
-                Text(
-                  'Role',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    _buildRoleChip('Batter', 'batter'),
-                    _buildRoleChip('Bowler', 'bowler'),
-                    _buildRoleChip('All-Rounder', 'all_rounder'),
-                    _buildRoleChip('WK-Batter', 'wk_batter'),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Batting Style
-                Text(
-                  'Batting Style',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    _buildBattingChip('Right Hand', 'right_hand'),
-                    _buildBattingChip('Left Hand', 'left_hand'),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Bowling Style
-                Text(
-                  'Bowling Style',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final style in BowlingStyle.values)
-                      _buildBowlingChip(
-                        style.label,
-                        style.name,
-                      ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-              ],
+          // Role
+          Text(
+            'Role',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              _buildRoleChip('Batter', 'batter'),
+              _buildRoleChip('Bowler', 'bowler'),
+              _buildRoleChip('All-Rounder', 'all_rounder'),
+              _buildRoleChip('WK-Batter', 'wk_batter'),
+            ],
+          ),
 
-        // Add to Team button
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: SizedBox(
+          const SizedBox(height: 16),
+
+          // Batting Style
+          Text(
+            'Batting Style',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              _buildBattingChip('Right Hand', 'right_hand'),
+              _buildBattingChip('Left Hand', 'left_hand'),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Bowling Style
+          Text(
+            'Bowling Style',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final style in BowlingStyle.values)
+                _buildBowlingChip(
+                  style.label,
+                  style.name,
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Add to Team button
+          SizedBox(
             width: double.infinity,
             height: 48,
             child: FilledButton(
@@ -348,8 +339,9 @@ class _CreateTabState extends State<_CreateTab> {
               child: const Text('Add to Team'),
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 

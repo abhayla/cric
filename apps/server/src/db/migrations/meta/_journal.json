@@ -33,6 +33,13 @@
     {
       "idx": 4,
       "version": "7",
+      "when": 1771500000000,
+      "tag": "0004_magic_over_customization",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
       "when": 1771699200000,
       "tag": "0005_stats_unique_constraints",
       "breakpoints": true
