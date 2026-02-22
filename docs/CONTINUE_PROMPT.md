@@ -16,6 +16,26 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-22d: Navigation Restructure — 4-Tab Layout + Updates & Live Features
+
+**Major navigation restructure from 5 tabs to 4 tabs, with new backend activity feed.**
+
+Bottom nav changed: ~~Home, Matches, Teams, Profile, More~~ → **My Cricket, Updates, Live, More**
+
+1. **Backend — Activity Feed** — New `activity_feed` table + service + 3 API endpoints (`GET /activity-feed`, `POST /activity-feed/read`, `GET /activity-feed/unread-count`). Fire-and-forget hooks in scoring, team, and tournament services.
+
+2. **Flutter — Updates feature** (new) — Full clean architecture: entity, repository, datasource, providers, UpdatesPage (grouped feed: Today/Yesterday/This Week/Earlier), ActivityEventCard widget.
+
+3. **Flutter — Live hub** (new) — LivePage showing live matches + ongoing tournaments with count badges. Reuses existing providers.
+
+4. **Flutter — My Cricket page** (rewrite) — HomePage rewritten with TabBar sub-tabs (Teams/Matches/Tournaments), profile avatar in AppBar, ExpandableFab (Start Match, Create Team, Create Tournament).
+
+5. **Router restructure** — ShellRoute: 4 tabs with new routes `/updates`, `/live-hub`. Profile removed as tab (accessible from More + header avatar). `/matches`, `/teams` remain as pushable routes.
+
+6. **More page update** — Added "My Profile" (uses auth state for userId), removed "Tournaments" (now in My Cricket sub-tab).
+
+7. **Tests updated** — `more_page_test.dart` and `home_page_test.dart` rewritten to match new UI structure.
+
 ### Session 2026-02-22c: UI Polish — 3 Fixes (Bottom Spacing, Manage Roster Merge, More Tab)
 
 **3 UI issues fixed from manual testing on OPPO device:**
@@ -28,17 +48,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
    - Pull-to-refresh via RefreshIndicator
    - Deleted `manage_roster_page.dart` and its test
 
-3. **Replaced Tournaments tab with More tab** — Fixed bottom nav "Tournaments" label wrapping to 2 lines. New tab order: Home, Matches, Teams, Profile, More. More page has 4 items: Tournaments, Settings, About, Help. Tournaments moved from shell tab to pushable top-level route.
-
-**Files changed:**
-- `add_player_page.dart` — bottom padding fix
-- `team_detail_page.dart` — ConsumerStatefulWidget with TabController, FAB, delete icons, RefreshIndicator
-- `router.dart` — removed manageRoster, updated addPlayer path to `/teams/:teamId/add-player`, added More/Settings/About/Help routes, moved tournaments to top-level
-- `home_page.dart` — Tournament button uses `context.push` instead of `context.go`
-- **DELETED:** `manage_roster_page.dart`, `manage_roster_page_test.dart`
-- **NEW:** `more_page.dart`, `settings_page.dart`, `about_page.dart`, `help_page.dart`, `more_page_test.dart`
-- Updated: `router_test.dart`, `team_detail_page_test.dart`
-- Updated wireframes: 22 files (bottom nav), deleted `09-manage-roster.html`, created `30-more.html`
+3. **Replaced Tournaments tab with More tab** — (Superseded by Session 2026-02-22d nav restructure above.)
 
 ### Session 2026-02-22b: Manual Testing on Physical Devices — Bug Fixes + Test Data Setup
 
@@ -1213,8 +1223,8 @@ M3 Light theme + go_router + auth guards:
 
 **Router (`app/router.dart`):**
 - `GoRouter` with auth-based redirect logic
-- 9 routes: splash, login, otp, profile-setup + 5 shell tabs (home, matches, tournaments, teams, profile)
-- `ShellRoute` with `NavigationBar` (5 destinations: Home, Matches, Tournaments, Teams, Profile)
+- Routes: splash, login, otp, profile-setup + 4 shell tabs (home, updates, live-hub, more) + pushable routes (matches, teams, profile, tournaments)
+- `ShellRoute` with `NavigationBar` (4 destinations: My Cricket, Updates, Live, More)
 - Auth guard: loading → splash, unauthenticated → login, authenticated on auth route → home
 - `AppRoutes` class with all route path constants
 - `NoTransitionPage` for tab switches (no animation between tabs)
@@ -1730,7 +1740,7 @@ For each screen:
 - **[Q19]** Manual strike swap icon button between batter cards. UI-only operation, no delivery record.
 - **[Q20]** Viewer mode: same scoring page layout, all scoring controls hidden. Access via "Watch Live" → WebSocket read-only.
 - **[Q21]** Add Player dialog: "Search by phone" (find existing user) + "Create new" (placeholder profile claimable later).
-- **[Q22]** Bottom nav: 5 tabs — Home, Matches, Tournaments, Teams, Profile.
+- **[Q22]** Bottom nav: 4 tabs — My Cricket (Teams/Matches/Tournaments sub-tabs), Updates (activity feed), Live (live matches + ongoing tournaments), More (Profile, Settings, About, Help). *(Originally 5 tabs, restructured in Session 2026-02-22d.)*
 
 **Infrastructure (Q23-Q25):**
 - **[Q23]** Single Firebase project for MVP (no staging/production split).

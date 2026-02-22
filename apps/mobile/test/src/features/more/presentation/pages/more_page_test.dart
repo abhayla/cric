@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:cricapp/src/app/providers.dart';
 import 'package:cricapp/src/features/more/presentation/pages/more_page.dart';
 
 void main() {
   Widget buildTestWidget() {
-    return const MaterialApp(
-      home: MorePage(),
+    return ProviderScope(
+      overrides: [
+        authStateProvider.overrideWith((ref) => Stream.value(null)),
+      ],
+      child: const MaterialApp(home: MorePage()),
     );
   }
 
@@ -17,11 +22,11 @@ void main() {
       expect(find.byType(ListTile), findsNWidgets(4));
     });
 
-    testWidgets('renders Tournaments item', (tester) async {
+    testWidgets('renders My Profile item', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.text('Tournaments'), findsOneWidget);
-      expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
+      expect(find.text('My Profile'), findsOneWidget);
+      expect(find.byIcon(Icons.person_outline), findsOneWidget);
     });
 
     testWidgets('renders Settings item', (tester) async {

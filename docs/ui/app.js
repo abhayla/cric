@@ -201,6 +201,11 @@ const ICONS = {
   person_add: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',
   info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
   help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  cricket: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm-1 14.5v-2.5h2v2.5h-2zm4.5-5.5c0 .83-.67 1.5-1.5 1.5h-4c-.83 0-1.5-.67-1.5-1.5v-1c0-.83.67-1.5 1.5-1.5h4c.83 0 1.5.67 1.5 1.5v1z"/><path d="M15 8c0-1.66-1.34-3-3-3S9 6.34 9 8s1.34 3 3 3 3-1.34 3-3zm-3 1.5c-.83 0-1.5-.67-1.5-1.5S11.17 6.5 12 6.5s1.5.67 1.5 1.5S12.83 9.5 12 9.5z" fill="none"/></svg>',
+  updates: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  live: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.93 19.07A10 10 0 0 1 2 12C2 6.48 6.48 2 12 2s10 4.48 10 10a10 10 0 0 1-2.93 7.07"/><path d="M7.76 16.24A6 6 0 0 1 6 12c0-3.31 2.69-6 6-6s6 2.69 6 6a6 6 0 0 1-1.76 4.24"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>',
+  start_match: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>',
+  create_team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>',
 };
 
 // ── Utility Functions ────────────────────────────────────
@@ -208,6 +213,15 @@ const ICONS = {
 /** Navigate to another page */
 function navigateTo(page) {
   window.location.href = page;
+}
+
+/** Go back to previous page, or fallback to default */
+function goBack(defaultPage) {
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    navigateTo(defaultPage);
+  }
 }
 
 /** Get the current page filename */
@@ -235,11 +249,10 @@ function initIcons() {
 /** Build the bottom navigation bar HTML */
 function buildBottomNav(activePage) {
   const navItems = [
-    { id: 'home',        label: 'Home',     icon: 'home',    page: '05-home.html' },
-    { id: 'matches',     label: 'Matches',  icon: 'matches', page: '18-match-history.html' },
-    { id: 'teams',       label: 'Teams',    icon: 'teams',   page: '06-teams-list.html' },
-    { id: 'profile',     label: 'Profile',  icon: 'profile', page: '17-player-profile.html' },
-    { id: 'more',        label: 'More',     icon: 'more_horiz', page: '30-more.html' },
+    { id: 'mycricket',  label: 'My Cricket', icon: 'cricket',    page: '05-home.html' },
+    { id: 'updates',    label: 'Updates',    icon: 'updates',    page: '31-updates.html' },
+    { id: 'live',       label: 'Live',       icon: 'live',       page: '32-live.html' },
+    { id: 'more',       label: 'More',       icon: 'more_horiz', page: '30-more.html' },
   ];
 
   return navItems.map(item => {
@@ -263,7 +276,7 @@ function initBottomNav(activePage) {
 
 /** Initialize tab switching behavior */
 function initTabs() {
-  document.querySelectorAll('.tabs').forEach(tabBar => {
+  document.querySelectorAll('.tabs, .header-tabs').forEach(tabBar => {
     const tabs = tabBar.querySelectorAll('.tab');
     const container = tabBar.parentElement;
     const panels = container.querySelectorAll('.tab-panel');
@@ -672,6 +685,29 @@ class ScoringState {
   }
 }
 
+// ── Expandable FAB ───────────────────────────────────────
+
+/** Initialize expandable FAB (speed dial) */
+function initExpandableFab() {
+  const fabContainer = document.querySelector('.fab-container');
+  if (!fabContainer) return;
+
+  const fabMain = fabContainer.querySelector('.fab-main');
+  if (fabMain) {
+    fabMain.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fabContainer.classList.toggle('fab-open');
+    });
+  }
+
+  // Close on click outside
+  document.addEventListener('click', (e) => {
+    if (!fabContainer.contains(e.target)) {
+      fabContainer.classList.remove('fab-open');
+    }
+  });
+}
+
 // ── Initialization ───────────────────────────────────────
 
 /** Main initialization — call on every page DOMContentLoaded */
@@ -683,6 +719,7 @@ function initApp() {
   initToggleGroups();
   initSelectionCards();
   initOtpInputs();
+  initExpandableFab();
 }
 
 // Auto-init on DOMContentLoaded

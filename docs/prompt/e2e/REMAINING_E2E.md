@@ -392,7 +392,7 @@ Total runtime: ~XX minutes
 
 ### Player Profile Issues
 - **Career stats not accumulating?** Check if `player_career_stats` upserts are running after each match completion.
-- **Profile page navigation fails?** Ensure the Teams tab and team detail page are accessible.
+- **Profile page navigation fails?** Ensure the Teams sub-tab (within My Cricket) and team detail page are accessible. Profile is in the More page.
 
 ### Tournament Issues
 - **Match N hangs?** Tournament test creates many matches. ANR is more likely — increase ANR dismiss frequency to every ~15s.

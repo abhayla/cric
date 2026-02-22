@@ -10,6 +10,9 @@
   <div class="phone-frame">
     <!-- Header -->
     <div class="header-bar">
+      <button class="back-btn" onclick="goBack('05-home.html#matches')">
+        <span data-icon="back"></span>
+      </button>
       <span class="header-title">Matches</span>
       <div class="header-actions">
         <button class="header-action" data-icon="filter"></button>
@@ -250,7 +253,7 @@
 
   <script src="app.js"></script>
   <script>
-    initBottomNav('matches');
+    initBottomNav('mycricket');
 
     // Filter chips
     const filterChips = document.getElementById('filterChips');

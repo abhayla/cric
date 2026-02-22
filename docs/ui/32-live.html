@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Live</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <span class="header-title">Live</span>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- Live Matches Section -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title-row">
+            <h2 class="section-title">Live Matches</h2>
+            <span class="section-count-badge">1</span>
+          </div>
+        </div>
+
+        <div class="match-card" onclick="navigateTo('29-live-match.html')">
+          <div class="match-header">
+            <span class="match-meta">T20 &bull; Marina Ground</span>
+            <span class="badge badge-live">LIVE</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-row">
+              <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">CK</div>
+              <span class="team-name">Chennai Kings</span>
+              <span class="team-score">156/4</span>
+              <span class="team-overs">(18.2)</span>
+            </div>
+            <div class="team-row">
+              <div class="avatar sm" style="background: #FFF3E0; color: #E65100;">BR</div>
+              <span class="team-name">Bangalore Royals</span>
+              <span class="team-score" style="color: var(--text-secondary);">&mdash;</span>
+              <span class="team-overs"></span>
+            </div>
+          </div>
+          <div style="margin-top: 8px; font-size: var(--caption); color: var(--text-secondary);">CRR: 8.51</div>
+        </div>
+      </div>
+
+      <!-- Ongoing Tournaments Section -->
+      <div class="section" style="margin-top: var(--section-gap);">
+        <div class="section-header">
+          <div class="section-title-row">
+            <h2 class="section-title">Ongoing Tournaments</h2>
+            <span class="section-count-badge count-neutral">2</span>
+          </div>
+        </div>
+
+        <!-- Tournament 1: LIVE -->
+        <div class="tournament-card" onclick="navigateTo('21-tournament-detail.html')">
+          <div class="t-header">
+            <span class="t-name">Weekend Warriors Cup</span>
+            <span class="badge badge-live">LIVE</span>
+          </div>
+          <div class="t-meta">
+            <span class="format-badge">Group + KO</span>
+            <span class="t-meta-item">20 overs</span>
+            <span class="t-meta-item">8 teams</span>
+          </div>
+          <div class="t-date">1 Mar &mdash; 15 Mar 2026</div>
+          <div class="t-progress">
+            <div class="t-progress-bar">
+              <div class="t-progress-fill" style="width: 47%;"></div>
+            </div>
+            <span class="t-progress-text">7/15 matches</span>
+          </div>
+        </div>
+
+        <!-- Tournament 2: REGISTRATION -->
+        <div class="tournament-card" onclick="navigateTo('21-tournament-detail.html')">
+          <div class="t-header">
+            <span class="t-name">Summer Sixes League</span>
+            <span class="badge-registration">REGISTRATION</span>
+          </div>
+          <div class="t-meta">
+            <span class="format-badge">Round Robin</span>
+            <span class="t-meta-item">6 overs</span>
+            <span class="t-meta-item">4/8 teams</span>
+          </div>
+          <div class="t-date">15 Apr &mdash; 30 Apr 2026</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Empty State (hidden) -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-icon" style="font-size: 48px; opacity: 0.5;">&#x1F4E1;</div>
+      <div class="empty-title">No Live Activity</div>
+      <div class="empty-text">Live matches and ongoing tournaments will appear here.</div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    initBottomNav('live');
+  </script>
+</body>
+</html>

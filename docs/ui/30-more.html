@@ -5,24 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CricApp — More</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    .list-tile {
-      display: flex; align-items: center; gap: 16px;
-      padding: 16px; border-bottom: 1px solid var(--divider);
-      cursor: pointer; transition: background var(--duration) var(--ease);
-    }
-    .list-tile:hover { background: var(--surface); }
-    .list-tile:last-child { border-bottom: none; }
-    .list-tile-icon {
-      width: 40px; height: 40px; border-radius: var(--radius-full);
-      background: var(--primary-light); color: var(--primary);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .list-tile-icon span { width: 20px; height: 20px; }
-    .list-tile-label { flex: 1; font-size: var(--body); font-weight: var(--fw-medium); color: var(--text-primary); }
-    .list-tile-trailing { width: 20px; height: 20px; color: var(--text-secondary); flex-shrink: 0; }
-  </style>
 </head>
 <body>
   <div class="phone-frame">
@@ -33,14 +15,22 @@
 
     <!-- Page Content -->
     <div class="page-content">
-      <div class="list-tile" onclick="navigateTo('19-tournaments-list.html')">
+      <!-- Search Bar -->
+      <div class="search-bar" style="margin-bottom: 16px;">
+        <span class="search-icon" data-icon="search" style="width: 20px; height: 20px;"></span>
+        <input type="text" placeholder="Search teams, matches, tournaments">
+      </div>
+
+      <!-- My Profile -->
+      <div class="list-tile" onclick="navigateTo('17-player-profile.html')">
         <div class="list-tile-icon">
-          <span data-icon="trophy"></span>
+          <span data-icon="profile"></span>
         </div>
-        <span class="list-tile-label">Tournaments</span>
+        <span class="list-tile-label">My Profile</span>
         <span class="list-tile-trailing" data-icon="chevronRight"></span>
       </div>
 
+      <!-- Settings -->
       <div class="list-tile" onclick="alert('Settings coming soon')">
         <div class="list-tile-icon">
           <span data-icon="settings"></span>
@@ -49,6 +39,7 @@
         <span class="list-tile-trailing" data-icon="chevronRight"></span>
       </div>
 
+      <!-- About -->
       <div class="list-tile" onclick="alert('About coming soon')">
         <div class="list-tile-icon">
           <span data-icon="info"></span>
@@ -57,6 +48,7 @@
         <span class="list-tile-trailing" data-icon="chevronRight"></span>
       </div>
 
+      <!-- Help -->
       <div class="list-tile" onclick="alert('Help coming soon')">
         <div class="list-tile-icon">
           <span data-icon="help"></span>

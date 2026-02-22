@@ -806,17 +806,16 @@ Generated at display time from delivery record fields. No `commentary_text` colu
 - **On change:** Re-render wagon wheel with selected player's shot data
 - **Query:** Filter `deliveries` by `striker_id` + `innings_id` where `runs_from_bat > 0`
 
-### Bottom Navigation (5 Tabs)
+### Bottom Navigation (4 Tabs)
 
 | Tab | Icon | Label | Destination |
 |-----|------|-------|-------------|
-| 1 | `Icons.home` | Home | Home dashboard (recent matches, quick actions, my stats) |
-| 2 | `Icons.sports_cricket` | Matches | Match history list (all/won/lost/tied filters) |
-| 3 | `Icons.emoji_events` | Tournaments | Tournament list (my tournaments, public tournaments) |
-| 4 | `Icons.groups` | Teams | Teams list (my teams) |
-| 5 | `Icons.person` | Profile | Player profile with stats and settings |
+| 1 | `Icons.sports_cricket` | My Cricket | Home dashboard with Teams/Matches/Tournaments sub-tabs, expandable FAB |
+| 2 | `Icons.notifications_outlined` | Updates | Activity feed (grouped by date: Today/Yesterday/This Week/Earlier) |
+| 3 | `Icons.cell_tower` | Live | Live matches + ongoing tournaments hub |
+| 4 | `Icons.more_horiz` | More | My Profile, Settings, About, Help |
 
-> Blueprint shows 3 tabs (Home, Teams, Profile) — outdated. Prototypes show 4 tabs — expanded to 5 with a dedicated Tournaments tab for quick access to tournament management.
+> Navigation restructured from 5 tabs to 4 tabs. Profile moved to More page + header avatar. Teams/Matches/Tournaments accessible as sub-tabs within My Cricket page.
 
 ### App Bar Pattern
 

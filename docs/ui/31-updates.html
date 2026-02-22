@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricApp — Updates</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <div class="header-bar">
+      <span class="header-title">Updates</span>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page-content">
+
+      <!-- Today -->
+      <div class="feed-date-header">Today</div>
+
+      <div class="activity-card" onclick="navigateTo('15-scorecard.html')">
+        <div class="activity-icon icon-match">
+          <span data-icon="matches"></span>
+        </div>
+        <div class="activity-body">
+          <div class="activity-title">Match Completed</div>
+          <div class="activity-desc">Mumbai Warriors beat Delhi Strikers by 15 runs in a T20 match.</div>
+          <div class="activity-time">2 hours ago</div>
+        </div>
+      </div>
+
+      <div class="activity-card" onclick="navigateTo('08-team-detail.html')">
+        <div class="activity-icon icon-team">
+          <span data-icon="person_add"></span>
+        </div>
+        <div class="activity-body">
+          <div class="activity-title">Player Added</div>
+          <div class="activity-desc">Tarun Bhatt was added to Delhi Strikers roster.</div>
+          <div class="activity-time">5 hours ago</div>
+        </div>
+      </div>
+
+      <!-- Yesterday -->
+      <div class="feed-date-header">Yesterday</div>
+
+      <div class="activity-card" onclick="navigateTo('21-tournament-detail.html')">
+        <div class="activity-icon icon-trophy">
+          <span data-icon="trophy"></span>
+        </div>
+        <div class="activity-body">
+          <div class="activity-title">Tournament Update</div>
+          <div class="activity-desc">Weekend Warriors Cup: Semi-finals scheduled for this Saturday.</div>
+          <div class="activity-time">1 day ago</div>
+        </div>
+      </div>
+
+      <div class="activity-card" onclick="navigateTo('17-player-profile.html')">
+        <div class="activity-icon icon-star">
+          <span data-icon="leaderboard"></span>
+        </div>
+        <div class="activity-body">
+          <div class="activity-title">Personal Milestone</div>
+          <div class="activity-desc">You scored your 7th half-century! 54 runs off 38 balls.</div>
+          <div class="activity-time">1 day ago</div>
+        </div>
+      </div>
+
+      <!-- This Week -->
+      <div class="feed-date-header">This Week</div>
+
+      <div class="activity-card" onclick="navigateTo('15-scorecard.html')">
+        <div class="activity-icon icon-match">
+          <span data-icon="matches"></span>
+        </div>
+        <div class="activity-body">
+          <div class="activity-title">Match Completed</div>
+          <div class="activity-desc">Mumbai Warriors beat Kolkata Thunder by 7 wickets.</div>
+          <div class="activity-time">3 days ago</div>
+        </div>
+      </div>
+
+      <div class="activity-card" onclick="navigateTo('08-team-detail.html')">
+        <div class="activity-icon icon-team">
+          <span data-icon="teams"></span>
+        </div>
+        <div class="activity-body">
+          <div class="activity-title">Joined a Team</div>
+          <div class="activity-desc">You joined Chennai Kings as a member.</div>
+          <div class="activity-time">5 days ago</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Empty State (hidden) -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-icon" style="font-size: 48px; opacity: 0.5;">&#x1F514;</div>
+      <div class="empty-title">No Updates</div>
+      <div class="empty-text">Your match results, team activity, and milestones will appear here.</div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    initBottomNav('updates');
+  </script>
+</body>
+</html>

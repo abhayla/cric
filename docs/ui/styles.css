@@ -179,6 +179,17 @@ button {
   transition: background var(--duration) var(--ease);
 }
 
+.back-btn span[data-icon] {
+  display: flex;
+  width: 20px;
+  height: 20px;
+}
+
+.back-btn span[data-icon] svg {
+  width: 100%;
+  height: 100%;
+}
+
 .header-bar .back-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
@@ -204,6 +215,12 @@ button {
   color: var(--text-on-dark);
   border-radius: var(--radius-full);
   transition: background var(--duration) var(--ease);
+}
+
+.header-bar .header-action svg,
+.header-bar .header-action[data-icon] svg {
+  width: 20px;
+  height: 20px;
 }
 
 .header-bar .header-action:hover {
@@ -2001,4 +2018,348 @@ select.input-field {
   .bottom-nav {
     border-radius: 0 0 20px 20px;
   }
+}
+
+/* =====================================================
+   Shared Component Styles (migrated from inline pages)
+   ===================================================== */
+
+/* ----- Team Grid (from 06-teams-list) ----- */
+.team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.team-grid-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 8px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
+.team-grid-card:hover { box-shadow: var(--shadow-card); border-color: var(--primary); }
+.team-grid-card .team-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  margin: 0 auto 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 18px;
+}
+.team-grid-card .team-grid-name {
+  font-size: var(--body-sm); font-weight: var(--fw-medium);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.team-grid-card .team-grid-meta {
+  font-size: var(--caption-sm); color: var(--text-secondary); margin-top: 2px;
+}
+.team-grid-card .team-grid-role {
+  font-size: 10px; color: var(--primary); font-weight: var(--fw-medium);
+  margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* ----- Tournament Card (from 19-tournaments-list) ----- */
+.tournament-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--card-padding);
+  cursor: pointer;
+  transition: box-shadow var(--duration) var(--ease);
+}
+.tournament-card:hover { box-shadow: var(--shadow-card); }
+.tournament-card + .tournament-card { margin-top: var(--element-gap); }
+.tournament-card .t-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+.tournament-card .t-name {
+  font-size: var(--body); font-weight: var(--fw-semibold);
+}
+.tournament-card .t-meta {
+  display: flex; gap: 8px; align-items: center; margin-top: 6px;
+}
+.tournament-card .t-meta-item {
+  font-size: var(--caption); color: var(--text-secondary);
+  display: flex; align-items: center; gap: 4px;
+}
+.format-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: var(--radius-full);
+  font-size: var(--caption-sm); font-weight: var(--fw-semibold);
+  background: var(--primary-light); color: var(--primary-dark);
+}
+.t-date {
+  font-size: var(--caption); color: var(--text-secondary); margin-top: 8px;
+}
+.t-progress {
+  margin-top: 10px; display: flex; align-items: center; gap: 8px;
+}
+.t-progress-bar {
+  flex: 1; height: 4px; background: var(--surface); border-radius: 2px; overflow: hidden;
+}
+.t-progress-fill {
+  height: 100%; background: var(--primary); border-radius: 2px;
+}
+.t-progress-text {
+  font-size: var(--caption); color: var(--text-secondary); white-space: nowrap;
+}
+.t-winner {
+  font-size: var(--caption); color: var(--primary); font-weight: var(--fw-semibold); margin-top: 6px;
+}
+.badge-draft {
+  background: var(--surface); color: var(--text-secondary);
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: var(--radius-full);
+  font-size: var(--caption-sm); font-weight: var(--fw-semibold);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.badge-registration {
+  background: #FFF3E0; color: #E65100;
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: var(--radius-full);
+  font-size: var(--caption-sm); font-weight: var(--fw-semibold);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* ----- List Tile (from 30-more) ----- */
+.list-tile {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px; border-bottom: 1px solid var(--divider);
+  cursor: pointer; transition: background var(--duration) var(--ease);
+}
+.list-tile:hover { background: var(--surface); }
+.list-tile:last-child { border-bottom: none; }
+.list-tile-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-full);
+  background: var(--primary-light); color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.list-tile-icon span { width: 20px; height: 20px; }
+.list-tile-label { flex: 1; font-size: var(--body); font-weight: var(--fw-medium); color: var(--text-primary); }
+.list-tile-trailing { width: 20px; height: 20px; color: var(--text-secondary); flex-shrink: 0; }
+
+/* =====================================================
+   New Component Styles — 4-Tab Navigation Update
+   ===================================================== */
+
+/* ----- Expandable FAB (Speed Dial) ----- */
+.fab-container {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-h) + 16px);
+  right: calc(50% - var(--phone-width) / 2 + 16px);
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 12px;
+  z-index: 50;
+}
+
+.fab-main {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-fab);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration) var(--ease);
+}
+
+.fab-main:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+.fab-main svg {
+  width: 24px;
+  height: 24px;
+  transition: transform 300ms var(--ease);
+}
+
+.fab-container.fab-open .fab-main svg {
+  transform: rotate(45deg);
+}
+
+.fab-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  transition: all 300ms var(--ease);
+}
+
+.fab-container.fab-open .fab-actions {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.fab-action-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.fab-action-label {
+  background: var(--card);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--body-sm);
+  font-weight: var(--fw-medium);
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
+}
+
+.fab-action-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration) var(--ease);
+}
+
+.fab-action-btn:hover {
+  background: var(--primary-light);
+}
+
+.fab-action-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ----- Activity Feed (Updates page) ----- */
+.feed-date-header {
+  font-size: var(--caption);
+  font-weight: var(--fw-bold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.feed-date-header + .feed-date-header,
+.activity-card ~ .feed-date-header {
+  margin-top: 20px;
+}
+
+.activity-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: box-shadow var(--duration) var(--ease);
+}
+
+.activity-card:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activity-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.activity-icon.icon-match { background: #E3F2FD; color: #1565C0; }
+.activity-icon.icon-team { background: #E8F5E9; color: #2E7D32; }
+.activity-icon.icon-trophy { background: #FFF8E1; color: #F57F17; }
+.activity-icon.icon-star { background: #F3E5F5; color: #6A1B9A; }
+
+.activity-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-title {
+  font-size: var(--body-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+}
+
+.activity-desc {
+  font-size: var(--caption);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.activity-time {
+  font-size: var(--caption-sm);
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ----- Section Count Badge (Live page) ----- */
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--live-badge);
+  color: var(--text-on-dark);
+  font-size: var(--caption-sm);
+  font-weight: var(--fw-bold);
+}
+
+.section-count-badge.count-neutral {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+/* ----- Team Role Badges ----- */
+.badge-owner {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--primary);
+  color: var(--text-on-primary);
+}
+
+.badge-member {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
 }

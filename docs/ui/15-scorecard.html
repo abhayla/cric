@@ -34,7 +34,7 @@
   <div class="phone-frame">
     <!-- Header -->
     <div class="header-bar">
-      <button class="back-btn" onclick="navigateTo('05-home.html')">
+      <button class="back-btn" onclick="goBack('05-home.html#matches')">
         <span data-icon="back"></span>
       </button>
       <span class="header-title">Match Details</span>
@@ -282,7 +282,7 @@
 
   <script src="app.js"></script>
   <script>
-    initBottomNav('matches');
+    initBottomNav('mycricket');
 
     function showInnings(num, chip) {
       document.querySelectorAll('.chip-group .chip').forEach(c => c.classList.remove('active'));

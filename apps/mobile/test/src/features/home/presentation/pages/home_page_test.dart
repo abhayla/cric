@@ -3,85 +3,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricapp/src/app/providers.dart';
-import 'package:cricapp/src/features/home/domain/entities/match_list_item.dart';
 import 'package:cricapp/src/features/home/domain/repositories/home_repository.dart';
 import 'package:cricapp/src/features/home/presentation/pages/home_page.dart';
-import 'package:cricapp/src/features/home/presentation/widgets/match_card.dart';
+import 'package:cricapp/src/features/home/presentation/widgets/expandable_fab.dart';
 import 'package:cricapp/src/features/home/providers.dart';
+import 'package:cricapp/src/features/teams/providers.dart';
+import 'package:cricapp/src/features/teams/domain/repositories/team_repository.dart';
+import 'package:cricapp/src/features/tournaments/providers.dart';
+import 'package:cricapp/src/features/tournaments/domain/repositories/tournament_repository.dart';
 
 void main() {
-  final liveMatchData = MatchListResult(
-    matches: [
-      MatchListItem(
-        id: 'live-1',
-        homeTeamName: 'Chennai Kings',
-        awayTeamName: 'Bangalore Royals',
-        format: 'T20',
-        totalOvers: 20,
-        status: 'live',
-        matchDate: '2026-03-15',
-        venue: 'Marina Ground',
-        currentInnings: const InningsSnapshot(
-          battingTeamId: 'team-1',
-          totalRuns: 156,
-          totalWickets: 4,
-          overs: '18.2',
-        ),
-      ),
-    ],
-    total: 1,
-    page: 1,
-  );
-
-  final recentMatchData = MatchListResult(
-    matches: [
-      MatchListItem(
-        id: 'recent-1',
-        homeTeamName: 'Mumbai Warriors',
-        awayTeamName: 'Delhi Strikers',
-        format: 'T20',
-        totalOvers: 20,
-        status: 'completed',
-        matchDate: '2026-02-08',
-        result: 'Mumbai Warriors won by 15 runs',
-        currentInnings: const InningsSnapshot(
-          battingTeamId: 'team-2',
-          totalRuns: 172,
-          totalWickets: 9,
-          overs: '20.0',
-        ),
-      ),
-    ],
-    total: 1,
-    page: 1,
-  );
-
-  final emptyMatchData = const MatchListResult(
-    matches: [],
-    total: 0,
-    page: 1,
-  );
-
   Widget buildTestWidget({
-    AsyncValue<MatchListResult>? liveMatches,
-    AsyncValue<MatchListResult>? recentMatches,
+    AsyncValue<MatchListResult>? allMatches,
   }) {
     return ProviderScope(
       overrides: [
-        // Override auth state to return null user (no Firebase needed)
         authStateProvider.overrideWith((ref) => Stream.value(null)),
-        liveMatchesProvider.overrideWith(
-          (ref) => (liveMatches ?? AsyncValue.data(emptyMatchData)).when(
-            data: (d) => Future.value(d),
-            loading: () => Future.any([]),
-            error: (e, s) => Future.error(e, s),
-          ),
-        ),
-        recentMatchesProvider.overrideWith(
-          (ref) => (recentMatches ?? AsyncValue.data(emptyMatchData)).when(
-            data: (d) => Future.value(d),
-            loading: () => Future.any([]),
-            error: (e, s) => Future.error(e, s),
+        teamsListProvider.overrideWith(() => _FakeTeamsNotifier()),
+        tournamentsListProvider.overrideWith(() => _FakeTournamentsNotifier()),
+        allMatchesProvider.overrideWith(
+          (ref, page) async =>
+              (allMatches ?? const AsyncValue.data(MatchListResult(
+                matches: [],
+                total: 0,
+                page: 1,
+              )))
+                  .when(
+            data: (d) => d,
+            loading: () => throw StateError('loading'),
+            error: (e, s) => throw e,
           ),
         ),
       ],
@@ -90,98 +40,105 @@ void main() {
   }
 
   group('HomePage', () {
-    testWidgets('renders CricApp title in app bar', (tester) async {
+    testWidgets('renders My Cricket title in app bar', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Title uses Text.rich with spans — find by RichText content
-      expect(find.byType(RichText), findsAtLeast(1));
+      expect(find.textContaining('My'), findsWidgets);
+      expect(find.textContaining('Cricket'), findsWidgets);
     });
 
-    testWidgets('renders quick action buttons', (tester) async {
+    testWidgets('renders three sub-tabs', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Start Match'), findsOneWidget);
-      expect(find.text('Create Team'), findsOneWidget);
-      expect(find.text('Tournament'), findsOneWidget);
+      expect(find.text('Teams'), findsOneWidget);
+      expect(find.text('Matches'), findsOneWidget);
+      expect(find.text('Tournaments'), findsOneWidget);
     });
 
-    testWidgets('shows live matches section when data available',
+    testWidgets('renders expandable FAB', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ExpandableFab), findsOneWidget);
+    });
+
+    testWidgets('renders profile avatar in app bar', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CircleAvatar), findsOneWidget);
+    });
+
+    testWidgets('shows teams empty state when no teams', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Teams tab is the default tab
+      expect(find.text('No Teams Yet'), findsOneWidget);
+    });
+
+    testWidgets('shows matches empty state on Matches tab', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Tap the Matches tab
+      await tester.tap(find.text('Matches'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No Matches Found'), findsOneWidget);
+    });
+
+    testWidgets('shows tournaments empty state on Tournaments tab',
         (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        liveMatches: AsyncValue.data(liveMatchData),
-      ));
+      await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Live'), findsOneWidget);
-      expect(find.text('Chennai Kings'), findsOneWidget);
-      expect(find.text('Bangalore Royals'), findsOneWidget);
-    });
-
-    testWidgets('hides live section when no live matches', (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        liveMatches: AsyncValue.data(emptyMatchData),
-      ));
+      // Tap the Tournaments tab
+      await tester.tap(find.text('Tournaments'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Live'), findsNothing);
+      expect(find.text('No Tournaments Found'), findsOneWidget);
     });
 
-    testWidgets('shows recent matches section', (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        recentMatches: AsyncValue.data(recentMatchData),
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Recent Matches'), findsOneWidget);
-      expect(find.text('Mumbai Warriors'), findsOneWidget);
-    });
-
-    testWidgets('shows empty state when no recent matches', (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        recentMatches: AsyncValue.data(emptyMatchData),
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.text('No matches yet'), findsOneWidget);
-    });
-
-    testWidgets('has pull-to-refresh', (tester) async {
+    testWidgets('has pull-to-refresh on Teams tab', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
       expect(find.byType(RefreshIndicator), findsOneWidget);
     });
 
-    testWidgets('shows error state for live matches hides section',
-        (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        liveMatches: AsyncValue.error('Network error', StackTrace.current),
-      ));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      // Error state should not crash — section just hidden
-      expect(find.text('Live'), findsNothing);
-    });
-
-    testWidgets('renders MatchCard widgets for live matches', (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        liveMatches: AsyncValue.data(liveMatchData),
-      ));
+    testWidgets('shows filter chips on Matches tab', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byType(MatchCard), findsOneWidget);
-    });
-
-    testWidgets('renders Recent Matches View All button', (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        recentMatches: AsyncValue.data(recentMatchData),
-      ));
+      await tester.tap(find.text('Matches'));
       await tester.pumpAndSettle();
 
-      expect(find.text('View All'), findsAtLeast(1));
+      expect(find.byType(FilterChip), findsAtLeast(1));
+    });
+
+    testWidgets('has TabBar with correct tab count', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TabBar), findsOneWidget);
+      expect(find.byType(Tab), findsNWidgets(3));
     });
   });
+}
+
+class _FakeTeamsNotifier extends TeamsListNotifier {
+  @override
+  Future<TeamListResult> build() async {
+    return const TeamListResult(teams: [], total: 0, page: 1);
+  }
+}
+
+class _FakeTournamentsNotifier extends TournamentsListNotifier {
+  @override
+  Future<TournamentListResult> build() async {
+    return const TournamentListResult(tournaments: [], total: 0, page: 1);
+  }
 }

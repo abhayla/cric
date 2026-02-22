@@ -21,45 +21,64 @@ void dumpVisibleTexts(WidgetTester tester, String label, [int count = 15]) {
 // Navigation Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Navigate to the Tournaments tab from the Home page.
+/// Navigate to the Tournaments sub-tab within My Cricket page.
+///
+/// Flow: Go to My Cricket (bottom nav) → tap Tournaments sub-tab.
 Future<void> navigateToTournaments(WidgetTester tester) async {
-  // Find the Tournaments tab in bottom navigation
-  // Use last match to prefer bottom nav bar label over page title
+  // First ensure we're on My Cricket page (bottom nav tab 0)
+  await _ensureOnMyCricketPage(tester);
+
+  // Then tap the Tournaments sub-tab within My Cricket
   final tournamentsTab = find.text('Tournaments');
   if (tournamentsTab.evaluate().isNotEmpty) {
-    await tester.tap(tournamentsTab.last);
+    await tester.tap(tournamentsTab.first);
     await settle(tester);
     await visualPause(tester);
   }
 }
 
-/// Navigate to the Teams tab.
+/// Navigate to the Teams sub-tab within My Cricket page.
 ///
-/// Works from inside the ShellRoute (bottom NavigationBar visible) AND from
-/// pages outside the ShellRoute (Team Detail, Add Player, etc.) by falling
-/// back to GoRouter.go('/teams').
+/// Flow: Go to My Cricket (bottom nav) → tap Teams sub-tab.
+/// Also works from outside the ShellRoute via GoRouter.go('/home').
 Future<void> navigateToTeams(WidgetTester tester) async {
-  // Check if the NavigationBar (ShellRoute shell) is visible
-  final navBar = find.byType(NavigationBar);
-  final teamsText = find.text('Teams');
+  // First ensure we're on My Cricket page
+  await _ensureOnMyCricketPage(tester);
 
-  if (navBar.evaluate().isNotEmpty && teamsText.evaluate().isNotEmpty) {
-    // Inside the shell — tap the Teams tab in the bottom nav
-    await tester.tap(teamsText.last);
+  // Teams is the first sub-tab (default), but tap it explicitly to be safe
+  final teamsTab = find.text('Teams');
+  if (teamsTab.evaluate().isNotEmpty) {
+    await tester.tap(teamsTab.first);
+    await settle(tester);
+    await visualPause(tester);
+  }
+}
+
+/// Ensure we're on the My Cricket page (first bottom nav tab).
+Future<void> _ensureOnMyCricketPage(WidgetTester tester) async {
+  // Check if we're already on My Cricket page (has the TabBar with sub-tabs)
+  final myCricketTitle = find.textContaining('Cricket');
+  if (myCricketTitle.evaluate().isNotEmpty) return;
+
+  // Try tapping "My Cricket" in bottom nav
+  final navBar = find.byType(NavigationBar);
+  final myCricketNav = find.text('My Cricket');
+  if (navBar.evaluate().isNotEmpty && myCricketNav.evaluate().isNotEmpty) {
+    await tester.tap(myCricketNav.first);
     await settle(tester);
     await visualPause(tester);
     return;
   }
 
-  // Outside the ShellRoute (e.g., Team Detail reached via go()) — use GoRouter
+  // Fallback: use GoRouter
   try {
     final ctx = tester.element(find.byType(Navigator).last);
-    GoRouter.of(ctx).go('/teams');
+    GoRouter.of(ctx).go('/home');
     await settle(tester);
     await visualPause(tester);
-    print('    [navigateToTeams] Used GoRouter.go(/teams) — was outside ShellRoute');
+    print('    [_ensureOnMyCricketPage] Used GoRouter.go(/home)');
   } catch (e) {
-    print('    [navigateToTeams] WARNING: GoRouter navigation failed: $e');
+    print('    [_ensureOnMyCricketPage] WARNING: GoRouter navigation failed: $e');
   }
 }
 

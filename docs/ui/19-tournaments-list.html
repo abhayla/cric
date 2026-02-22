@@ -5,74 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CricApp — Tournaments</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    .tournament-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: var(--card-padding);
-      cursor: pointer;
-      transition: box-shadow var(--duration) var(--ease);
-    }
-    .tournament-card:hover { box-shadow: var(--shadow-card); }
-    .tournament-card + .tournament-card { margin-top: var(--element-gap); }
-    .tournament-card .t-header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
-    }
-    .tournament-card .t-name {
-      font-size: var(--body); font-weight: var(--fw-semibold);
-    }
-    .tournament-card .t-meta {
-      display: flex; gap: 8px; align-items: center; margin-top: 6px;
-    }
-    .tournament-card .t-meta-item {
-      font-size: var(--caption); color: var(--text-secondary);
-      display: flex; align-items: center; gap: 4px;
-    }
-    .badge-draft {
-      background: var(--surface); color: var(--text-secondary);
-      display: inline-flex; align-items: center;
-      padding: 2px 8px; border-radius: var(--radius-full);
-      font-size: var(--caption-sm); font-weight: var(--fw-semibold);
-      text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .format-badge {
-      display: inline-flex; align-items: center;
-      padding: 2px 8px; border-radius: var(--radius-full);
-      font-size: var(--caption-sm); font-weight: var(--fw-semibold);
-      background: var(--primary-light); color: var(--primary-dark);
-    }
-    .t-date {
-      font-size: var(--caption); color: var(--text-secondary); margin-top: 8px;
-    }
-    .t-progress {
-      margin-top: 10px; display: flex; align-items: center; gap: 8px;
-    }
-    .t-progress-bar {
-      flex: 1; height: 4px; background: var(--surface); border-radius: 2px; overflow: hidden;
-    }
-    .t-progress-fill {
-      height: 100%; background: var(--primary); border-radius: 2px;
-    }
-    .t-progress-text {
-      font-size: var(--caption); color: var(--text-secondary); white-space: nowrap;
-    }
-    .badge-registration {
-      background: #FFF3E0; color: #E65100;
-      display: inline-flex; align-items: center;
-      padding: 2px 8px; border-radius: var(--radius-full);
-      font-size: var(--caption-sm); font-weight: var(--fw-semibold);
-      text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .t-winner {
-      font-size: var(--caption); color: var(--primary); font-weight: var(--fw-semibold); margin-top: 6px;
-    }
-  </style>
+  <!-- Tournament card styles now in styles.css -->
 </head>
 <body>
   <div class="phone-frame">
     <!-- Header -->
     <div class="header-bar">
+      <button class="back-btn" onclick="goBack('05-home.html#tournaments')">
+        <span data-icon="back"></span>
+      </button>
       <span class="header-title">Tournaments</span>
     </div>
 
@@ -168,6 +109,6 @@
   </div>
 
   <script src="app.js"></script>
-  <script>initBottomNav('more');</script>
+  <script>initBottomNav('mycricket');</script>
 </body>
 </html>

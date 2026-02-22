@@ -77,7 +77,7 @@ Same structure but with `seed=99` for different delivery patterns.
 ## Profile Navigation Path
 
 ```
-Home → Teams tab → Tap "Mumbai Warriors" → Players tab → Tap "Rohit Sharma" → Player Detail Page
+My Cricket → Teams sub-tab → Tap "Mumbai Warriors" → Players tab → Tap "Rohit Sharma" → Player Detail Page
 ```
 
 On the Player Detail page, expect to see:

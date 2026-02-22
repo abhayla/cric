@@ -52,7 +52,7 @@
   <div class="phone-frame">
     <!-- Header -->
     <div class="header-bar">
-      <button class="back-btn" onclick="navigateTo('21-tournament-detail.html')">
+      <button class="back-btn" onclick="goBack('21-tournament-detail.html')">
         <span data-icon="back"></span>
       </button>
       <span class="header-title">Standings</span>
@@ -260,7 +260,7 @@
 
   <script src="app.js"></script>
   <script>
-    initBottomNav('more');
+    initBottomNav('mycricket');
     // Header tabs need manual init since they use header-tabs class
     document.querySelectorAll('.header-tabs .tab').forEach(tab => {
       tab.addEventListener('click', () => {

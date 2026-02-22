@@ -111,7 +111,7 @@
 
 | Gap | CricHeroes | CricApp | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
-| Tab count | 5 tabs (Home, My Cricket, Discover, Notifications, Profile) | 5 tabs (Home, Matches, Tournaments, Teams, Profile) per Q22 | SKIP — different but valid structure | — |
+| Tab count | 5 tabs (Home, My Cricket, Discover, Notifications, Profile) | 4 tabs (My Cricket, Updates, Live, More) | SKIP — different but valid structure | — |
 | Discover/Looking For | Dedicated tab for community discovery | Not in MVP | SKIP | Low |
 | Notifications tab | Dedicated tab with badges | Not explicitly planned | DEFER (Phase 6+) | Medium |
 | Match cards | Rich cards with scores, overs, result | Planned in blueprint | — | — |
@@ -607,7 +607,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 | Pattern | CricHeroes | CricApp |
 |---------|-----------|---------|
-| Bottom nav tabs | 5: Home, My Cricket, Discover, Notifications, Profile | 5: Home, Matches, Tournaments, Teams, Profile |
+| Bottom nav tabs | 5: Home, My Cricket, Discover, Notifications, Profile | 4: My Cricket, Updates, Live, More |
 | Side drawer | Yes (settings, language, help) | No (settings in Profile) |
 | Quick actions | FAB / prominent buttons | Quick action cards on Home |
 | Search | Global search + voice search | Not in MVP |
@@ -722,7 +722,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 | # | Feature | Reason |
 |---|---------|--------|
 | 2 | OTP digit count (5 vs 6) | Keep 6-digit (Firebase default). No benefit to changing. |
-| 8 | Different tab structure | CricApp's 5-tab structure is valid and well-designed |
+| 8 | Different tab structure | CricApp's 4-tab structure (My Cricket, Updates, Live, More) is valid and well-designed |
 | 9 | "Matches of Your Interest" | Contact+location-based suggestions, complex |
 | 10 | Stories (Instagram-like feed) | Social feature, out of MVP scope |
 | 11 | Side drawer navigation | Settings in Profile tab is simpler |

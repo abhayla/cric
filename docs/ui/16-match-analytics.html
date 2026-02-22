@@ -27,7 +27,7 @@
   <div class="phone-frame">
     <!-- Header -->
     <div class="header-bar">
-      <button class="back-btn" onclick="navigateTo('15-scorecard.html')">
+      <button class="back-btn" onclick="goBack('15-scorecard.html')">
         <span data-icon="back"></span>
       </button>
       <span class="header-title">Analytics</span>
@@ -247,7 +247,7 @@
 
   <script src="app.js"></script>
   <script>
-    initBottomNav('matches');
+    initBottomNav('mycricket');
 
     // Generate Manhattan chart
     const runsPerOver = [8, 6, 12, 7, 10, 14, 5, 9, 11, 8, 13, 6, 10, 12, 7, 9, 15, 8, 11, 6];
