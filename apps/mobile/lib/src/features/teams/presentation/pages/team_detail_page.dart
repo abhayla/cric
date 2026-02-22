@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
+import '../../../../shared/widgets/error_display.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../domain/entities/team.dart';
 import '../../domain/repositories/team_repository.dart';
@@ -26,7 +27,10 @@ class TeamDetailPage extends ConsumerWidget {
       ),
       error: (error, _) => Scaffold(
         appBar: AppBar(),
-        body: Center(child: Text('Error: $error')),
+        body: ErrorDisplay(
+          error: error,
+          onRetry: () => ref.invalidate(teamDetailProvider(teamId)),
+        ),
       ),
       data: (detail) => _TeamDetailView(detail: detail),
     );

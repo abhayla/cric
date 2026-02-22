@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
+import '../../../../shared/widgets/error_display.dart';
 import '../../domain/entities/fixture.dart';
 import '../../domain/entities/standing.dart';
 import '../../domain/entities/tournament.dart';
@@ -26,7 +27,10 @@ class TournamentDetailPage extends ConsumerWidget {
       ),
       error: (error, _) => Scaffold(
         appBar: AppBar(),
-        body: Center(child: Text('Error: $error')),
+        body: ErrorDisplay(
+          error: error,
+          onRetry: () => ref.invalidate(tournamentDetailProvider(tournamentId)),
+        ),
       ),
       data: (tournament) => _TournamentDetailView(
         tournament: tournament,
@@ -475,7 +479,10 @@ class _FixturesTab extends ConsumerWidget {
 
     return fixturesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('Error: $error')),
+      error: (error, _) => ErrorDisplay(
+            error: error,
+            onRetry: () => ref.invalidate(tournamentFixturesProvider(tournamentId)),
+          ),
       data: (fixtures) {
         if (fixtures.isEmpty) {
           return const _SectionEmptyState(

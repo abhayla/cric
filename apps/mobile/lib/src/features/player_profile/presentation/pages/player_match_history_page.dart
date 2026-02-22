@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/widgets/error_display.dart';
 import '../../providers.dart';
 import '../notifiers/player_match_history_notifier.dart';
 import '../widgets/match_performance_card.dart';
@@ -48,14 +49,17 @@ class _PlayerMatchHistoryPageState
 
     return Scaffold(
       appBar: AppBar(title: const Text('Match History')),
-      body: Column(
-        children: [
-          _FilterChips(
-            selectedResult: state.selectedResult,
-            onSelected: _notifier.filterByResult,
-          ),
-          Expanded(child: _buildBody(state)),
-        ],
+      body: RefreshIndicator(
+        onRefresh: () => _notifier.loadMatches(),
+        child: Column(
+          children: [
+            _FilterChips(
+              selectedResult: state.selectedResult,
+              onSelected: _notifier.filterByResult,
+            ),
+            Expanded(child: _buildBody(state)),
+          ],
+        ),
       ),
     );
   }
@@ -66,7 +70,10 @@ class _PlayerMatchHistoryPageState
     }
 
     if (state.error != null && state.matches.isEmpty) {
-      return Center(child: Text('Error: ${state.error}'));
+      return ErrorDisplay(
+        error: state.error!,
+        onRetry: () => _notifier.loadMatches(),
+      );
     }
 
     if (state.matches.isEmpty) {

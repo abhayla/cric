@@ -60,7 +60,11 @@ export interface PublishScoreMessage {
   payload: object;
 }
 
-export type ClientMessage = JoinMatchMessage | LeaveMatchMessage | PublishScoreMessage;
+export interface PingMessage {
+  type: 'ping';
+}
+
+export type ClientMessage = JoinMatchMessage | LeaveMatchMessage | PublishScoreMessage | PingMessage;
 
 // --- Server → Client Messages ---
 

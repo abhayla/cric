@@ -22,7 +22,7 @@ abstract final class AppConstants {
   static const double spacing = 8.0;
 
   /// WebSocket reconnect: max attempts before giving up.
-  static const int wsReconnectMaxAttempts = 10;
+  static const int wsReconnectMaxAttempts = 30;
 
   /// WebSocket reconnect: initial delay in milliseconds.
   static const int wsReconnectInitialDelayMs = 1000;

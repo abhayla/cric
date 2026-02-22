@@ -108,6 +108,8 @@ class _ScoringPageState extends State<ScoringPage> {
   ScoringNotifier? _notifier;
   ScoringPersistenceService? _service;
   bool _isReady = false;
+  SyncStatus? _syncStatus;
+  int _pendingCount = 0;
 
   @override
   void initState() {
@@ -158,6 +160,21 @@ class _ScoringPageState extends State<ScoringPage> {
     } else {
       // No persistence — direct notifier (backwards compatible)
       _notifier = _createNotifier(args);
+    }
+
+    // Listen to sync status changes
+    final syncSvc = _service?.syncService;
+    if (syncSvc != null) {
+      _syncStatus = syncSvc.status;
+      _pendingCount = syncSvc.unsyncedCount;
+      syncSvc.onSyncStatusChanged = () {
+        if (mounted) {
+          setState(() {
+            _syncStatus = syncSvc.status;
+            _pendingCount = syncSvc.unsyncedCount;
+          });
+        }
+      };
     }
 
     // Connect WS and join match room for fast-path broadcasting
@@ -779,6 +796,8 @@ class _ScoringPageState extends State<ScoringPage> {
               target: _state.target,
               runsNeeded: _state.runsNeeded,
               onBack: _showExitDialog,
+              syncStatus: _syncStatus,
+              pendingCount: _pendingCount,
               isMagicOver: _state.isMagicOver,
               magicOverMultiplier: _state.magicOverRunMultiplier,
               isFreeHitPending: _state.isFreeHitPending,

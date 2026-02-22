@@ -179,7 +179,7 @@ void main() {
       await tester.pumpWidget(buildProfilePage());
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Network timeout'), findsOneWidget);
+      expect(find.textContaining('Something went wrong'), findsOneWidget);
     });
 
     testWidgets('loading state shows spinner', (tester) async {

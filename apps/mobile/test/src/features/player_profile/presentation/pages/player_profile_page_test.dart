@@ -83,7 +83,7 @@ void main() {
       await tester.pumpWidget(buildWidget('player-1'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Network error'), findsOneWidget);
+      expect(find.textContaining('Something went wrong'), findsOneWidget);
     });
 
     testWidgets('shows profile content on success', (tester) async {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
+import '../../../../shared/widgets/error_display.dart';
 import '../../domain/entities/team.dart';
 import '../../providers.dart';
 import '../widgets/team_card.dart';
@@ -22,8 +23,8 @@ class TeamsListPage extends ConsumerWidget {
         onRefresh: () => ref.read(teamsListProvider.notifier).refresh(),
         child: teamsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => _ErrorState(
-            error: error.toString(),
+          error: (error, _) => ErrorDisplay(
+            error: error,
             onRetry: () => ref.read(teamsListProvider.notifier).refresh(),
           ),
           data: (result) {
@@ -114,35 +115,3 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.error, required this.onRetry});
-
-  final String error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load teams',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: theme.textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          FilledButton(onPressed: onRetry, child: const Text('Retry')),
-        ],
-      ),
-    );
-  }
-}

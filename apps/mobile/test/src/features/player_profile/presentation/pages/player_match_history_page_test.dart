@@ -87,7 +87,7 @@ void main() {
       await tester.pumpWidget(buildWidget('player-1'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Server error'), findsOneWidget);
+      expect(find.textContaining('Something went wrong'), findsOneWidget);
     });
 
     testWidgets('shows empty state when no matches', (tester) async {

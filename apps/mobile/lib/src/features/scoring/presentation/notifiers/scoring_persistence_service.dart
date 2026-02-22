@@ -35,6 +35,9 @@ class ScoringPersistenceService {
   /// Direct access to the notifier (for read-only properties like bowlerOptions).
   ScoringNotifier get notifier => _notifier;
 
+  /// Access to the sync service for status monitoring.
+  SyncService? get syncService => _syncService;
+
   /// Create a new scoring session and persist the initial state.
   static Future<ScoringPersistenceService> createNew({
     required ScoringNotifier notifier,

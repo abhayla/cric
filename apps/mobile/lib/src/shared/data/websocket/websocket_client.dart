@@ -44,6 +44,7 @@ class WebSocketClient {
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
   Timer? _reconnectTimer;
+  Timer? _pingTimer;
   int _reconnectAttempts = 0;
   bool _manualDisconnect = false;
   bool _disposed = false;
@@ -76,6 +77,7 @@ class WebSocketClient {
     try {
       _channel = _channelFactory(Uri.parse(_url));
       _setStatus(ConnectionStatus.connected);
+      _startPingTimer();
 
       _subscription = _channel!.stream.listen(
         _onData,
@@ -93,6 +95,7 @@ class WebSocketClient {
     _manualDisconnect = true;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _stopPingTimer();
     _activeMatchId = null;
     await _cleanup();
     _setStatus(ConnectionStatus.disconnected);
@@ -114,6 +117,18 @@ class WebSocketClient {
     }
   }
 
+  /// Reset reconnect counter and attempt to connect.
+  ///
+  /// Use this when the user explicitly taps a retry/reconnect button.
+  Future<void> reconnect() async {
+    _reconnectAttempts = 0;
+    _manualDisconnect = false;
+    await connect();
+    if (_status == ConnectionStatus.connected && _activeMatchId != null) {
+      joinMatch(_activeMatchId!);
+    }
+  }
+
   /// Publish a score update to a match room (fast path for scorer).
   void publishToMatch(String matchId, Map<String, dynamic> payload) {
     if (_status != ConnectionStatus.connected) {
@@ -129,6 +144,7 @@ class WebSocketClient {
     _manualDisconnect = true;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
+    _stopPingTimer();
     _status = ConnectionStatus.disconnected;
     _subscription?.cancel();
     _subscription = null;
@@ -136,6 +152,20 @@ class WebSocketClient {
     _disposed = true;
     _messageController.close();
     _statusController.close();
+  }
+
+  void _startPingTimer() {
+    _stopPingTimer();
+    _pingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (_status == ConnectionStatus.connected) {
+        _send({'type': 'ping'});
+      }
+    });
+  }
+
+  void _stopPingTimer() {
+    _pingTimer?.cancel();
+    _pingTimer = null;
   }
 
   void _send(Map<String, dynamic> message) {
@@ -152,6 +182,7 @@ class WebSocketClient {
   }
 
   void _onDone() {
+    _stopPingTimer();
     _cleanup();
     if (!_manualDisconnect && !_disposed) {
       _setStatus(ConnectionStatus.disconnected);
@@ -160,6 +191,7 @@ class WebSocketClient {
   }
 
   void _onError(Object error) {
+    _stopPingTimer();
     _cleanup();
     if (!_manualDisconnect && !_disposed) {
       _setStatus(ConnectionStatus.disconnected);

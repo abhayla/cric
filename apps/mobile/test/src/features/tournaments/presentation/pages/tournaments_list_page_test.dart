@@ -246,7 +246,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Failed to load tournaments'), findsOneWidget);
+      expect(find.textContaining('Something went wrong'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
     });
   });

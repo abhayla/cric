@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
+import '../../../../shared/widgets/error_display.dart';
 import '../../domain/entities/career_stats.dart';
 import '../../providers.dart';
 import '../notifiers/player_profile_notifier.dart';
@@ -61,7 +62,10 @@ class _PlayerProfilePageState extends ConsumerState<PlayerProfilePage> {
     if (state.error != null && state.profile == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Player Profile')),
-        body: Center(child: Text('Error: ${state.error}')),
+        body: ErrorDisplay(
+          error: state.error!,
+          onRetry: () => _notifier.loadProfile(),
+        ),
       );
     }
 
@@ -78,15 +82,10 @@ class _PlayerProfilePageState extends ConsumerState<PlayerProfilePage> {
         appBar: AppBar(
           title: const Text('Player Profile'),
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: _ProfileBody(
-                playerId: widget.playerId,
-                state: state,
-              ),
-            ),
-          ],
+        body: _ProfileBody(
+          playerId: widget.playerId,
+          state: state,
+          onRefresh: () => _notifier.loadProfile(),
         ),
       ),
     );
@@ -97,10 +96,12 @@ class _ProfileBody extends StatelessWidget {
   const _ProfileBody({
     required this.playerId,
     required this.state,
+    required this.onRefresh,
   });
 
   final String playerId;
   final PlayerProfileState state;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -108,44 +109,48 @@ class _ProfileBody extends StatelessWidget {
       children: [
         // Scrollable header + quick stats
         Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                PlayerProfileHero(profile: state.profile!),
-                const SizedBox(height: 8),
-                QuickStatsGrid(stats: state.stats),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      context.push(
-                        AppRoutes.playerMatchHistoryPath(playerId),
-                      );
-                    },
-                    icon: const Icon(Icons.history),
-                    label: const Text('View Match History'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 40),
+          child: RefreshIndicator(
+            onRefresh: onRefresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  PlayerProfileHero(profile: state.profile!),
+                  const SizedBox(height: 8),
+                  QuickStatsGrid(stats: state.stats),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        context.push(
+                          AppRoutes.playerMatchHistoryPath(playerId),
+                        );
+                      },
+                      icon: const Icon(Icons.history),
+                      label: const Text('View Match History'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 40),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                const TabBar(
-                  tabs: [
-                    Tab(text: 'Batting'),
-                    Tab(text: 'Bowling'),
-                    Tab(text: 'Fielding'),
-                  ],
-                ),
-                if (state.isStatsLoading)
-                  const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else
-                  _StatsTabContent(stats: state.stats),
-              ],
+                  const SizedBox(height: 16),
+                  const TabBar(
+                    tabs: [
+                      Tab(text: 'Batting'),
+                      Tab(text: 'Bowling'),
+                      Tab(text: 'Fielding'),
+                    ],
+                  ),
+                  if (state.isStatsLoading)
+                    const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else
+                    _StatsTabContent(stats: state.stats),
+                ],
+              ),
             ),
           ),
         ),

@@ -83,6 +83,11 @@ export const websocketHandler = new Elysia({ name: 'websocket' }).ws('/ws', {
         break;
       }
 
+      case 'ping': {
+        ws.send(JSON.stringify({ type: 'pong' }));
+        break;
+      }
+
       case 'publish_score': {
         if (!msg.matchId || typeof msg.matchId !== 'string') {
           const err: ErrorMessage = {

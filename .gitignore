@@ -40,6 +40,11 @@ apps/server/node_modules/
 **/google-services.json
 **/firebase-service-account.json
 
+# Android signing
+key.properties
+*.jks
+*.keystore
+
 # Generated
 *.g.dart
 *.freezed.dart
