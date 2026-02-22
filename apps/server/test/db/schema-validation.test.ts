@@ -36,15 +36,17 @@ const EXPECTED_TABLES = [
   'tournament_fixtures',
   'tournament_standings',
   'tournament_requests',
+  // Activity Feed (1)
+  'activity_feed',
 ] as const;
 
 describe('Schema Validation', () => {
-  test('exports all 26 table definitions', () => {
+  test('exports all 27 table definitions', () => {
     // Each table export is a Drizzle table object with a symbol key for table name
     const exportedTables = Object.values(schema).filter(
       (value) => typeof value === 'object' && value !== null && Symbol.for('drizzle:Name') in value,
     );
-    expect(exportedTables.length).toBe(26);
+    expect(exportedTables.length).toBe(27);
   });
 
   test.each(EXPECTED_TABLES)('exports table: %s', (tableName) => {

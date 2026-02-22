@@ -10,7 +10,7 @@
     "db:migrate": "bunx drizzle-kit migrate",
     "db:seed": "bun run src/db/seed/master_data.ts",
     "typecheck": "bunx tsc --noEmit",
-    "test": "bun test --timeout=60000 --concurrency 1"
+    "test": "bun test --timeout=60000 --max-concurrency=1"
   },
   "dependencies": {
     "drizzle-orm": "^0.38.4",

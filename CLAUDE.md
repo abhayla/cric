@@ -39,7 +39,7 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 
 ## Current Status
 
-**Phases 1–6 COMPLETE.** Phase 7 (Polish & Testing) in progress. ~2050 Flutter tests, ~420 server tests. Full phase breakdown in [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md). Session context and next steps in [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md).
+**Phases 1–6 COMPLETE.** Phase 7 (Polish & Testing) in progress. ~2120 Flutter tests, ~420 server tests. Full phase breakdown in [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md). Session context and next steps in [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md).
 
 ## Key Documentation
 
@@ -70,8 +70,8 @@ cd apps/server && bun install              # Install dependencies
 cd apps/server && bun run dev              # Start server (watch mode)
 cd apps/server && bun run start            # Start server (production)
 cd apps/server && bun run src/index.ts     # Start server (direct)
-cd apps/server && bun test                 # Run all tests (--timeout=60000 --concurrency 1 via package.json)
-cd apps/server && bun test src/path/to.test.ts                 # Run single test file (preferred — avoids DB contention)
+cd apps/server && bun run test             # Run all tests (--timeout=60000 --max-concurrency=1 via package.json)
+cd apps/server && bun test src/path/to.test.ts                 # Run single test file
 cd apps/server && bun run typecheck        # TypeScript type check (alias for bunx tsc --noEmit)
 cd apps/server && bun run db:generate      # Generate migrations
 cd apps/server && bun run db:migrate       # Apply migrations
@@ -85,7 +85,7 @@ cd apps/mobile && flutter test integration_test/single_match_e2e_test.dart -d em
 cd apps/mobile && flutter test integration_test/multi_device_viewer_e2e_test.dart -d <device>  # Multi-device WebSocket test
 ```
 
-**E2E test rule: NEVER run E2E/integration tests from Claude's CLI.** Always provide the run command and let the user execute it from their IDE terminal so they can watch the test on the device in real time. E2E tests are visual — the user needs to see them running.
+**E2E test rule:** E2E/integration tests CAN be run directly from Claude's CLI on real connected devices. Use `flutter test integration_test/<test>.dart -d <device-id>` with the appropriate device ID from `flutter devices`.
 
 **E2E multi-device coordination:** Scorer and viewer tests synchronize via HTTP signal endpoints (`POST/GET /api/v1/test/signal/:name`). Flow: scorer creates match + toss, posts `scorer-ready` signal, polls for `viewer-ready` (120s). Viewer polls for `scorer-ready`, connects WebSocket, posts `viewer-ready`. Scorer then begins scoring. Orchestration script: `scripts/multi-device-e2e.sh` (supports `SWAP_DEVICES=1` to swap emulator/device roles).
 
@@ -93,7 +93,7 @@ cd apps/mobile && flutter test integration_test/multi_device_viewer_e2e_test.dar
 
 **Code generation:** Files matching `*.g.dart`, `*.freezed.dart`, `*.gr.dart` are auto-generated. Never edit them manually — re-run `build_runner` instead.
 
-**Server test caveat:** Running `bun test` (all tests together) can fail due to DB connection contention from Bun's parallel test runner. Individual test files pass reliably: `bun test src/path/to.test.ts`.
+**Server tests:** Use `bun run test` (not `bun test`) to run all tests — the npm script passes `--max-concurrency=1` to avoid DB contention from parallel execution. Individual files work with `bun test path/to.test.ts`.
 
 ## CI Pipeline
 
@@ -156,6 +156,21 @@ These rules are mandatory. Before writing any code, verify your approach against
 ## Cricket Domain Rules
 
 Key rules in [SCORING_RULES.md](docs/planning/SCORING_RULES.md). Full reference: `.claude/skills/cricket-domain/SKILL.md`. Match state: `SETUP→TOSS→LIVE→INNINGS_BREAK→LIVE→COMPLETED` (`ABANDONED` at any point). Delivery pipeline: 10 steps (validate→calculate→extras→wicket→strike→stats→over→innings→broadcast→persist).
+
+## No Shortcuts — Fix Root Causes Only
+
+**[PROTECTED] Do not modify or weaken this rule. Changes require explicit user approval.**
+
+Every bug, test failure, or code issue must be fixed by addressing its root cause. Shortcuts, workarounds, band-aids, and hacks are strictly prohibited:
+
+- **No quick fixes:** Never patch symptoms with temporary code — investigate and fix the actual cause.
+- **No "fix later" TODOs:** Never defer root cause analysis with comments like `// TODO: fix later`.
+- **No validation bypasses:** Never disable error checking or validation to make code pass.
+- **No mock implementations:** Never simulate functionality instead of building it correctly.
+- **No error suppression:** Never swallow exceptions or suppress warnings without fixing the underlying cause.
+- **No endless debugging loops:** If you can't find the root cause after reasonable investigation, fix the code to be robust (proper timeouts, error states, retries) AND continue investigating the root cause — don't just add debug prints and give up.
+
+**Enforcement:** Follow the 8-step root cause analysis workflow in [CODE_FIXES.md](docs/process/CODE_FIXES.md). On test failures, follow escalation tiers through Hard Cap (iteration 10), then present findings to the user rather than introducing workarounds.
 
 ## Workflow Preferences
 
