@@ -8,7 +8,15 @@ import 'src/app/app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  debugPrint('[CricApp] Initializing Firebase...');
+  try {
+    await Firebase.initializeApp()
+        .timeout(const Duration(seconds: 10));
+    debugPrint('[CricApp] Firebase initialized successfully');
+  } catch (e) {
+    debugPrint('[CricApp] Firebase init failed/timed out: $e');
+    // Continue anyway — auth provider has its own 5s timeout
+  }
 
   // Lock to portrait mode
   await SystemChrome.setPreferredOrientations([
@@ -16,6 +24,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
+  debugPrint('[CricApp] Starting app...');
   runApp(
     const ProviderScope(
       child: CricApp(),

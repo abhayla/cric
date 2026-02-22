@@ -10,7 +10,11 @@ import 'domain/repositories/team_repository.dart';
 
 /// Dio instance for teams feature.
 final _dioProvider = Provider<Dio>((ref) {
-  return Dio();
+  return Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+    sendTimeout: const Duration(seconds: 10),
+  ));
 });
 
 /// Teams remote datasource.
