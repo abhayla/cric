@@ -8,6 +8,7 @@ import { dismissalTypes } from '../db/schema/master-data.ts';
 import { tournamentStandings } from '../db/schema/tournaments.ts';
 import { AppError } from '../middleware/error-handler.ts';
 import { refreshMatchPlayerCareerStats } from './career-stats.service.ts';
+import { emitMatchCompletedEvents } from './activity-feed.service.ts';
 
 // ============================================================
 // Cricket Overs Arithmetic Helpers
@@ -530,6 +531,11 @@ export async function recordDelivery(
     } catch (err) {
       console.error(`[Scoring] Career stats refresh failed for match=${matchId}:`, err);
     }
+
+    // Fire-and-forget activity feed events
+    emitMatchCompletedEvents(matchId).catch((err) =>
+      console.error(`[ActivityFeed] Failed for match=${matchId}:`, err),
+    );
   }
 
   return result;
@@ -770,6 +776,11 @@ export async function recordDeliveryBatch(
     } catch (err) {
       console.error(`[Scoring] Career stats refresh failed for match=${matchId}:`, err);
     }
+
+    // Fire-and-forget activity feed events
+    emitMatchCompletedEvents(matchId).catch((err) =>
+      console.error(`[ActivityFeed] Failed for match=${matchId}:`, err),
+    );
   }
 
   return result;

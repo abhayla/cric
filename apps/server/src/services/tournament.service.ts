@@ -7,6 +7,7 @@ import { matches } from '../db/schema/matches.ts';
 import { innings } from '../db/schema/innings.ts';
 import { battingStats, bowlingStats } from '../db/schema/stats.ts';
 import { AppError } from '../middleware/error-handler.ts';
+import { emitTournamentUpdateEvents } from './activity-feed.service.ts';
 
 // -- Types --
 
@@ -327,6 +328,11 @@ export async function transitionStatus(tournamentId: string, userId: string, new
     .set({ status: newStatus })
     .where(eq(tournaments.id, tournamentId))
     .returning();
+
+  // Fire-and-forget activity feed events
+  emitTournamentUpdateEvents(tournamentId, updated!.name, newStatus).catch((err) =>
+    console.error(`[ActivityFeed] Failed for tournament=${tournamentId}:`, err),
+  );
 
   return updated!;
 }

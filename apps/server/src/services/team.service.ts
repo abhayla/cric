@@ -4,6 +4,7 @@ import { teams } from '../db/schema/teams.ts';
 import { teamRosters } from '../db/schema/teams.ts';
 import { users } from '../db/schema/users.ts';
 import { AppError } from '../middleware/error-handler.ts';
+import { emitPlayerAddedEvents } from './activity-feed.service.ts';
 
 const MAX_ROSTER_SIZE = 25;
 
@@ -304,6 +305,11 @@ export async function addPlayer(teamId: string, userId: string, input: AddPlayer
     .innerJoin(users, eq(teamRosters.playerId, users.id))
     .where(eq(teamRosters.id, entry!.id))
     .limit(1);
+
+  // Fire-and-forget activity feed event
+  emitPlayerAddedEvents(teamId, input.playerId).catch((err) =>
+    console.error(`[ActivityFeed] Failed for team=${teamId}:`, err),
+  );
 
   return enriched!;
 }

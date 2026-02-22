@@ -9,6 +9,8 @@ import '../features/auth/presentation/pages/profile_setup_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/home/presentation/pages/match_history_page.dart';
+import '../features/updates/presentation/pages/updates_page.dart';
+import '../features/live/presentation/pages/live_page.dart';
 import '../features/more/presentation/pages/more_page.dart';
 import '../features/more/presentation/pages/settings_page.dart';
 import '../features/more/presentation/pages/about_page.dart';
@@ -45,6 +47,8 @@ abstract final class AppRoutes {
   static const String otp = '/otp';
   static const String profileSetup = '/profile-setup';
   static const String home = '/home';
+  static const String updates = '/updates';
+  static const String liveHub = '/live-hub';
   static const String matches = '/matches';
   static const String tournaments = '/tournaments';
   static const String teams = '/teams';
@@ -587,6 +591,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: AppRoutes.matches,
+        builder: (context, state) => const MatchHistoryPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.teams,
+        builder: (context, state) => const TeamsListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const _CurrentUserProfilePage(),
+      ),
+      GoRoute(
         path: AppRoutes.tournaments,
         builder: (context, state) => const TournamentsListPage(),
       ),
@@ -665,21 +681,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: AppRoutes.matches,
+            path: AppRoutes.updates,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: MatchHistoryPage(),
+              child: UpdatesPage(),
             ),
           ),
           GoRoute(
-            path: AppRoutes.teams,
+            path: AppRoutes.liveHub,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: TeamsListPage(),
-            ),
-          ),
-          GoRoute(
-            path: AppRoutes.profile,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: _CurrentUserProfilePage(),
+              child: LivePage(),
             ),
           ),
           GoRoute(
@@ -694,7 +704,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// Bottom navigation shell with 5 tabs.
+/// Bottom navigation shell with 4 tabs.
 class _AppShell extends StatelessWidget {
   const _AppShell({required this.child});
 
@@ -702,9 +712,8 @@ class _AppShell extends StatelessWidget {
 
   static const _tabs = [
     AppRoutes.home,
-    AppRoutes.matches,
-    AppRoutes.teams,
-    AppRoutes.profile,
+    AppRoutes.updates,
+    AppRoutes.liveHub,
     AppRoutes.more,
   ];
 
@@ -722,24 +731,19 @@ class _AppShell extends StatelessWidget {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.sports_cricket_outlined),
             selectedIcon: Icon(Icons.sports_cricket),
-            label: 'Matches',
+            label: 'My Cricket',
           ),
           NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            selectedIcon: Icon(Icons.groups),
-            label: 'Teams',
+            icon: Icon(Icons.notifications_outlined),
+            selectedIcon: Icon(Icons.notifications),
+            label: 'Updates',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: Icon(Icons.cell_tower_outlined),
+            selectedIcon: Icon(Icons.cell_tower),
+            label: 'Live',
           ),
           NavigationDestination(
             icon: Icon(Icons.more_horiz),

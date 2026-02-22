@@ -12,6 +12,7 @@ import { tournamentRoutes } from './routes/v1/tournaments.ts';
 import { scoringRoutes } from './routes/v1/scoring.ts';
 import { testVerifyRoutes } from './routes/v1/test-verify.routes.ts';
 import { uploadRoutes } from './routes/v1/uploads.ts';
+import { activityFeedRoutes } from './routes/v1/activity-feed.ts';
 import { websocketHandler } from './websocket/handler.ts';
 import { initBroadcaster } from './websocket/broadcaster.ts';
 
@@ -30,6 +31,7 @@ const app = new Elysia()
   .use(scoringRoutes)
   .use(testVerifyRoutes)
   .use(uploadRoutes)
+  .use(activityFeedRoutes)
   .listen(env.PORT);
 
 initBroadcaster(app.server!);

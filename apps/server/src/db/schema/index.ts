@@ -6,3 +6,4 @@ export * from './innings.ts';
 export * from './deliveries.ts';
 export * from './stats.ts';
 export * from './tournaments.ts';
+export * from './activity-feed.ts';
