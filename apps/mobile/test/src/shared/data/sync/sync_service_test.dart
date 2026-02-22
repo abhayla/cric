@@ -45,9 +45,10 @@ void main() {
       // Give processSyncQueue time to run
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      // Verify the entry was enqueued (and synced since mock succeeded)
+      // Verify the entry was enqueued and synced via batch endpoint
+      // (_batchThreshold = 1, so all creates use batch path)
       verify(() => mockDio.post(
-            '/api/v1/matches/match-1/deliveries',
+            '/api/v1/matches/match-1/delivery-batch',
             data: any(named: 'data'),
           )).called(1);
     });
@@ -114,7 +115,8 @@ void main() {
 
       await service.processSyncQueue();
 
-      verify(() => mockDio.post(any(), data: any(named: 'data'))).called(2);
+      // Both entries batched into a single POST (_batchThreshold = 1)
+      verify(() => mockDio.post(any(), data: any(named: 'data'))).called(1);
       expect(service.status, SyncStatus.allSynced);
       expect(service.unsyncedCount, 0);
     });
@@ -345,14 +347,14 @@ void main() {
   });
 
   group('batch sync', () {
-    test('queue < 6 entries → individual POSTs (not batch)', () async {
+    test('queue < 6 entries → single batch POST', () async {
       when(() => mockDio.post(any(), data: any(named: 'data')))
           .thenAnswer((_) async => Response(
                 requestOptions: RequestOptions(),
                 statusCode: 201,
               ));
 
-      // Insert 3 entries (below batch threshold)
+      // Insert 3 entries (below old threshold, but _batchThreshold = 1)
       for (var i = 0; i < 3; i++) {
         await dao.enqueueSyncEntry(SyncQueueCompanion.insert(
           entityType: 'delivery',
@@ -365,15 +367,12 @@ void main() {
 
       await service.processSyncQueue();
 
-      // Should use individual POSTs to /deliveries (not /delivery-batch)
+      // All entries batched into a single POST (_batchThreshold = 1)
       verify(() => mockDio.post(
-            '/api/v1/matches/match-1/deliveries',
-            data: any(named: 'data'),
-          )).called(3);
-      verifyNever(() => mockDio.post(
             '/api/v1/matches/match-1/delivery-batch',
             data: any(named: 'data'),
-          ));
+          )).called(1);
+      expect(service.status, SyncStatus.allSynced);
     });
 
     test('queue >= 6 entries → single batch POST', () async {
