@@ -397,7 +397,7 @@ void main() {
       await tester.pump();
 
       expect(createdName, 'Test Player');
-      expect(createdPhone, '9876543210');
+      expect(createdPhone, '+919876543210');
       expect(createdRole, 'batter'); // Default role
     });
   });

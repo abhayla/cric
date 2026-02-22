@@ -17,9 +17,15 @@ void main() {
     test('main tab routes have correct paths', () {
       expect(AppRoutes.home, '/home');
       expect(AppRoutes.matches, '/matches');
-      expect(AppRoutes.tournaments, '/tournaments');
       expect(AppRoutes.teams, '/teams');
       expect(AppRoutes.profile, '/profile');
+      expect(AppRoutes.more, '/more');
+    });
+
+    test('more sub-routes have correct paths', () {
+      expect(AppRoutes.settings, '/more/settings');
+      expect(AppRoutes.about, '/more/about');
+      expect(AppRoutes.help, '/more/help');
     });
 
     test('team detail route paths', () {
@@ -28,16 +34,11 @@ void main() {
       expect(AppRoutes.teamDetailPath('abc-123'), '/teams/abc-123');
     });
 
-    test('manage roster and add player route paths', () {
-      expect(AppRoutes.manageRoster, '/teams/:teamId/roster');
-      expect(AppRoutes.addPlayer, '/teams/:teamId/roster/add');
-      expect(
-        AppRoutes.manageRosterPath('abc-123'),
-        '/teams/abc-123/roster',
-      );
+    test('add player route path', () {
+      expect(AppRoutes.addPlayer, '/teams/:teamId/add-player');
       expect(
         AppRoutes.addPlayerPath('abc-123'),
-        '/teams/abc-123/roster/add',
+        '/teams/abc-123/add-player',
       );
     });
 
@@ -50,7 +51,11 @@ void main() {
       expect(AppRoutes.tossPath('match-456'), '/toss/match-456');
     });
 
-    test('all 15 routes defined', () {
+    test('tournaments route path', () {
+      expect(AppRoutes.tournaments, '/tournaments');
+    });
+
+    test('all routes defined', () {
       final routes = [
         AppRoutes.splash,
         AppRoutes.login,
@@ -58,18 +63,21 @@ void main() {
         AppRoutes.profileSetup,
         AppRoutes.home,
         AppRoutes.matches,
-        AppRoutes.tournaments,
         AppRoutes.teams,
+        AppRoutes.profile,
+        AppRoutes.more,
+        AppRoutes.settings,
+        AppRoutes.about,
+        AppRoutes.help,
         AppRoutes.createTeam,
         AppRoutes.teamDetail,
-        AppRoutes.manageRoster,
         AppRoutes.addPlayer,
-        AppRoutes.profile,
         AppRoutes.matchSetup,
         AppRoutes.toss,
+        AppRoutes.tournaments,
       ];
-      expect(routes.length, 15);
-      expect(routes.toSet().length, 15); // All unique
+      expect(routes.length, 18);
+      expect(routes.toSet().length, 18); // All unique
     });
   });
 }

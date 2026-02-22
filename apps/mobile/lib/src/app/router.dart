@@ -9,9 +9,12 @@ import '../features/auth/presentation/pages/profile_setup_page.dart';
 import '../features/auth/presentation/pages/splash_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/home/presentation/pages/match_history_page.dart';
+import '../features/more/presentation/pages/more_page.dart';
+import '../features/more/presentation/pages/settings_page.dart';
+import '../features/more/presentation/pages/about_page.dart';
+import '../features/more/presentation/pages/help_page.dart';
 import '../features/teams/presentation/pages/add_player_page.dart';
 import '../features/teams/presentation/pages/create_team_page.dart';
-import '../features/teams/presentation/pages/manage_roster_page.dart';
 import '../features/teams/presentation/pages/team_detail_page.dart';
 import '../features/scoring/presentation/notifiers/toss_notifier.dart';
 import '../features/scoring/presentation/pages/match_setup_page.dart';
@@ -46,10 +49,13 @@ abstract final class AppRoutes {
   static const String tournaments = '/tournaments';
   static const String teams = '/teams';
   static const String profile = '/profile';
+  static const String more = '/more';
+  static const String settings = '/more/settings';
+  static const String about = '/more/about';
+  static const String help = '/more/help';
   static const String createTeam = '/teams/create';
   static const String teamDetail = '/teams/:teamId';
-  static const String manageRoster = '/teams/:teamId/roster';
-  static const String addPlayer = '/teams/:teamId/roster/add';
+  static const String addPlayer = '/teams/:teamId/add-player';
   static const String matchSetup = '/match-setup';
   static const String toss = '/toss/:matchId';
   static const String scoring = '/scoring/:matchId';
@@ -69,11 +75,8 @@ abstract final class AppRoutes {
   /// Build team detail path with actual ID.
   static String teamDetailPath(String teamId) => '/teams/$teamId';
 
-  /// Build manage roster path with actual ID.
-  static String manageRosterPath(String teamId) => '/teams/$teamId/roster';
-
   /// Build add player path with actual ID.
-  static String addPlayerPath(String teamId) => '/teams/$teamId/roster/add';
+  static String addPlayerPath(String teamId) => '/teams/$teamId/add-player';
 
   /// Build toss path with actual match ID.
   static String tossPath(String matchId) => '/toss/$matchId';
@@ -279,13 +282,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final teamId = state.pathParameters['teamId']!;
           return TeamDetailPage(teamId: teamId);
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.manageRoster,
-        builder: (context, state) {
-          final teamId = state.pathParameters['teamId']!;
-          return ManageRosterPage(teamId: teamId);
         },
       ),
       GoRoute(
@@ -591,6 +587,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: AppRoutes.tournaments,
+        builder: (context, state) => const TournamentsListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.about,
+        builder: (context, state) => const AboutPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.help,
+        builder: (context, state) => const HelpPage(),
+      ),
+      GoRoute(
         path: AppRoutes.createTournament,
         builder: (context, state) => CreateTournamentPage(
           onCreated: (tournamentId) {
@@ -659,12 +671,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: AppRoutes.tournaments,
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: TournamentsListPage(),
-            ),
-          ),
-          GoRoute(
             path: AppRoutes.teams,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: TeamsListPage(),
@@ -674,6 +680,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.profile,
             pageBuilder: (context, state) => const NoTransitionPage(
               child: _CurrentUserProfilePage(),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.more,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: MorePage(),
             ),
           ),
         ],
@@ -691,9 +703,9 @@ class _AppShell extends StatelessWidget {
   static const _tabs = [
     AppRoutes.home,
     AppRoutes.matches,
-    AppRoutes.tournaments,
     AppRoutes.teams,
     AppRoutes.profile,
+    AppRoutes.more,
   ];
 
   @override
@@ -720,11 +732,6 @@ class _AppShell extends StatelessWidget {
             label: 'Matches',
           ),
           NavigationDestination(
-            icon: Icon(Icons.emoji_events_outlined),
-            selectedIcon: Icon(Icons.emoji_events),
-            label: 'Tournaments',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.groups_outlined),
             selectedIcon: Icon(Icons.groups),
             label: 'Teams',
@@ -733,6 +740,11 @@ class _AppShell extends StatelessWidget {
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.more_horiz),
+            selectedIcon: Icon(Icons.more_horiz),
+            label: 'More',
           ),
         ],
       ),

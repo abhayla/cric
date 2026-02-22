@@ -33,45 +33,83 @@ class TeamDetailPage extends ConsumerWidget {
   }
 }
 
-class _TeamDetailView extends StatelessWidget {
+class _TeamDetailView extends ConsumerStatefulWidget {
   const _TeamDetailView({required this.detail});
 
   final TeamDetail detail;
 
   @override
+  ConsumerState<_TeamDetailView> createState() => _TeamDetailViewState();
+}
+
+class _TeamDetailViewState extends ConsumerState<_TeamDetailView>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  bool get _isOwnerOrCaptain =>
+      widget.detail.team.role == TeamMemberRole.owner ||
+      widget.detail.team.role == TeamMemberRole.captain;
+
+  bool get _showFab => _tabController.index == 2 && _isOwnerOrCaptain;
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(detail.team.name),
-        ),
-        body: Column(
-          children: [
-            _TeamHeader(team: detail.team),
-            const TeamStatsRow(),
-            const TabBar(
-              tabs: [
-                Tab(text: 'Overview'),
-                Tab(text: 'Matches'),
-                Tab(text: 'Players'),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.detail.team.name),
+      ),
+      floatingActionButton: _showFab
+          ? FloatingActionButton(
+              onPressed: () {
+                context.push(AppRoutes.addPlayerPath(widget.detail.team.id));
+              },
+              child: const Icon(Icons.person_add),
+            )
+          : null,
+      body: Column(
+        children: [
+          _TeamHeader(team: widget.detail.team),
+          const TeamStatsRow(),
+          TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'Overview'),
+              Tab(text: 'Matches'),
+              Tab(text: 'Players'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _OverviewTab(team: widget.detail.team),
+                const _MatchesTab(),
+                _PlayersTab(
+                  roster: widget.detail.roster,
+                  team: widget.detail.team,
+                  teamId: widget.detail.team.id,
+                ),
               ],
             ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _OverviewTab(team: detail.team),
-                  const _MatchesTab(),
-                  _PlayersTab(
-                    roster: detail.roster,
-                    team: detail.team,
-                    teamId: detail.team.id,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -206,7 +244,7 @@ class _MatchesTab extends StatelessWidget {
   }
 }
 
-class _PlayersTab extends StatelessWidget {
+class _PlayersTab extends ConsumerWidget {
   const _PlayersTab({
     required this.roster,
     required this.team,
@@ -217,8 +255,12 @@ class _PlayersTab extends StatelessWidget {
   final Team team;
   final String teamId;
 
+  bool get _isOwnerOrCaptain =>
+      team.role == TeamMemberRole.owner ||
+      team.role == TeamMemberRole.captain;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (roster.isEmpty) {
       return _EmptyPlayersState(teamId: teamId);
     }
@@ -240,39 +282,88 @@ class _PlayersTab extends StatelessWidget {
       PlayerRole.bowler,
     ];
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${roster.length} ${roster.length == 1 ? 'player' : 'players'}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(teamDetailProvider(teamId));
+        await ref.read(teamDetailProvider(teamId).future);
+      },
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              '${roster.length} ${roster.length == 1 ? 'player' : 'players'}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-              if (team.role == TeamMemberRole.owner ||
-                  team.role == TeamMemberRole.captain)
-                OutlinedButton(
-                  onPressed: () {
-                    context.push(AppRoutes.manageRosterPath(teamId));
-                  },
-                  child: const Text('Manage'),
+            ),
+          ),
+          for (final role in roleOrder)
+            if (grouped.containsKey(role)) ...[
+              _RoleGroupHeader(role: role),
+              for (final entry in grouped[role]!)
+                Row(
+                  children: [
+                    Expanded(child: PlayerRow(entry: entry)),
+                    if (_isOwnerOrCaptain)
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: theme.colorScheme.error,
+                        ),
+                        tooltip: 'Remove',
+                        onPressed: () => _confirmRemovePlayer(
+                          context, ref, entry.playerId,
+                        ),
+                      ),
+                  ],
                 ),
             ],
-          ),
-        ),
-        for (final role in roleOrder)
-          if (grouped.containsKey(role)) ...[
-            _RoleGroupHeader(role: role),
-            for (final entry in grouped[role]!)
-              PlayerRow(entry: entry),
-          ],
-      ],
+        ],
+      ),
     );
+  }
+
+  Future<void> _confirmRemovePlayer(
+    BuildContext context, WidgetRef ref, String playerId,
+  ) async {
+    final player = roster.where((e) => e.playerId == playerId).firstOrNull;
+    final playerName = player?.displayName ?? 'this player';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Player'),
+        content: Text('Remove $playerName from the roster?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(teamRepositoryProvider).removePlayer(teamId, playerId);
+      ref.invalidate(teamDetailProvider(teamId));
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Player removed')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to remove player')),
+      );
+    }
   }
 }
 

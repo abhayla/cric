@@ -203,7 +203,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('No players yet'), findsOneWidget);
-      expect(find.byIcon(Icons.person_add), findsOneWidget);
+      // Both the empty state icon and the FAB show person_add
+      expect(find.byIcon(Icons.person_add), findsNWidgets(2));
     });
 
     testWidgets('shows loading indicator', (tester) async {
@@ -213,7 +214,22 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows Manage button in Players tab for owner',
+    testWidgets('shows FAB on Players tab for owner', (tester) async {
+      await tester.pumpWidget(buildTestWidget(initialData: testDetail));
+      await tester.pumpAndSettle();
+
+      // FAB not visible on Overview tab
+      expect(find.byType(FloatingActionButton), findsNothing);
+
+      // Switch to Players tab
+      await tester.tap(find.byType(Tab).last);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      expect(find.byIcon(Icons.person_add), findsOneWidget);
+    });
+
+    testWidgets('shows delete icons on Players tab for owner',
         (tester) async {
       await tester.pumpWidget(buildTestWidget(initialData: testDetail));
       await tester.pumpAndSettle();
@@ -221,7 +237,32 @@ void main() {
       await tester.tap(find.byType(Tab).last);
       await tester.pumpAndSettle();
 
-      expect(find.text('Manage'), findsOneWidget);
+      expect(find.byIcon(Icons.delete_outline), findsWidgets);
+    });
+
+    testWidgets('hides FAB and delete icons for regular player',
+        (tester) async {
+      final playerTeam = Team(
+        id: 'team-1',
+        name: 'Mumbai Warriors',
+        createdBy: 'user-1',
+        isActive: true,
+        playerCount: 11,
+        role: TeamMemberRole.member,
+        location: 'Mumbai',
+        createdAt: DateTime(2025, 3, 15),
+        updatedAt: DateTime(2025, 3, 15),
+      );
+      final playerDetail = TeamDetail(team: playerTeam, roster: testRoster);
+
+      await tester.pumpWidget(buildTestWidget(initialData: playerDetail));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Tab).last);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byIcon(Icons.delete_outline), findsNothing);
     });
 
     testWidgets('shows player count in Players tab header', (tester) async {

@@ -16,6 +16,58 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-22c: UI Polish — 3 Fixes (Bottom Spacing, Manage Roster Merge, More Tab)
+
+**3 UI issues fixed from manual testing on OPPO device:**
+
+1. **Add Player bottom spacing** — "Add to Team" button touched screen bottom on gesture navigation devices. Added `MediaQuery.of(context).viewPadding.bottom + 24` dynamic padding to both _CreateTab and _SearchTab.
+
+2. **Merged Manage Roster into Team Detail** — Eliminated 3-tap flow (Team Detail → Manage → Add). Now Team Detail Players tab has:
+   - FAB (person_add icon) visible on Players tab for owner/captain
+   - Inline delete icons on each player row for owner/captain
+   - Pull-to-refresh via RefreshIndicator
+   - Deleted `manage_roster_page.dart` and its test
+
+3. **Replaced Tournaments tab with More tab** — Fixed bottom nav "Tournaments" label wrapping to 2 lines. New tab order: Home, Matches, Teams, Profile, More. More page has 4 items: Tournaments, Settings, About, Help. Tournaments moved from shell tab to pushable top-level route.
+
+**Files changed:**
+- `add_player_page.dart` — bottom padding fix
+- `team_detail_page.dart` — ConsumerStatefulWidget with TabController, FAB, delete icons, RefreshIndicator
+- `router.dart` — removed manageRoster, updated addPlayer path to `/teams/:teamId/add-player`, added More/Settings/About/Help routes, moved tournaments to top-level
+- `home_page.dart` — Tournament button uses `context.push` instead of `context.go`
+- **DELETED:** `manage_roster_page.dart`, `manage_roster_page_test.dart`
+- **NEW:** `more_page.dart`, `settings_page.dart`, `about_page.dart`, `help_page.dart`, `more_page_test.dart`
+- Updated: `router_test.dart`, `team_detail_page_test.dart`
+- Updated wireframes: 22 files (bottom nav), deleted `09-manage-roster.html`, created `30-more.html`
+
+### Session 2026-02-22b: Manual Testing on Physical Devices — Bug Fixes + Test Data Setup
+
+**Two real devices connected:** OPPO CPH2691 (serial: 843773fe) and OnePlus EB2101 (serial: f7d1d240).
+
+**Bugs fixed:**
+1. **`add_player_page.dart`** — BowlingStyle enum used `style.name` (camelCase like `rightArmMedium`) but server expects `style.apiValue` (snake_case like `right_arm_medium`). Fixed line 413-417.
+2. **`add_player_page.dart`** — Create tab phone number not prepending `+91` prefix. Fixed line 273.
+3. **`manage_roster_page.dart`** — Complete rewrite to fix blank page issue: added `skipLoadingOnRefresh: false`, error state with retry button, FAB for add player, `RefreshIndicator` pull-to-refresh, `AlwaysScrollableScrollPhysics`.
+4. **`providers.dart`** — Dio had no timeouts (infinite by default). Added 10s connect/receive/send timeouts.
+
+**Test data created via API** (server running with `NODE_ENV=test`, auth bypassed):
+- **Team Abhay** — 6 players: A1 (all_rounder), A2 (batter), A3 (bowler), A4 (all_rounder), A5 (wk_batter), A6 (bowler)
+- **Team Madhu** — 6 players: M1 (batter), M2 (bowler), M3 (all_rounder), M4 (wk_batter), M5 (batter), M6 (bowler)
+
+**CLAUDE.md updated:** Added "No Shortcuts — Fix Root Causes Only" PROTECTED rule.
+
+**Known issues:**
+- Other Dio providers (home, scoring, tournaments, player_profile) also lack timeouts — only teams was fixed
+- OPPO phone has aggressive screen lock (fingerprint) — adb can't bypass it for UI automation
+- Screen timeout increased to 10 minutes via `adb shell settings put system screen_off_timeout 600000`
+- Server `NODE_ENV=test` bypasses auth — remember to revert for real testing
+
+**Next steps:**
+1. Verify teams/rosters display correctly in app UI on both devices
+2. Fix Dio timeouts in other feature providers
+3. Run a test match between Team Abhay and Team Madhu
+4. Continue Phase 7 polish items
+
 ### Session 2026-02-27: Implemented Issues #90, #91, #92, #93, #94 (Scoring Polish)
 
 **5 GitHub issues implemented** — all 1152 scoring tests passing, flutter analyze clean, server typecheck clean.

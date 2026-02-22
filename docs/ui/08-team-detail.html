@@ -158,12 +158,11 @@
           <div class="empty-icon" data-icon="person_add" style="font-size: 64px; opacity: 0.38;"></div>
           <div class="empty-title">No Players Added</div>
           <div class="empty-text">Add players to build your team roster.</div>
-          <button class="empty-cta" onclick="navigateTo('09-manage-roster.html')">Add Player</button>
+          <button class="empty-cta" onclick="navigateTo('28-add-player.html')">Add Player</button>
         </div>
         <div style="padding: var(--page-margin);">
           <div class="flex justify-between items-center mb-16">
             <span class="text-secondary text-sm">11 players</span>
-            <button class="btn btn-sm btn-outline" onclick="navigateTo('09-manage-roster.html')">Manage</button>
           </div>
 
           <!-- Batsmen -->
@@ -174,6 +173,9 @@
               <div class="player-name">Arjun Mehta</div>
               <div class="player-role">Right Hand Bat</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">VS</div>
@@ -181,6 +183,9 @@
               <div class="player-name">Vikram Sharma</div>
               <div class="player-role">Right Hand Bat</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #E3F2FD; color: #1565C0;">RP</div>
@@ -188,6 +193,9 @@
               <div class="player-name">Rohan Patel</div>
               <div class="player-role">Left Hand Bat</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
 
           <!-- All-rounders -->
@@ -198,6 +206,9 @@
               <div class="player-name">Karan Singh</div>
               <div class="player-role">Right Hand Bat · Right Arm Fast</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #E8F5E9; color: #2E7D32;">AJ</div>
@@ -205,6 +216,9 @@
               <div class="player-name">Aditya Joshi</div>
               <div class="player-role">Left Hand Bat · Left Arm Orthodox</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
 
           <!-- Wicketkeeper -->
@@ -215,6 +229,9 @@
               <div class="player-name">Nikhil Verma</div>
               <div class="player-role">WK-Batter · Right Hand Bat</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
 
           <!-- Bowlers -->
@@ -225,6 +242,9 @@
               <div class="player-name">Rajesh Kumar</div>
               <div class="player-role">Right Arm Fast</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">SR</div>
@@ -232,6 +252,9 @@
               <div class="player-name">Sanjay Rao</div>
               <div class="player-role">Right Arm Medium</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">DN</div>
@@ -239,6 +262,9 @@
               <div class="player-name">Deepak Nair</div>
               <div class="player-role">Left Arm Orthodox</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">AT</div>
@@ -246,6 +272,9 @@
               <div class="player-name">Amit Tiwari</div>
               <div class="player-role">Right Arm Off Spin</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
           <div class="player-row" onclick="navigateTo('17-player-profile.html')" style="cursor:pointer;">
             <div class="avatar sm" style="background: #FFEBEE; color: #C62828;">PG</div>
@@ -253,10 +282,18 @@
               <div class="player-name">Prashant Gupta</div>
               <div class="player-role">Right Arm Fast</div>
             </div>
+            <button class="remove-btn" title="Remove" onclick="event.stopPropagation(); this.closest('.player-row').style.display='none'" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0;">
+              <span data-icon="trash" style="width:16px;height:16px;"></span>
+            </button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- FAB: Add Player (visible on Players tab) -->
+    <button class="fab" onclick="navigateTo('28-add-player.html')" title="Add Player">
+      <span data-icon="person_add" style="width: 24px; height: 24px;"></span>
+    </button>
 
     <!-- Bottom Nav -->
     <nav class="bottom-nav" id="bottomNav"></nav>

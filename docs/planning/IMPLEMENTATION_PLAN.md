@@ -185,7 +185,7 @@ apps/mobile/
 │   │   │   │   │   │   ├── teams_list_page.dart
 │   │   │   │   │   │   ├── team_detail_page.dart
 │   │   │   │   │   │   ├── create_team_page.dart
-│   │   │   │   │   │   └── manage_roster_page.dart
+│   │   │   │   │   │   └── add_player_page.dart
 │   │   │   │   │   └── widgets/
 │   │   │   │   └── providers.dart
 │   │   │   │
@@ -421,7 +421,7 @@ dev_dependencies:
 
 ### Phase 2: Teams & Match Setup (Week 3-4)
 - [ ] Implement Teams CRUD (API + Flutter)
-- [ ] Build: Teams List, Create Team, Team Detail, Manage Roster screens
+- [ ] Build: Teams List, Create Team, Team Detail (with inline roster management) screens
 - [ ] Implement Match creation (API + Flutter)
 - [ ] Build: Match Setup, Toss screens
 - [ ] Set up Drift local database (mirror PostgreSQL schema)
@@ -604,7 +604,7 @@ WS_HEARTBEAT_INTERVAL_MS=30000
 6. Teams List Page
 7. Create Team Page
 8. Team Detail Page
-9. Manage Roster Page
+9. Add Player Page
 10. Match Setup Page
 11. Toss Page
 12. **Scoring Page** (most critical)

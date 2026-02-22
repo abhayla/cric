@@ -91,7 +91,7 @@ class HomePage extends ConsumerWidget {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
-                              context.go(AppRoutes.tournaments);
+                              context.push(AppRoutes.tournaments);
                             },
                             child: const Text('Tournament'),
                           ),

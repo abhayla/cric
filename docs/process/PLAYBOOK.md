@@ -251,7 +251,7 @@ Run `/session-handoff` to update `docs/CONTINUE_PROMPT.md` with:
 | 13 | Teams list page | 06-teams-list | teams |
 | 14 | Create team page | 07-create-team | teams |
 | 15 | Team detail page | 08-team-detail | teams |
-| 16 | Manage roster page + add player | 09-manage-roster, 28-add-player | teams |
+| 16 | Add player page (roster managed inline in team detail) | 28-add-player | teams |
 | 17 | Match creation (API + service) | — | server |
 | 18 | Match setup page | 10-match-setup | scoring |
 | 19 | Toss page (5-step stepper) | 11-toss | scoring |
@@ -488,7 +488,7 @@ Modals and dialogs are grouped with their parent screen's issue.
 | Teams List | 06-teams-list | 2 | teams |
 | Create Team | 07-create-team | 2 | teams |
 | Team Detail | 08-team-detail | 2 | teams |
-| Manage Roster + Add Player | 09-manage-roster, 28-add-player | 2 | teams |
+| Add Player (roster inline in team detail) | 28-add-player | 2 | teams |
 | Match Setup | 10-match-setup | 2 | scoring |
 | Toss (5-step stepper) | 11-toss | 2 | scoring |
 | Tournaments List | 19-tournaments-list | 2.5 | tournaments |

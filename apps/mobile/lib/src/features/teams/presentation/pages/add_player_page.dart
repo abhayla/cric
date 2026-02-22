@@ -176,6 +176,7 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
                     ),
             ),
           ],
+          SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 24),
         ],
       ),
     );
@@ -270,7 +271,7 @@ class _CreateTabState extends State<_CreateTab> {
     final phone = _phoneController.text.trim();
     widget.onCreatePlayer?.call(
       _nameController.text.trim(),
-      phone.isEmpty ? null : phone,
+      phone.isEmpty ? null : '+91$phone',
       _selectedRole,
       _selectedBattingStyle,
       _selectedBowlingStyle,
@@ -413,7 +414,7 @@ class _CreateTabState extends State<_CreateTab> {
               for (final style in BowlingStyle.values)
                 _buildBowlingChip(
                   style.label,
-                  style.name,
+                  style.apiValue,
                 ),
             ],
           ),
@@ -429,7 +430,7 @@ class _CreateTabState extends State<_CreateTab> {
               child: const Text('Add to Team'),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 24),
         ],
       ),
     );

@@ -131,7 +131,7 @@ Future<void> createTeam(
 /// Flow:
 ///   1. Switch to Players tab
 ///   2. First player: tap "Add Player" from empty state → AddPlayerPage
-///   3. Subsequent players: tap "Manage" → ManageRosterPage → "Add Player"
+///   3. Subsequent players: tap FAB (person_add) on Players tab → AddPlayerPage
 ///   4. On AddPlayerPage: "Create New" tab → fill name → select role → "Add to Team"
 ///   5. Returns on Team Detail page (Players tab)
 Future<void> addPlayersToRoster(
