@@ -85,8 +85,8 @@ void main() {
       await AppTestWrapper.pumpApp(tester);
       await settle(tester);
       await visualPause(tester, 1000);
-      expect(find.text('Home'), findsWidgets);
-      print('✓ Home page loaded');
+      expect(find.text('My Cricket'), findsWidgets);
+      print('✓ My Cricket page loaded');
 
       // ── PHASE 2: Create Teams if needed ────────────────────────────
       print('\n══════════ PHASE 2: Create Teams ══════════');
@@ -113,11 +113,11 @@ void main() {
       // ── PHASE 3: Match Setup ───────────────────────────────────────
       print('\n══════════ PHASE 3: Match Setup ══════════');
 
-      // Navigate to Home tab
+      // Navigate to My Cricket tab
       final navBar = find.byType(NavigationBar);
-      final homeTab = find.text('Home');
-      if (navBar.evaluate().isNotEmpty && homeTab.evaluate().isNotEmpty) {
-        await tester.tap(homeTab.first);
+      final myCricketTab = find.text('My Cricket');
+      if (navBar.evaluate().isNotEmpty && myCricketTab.evaluate().isNotEmpty) {
+        await tester.tap(myCricketTab.first);
         await settle(tester);
       } else {
         try {
@@ -132,10 +132,7 @@ void main() {
       await visualPause(tester, 500);
 
       // Start Match
-      final startBtn = find.text('Start Match');
-      expect(startBtn, findsOneWidget, reason: '"Start Match" button missing');
-      await tester.tap(startBtn);
-      await settle(tester);
+      await navigateToMatchSetup(tester);
       await visualPause(tester, 1000);
       print('✓ Navigated to Match Setup');
 

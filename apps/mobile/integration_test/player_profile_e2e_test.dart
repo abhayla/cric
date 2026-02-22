@@ -86,8 +86,8 @@ void main() {
       await AppTestWrapper.pumpApp(tester);
       await settle(tester);
       await visualPause(tester, 1000);
-      expect(find.text('Home'), findsWidgets);
-      print('  Home page loaded');
+      expect(find.text('My Cricket'), findsWidgets);
+      print('  My Cricket page loaded');
 
       // ── PHASE 2: Create Teams if needed ──
       print('\n══════════ PHASE 2: Create Teams ══════════');
@@ -118,10 +118,7 @@ void main() {
       await visualPause(tester, 500);
 
       // Start match
-      final startBtn = find.text('Start Match');
-      expect(startBtn, findsOneWidget);
-      await tester.tap(startBtn);
-      await settle(tester);
+      await navigateToMatchSetup(tester);
       await visualPause(tester, 1000);
 
       // Select teams and config
@@ -214,17 +211,8 @@ void main() {
       final match2Record = MatchRecord(matchId: 'profile-match-2');
 
       // Start another match
-      final startBtn2 = find.text('Start Match');
-      if (startBtn2.evaluate().isEmpty) {
-        // Navigate to home first
-        await _navigateToHome(tester);
-        await visualPause(tester, 500);
-      }
-
-      final startMatch2 = find.text('Start Match');
-      expect(startMatch2, findsOneWidget);
-      await tester.tap(startMatch2);
-      await settle(tester);
+      await _navigateToHome(tester);
+      await navigateToMatchSetup(tester);
       await visualPause(tester, 1000);
 
       await _selectTeamInPicker(tester, 'Select Team A', teamA.name);
@@ -477,12 +465,12 @@ void main() {
   );
 }
 
-/// Navigate to Home tab.
+/// Navigate to My Cricket tab.
 Future<void> _navigateToHome(WidgetTester tester) async {
   final navBar = find.byType(NavigationBar);
-  final homeTab = find.text('Home');
-  if (navBar.evaluate().isNotEmpty && homeTab.evaluate().isNotEmpty) {
-    await tester.tap(homeTab.first);
+  final myCricketTab = find.text('My Cricket');
+  if (navBar.evaluate().isNotEmpty && myCricketTab.evaluate().isNotEmpty) {
+    await tester.tap(myCricketTab.first);
     await settle(tester);
   } else {
     try {

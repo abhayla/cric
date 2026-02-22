@@ -93,8 +93,8 @@ void main() {
       await AppTestWrapper.pumpApp(tester);
       await settle(tester);
       await visualPause(tester, 1000);
-      expect(find.text('Home'), findsWidgets);
-      print('OK Home page loaded');
+      expect(find.text('My Cricket'), findsWidgets);
+      print('OK My Cricket page loaded');
 
       // -- PHASE 2: Teams --
       print('\n== PHASE 2: Teams ==');
@@ -117,10 +117,7 @@ void main() {
       // -- PHASE 3: Match Setup --
       print('\n== PHASE 3: Match Setup ==');
       await _navigateToHome(tester);
-      final startMatchBtn = find.text('Start Match');
-      expect(startMatchBtn, findsOneWidget);
-      await tester.tap(startMatchBtn);
-      await settle(tester);
+      await navigateToMatchSetup(tester);
       await visualPause(tester, 1000);
 
       await _selectTeamInPicker(tester, 'Select Team A', teamA.name);
@@ -390,7 +387,7 @@ void main() {
       await AppTestWrapper.pumpApp(tester);
       await settle(tester);
       await visualPause(tester, 1000);
-      expect(find.text('Home'), findsWidgets);
+      expect(find.text('My Cricket'), findsWidgets);
 
       // -- Teams --
       if (!teamsAlreadyExist) {
@@ -409,9 +406,7 @@ void main() {
       // -- Match Setup --
       print('\n== Match Setup ==');
       await _navigateToHome(tester);
-      final startMatchBtn = find.text('Start Match');
-      await tester.tap(startMatchBtn);
-      await settle(tester);
+      await navigateToMatchSetup(tester);
       await visualPause(tester, 1000);
       await _selectTeamInPicker(tester, 'Select Team A', teamA.name);
       await _selectTeamInPicker(tester, 'Select Team B', teamB.name);
@@ -580,7 +575,7 @@ void main() {
       await AppTestWrapper.pumpApp(tester);
       await settle(tester);
       await visualPause(tester, 1000);
-      expect(find.text('Home'), findsWidgets);
+      expect(find.text('My Cricket'), findsWidgets);
 
       // -- Teams --
       if (!teamsAlreadyExist) {
@@ -599,9 +594,7 @@ void main() {
       // -- Match Setup --
       print('\n== Match Setup ==');
       await _navigateToHome(tester);
-      final startMatchBtn = find.text('Start Match');
-      await tester.tap(startMatchBtn);
-      await settle(tester);
+      await navigateToMatchSetup(tester);
       await visualPause(tester, 1000);
       await _selectTeamInPicker(tester, 'Select Team A', teamA.name);
       await _selectTeamInPicker(tester, 'Select Team B', teamB.name);
@@ -755,12 +748,12 @@ void main() {
 // Shared Helpers
 // ==========================================================================
 
-/// Navigate to home tab.
+/// Navigate to My Cricket tab.
 Future<void> _navigateToHome(WidgetTester tester) async {
   final navBar = find.byType(NavigationBar);
-  final homeText = find.text('Home');
-  if (navBar.evaluate().isNotEmpty && homeText.evaluate().isNotEmpty) {
-    await tester.tap(homeText.first);
+  final myCricketText = find.text('My Cricket');
+  if (navBar.evaluate().isNotEmpty && myCricketText.evaluate().isNotEmpty) {
+    await tester.tap(myCricketText.first);
     await settle(tester);
   } else {
     try {

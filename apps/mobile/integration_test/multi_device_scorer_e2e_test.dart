@@ -94,7 +94,7 @@ void main() {
       // ── PHASE 1: Boot ──
       print('\n[SCORER] ══════════ PHASE 1: Boot App ══════════');
       await AppTestWrapper.pumpAppAndWaitForHome(tester);
-      print('[SCORER] Home page loaded');
+      print('[SCORER] My Cricket page loaded');
 
       // ── PHASE 2: Create Teams ──
       print('\n[SCORER] ══════════ PHASE 2: Create Teams ══════════');
@@ -119,10 +119,10 @@ void main() {
       // ── PHASE 3: Match Setup ──
       print('\n[SCORER] ══════════ PHASE 3: Match Setup ══════════');
       final navBarCheck = find.byType(NavigationBar);
-      final homeTabText = find.text('Home');
+      final myCricketTabText = find.text('My Cricket');
       if (navBarCheck.evaluate().isNotEmpty &&
-          homeTabText.evaluate().isNotEmpty) {
-        await tester.tap(homeTabText.first);
+          myCricketTabText.evaluate().isNotEmpty) {
+        await tester.tap(myCricketTabText.first);
         await settle(tester);
       } else {
         try {
@@ -135,10 +135,7 @@ void main() {
       }
       await visualPause(tester, 500);
 
-      final startMatchBtn = find.text('Start Match');
-      expect(startMatchBtn, findsOneWidget);
-      await tester.tap(startMatchBtn);
-      await settle(tester);
+      await navigateToMatchSetup(tester);
       await visualPause(tester, 1000);
       print('[SCORER] Match Setup page');
 

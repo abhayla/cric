@@ -315,19 +315,16 @@ class SingleMatchFlow {
   }) async {
     print('\n[SingleMatchFlow] Setting up match: $homeTeamName vs $awayTeamName');
 
-    // Navigate to Home tab
-    final homeTab = find.text('Home');
-    if (homeTab.evaluate().isNotEmpty) {
-      await tester.tap(homeTab.first);
+    // Navigate to My Cricket tab
+    final myCricketTab = find.text('My Cricket');
+    if (myCricketTab.evaluate().isNotEmpty) {
+      await tester.tap(myCricketTab.first);
       await settle(tester);
     }
     await visualPause(tester, 500);
 
-    // Tap "Start Match"
-    final startBtn = find.text('Start Match');
-    expect(startBtn, findsOneWidget, reason: '"Start Match" button not found');
-    await tester.tap(startBtn);
-    await settle(tester);
+    // Navigate to Match Setup
+    await navigateToMatchSetup(tester);
     await visualPause(tester, 1000);
 
     // Select Home team

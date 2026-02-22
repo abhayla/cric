@@ -113,31 +113,34 @@ class _ExpandingAction extends AnimatedWidget {
     return Positioned(
       bottom: offset * animation.value,
       right: 0,
-      child: FadeTransition(
-        opacity: animation,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Material(
-              elevation: 2,
-              borderRadius: BorderRadius.circular(8),
-              color: Theme.of(context).colorScheme.surfaceContainer,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Text(
-                  action.label,
-                  style: Theme.of(context).textTheme.labelMedium,
+      child: IgnorePointer(
+        ignoring: animation.value == 0,
+        child: FadeTransition(
+          opacity: animation,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Material(
+                elevation: 2,
+                borderRadius: BorderRadius.circular(8),
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Text(
+                    action.label,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            FloatingActionButton.small(
-              heroTag: 'fab_action_$index',
-              onPressed: onPressed,
-              child: Icon(action.icon),
-            ),
-          ],
+              const SizedBox(width: 8),
+              FloatingActionButton.small(
+                heroTag: 'fab_action_$index',
+                onPressed: onPressed,
+                child: Icon(action.icon),
+              ),
+            ],
+          ),
         ),
       ),
     );

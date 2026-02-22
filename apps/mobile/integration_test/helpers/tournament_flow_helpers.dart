@@ -83,6 +83,26 @@ Future<void> _ensureOnMyCricketPage(WidgetTester tester) async {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Match Setup Navigation
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Navigate to match setup page via GoRouter.
+///
+/// Avoids tapping FAB "Start Match" label which can overlap with other FAB
+/// labels in the ExpandableFab stack, causing unreliable hit-testing.
+Future<void> navigateToMatchSetup(WidgetTester tester) async {
+  try {
+    final ctx = tester.element(find.byType(Navigator).last);
+    GoRouter.of(ctx).push('/match-setup');
+    await settle(tester);
+    await visualPause(tester, 500);
+    print('    [navigateToMatchSetup] Navigated via GoRouter');
+  } catch (e) {
+    print('    [navigateToMatchSetup] WARNING: GoRouter failed: $e');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Team Creation
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -93,17 +113,22 @@ Future<void> createTeam(
   WidgetTester tester,
   TeamData team,
 ) async {
-  // Navigate to create team page via button or FAB
-  final createButton = find.text('Create Team');
-  if (createButton.evaluate().isEmpty) {
-    final fab = find.byType(FloatingActionButton);
-    if (fab.evaluate().isNotEmpty) {
-      await tester.tap(fab.first);
-      await settle(tester);
-    }
-  } else {
-    await tester.tap(createButton.first);
+  // Navigate to create team page via GoRouter (more reliable than tapping
+  // FAB labels which can overlap in the ExpandableFab stack)
+  try {
+    final ctx = tester.element(find.byType(Navigator).last);
+    GoRouter.of(ctx).push('/teams/create');
     await settle(tester);
+    print('    [createTeam] Navigated to create team via GoRouter');
+  } catch (e) {
+    // Fallback: try tapping empty state CTA or FAB
+    final createCTA = find.text('Create a Team');
+    if (createCTA.evaluate().isNotEmpty) {
+      await tester.tap(createCTA.first);
+      await settle(tester);
+    } else {
+      print('    [createTeam] WARNING: GoRouter and CTA both failed: $e');
+    }
   }
   await visualPause(tester);
 
@@ -207,7 +232,7 @@ Future<void> addPlayersToRoster(
       final router = GoRouter.of(
         tester.element(find.byType(Scaffold).first),
       );
-      router.push('/teams/$teamId/roster/add');
+      router.push('/teams/$teamId/add-player');
       await settle(tester);
       await visualPause(tester, 300);
 

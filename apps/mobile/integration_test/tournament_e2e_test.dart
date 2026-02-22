@@ -162,9 +162,9 @@ void main() {
 
     // Verify we're on home page or navigate there
     await settle(tester);
-    final homeIndicator = find.text('Home');
-    if (homeIndicator.evaluate().isEmpty) {
-      print('    [postMatch] Not on home page, forcing navigation...');
+    final myCricketIndicator = find.text('My Cricket');
+    if (myCricketIndicator.evaluate().isEmpty) {
+      print('    [postMatch] Not on My Cricket page, forcing navigation...');
       await navigateToHome(tester);
     }
 
@@ -228,10 +228,10 @@ void main() {
 
       await AppTestWrapper.pumpApp(tester);
 
-      // Should land on Home page (debug mode skips auth)
-      expect(find.text('Home'), findsWidgets,
-          reason: 'Should land on Home page');
-      print('[SETUP] App launched, on Home page');
+      // Should land on My Cricket page (debug mode skips auth)
+      expect(find.text('My Cricket'), findsWidgets,
+          reason: 'Should land on My Cricket page');
+      print('[SETUP] App launched, on My Cricket page');
 
       // ── 2. CREATE 16 TEAMS + PLAYERS (via API) ──
       print('\n[PHASE 2] Creating 16 teams with players via API...');

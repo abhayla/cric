@@ -33,9 +33,9 @@ class AppTestWrapper {
     }
   }
 
-  /// Pump the app and wait for the Home page to appear.
+  /// Pump the app and wait for the My Cricket page to appear.
   ///
-  /// Polls for `find.text('Home')` with a 180s timeout to accommodate
+  /// Polls for `find.text('My Cricket')` with a 180s timeout to accommodate
   /// real device Firebase init, which can be much slower than emulator.
   /// Use this in multi-device tests; use [pumpApp] for single-device tests.
   static Future<void> pumpAppAndWaitForHome(WidgetTester tester) async {
@@ -50,13 +50,13 @@ class AppTestWrapper {
       ),
     );
 
-    // Poll for Home text with 180s timeout
+    // Poll for My Cricket text with 180s timeout
     final deadline = DateTime.now().add(const Duration(seconds: 180));
     var found = false;
 
     while (DateTime.now().isBefore(deadline)) {
       await tester.pump(const Duration(milliseconds: 500));
-      if (find.text('Home').evaluate().isNotEmpty) {
+      if (find.text('My Cricket').evaluate().isNotEmpty) {
         found = true;
         break;
       }
@@ -64,7 +64,7 @@ class AppTestWrapper {
 
     if (!found) {
       throw TestFailure(
-        'Home page did not appear within 180s. '
+        'My Cricket page did not appear within 180s. '
         'Check Firebase init and network connectivity on this device.',
       );
     }

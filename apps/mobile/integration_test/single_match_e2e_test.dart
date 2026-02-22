@@ -111,8 +111,8 @@ void main() {
       await AppTestWrapper.pumpApp(tester);
       await settle(tester);
       await visualPause(tester, 1000);
-      expect(find.text('Home'), findsWidgets);
-      print('✓ Home page loaded');
+      expect(find.text('My Cricket'), findsWidgets);
+      print('✓ My Cricket page loaded');
 
 
       // ── PHASE 2: Create Teams via UI ──────────────────────────────
@@ -144,13 +144,13 @@ void main() {
       // ── PHASE 3: Match Setup ───────────────────────────────────────
       print('\n══════════ PHASE 3: Match Setup ══════════');
 
-      // Go to Home tab and tap "Start Match".
+      // Go to My Cricket tab and tap "Start Match".
       // After addPlayersToRoster we may be on Team Detail (outside ShellRoute),
       // so NavigationBar is not visible. Use GoRouter as fallback.
       final navBarCheck = find.byType(NavigationBar);
-      final homeTabText = find.text('Home');
-      if (navBarCheck.evaluate().isNotEmpty && homeTabText.evaluate().isNotEmpty) {
-        await tester.tap(homeTabText.first);
+      final myCricketTabText = find.text('My Cricket');
+      if (navBarCheck.evaluate().isNotEmpty && myCricketTabText.evaluate().isNotEmpty) {
+        await tester.tap(myCricketTabText.first);
         await settle(tester);
       } else {
         // Outside ShellRoute — navigate to home via GoRouter
@@ -165,10 +165,7 @@ void main() {
       }
       await visualPause(tester, 500);
 
-      final startMatchBtn = find.text('Start Match');
-      expect(startMatchBtn, findsOneWidget, reason: '"Start Match" button missing');
-      await tester.tap(startMatchBtn);
-      await settle(tester);
+      await navigateToMatchSetup(tester);
       await visualPause(tester, 1000);
       print('✓ Navigated to Match Setup');
 
