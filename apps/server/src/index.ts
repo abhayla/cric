@@ -10,13 +10,18 @@ import { playerRoutes } from './routes/v1/players.ts';
 import { matchRoutes } from './routes/v1/matches.ts';
 import { tournamentRoutes } from './routes/v1/tournaments.ts';
 import { scoringRoutes } from './routes/v1/scoring.ts';
-import { testVerifyRoutes } from './routes/v1/test-verify.routes.ts';
 import { uploadRoutes } from './routes/v1/uploads.ts';
 import { activityFeedRoutes } from './routes/v1/activity-feed.ts';
 import { websocketHandler } from './websocket/handler.ts';
 import { initBroadcaster } from './websocket/broadcaster.ts';
 
 initFirebase();
+
+// Production safety: ENABLE_TEST_AUTH must never be set in production
+if (env.NODE_ENV === 'production' && process.env.ENABLE_TEST_AUTH === 'true') {
+  console.error('FATAL: ENABLE_TEST_AUTH is forbidden in production');
+  process.exit(1);
+}
 
 const app = new Elysia()
   .use(corsMiddleware)
@@ -29,10 +34,16 @@ const app = new Elysia()
   .use(matchRoutes)
   .use(tournamentRoutes)
   .use(scoringRoutes)
-  .use(testVerifyRoutes)
   .use(uploadRoutes)
-  .use(activityFeedRoutes)
-  .listen(env.PORT);
+  .use(activityFeedRoutes);
+
+// Only register test verification routes in test environment
+if (process.env.NODE_ENV === 'test') {
+  const { testVerifyRoutes } = await import('./routes/v1/test-verify.routes.ts');
+  app.use(testVerifyRoutes);
+}
+
+app.listen(env.PORT);
 
 initBroadcaster(app.server!);
 

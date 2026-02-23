@@ -12,8 +12,8 @@ const TEST_USER: FirebaseUser = {
 export const authMiddleware = new Elysia({ name: 'auth' }).resolve(
   { as: 'scoped' },
   async ({ request }): Promise<{ firebaseUser: FirebaseUser }> => {
-    // In test mode, bypass Firebase auth and use a test user
-    if (process.env.NODE_ENV === 'test') {
+    // In test mode with explicit opt-in, bypass Firebase auth and use a test user
+    if (process.env.NODE_ENV === 'test' && process.env.ENABLE_TEST_AUTH === 'true') {
       return { firebaseUser: TEST_USER };
     }
 

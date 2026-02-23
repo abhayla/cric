@@ -24,3 +24,9 @@ export const env = {
     getEnvVar('WS_HEARTBEAT_INTERVAL_MS', '30000'),
   ),
 } as const;
+
+// Production safety: wildcard CORS is not allowed
+if (env.NODE_ENV === 'production' && env.CORS_ORIGIN === '*') {
+  console.error('FATAL: CORS_ORIGIN=* is not allowed in production.');
+  process.exit(1);
+}

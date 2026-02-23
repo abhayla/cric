@@ -22,12 +22,14 @@ enum ConnectionStatus {
 class WebSocketClient {
   WebSocketClient({
     String? url,
+    String? token,
     WebSocketChannel Function(Uri)? channelFactory,
     bool reconnectEnabled = true,
     int maxReconnectAttempts = AppConstants.wsReconnectMaxAttempts,
     int initialReconnectDelayMs = AppConstants.wsReconnectInitialDelayMs,
     int maxReconnectDelayMs = AppConstants.wsReconnectMaxDelayMs,
   })  : _url = url ?? AppConstants.wsBaseUrl,
+        _token = token,
         _channelFactory = channelFactory ?? _defaultChannelFactory,
         _reconnectEnabled = reconnectEnabled,
         _maxReconnectAttempts = maxReconnectAttempts,
@@ -35,6 +37,7 @@ class WebSocketClient {
         _maxReconnectDelayMs = maxReconnectDelayMs;
 
   final String _url;
+  String? _token;
   final WebSocketChannel Function(Uri) _channelFactory;
   final bool _reconnectEnabled;
   final int _maxReconnectAttempts;
@@ -75,7 +78,10 @@ class WebSocketClient {
     _manualDisconnect = false;
 
     try {
-      _channel = _channelFactory(Uri.parse(_url));
+      final wsUrl = _token != null
+          ? '$_url?token=${Uri.encodeComponent(_token!)}'
+          : _url;
+      _channel = _channelFactory(Uri.parse(wsUrl));
       _setStatus(ConnectionStatus.connected);
       _startPingTimer();
 
@@ -137,6 +143,13 @@ class WebSocketClient {
       return;
     }
     _send({'type': 'publish_score', 'matchId': matchId, 'payload': payload});
+  }
+
+  /// Update the auth token (e.g. after refresh).
+  ///
+  /// Takes effect on the next connection attempt.
+  void updateToken(String? token) {
+    _token = token;
   }
 
   /// Dispose all resources.

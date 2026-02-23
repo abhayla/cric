@@ -16,6 +16,29 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-23: Production Readiness — 5 Blockers Fixed
+
+**Fixed all 5 blockers from the production readiness scan (`docs/pre-prod/PRODUCTION_READINESS_SCAN.md`):**
+
+1. **B5 — INTERNET permission** — Added `<uses-permission android:name="android.permission.INTERNET"/>` to release AndroidManifest.xml (was only in debug/profile).
+
+2. **B2 — Test routes + auth hardening** — `testVerifyRoutes` only registered when `NODE_ENV=test`. Auth bypass now requires both `NODE_ENV=test` AND `ENABLE_TEST_AUTH=true`. Updated `package.json` test script and CI workflow.
+
+3. **B3 — CORS wildcard block** — Added fatal exit in `env.ts` if `CORS_ORIGIN=*` in production.
+
+4. **B4 — WebSocket publish_score auth** — Full scorer enforcement:
+   - Server: Token verification on WS `open()`, verified UID stored in map, `publish_score` checks scorer is authenticated AND is the match scorer (DB lookup + cache).
+   - Flutter: `WebSocketClient` accepts optional `token`, appends as query param on connect. `websocketClientProvider` fetches Firebase ID token.
+
+5. **B1 — ProGuard/R8** — Enabled `isMinifyEnabled` + `isShrinkResources` in release build. Created `proguard-rules.pro` with Flutter/Firebase/OkHttp keep rules.
+
+**Verification:** Server typecheck passes (0 errors). Flutter analyze passes (0 errors, only pre-existing warnings/info).
+
+**Still needed for full verification:**
+- `bun run test` to confirm all ~420 server tests pass with `ENABLE_TEST_AUTH` flag
+- `flutter build apk --release` to confirm ProGuard doesn't strip needed classes
+- Manual WS auth test: connect without token → publish rejected; connect with valid token → publish relayed
+
 ### Session 2026-02-22d: Navigation Restructure — 4-Tab Layout + Updates & Live Features
 
 **Major navigation restructure from 5 tabs to 4 tabs, with new backend activity feed.**
