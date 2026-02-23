@@ -39,7 +39,7 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 
 ## Current Status
 
-**Phases 1–6 COMPLETE.** Phase 7 (Polish & Testing) in progress. ~2120 Flutter tests (heaviest in `test/src/features/scoring/`), ~420 server tests (heaviest in `test/services/`). Full phase breakdown in [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md). Session context and next steps in [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md).
+**Phases 1–6 COMPLETE.** Phase 7 (Polish & Testing) in progress. Heaviest test areas: `test/src/features/scoring/` (Flutter), `test/services/` (server). Full phase breakdown in [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md). Session context and next steps in [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md).
 
 ## Key Documentation
 
@@ -180,19 +180,25 @@ The scoring engine is the most complex subsystem. Key files and their roles:
 
 ## VPS Deployment
 
-This project's development VPS is **544934-ABHAYVPS** (`103.118.16.189`, Windows Server 2022).
+Production/friend-testing VPS: **544934-ABHAYVPS** at `103.118.16.189` (Windows Server 2022). Full deployment guide: [docs/pre-prod/VPS_ACTIONS.md](docs/pre-prod/VPS_ACTIONS.md).
 
-**Server config:** CricApp server runs on port `3000` (HTTP) and `3001` (WebSocket) per `.env.example`. Database: `cricapp_dev` on local PostgreSQL 16.8 (port 5432).
+| Detail | Value |
+|--------|-------|
+| VPS IP | `103.118.16.189` |
+| Domain | `cricscores.in` (via Cloudflare) |
+| CricApp port | `3005` (HTTP + WS on same port) |
+| Database | `cricapp` on PostgreSQL 16.8 (`127.0.0.1:5432` on VPS) |
+| Dev database | `cricapp_dev` on same PostgreSQL instance (on VPS) |
+| App directory | `C:\Apps\cricapp\` (on VPS, NOT local) |
+| Process manager | PM2 — **always run `pm2 save` after changes** |
+| Reverse proxy | Nginx at `C:\Apps\nginx\` (on VPS) — port 80, site config in `conf\sites\cricscores.conf` |
+| SSL | Cloudflare Flexible mode (terminates HTTPS at edge, HTTP to Nginx) |
+| Health monitoring | `C:\Apps\shared\scripts\health-check.ps1` (on VPS) — runs every 5 min, auto-restarts crashed services |
+| VPS docs | `C:\Apps\shared\docs\` (on VPS) — **do not modify these files** |
+| Other hosted apps | bestdemataccount, firekaro, ipodhan, algochanakya (ports 3001-3004, 8000) |
+| Available ports | 3006-3008 |
 
-**VPS infrastructure:**
-- **Nginx** at `C:\Apps\nginx\` — reverse proxy on port 80, per-site configs in `conf\sites\`.
-- **PM2** — process manager for all hosted apps. **Always run `pm2 save` after any PM2 changes.**
-- **Cloudflare** — CDN/SSL termination (Flexible mode). Nginx receives HTTP on port 80.
-- **Health monitoring** — `C:\Apps\shared\scripts\health-check.ps1` runs every 5 minutes via scheduled task, auto-restarts crashed services.
-
-**VPS documentation:** `C:\Apps\shared\docs\` contains comprehensive guides organized by topic (setup, PM2, Nginx, Cloudflare, CI/CD, monitoring, troubleshooting). Start with `C:\Apps\shared\docs\README.md`. **Do not modify files in `C:\Apps\shared\`.**
-
-**Other hosted apps on this VPS** (ports 3001-3004, 8000): bestdemataccount, firekaro, ipodhan, algochanakya. Available ports: 3005-3008. See `C:\Apps\shared\docs\setup\NEW-WEBSITE-SETUP-GUIDE.md` for port allocation table.
+**Important:** All `C:\Apps\` paths above are on the **remote VPS** (`103.118.16.189`), not on the local development machine. Access via RDP or SSH.
 
 ## Code Principles (YAGNI, KISS, DRY)
 
@@ -266,35 +272,13 @@ Every bug, test failure, or code issue must be fixed by addressing its root caus
 
 ## Feature Architecture
 
-Each feature in `apps/mobile/lib/src/features/<feature>/` follows clean architecture: `data/` (datasources, models, repositories) + `domain/` (entities, repository interfaces) + `presentation/` (notifiers, pages, widgets) + `providers.dart`. Full placement rules and decision tree in [.claude/rules.md](.claude/rules.md).
-
-**Critical placement anti-patterns (from [.claude/rules.md](.claude/rules.md)):**
-- Never import from one feature's `data/` or `domain/` into another feature — features communicate only through `shared/` providers.
-- Never put Drift table definitions inside a feature — all tables go in `shared/data/database/tables/`.
-- Never put business logic in `presentation/` — notifiers orchestrate, but core logic goes in `domain/` or `data/`.
-- Never create a `models/` folder in `domain/` — domain has `entities/` (pure Dart), data has `models/` (Freezed/serializable).
-- Never put SQL queries directly in server route handlers — all DB access goes through services or `db/` layer.
-- Never define WebSocket message types inline at send/receive sites — use the centralized types files.
+Each feature in `apps/mobile/lib/src/features/<feature>/` follows clean architecture: `data/` (datasources, models, repositories) + `domain/` (entities, repository interfaces) + `presentation/` (notifiers, pages, widgets) + `providers.dart`. Full placement rules, decision tree, and critical anti-patterns in [.claude/rules.md](.claude/rules.md). Server-side: all DB access through services (never in route handlers), WS message types in centralized type files (never inline).
 
 ## Naming Conventions
 
-**Dart (Flutter):**
-- Files: `snake_case.dart` (e.g., `scoring_notifier.dart`, `match_model.dart`)
-- Classes/enums: `PascalCase` (e.g., `ScoringNotifier`, `DeliveryType`)
-- Variables/functions: `camelCase` (e.g., `currentInnings`, `rotateStrike()`)
-- Drift tables: `PascalCase` class, `snake_case` column names in SQL
+- **Dart:** `snake_case.dart` files, `PascalCase` classes, `camelCase` vars/functions
+- **TypeScript:** `kebab-case.ts` utils, `dot-notation.ts` services (e.g., `scoring.service.ts`), `PascalCase` types
+- **Database:** `snake_case` plural tables, `snake_case` columns, `idx_<table>_<columns>` indexes
+- **Git:** Conventional commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`). Branch: `feature/`/`fix/`/`task/` + issue number
 
-**TypeScript (Bun Server):**
-- Files: `kebab-case.ts` for utils/middleware (e.g., `cricket-rules.ts`), `dot-notation.ts` for services (e.g., `scoring.service.ts`)
-- Types/interfaces: `PascalCase` (e.g., `Delivery`, `MatchState`)
-- Variables/functions: `camelCase`
-- Drizzle schema tables: `snake_case` SQL names (e.g., `batting_stats`, `player_career_stats`)
-
-**Database (PostgreSQL + SQLite):**
-- Tables: `snake_case` plural (e.g., `deliveries`, `batting_stats`, `team_rosters`)
-- Columns: `snake_case` (e.g., `is_legal`, `bowler_id`, `created_at`)
-- Indexes: `idx_<table>_<columns>` (e.g., `idx_deliveries_innings_over`)
-
-**Git commits:** Use conventional commits — `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`. Branch format: `feature/`, `fix/`, or `task/` + issue number + description. See [GITHUB_ISSUES.md](docs/process/GITHUB_ISSUES.md) for full format.
-
-**Extended conventions:** See [CODE_STANDARDS.md](docs/process/CODE_STANDARDS.md) for variable naming patterns, function naming patterns, error handling patterns, and import ordering.
+Full conventions (variable patterns, error handling, import ordering): [CODE_STANDARDS.md](docs/process/CODE_STANDARDS.md).

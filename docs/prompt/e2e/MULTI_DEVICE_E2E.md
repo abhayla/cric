@@ -25,6 +25,11 @@ Before running, confirm ALL of these:
 5. **Bun server dependencies installed** — `cd apps/server && bun install` (one-time)
 6. **Flutter dependencies resolved** — `cd apps/mobile && flutter pub get` (one-time)
 7. **PostgreSQL running** — with test database configured in `apps/server/.env`
+8. **Firebase test phone numbers configured** — In Firebase Console > Authentication > Phone > Test phone numbers, add both numbers with code `123456`:
+   - `+919999999999` — used by the **scorer** device
+   - `+919999999998` — used by the **viewer** device
+
+   This gives each device a distinct Firebase UID and allows instant OTP verification without sending real SMS.
 
 ---
 
