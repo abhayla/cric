@@ -93,7 +93,7 @@ void main() {
 
       // ── PHASE 1: Boot ──
       print('\n[SCORER] ══════════ PHASE 1: Boot App ══════════');
-      await AppTestWrapper.pumpAppAndWaitForHome(tester);
+      await AppTestWrapper.pumpAppAndWaitForHome(tester, phoneNumber: testPhoneDevice1);
       print('[SCORER] My Cricket page loaded');
 
       // ── PHASE 2: Create Teams ──
@@ -364,6 +364,10 @@ void main() {
 }
 
 /// Open the team picker bottom sheet and select [teamName].
+///
+/// The picker is a DraggableScrollableSheet that watches [teamsListProvider].
+/// It needs time for: bottom sheet animation (~300ms) + HTTP GET /teams
+/// response (~1-3s on cold server) + Riverpod rebuild. We give it up to 15s.
 Future<void> _selectTeamInPicker(
   WidgetTester tester,
   String pickerLabel,
@@ -377,20 +381,27 @@ Future<void> _selectTeamInPicker(
   }
 
   await tester.tap(selector.first);
-  await tester.pump(const Duration(milliseconds: 100));
-  await tester.pump(const Duration(milliseconds: 400));
+  // Wait for bottom sheet animation to complete
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 300));
+  }
 
+  // Poll for team name — bottom sheet fetches teams via HTTP, may take a few seconds
   var found = false;
-  for (var i = 0; i < 25; i++) {
-    await tester.pump(const Duration(milliseconds: 200));
+  for (var i = 0; i < 50; i++) {
+    await tester.pump(const Duration(milliseconds: 300));
     if (find.text(teamName).evaluate().isNotEmpty) {
       found = true;
       break;
     }
+    if (i % 10 == 0 && i > 0) {
+      print('[SCORER] Still waiting for "$teamName" in picker... (${i * 300}ms)');
+    }
   }
 
   if (!found) {
-    print('[SCORER] Team "$teamName" not found in picker');
+    print('[SCORER] Team "$teamName" not found in picker after 15s');
+    dumpVisibleTexts(tester, 'picker-teams-missing', 30);
     await tester.pageBack();
     await tester.pump(const Duration(milliseconds: 300));
     return;

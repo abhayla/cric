@@ -35,6 +35,8 @@ import '../features/tournaments/presentation/pages/tournament_leaderboard_page.d
 import '../features/tournaments/presentation/pages/tournaments_list_page.dart';
 import '../features/player_profile/presentation/pages/player_profile_page.dart';
 import '../features/player_profile/presentation/pages/player_match_history_page.dart';
+import '../features/auth/providers.dart' as auth;
+import '../features/auth/presentation/notifiers/auth_notifier.dart';
 import '../features/teams/providers.dart' as teams;
 import '../features/scoring/providers.dart' as scoring;
 import '../shared/providers/websocket_provider.dart';
@@ -229,11 +231,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => LoginPage(
-          onSendOtp: (fullPhone) {
-            GoRouter.of(context).go(
-              AppRoutes.otp,
-              extra: fullPhone,
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) {
+            final authState = ref.watch(auth.authNotifierProvider);
+            final isLoading = authState.status == AuthStatus.sendingOtp;
+
+            // Show error via snackbar
+            ref.listen(auth.authNotifierProvider, (prev, next) {
+              if (next.status == AuthStatus.error &&
+                  next.errorMessage != null &&
+                  prev?.status != AuthStatus.error) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(next.errorMessage!)),
+                );
+              }
+            });
+
+            return Stack(
+              children: [
+                LoginPage(
+                  onSendOtp: (fullPhone) {
+                    ref.read(auth.authNotifierProvider.notifier).sendOtp(fullPhone).then((success) {
+                      if (success && context.mounted) {
+                        GoRouter.of(context).go(AppRoutes.otp, extra: fullPhone);
+                      }
+                    });
+                  },
+                ),
+                if (isLoading)
+                  const ColoredBox(
+                    color: Color(0x40000000),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+              ],
             );
           },
         ),
@@ -242,15 +272,42 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.otp,
         builder: (context, state) {
           final phoneNumber = state.extra as String? ?? '';
-          return OtpPage(
-            phoneNumber: phoneNumber,
-            onVerify: (otp) {
-              // After OTP verification, navigate to profile setup or home
-              // This will be handled by auth state change via redirect
-              GoRouter.of(context).go(AppRoutes.profileSetup);
-            },
-            onResend: () {
-              // Re-trigger OTP send via datasource (wired in later phases)
+          return Consumer(
+            builder: (context, ref, _) {
+              final authState = ref.watch(auth.authNotifierProvider);
+              final isVerifying = authState.status == AuthStatus.verifyingOtp;
+
+              // Show error via snackbar
+              ref.listen(auth.authNotifierProvider, (prev, next) {
+                if (next.status == AuthStatus.error &&
+                    next.errorMessage != null &&
+                    prev?.status != AuthStatus.error) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(next.errorMessage!)),
+                  );
+                }
+              });
+
+              return Stack(
+                children: [
+                  OtpPage(
+                    phoneNumber: phoneNumber,
+                    onVerify: (otp) {
+                      // Call verifyOtp — on success, Firebase auth state
+                      // changes and GoRouter redirect navigates to /home.
+                      ref.read(auth.authNotifierProvider.notifier).verifyOtp(otp);
+                    },
+                    onResend: () {
+                      ref.read(auth.authNotifierProvider.notifier).resendOtp();
+                    },
+                  ),
+                  if (isVerifying)
+                    const ColoredBox(
+                      color: Color(0x40000000),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                ],
+              );
             },
           );
         },

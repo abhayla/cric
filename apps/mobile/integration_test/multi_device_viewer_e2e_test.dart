@@ -41,7 +41,7 @@ void main() {
   ) async {
     // ── PHASE 1: Boot App ──
     print('\n[VIEWER] ══════════ PHASE 1: Boot App ══════════');
-    await AppTestWrapper.pumpAppAndWaitForHome(tester);
+    await AppTestWrapper.pumpAppAndWaitForHome(tester, phoneNumber: testPhoneDevice2);
     print('[VIEWER] My Cricket page loaded');
     print('[VIEWER] API base: ${AppConstants.apiBaseUrl}');
     print('[VIEWER] WS base:  ${AppConstants.wsBaseUrl}');

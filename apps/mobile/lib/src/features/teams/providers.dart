@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cricapp/src/shared/providers/database_provider.dart';
 
+import '../../app/providers.dart';
 import 'data/datasources/team_local_datasource.dart';
 import 'data/datasources/team_remote_datasource.dart';
 import 'data/repositories/team_repository_impl.dart';
@@ -10,11 +11,32 @@ import 'domain/repositories/team_repository.dart';
 
 /// Dio instance for teams feature.
 final _dioProvider = Provider<Dio>((ref) {
-  return Dio(BaseOptions(
+  final dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
     sendTimeout: const Duration(seconds: 10),
   ));
+
+  try {
+    final authDatasource = ref.read(firebaseAuthDatasourceProvider);
+    dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        try {
+          final token = await authDatasource.getIdToken();
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+        } catch (_) {
+          // Silently continue without auth
+        }
+        handler.next(options);
+      },
+    ));
+  } catch (_) {
+    // Provider not available (e.g., in test environment)
+  }
+
+  return dio;
 });
 
 /// Teams remote datasource.
