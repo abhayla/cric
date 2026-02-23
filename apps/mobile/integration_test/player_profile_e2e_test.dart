@@ -6,8 +6,6 @@ library;
 import 'dart:math';
 
 import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/match_complete_modal.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,12 +13,10 @@ import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'helpers/app_test_wrapper.dart';
-import 'helpers/data_generators.dart';
 import 'helpers/delivery_record.dart';
 import 'helpers/match_flow_helpers.dart';
 import 'helpers/scenario_test_data.dart';
 import 'helpers/server_manager.dart';
-import 'helpers/single_match_flow.dart';
 import 'helpers/tournament_flow_helpers.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════

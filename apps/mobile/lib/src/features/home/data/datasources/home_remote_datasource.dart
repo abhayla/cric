@@ -19,7 +19,7 @@ class HomeRemoteDatasource {
         queryParameters: {
           'page': page.toString(),
           'limit': limit.toString(),
-          if (status != null) 'status': status,
+          'status': ?status,
         },
       );
       return response.data as Map<String, dynamic>;

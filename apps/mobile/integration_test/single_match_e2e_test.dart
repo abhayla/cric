@@ -46,22 +46,22 @@ void main() {
   late final Dio testDio;
 
   // Team rosters
-  final teamA = TeamData(name: 'Mumbai Lions', players: [
-    const PlayerData(name: 'Rohit Sharma'),
-    const PlayerData(name: 'Suryakumar Yadav'),
-    const PlayerData(name: 'Ishan Kishan'),
-    const PlayerData(name: 'Hardik Pandya'),
-    const PlayerData(name: 'Jasprit Bumrah'),
-    const PlayerData(name: 'Rahul Chahar'),
+  const teamA = TeamData(name: 'Mumbai Lions', players: [
+    PlayerData(name: 'Rohit Sharma'),
+    PlayerData(name: 'Suryakumar Yadav'),
+    PlayerData(name: 'Ishan Kishan'),
+    PlayerData(name: 'Hardik Pandya'),
+    PlayerData(name: 'Jasprit Bumrah'),
+    PlayerData(name: 'Rahul Chahar'),
   ]);
 
-  final teamB = TeamData(name: 'Chennai Kings', players: [
-    const PlayerData(name: 'MS Dhoni'),
-    const PlayerData(name: 'Ruturaj Gaikwad'),
-    const PlayerData(name: 'Devon Conway'),
-    const PlayerData(name: 'Ravindra Jadeja'),
-    const PlayerData(name: 'Deepak Chahar'),
-    const PlayerData(name: 'Tushar Deshpande'),
+  const teamB = TeamData(name: 'Chennai Kings', players: [
+    PlayerData(name: 'MS Dhoni'),
+    PlayerData(name: 'Ruturaj Gaikwad'),
+    PlayerData(name: 'Devon Conway'),
+    PlayerData(name: 'Ravindra Jadeja'),
+    PlayerData(name: 'Deepak Chahar'),
+    PlayerData(name: 'Tushar Deshpande'),
   ]);
 
   // Track deliveries entered via UI for DB comparison
@@ -474,7 +474,11 @@ void main() {
               && legalOk && overOk && ballOk && fourOk && sixOk;
 
           final status = allOk ? '✓' : '✗';
-          if (allOk) deliveryMatches++; else deliveryMismatches++;
+          if (allOk) {
+            deliveryMatches++;
+          } else {
+            deliveryMismatches++;
+          }
 
           final dbDesc = 'r=$dbRuns o$dbOver.$dbBall${dbWide ? ",WD" : ""}${dbNb ? ",NB" : ""}${dbWkt ? ",W" : ""}${dbFour ? ",4" : ""}${dbSix ? ",6" : ""}${dbFreeHit ? ",FH" : ""}${dbLegal ? "" : ",!L"}';
           print('│$status${(i+1).toString().padLeft(2)} │  $inningsNum  │ $uiDesc│ $dbDesc');

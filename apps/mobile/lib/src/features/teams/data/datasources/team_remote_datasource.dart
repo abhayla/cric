@@ -3,7 +3,6 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:cricapp/src/core/constants/app_constants.dart';
 import 'package:cricapp/src/core/errors/exceptions.dart';
-import '../models/team_model.dart';
 
 class TeamRemoteDatasource {
   TeamRemoteDatasource({required this.dio});
@@ -20,8 +19,8 @@ class TeamRemoteDatasource {
         '${AppConstants.apiBaseUrl}/teams',
         data: {
           'name': name,
-          if (location != null) 'location': location,
-          if (logoUrl != null) 'logoUrl': logoUrl,
+          'location': ?location,
+          'logoUrl': ?logoUrl,
         },
       );
       return response.data['team'] as Map<String, dynamic>;
@@ -63,9 +62,9 @@ class TeamRemoteDatasource {
       final response = await dio.put(
         '${AppConstants.apiBaseUrl}/teams/$teamId',
         data: {
-          if (name != null) 'name': name,
-          if (location != null) 'location': location,
-          if (logoUrl != null) 'logoUrl': logoUrl,
+          'name': ?name,
+          'location': ?location,
+          'logoUrl': ?logoUrl,
         },
       );
       return response.data['team'] as Map<String, dynamic>;
@@ -93,8 +92,8 @@ class TeamRemoteDatasource {
         '${AppConstants.apiBaseUrl}/teams/$teamId/players',
         data: {
           'playerId': playerId,
-          if (jerseyNumber != null) 'jerseyNumber': jerseyNumber,
-          if (role != null) 'role': role,
+          'jerseyNumber': ?jerseyNumber,
+          'role': ?role,
         },
       );
       return response.data['rosterEntry'] as Map<String, dynamic>;
@@ -152,10 +151,10 @@ class TeamRemoteDatasource {
         '${AppConstants.apiBaseUrl}/players',
         data: {
           'displayName': displayName,
-          if (phone != null) 'phone': phone,
-          if (playerRole != null) 'playerRole': playerRole,
-          if (battingStyle != null) 'battingStyle': battingStyle,
-          if (bowlingStyle != null) 'bowlingStyle': bowlingStyle,
+          'phone': ?phone,
+          'playerRole': ?playerRole,
+          'battingStyle': ?battingStyle,
+          'bowlingStyle': ?bowlingStyle,
         },
       );
       return response.data['player'] as Map<String, dynamic>;

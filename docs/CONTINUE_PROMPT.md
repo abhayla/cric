@@ -16,6 +16,21 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-23b: Code Review — Lint Fixes & Cleanup
+
+**Changes reviewed and committed (user-authored):**
+- Flutter analyzer lint fixes across ~65 files (unused imports, unnecessary underscores, type annotations)
+- Integration test cleanup and helpers refactoring
+- `analysis_options.yaml` updated, integration test `analysis_options.yaml` added (allows `print` in integration tests)
+- `pubspec.yaml` dependency update
+
+**Review findings logged (not yet addressed):**
+- `kDebugMode` auth bypass in `router.dart` should use `--dart-define=SKIP_AUTH=true` before external distribution
+- `_routeExtraCache` in router grows unboundedly (memory leak over long sessions)
+- `LivePage` cross-feature imports (`MatchCard`, `TournamentCard`) — decide: move to `shared/widgets/` or document as hub-page exception
+- Updates feature has zero test coverage
+- `_eventFromJson` `createdAt` falls back to `DateTime.now()` silently — should throw on missing field
+
 ### Session 2026-02-23: Production Readiness — 5 Blockers Fixed
 
 **Fixed all 5 blockers from the production readiness scan (`docs/pre-prod/PRODUCTION_READINESS_SCAN.md`):**

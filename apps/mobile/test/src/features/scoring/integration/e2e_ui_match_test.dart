@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
 import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
 import 'package:cricapp/src/features/scoring/presentation/pages/scoring_page.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/extras_panel.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/match_complete_modal.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/score_header.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/select_batter_sheet.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/select_bowler_sheet.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/this_over_display.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/wicket_dialog.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -167,8 +164,7 @@ Future<void> _tapWicket(WidgetTester tester) async {
 }
 
 /// Select a dismissal type in the WicketDialog (step 1).
-Future<void> _selectDismissalType(
-    WidgetTester tester, String label) async {
+Future<void> _selectDismissalType(WidgetTester tester, String label) async {
   final chip = find.descendant(
     of: find.byType(WicketDialog),
     matching: find.text(label),
@@ -241,13 +237,6 @@ Future<void> _selectBatter(WidgetTester tester, String name) async {
   }
   // Auto-select may have fired
   await tester.pumpAndSettle();
-}
-
-/// Verify the score displayed in ScoreHeader.
-void _expectScore(WidgetTester tester, int runs, int wickets) {
-  // ScoreHeader shows "runs/wickets" as separate Text widgets
-  // Check that the runs and wickets values are present
-  expect(find.byType(ScoreHeader), findsOneWidget);
 }
 
 /// Bowl a full over of dots through UI taps.
@@ -323,8 +312,9 @@ void main() {
   // ── Group 3: Full Match — Win by Runs ─────────────────────────────────
 
   group('Full Match — Win by Runs', () {
-    testWidgets('1st innings scores runs, 2nd innings overs exhausted',
-        (tester) async {
+    testWidgets('1st innings scores runs, 2nd innings overs exhausted', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildScoringPage());
       await tester.pumpAndSettle();
 
@@ -403,7 +393,10 @@ void main() {
       // Match complete modal
       await tester.pumpAndSettle();
       expect(find.byType(MatchCompleteModal), findsOneWidget);
-      expect(find.textContaining('Mumbai Indians won by 26 runs'), findsOneWidget);
+      expect(
+        find.textContaining('Mumbai Indians won by 26 runs'),
+        findsOneWidget,
+      );
 
       // Tap View Scorecard
       await tester.tap(find.text('View Scorecard'));
@@ -560,7 +553,10 @@ void main() {
 
       // Score should show 1 run (no over advance for wide)
       // The over display should not advance
-      expect(find.text('FREE HIT'), findsNothing); // Wide doesn't trigger free hit
+      expect(
+        find.text('FREE HIT'),
+        findsNothing,
+      ); // Wide doesn't trigger free hit
     });
 
     testWidgets('Wide with additional runs', (tester) async {
@@ -642,8 +638,9 @@ void main() {
   // ── Group 8: Free Hit Mechanics Through UI ────────────────────────────
 
   group('Free Hit Mechanics Through UI', () {
-    testWidgets('No-ball triggers free hit, legal delivery consumes it',
-        (tester) async {
+    testWidgets('No-ball triggers free hit, legal delivery consumes it', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildScoringPage());
       await tester.pumpAndSettle();
 
@@ -780,8 +777,9 @@ void main() {
       expect(find.text('Suryakumar Yadav *'), findsOneWidget);
     });
 
-    testWidgets('Odd runs + end of over = double swap (cancels out)',
-        (tester) async {
+    testWidgets('Odd runs + end of over = double swap (cancels out)', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildScoringPage());
       await tester.pumpAndSettle();
 
@@ -800,8 +798,9 @@ void main() {
       expect(find.text('Rohit Sharma *'), findsOneWidget);
     });
 
-    testWidgets('Wide with 0 additional runs (odd total) swaps strike',
-        (tester) async {
+    testWidgets('Wide with 0 additional runs (odd total) swaps strike', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildScoringPage());
       await tester.pumpAndSettle();
 
@@ -1027,8 +1026,9 @@ void main() {
       expect(find.byType(WicketDialog), findsNothing);
     });
 
-    testWidgets('Run Out: 3-step (fielder, who dismissed, batters crossed)',
-        (tester) async {
+    testWidgets('Run Out: 3-step (fielder, who dismissed, batters crossed)', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildScoringPage(totalOvers: 5));
       await tester.pumpAndSettle();
 
@@ -1101,8 +1101,9 @@ void main() {
   // ── Group 13: Bowler Eligibility ──────────────────────────────────────
 
   group('Bowler Eligibility', () {
-    testWidgets('Last bowler is ineligible for consecutive over',
-        (tester) async {
+    testWidgets('Last bowler is ineligible for consecutive over', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildScoringPage());
       await tester.pumpAndSettle();
 

@@ -50,7 +50,7 @@ void main() {
     testWidgets('shows empty state when no knockout fixtures', (tester) async {
       // Only group fixtures — no knockout
       final fixtures = [
-        Fixture(
+        const Fixture(
           id: 'fix-1',
           tournamentId: 'tour-1',
           roundNumber: 1,
@@ -69,7 +69,7 @@ void main() {
 
     testWidgets('shows bracket with knockout fixtures', (tester) async {
       final fixtures = [
-        Fixture(
+        const Fixture(
           id: 'fix-1',
           tournamentId: 'tour-1',
           roundNumber: 1,
@@ -80,7 +80,7 @@ void main() {
           homeTeamName: 'Mumbai Warriors',
           awayTeamName: 'Chennai Kings',
         ),
-        Fixture(
+        const Fixture(
           id: 'fix-2',
           tournamentId: 'tour-1',
           roundNumber: 1,
@@ -104,7 +104,7 @@ void main() {
 
     testWidgets('shows TBD for teams without names', (tester) async {
       final fixtures = [
-        Fixture(
+        const Fixture(
           id: 'fix-1',
           tournamentId: 'tour-1',
           roundNumber: 1,
@@ -123,7 +123,7 @@ void main() {
 
     testWidgets('shows result summary for completed fixtures', (tester) async {
       final fixtures = [
-        Fixture(
+        const Fixture(
           id: 'fix-1',
           tournamentId: 'tour-1',
           roundNumber: 1,
@@ -133,7 +133,7 @@ void main() {
           awayTeamId: 'team-2',
           homeTeamName: 'Mumbai Warriors',
           awayTeamName: 'Chennai Kings',
-          result: const FixtureResult(
+          result: FixtureResult(
             winner: 'team-1',
             summary: 'Mumbai Warriors won by 20 runs',
           ),

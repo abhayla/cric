@@ -9,8 +9,6 @@ class MyStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Padding(
@@ -30,10 +28,7 @@ class MyStatsCard extends StatelessWidget {
               value: stats.bowling.wicketsTaken.toString(),
               label: 'Wickets',
             ),
-            _StatColumn(
-              value: stats.batting.averageDisplay,
-              label: 'Avg',
-            ),
+            _StatColumn(value: stats.batting.averageDisplay, label: 'Avg'),
           ],
         ),
       ),

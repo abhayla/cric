@@ -158,7 +158,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<PlayerRole>(
-                      value: _playerRole,
+                      initialValue: _playerRole,
                       onChanged: (value) =>
                           setState(() => _playerRole = value),
                       decoration: const InputDecoration(
@@ -220,7 +220,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<BowlingStyle>(
-                      value: _bowlingStyle,
+                      initialValue: _bowlingStyle,
                       onChanged: (value) =>
                           setState(() => _bowlingStyle = value),
                       decoration: const InputDecoration(

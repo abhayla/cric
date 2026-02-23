@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/core/utils/commentary_generator.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/batter_innings.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/bowler_spell.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';

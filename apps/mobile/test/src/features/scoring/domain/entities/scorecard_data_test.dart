@@ -6,7 +6,7 @@ import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_noti
 
 void main() {
   group('ScorecardData', () {
-    ScorecardData _createScorecardData({
+    ScorecardData createScorecardData({
       String matchId = 'match-1',
       int totalOvers = 20,
       int playersPerSide = 11,
@@ -32,7 +32,7 @@ void main() {
     }
 
     test('stores match metadata', () {
-      final data = _createScorecardData(
+      final data = createScorecardData(
         matchId: 'match-99',
         totalOvers: 50,
         playersPerSide: 11,
@@ -45,7 +45,7 @@ void main() {
     test('holds both innings data', () {
       final first = _defaultInningsData('Team A', 'team-a', runs: 180);
       final second = _defaultInningsData('Team B', 'team-b', runs: 155);
-      final data = _createScorecardData(
+      final data = createScorecardData(
         firstInnings: first,
         secondInnings: second,
       );
@@ -54,27 +54,27 @@ void main() {
     });
 
     test('holds match result', () {
-      final result = const MatchResult(
+      const result = MatchResult(
         winnerTeamId: 'team-b',
         winnerTeamName: 'Team B',
         resultType: MatchResultType.wickets,
         margin: 4,
         resultDescription: 'Team B won by 4 wickets',
       );
-      final data = _createScorecardData(matchResult: result);
+      final data = createScorecardData(matchResult: result);
       expect(data.matchResult.resultDescription, 'Team B won by 4 wickets');
       expect(data.matchResult.resultType, MatchResultType.wickets);
     });
 
     test('holds tie result', () {
-      final result = const MatchResult(
+      const result = MatchResult(
         winnerTeamId: null,
         winnerTeamName: null,
         resultType: MatchResultType.tie,
         margin: null,
         resultDescription: 'Match Tied',
       );
-      final data = _createScorecardData(matchResult: result);
+      final data = createScorecardData(matchResult: result);
       expect(data.matchResult.resultType, MatchResultType.tie);
       expect(data.matchResult.winnerTeamId, isNull);
     });
@@ -97,7 +97,7 @@ void main() {
         isInningsComplete: true,
         isMatchComplete: true,
         firstInnings: firstInnings,
-        firstInningsSummary: FirstInningsSummary(
+        firstInningsSummary: const FirstInningsSummary(
           teamName: 'Team A',
           teamId: 'team-a',
           totalRuns: 150,

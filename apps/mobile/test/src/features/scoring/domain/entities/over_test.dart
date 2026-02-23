@@ -44,7 +44,7 @@ void main() {
     }
 
     test('constructs with defaults', () {
-      final o = Over(
+      const o = Over(
         overNumber: 1,
         bowlerId: 'bowl-1',
         bowlerName: 'J Bumrah',
@@ -100,7 +100,7 @@ void main() {
     });
 
     test('legalBalls with no deliveries', () {
-      final o = Over(
+      const o = Over(
         overNumber: 1,
         bowlerId: 'bowl-1',
         bowlerName: 'Test',
@@ -144,7 +144,7 @@ void main() {
     // ── notation ──
 
     test('notation for empty over', () {
-      final o = Over(
+      const o = Over(
         overNumber: 1,
         bowlerId: 'bowl-1',
         bowlerName: 'Test',
@@ -202,7 +202,7 @@ void main() {
     // ── maiden flag ──
 
     test('maiden over flag is stored', () {
-      final o = Over(
+      const o = Over(
         overNumber: 1,
         bowlerId: 'bowl-1',
         bowlerName: 'Test',
@@ -212,7 +212,7 @@ void main() {
     });
 
     test('non-maiden over flag is false', () {
-      final o = Over(
+      const o = Over(
         overNumber: 1,
         bowlerId: 'bowl-1',
         bowlerName: 'Test',

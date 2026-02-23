@@ -46,19 +46,19 @@ void main() {
 
   group('InningsChartData', () {
     test('stores all chart data for one innings', () {
-      final data = InningsChartData(
+      const data = InningsChartData(
         teamName: 'Team A',
         scoreDisplay: '187/6',
-        manhattan: const [
+        manhattan: [
           OverStats(overNumber: 1, runs: 8, hasWicket: false),
           OverStats(overNumber: 2, runs: 12, hasWicket: true),
         ],
-        worm: const [
+        worm: [
           WormDataPoint(overNumber: 0, cumulativeRuns: 0),
           WormDataPoint(overNumber: 1, cumulativeRuns: 8),
           WormDataPoint(overNumber: 2, cumulativeRuns: 20),
         ],
-        runRate: const [
+        runRate: [
           RunRateDataPoint(overNumber: 1, runRate: 8.0),
           RunRateDataPoint(overNumber: 2, runRate: 12.0),
         ],

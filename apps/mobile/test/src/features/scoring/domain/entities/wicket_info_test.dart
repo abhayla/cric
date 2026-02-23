@@ -6,7 +6,7 @@ import 'package:cricapp/src/features/scoring/domain/entities/wicket_info.dart';
 void main() {
   group('WicketInfo', () {
     test('constructs with required fields', () {
-      final w = WicketInfo(
+      const w = WicketInfo(
         dismissedPlayerId: 'bat-1',
         dismissalType: DismissalType.bowled,
         bowlerCredited: true,
@@ -19,7 +19,7 @@ void main() {
     });
 
     test('constructs with all fields for caught dismissal', () {
-      final w = WicketInfo(
+      const w = WicketInfo(
         dismissedPlayerId: 'bat-1',
         dismissalType: DismissalType.caught,
         bowlerCredited: true,
@@ -32,7 +32,7 @@ void main() {
     });
 
     test('constructs with battersCrossed for run out', () {
-      final w = WicketInfo(
+      const w = WicketInfo(
         dismissedPlayerId: 'bat-2',
         dismissalType: DismissalType.runOut,
         bowlerCredited: false,
@@ -47,7 +47,7 @@ void main() {
     });
 
     test('battersCrossed can be false for run out', () {
-      final w = WicketInfo(
+      const w = WicketInfo(
         dismissedPlayerId: 'bat-1',
         dismissalType: DismissalType.runOut,
         bowlerCredited: false,
@@ -59,7 +59,7 @@ void main() {
 
     test('requiresFielder delegates to dismissalType', () {
       expect(
-        WicketInfo(
+        const WicketInfo(
           dismissedPlayerId: 'bat-1',
           dismissalType: DismissalType.bowled,
           bowlerCredited: true,
@@ -67,7 +67,7 @@ void main() {
         false,
       );
       expect(
-        WicketInfo(
+        const WicketInfo(
           dismissedPlayerId: 'bat-1',
           dismissalType: DismissalType.caught,
           bowlerCredited: true,
@@ -76,7 +76,7 @@ void main() {
         true,
       );
       expect(
-        WicketInfo(
+        const WicketInfo(
           dismissedPlayerId: 'bat-1',
           dismissalType: DismissalType.runOut,
           bowlerCredited: false,
@@ -85,7 +85,7 @@ void main() {
         true,
       );
       expect(
-        WicketInfo(
+        const WicketInfo(
           dismissedPlayerId: 'bat-1',
           dismissalType: DismissalType.stumped,
           bowlerCredited: true,
@@ -94,7 +94,7 @@ void main() {
         true,
       );
       expect(
-        WicketInfo(
+        const WicketInfo(
           dismissedPlayerId: 'bat-1',
           dismissalType: DismissalType.lbw,
           bowlerCredited: true,
@@ -104,7 +104,7 @@ void main() {
     });
 
     test('constructs for retired hurt (no fielder, no bowler credit)', () {
-      final w = WicketInfo(
+      const w = WicketInfo(
         dismissedPlayerId: 'bat-1',
         dismissalType: DismissalType.retiredHurt,
         bowlerCredited: false,
@@ -116,7 +116,7 @@ void main() {
     });
 
     test('constructs for stumped (fielder = keeper)', () {
-      final w = WicketInfo(
+      const w = WicketInfo(
         dismissedPlayerId: 'bat-1',
         dismissalType: DismissalType.stumped,
         bowlerCredited: true,
@@ -127,7 +127,7 @@ void main() {
     });
 
     test('constructs for caught and bowled (no fielder needed)', () {
-      final w = WicketInfo(
+      const w = WicketInfo(
         dismissedPlayerId: 'bat-1',
         dismissalType: DismissalType.caughtAndBowled,
         bowlerCredited: true,
@@ -137,7 +137,7 @@ void main() {
     });
 
     test('constructs for hit wicket', () {
-      final w = WicketInfo(
+      const w = WicketInfo(
         dismissedPlayerId: 'bat-1',
         dismissalType: DismissalType.hitWicket,
         bowlerCredited: true,

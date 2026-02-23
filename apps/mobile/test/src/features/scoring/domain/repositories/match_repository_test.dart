@@ -6,7 +6,7 @@ import 'package:cricapp/src/features/scoring/domain/repositories/match_repositor
 void main() {
   group('MatchRepository interface', () {
     test('MatchListResult holds matches, total, and page', () {
-      final result = MatchListResult(
+      const result = MatchListResult(
         matches: [],
         total: 0,
         page: 1,
@@ -48,7 +48,7 @@ void main() {
     });
 
     test('CreateMatchInput holds all creation fields', () {
-      final input = CreateMatchInput(
+      const input = CreateMatchInput(
         homeTeamId: 'team-1',
         awayTeamId: 'team-2',
         format: MatchFormat.t20,
@@ -68,7 +68,7 @@ void main() {
     });
 
     test('CreateMatchInput holds optional fields', () {
-      final input = CreateMatchInput(
+      const input = CreateMatchInput(
         homeTeamId: 'team-1',
         awayTeamId: 'team-2',
         format: MatchFormat.odi,
@@ -92,7 +92,7 @@ void main() {
     });
 
     test('RecordTossInput holds all toss fields', () {
-      final input = RecordTossInput(
+      const input = RecordTossInput(
         winnerId: 'team-1',
         decision: TossDecision.bat,
         openingStrikerId: 'player-1',
@@ -108,7 +108,7 @@ void main() {
     });
 
     test('SetPlayingXIInput holds all playing XI fields', () {
-      final input = SetPlayingXIInput(
+      const input = SetPlayingXIInput(
         teamId: 'team-1',
         playerIds: ['p1', 'p2', 'p3'],
         captainId: 'p1',

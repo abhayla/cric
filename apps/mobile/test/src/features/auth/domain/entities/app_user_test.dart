@@ -5,7 +5,7 @@ import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
 void main() {
   group('AppUser', () {
     test('creates with required fields', () {
-      final user = AppUser(
+      const user = AppUser(
         id: 'user-123',
         firebaseUid: 'fb-123',
         displayName: 'Virat Kohli',
@@ -22,7 +22,7 @@ void main() {
     });
 
     test('creates with all fields', () {
-      final user = AppUser(
+      const user = AppUser(
         id: 'user-123',
         firebaseUid: 'fb-123',
         displayName: 'Virat Kohli',
@@ -40,7 +40,7 @@ void main() {
     });
 
     test('initials returns first two letters of display name', () {
-      final user = AppUser(
+      const user = AppUser(
         id: 'u1',
         firebaseUid: 'fb1',
         displayName: 'Virat Kohli',
@@ -49,7 +49,7 @@ void main() {
     });
 
     test('initials returns single letter for single-word name', () {
-      final user = AppUser(
+      const user = AppUser(
         id: 'u1',
         firebaseUid: 'fb1',
         displayName: 'Virat',

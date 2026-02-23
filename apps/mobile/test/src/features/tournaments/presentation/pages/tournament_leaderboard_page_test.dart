@@ -13,7 +13,7 @@ void main() {
     LeaderboardResult? avgResult,
     LeaderboardResult? ecoResult,
   }) {
-    final defaultResult = const LeaderboardResult(
+    const defaultResult = LeaderboardResult(
       category: LeaderboardCategory.runs,
       leaderboard: [],
     );
@@ -92,7 +92,7 @@ void main() {
     });
 
     testWidgets('shows leaderboard entries', (tester) async {
-      final result = LeaderboardResult(
+      const result = LeaderboardResult(
         category: LeaderboardCategory.runs,
         leaderboard: [
           LeaderboardEntry(
@@ -126,7 +126,7 @@ void main() {
     });
 
     testWidgets('shows rank badges with correct numbering', (tester) async {
-      final result = LeaderboardResult(
+      const result = LeaderboardResult(
         category: LeaderboardCategory.runs,
         leaderboard: [
           LeaderboardEntry(
@@ -165,7 +165,7 @@ void main() {
     });
 
     testWidgets('shows matches count per entry', (tester) async {
-      final result = LeaderboardResult(
+      const result = LeaderboardResult(
         category: LeaderboardCategory.runs,
         leaderboard: [
           LeaderboardEntry(

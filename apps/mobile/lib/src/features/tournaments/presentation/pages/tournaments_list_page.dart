@@ -16,18 +16,14 @@ class TournamentsListPage extends ConsumerWidget {
     final tournamentsAsync = ref.watch(tournamentsListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tournaments'),
-      ),
+      appBar: AppBar(title: const Text('Tournaments')),
       body: RefreshIndicator(
-        onRefresh: () =>
-            ref.read(tournamentsListProvider.notifier).refresh(),
+        onRefresh: () => ref.read(tournamentsListProvider.notifier).refresh(),
         child: tournamentsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => ErrorDisplay(
             error: error,
-            onRetry: () =>
-                ref.read(tournamentsListProvider.notifier).refresh(),
+            onRetry: () => ref.read(tournamentsListProvider.notifier).refresh(),
           ),
           data: (result) {
             if (result.tournaments.isEmpty) {
@@ -55,12 +51,11 @@ class _TournamentsList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: tournaments.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) => TournamentCard(
         tournament: tournaments[index],
-        onTap: () => context.push(
-          AppRoutes.tournamentDetailPath(tournaments[index].id),
-        ),
+        onTap: () =>
+            context.push(AppRoutes.tournamentDetailPath(tournaments[index].id)),
       ),
     );
   }
@@ -111,4 +106,3 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
-

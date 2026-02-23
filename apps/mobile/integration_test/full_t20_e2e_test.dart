@@ -269,8 +269,8 @@ void main() {
       final staleComplete =
           find.byType(MatchCompleteModal).evaluate().isNotEmpty;
       print('[Phase6] Post-transition check: '
-          'InningsTransitionModal=${staleTransition}, '
-          'MatchCompleteModal=${staleComplete}');
+          'InningsTransitionModal=$staleTransition, '
+          'MatchCompleteModal=$staleComplete');
       expect(staleTransition, isFalse,
           reason: 'InningsTransitionModal must be gone before 2nd innings');
 

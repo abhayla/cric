@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:cricapp/src/features/scoring/presentation/notifiers/match_live_notifier.dart';
 import 'package:cricapp/src/features/scoring/providers.dart';
 import 'package:cricapp/src/shared/data/websocket/websocket_client.dart';
-import 'package:cricapp/src/shared/data/websocket/ws_message_model.dart';
 import 'package:cricapp/src/shared/providers/websocket_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

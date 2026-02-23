@@ -181,7 +181,7 @@ class _TeamsSubTab extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, __) => ErrorDisplay(
+        error: (error, _) => ErrorDisplay(
           error: error,
           onRetry: () => ref.invalidate(teams_prov.teamsListProvider),
         ),
@@ -218,16 +218,17 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
                     'live' => m.status == 'live',
                     'won' => m.result?.contains('Won') ?? false,
                     'lost' =>
-                      m.isCompleted &&
-                      !(m.result?.contains('Won') ?? true),
+                      m.isCompleted && !(m.result?.contains('Won') ?? true),
                     _ => true,
                   };
                 }).toList();
 
           // Build items list: filter chips + matches (or empty state) + optional view all
-          final hasViewAll = filteredMatches.isNotEmpty &&
+          final hasViewAll =
+              filteredMatches.isNotEmpty &&
               result.total > result.matches.length;
-          final itemCount = 1 + // filter chips
+          final itemCount =
+              1 + // filter chips
               (filteredMatches.isEmpty ? 1 : filteredMatches.length) +
               (hasViewAll ? 1 : 0);
 
@@ -277,8 +278,7 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
                     subtitle: _filter == 'all'
                         ? 'Start a match to see it here'
                         : 'No matches match this filter',
-                    actionLabel:
-                        _filter == 'all' ? 'Start a Match' : null,
+                    actionLabel: _filter == 'all' ? 'Start a Match' : null,
                     onAction: _filter == 'all'
                         ? () => context.push(AppRoutes.matchSetup)
                         : null,
@@ -316,7 +316,7 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, __) => ErrorDisplay(
+        error: (error, _) => ErrorDisplay(
           error: error,
           onRetry: () => ref.invalidate(allMatchesProvider(1)),
         ),
@@ -330,8 +330,7 @@ class _TournamentsSubTab extends ConsumerStatefulWidget {
   const _TournamentsSubTab();
 
   @override
-  ConsumerState<_TournamentsSubTab> createState() =>
-      _TournamentsSubTabState();
+  ConsumerState<_TournamentsSubTab> createState() => _TournamentsSubTabState();
 }
 
 class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
@@ -358,9 +357,10 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
                 }).toList();
 
           // Build items list: filter chips + tournaments (or empty state) + optional view all
-          final hasViewAll = filtered.isNotEmpty &&
-              result.tournaments.length < result.total;
-          final itemCount = 1 + // filter chips
+          final hasViewAll =
+              filtered.isNotEmpty && result.tournaments.length < result.total;
+          final itemCount =
+              1 + // filter chips
               (filtered.isEmpty ? 1 : filtered.length) +
               (hasViewAll ? 1 : 0);
 
@@ -388,8 +388,7 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
                       _FilterChip(
                         label: 'Completed',
                         selected: _filter == 'completed',
-                        onSelected: () =>
-                            setState(() => _filter = 'completed'),
+                        onSelected: () => setState(() => _filter = 'completed'),
                       ),
                     ],
                   ),
@@ -406,8 +405,7 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
                     subtitle: _filter == 'all'
                         ? 'Create a tournament to get started'
                         : 'No tournaments match this filter',
-                    actionLabel:
-                        _filter == 'all' ? 'Create Tournament' : null,
+                    actionLabel: _filter == 'all' ? 'Create Tournament' : null,
                     onAction: _filter == 'all'
                         ? () => context.push(AppRoutes.createTournament)
                         : null,
@@ -421,12 +419,15 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
                 final tournament = filtered[tournamentIndex];
                 return Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 4),
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   child: TournamentCard(
                     tournament: tournament,
                     onTap: () {
-                      context.push(AppRoutes.tournamentDetailPath(
-                          tournament.id));
+                      context.push(
+                        AppRoutes.tournamentDetailPath(tournament.id),
+                      );
                     },
                   ),
                 );
@@ -437,8 +438,7 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
                 padding: const EdgeInsets.all(16),
                 child: Center(
                   child: TextButton(
-                    onPressed: () =>
-                        context.push(AppRoutes.tournaments),
+                    onPressed: () => context.push(AppRoutes.tournaments),
                     child: const Text('View All Tournaments'),
                   ),
                 ),
@@ -447,7 +447,7 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, __) => ErrorDisplay(
+        error: (error, _) => ErrorDisplay(
           error: error,
           onRetry: () => ref.invalidate(tourn_prov.tournamentsListProvider),
         ),
@@ -502,9 +502,7 @@ class _TeamGrid extends StatelessWidget {
         itemCount: teams.length,
         itemBuilder: (context, index) => TeamCard(
           team: teams[index],
-          onTap: () => context.push(
-            AppRoutes.teamDetailPath(teams[index].id),
-          ),
+          onTap: () => context.push(AppRoutes.teamDetailPath(teams[index].id)),
         ),
       ),
     );
@@ -572,10 +570,7 @@ class _EmptyState extends StatelessWidget {
           ),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: 16),
-            FilledButton(
-              onPressed: onAction,
-              child: Text(actionLabel!),
-            ),
+            FilledButton(onPressed: onAction, child: Text(actionLabel!)),
           ],
         ],
       ),

@@ -83,9 +83,6 @@ class _WicketDialogState extends State<WicketDialog> {
     return 1;
   }
 
-  /// Whether the selected type is a terminal step 1 type (no fielder needed).
-  bool get _isStep1Terminal => _maxStep == 1;
-
   /// Button label for the primary action.
   String get _primaryButtonLabel {
     if (_selectedType == null) return 'Next';
@@ -109,18 +106,18 @@ class _WicketDialogState extends State<WicketDialog> {
 
   /// Grid label for a dismissal type.
   String _gridLabel(DismissalType type) => switch (type) {
-        DismissalType.bowled => 'Bowled',
-        DismissalType.caught => 'Caught',
-        DismissalType.lbw => 'LBW',
-        DismissalType.runOut => 'Run Out',
-        DismissalType.stumped => 'Stumped',
-        DismissalType.hitWicket => 'Hit Wicket',
-        DismissalType.caughtAndBowled => 'C & B',
-        DismissalType.retiredHurt => 'Ret. Hurt',
-        DismissalType.retiredOut => 'Ret. Out',
-        DismissalType.timedOut => 'Timed Out',
-        DismissalType.obstructingField => 'Obstruct.',
-      };
+    DismissalType.bowled => 'Bowled',
+    DismissalType.caught => 'Caught',
+    DismissalType.lbw => 'LBW',
+    DismissalType.runOut => 'Run Out',
+    DismissalType.stumped => 'Stumped',
+    DismissalType.hitWicket => 'Hit Wicket',
+    DismissalType.caughtAndBowled => 'C & B',
+    DismissalType.retiredHurt => 'Ret. Hurt',
+    DismissalType.retiredOut => 'Ret. Out',
+    DismissalType.timedOut => 'Timed Out',
+    DismissalType.obstructingField => 'Obstruct.',
+  };
 
   /// Whether a dismissal type is enabled in the grid.
   bool _isTypeEnabled(DismissalType type) {
@@ -153,15 +150,19 @@ class _WicketDialogState extends State<WicketDialog> {
   }
 
   void _confirm() {
-    widget.onConfirm(WicketDialogResult(
-      dismissalType: _selectedType!,
-      dismissedPlayerId: _dismissedPlayerId ?? widget.strikerId,
-      fielderId: _selectedFielderId,
-      fielderName: _selectedFielderName,
-      runsFromBat: _selectedType == DismissalType.runOut ? _runsBeforeRunOut : 0,
-      battersCrossed: _battersCrossed,
-      isDirectHit: _isDirectHit,
-    ));
+    widget.onConfirm(
+      WicketDialogResult(
+        dismissalType: _selectedType!,
+        dismissedPlayerId: _dismissedPlayerId ?? widget.strikerId,
+        fielderId: _selectedFielderId,
+        fielderName: _selectedFielderName,
+        runsFromBat: _selectedType == DismissalType.runOut
+            ? _runsBeforeRunOut
+            : 0,
+        battersCrossed: _battersCrossed,
+        isDirectHit: _isDirectHit,
+      ),
+    );
   }
 
   @override
@@ -205,9 +206,9 @@ class _WicketDialogState extends State<WicketDialog> {
           Text(
             'Wicket!',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: const Color(0xFFC62828),
-                  fontWeight: FontWeight.bold,
-                ),
+              color: const Color(0xFFC62828),
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const Spacer(),
           IconButton(
@@ -358,10 +359,7 @@ class _WicketDialogState extends State<WicketDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Had batters crossed?',
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text('Had batters crossed?', style: theme.textTheme.bodyMedium),
               Switch(
                 value: _battersCrossed,
                 onChanged: (v) => setState(() => _battersCrossed = v),
@@ -371,10 +369,7 @@ class _WicketDialogState extends State<WicketDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Direct hit?',
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text('Direct hit?', style: theme.textTheme.bodyMedium),
               Switch(
                 value: _isDirectHit,
                 onChanged: (v) => setState(() => _isDirectHit = v),
@@ -540,8 +535,10 @@ class _FielderRow extends StatelessWidget {
               ),
               if (player.badge != null)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(8),

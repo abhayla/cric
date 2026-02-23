@@ -2,15 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cricapp/src/core/theme/app_colors.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/match_live_notifier.dart';
 import 'package:cricapp/src/features/scoring/presentation/pages/live_match_page.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/batter_card.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/bowler_card.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/connection_status_banner.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/score_header.dart';
-import 'package:cricapp/src/features/scoring/providers.dart';
 import 'package:cricapp/src/shared/data/websocket/websocket_client.dart';
-import 'package:cricapp/src/shared/data/websocket/ws_message_model.dart';
 import 'package:cricapp/src/shared/providers/websocket_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

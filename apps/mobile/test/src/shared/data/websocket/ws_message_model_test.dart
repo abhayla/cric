@@ -30,7 +30,7 @@ void main() {
     });
 
     test('toBatterInnings converts to domain entity', () {
-      final snapshot = WsPlayerBattingSnapshot(
+      const snapshot = WsPlayerBattingSnapshot(
         id: 'p1',
         name: 'Rohit Sharma',
         runs: 45,
@@ -76,7 +76,7 @@ void main() {
     });
 
     test('toBowlerSpell converts to domain entity with complete overs', () {
-      final snapshot = WsPlayerBowlingSnapshot(
+      const snapshot = WsPlayerBowlingSnapshot(
         id: 'b1',
         name: 'Bumrah',
         overs: '4.0',
@@ -98,7 +98,7 @@ void main() {
     });
 
     test('toBowlerSpell converts partial overs correctly', () {
-      final snapshot = WsPlayerBowlingSnapshot(
+      const snapshot = WsPlayerBowlingSnapshot(
         id: 'b2',
         name: 'Ashwin',
         overs: '3.4',
@@ -114,7 +114,7 @@ void main() {
     });
 
     test('toBowlerSpell handles zero overs', () {
-      final snapshot = WsPlayerBowlingSnapshot(
+      const snapshot = WsPlayerBowlingSnapshot(
         id: 'b3',
         name: 'Test',
         overs: '0.0',

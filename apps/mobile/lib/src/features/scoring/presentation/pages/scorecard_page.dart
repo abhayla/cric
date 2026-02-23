@@ -11,7 +11,6 @@ import '../../../analytics/presentation/widgets/run_rate_chart.dart';
 import '../../../analytics/presentation/widgets/worm_chart.dart';
 import '../../domain/entities/batter_innings.dart';
 import '../../domain/entities/bowler_spell.dart';
-import '../../domain/entities/delivery.dart';
 import '../../domain/entities/innings_data.dart';
 import '../../domain/entities/scorecard_data.dart';
 

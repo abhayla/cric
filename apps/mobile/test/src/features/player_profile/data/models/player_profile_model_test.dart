@@ -55,7 +55,7 @@ void main() {
     });
 
     test('toEntity converts correctly', () {
-      final model = const PlayerProfileModel(
+      const model = PlayerProfileModel(
         id: 'player-1',
         displayName: 'Virat Kohli',
         playerRole: 'batter',

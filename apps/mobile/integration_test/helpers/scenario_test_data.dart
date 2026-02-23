@@ -12,9 +12,9 @@ class ScenarioTeams {
   static const teamAName = 'Mumbai Warriors';
   static const teamBName = 'Chennai Challengers';
 
-  static TeamData get teamA => TeamData(
+  static TeamData get teamA => const TeamData(
         name: teamAName,
-        players: const [
+        players: [
           // Batters (indexes 0-3)
           PlayerData(name: 'Rohit Sharma', role: 'batter'),
           PlayerData(name: 'Virat Kohli', role: 'batter'),
@@ -33,9 +33,9 @@ class ScenarioTeams {
         ],
       );
 
-  static TeamData get teamB => TeamData(
+  static TeamData get teamB => const TeamData(
         name: teamBName,
-        players: const [
+        players: [
           // Batters (indexes 0-3)
           PlayerData(name: 'Shubman Gill', role: 'batter'),
           PlayerData(name: 'Yashasvi Jaiswal', role: 'batter'),

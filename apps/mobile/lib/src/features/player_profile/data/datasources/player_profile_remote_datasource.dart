@@ -47,8 +47,8 @@ class PlayerProfileRemoteDatasource {
         queryParameters: {
           'page': page.toString(),
           'limit': limit.toString(),
-          if (format != null) 'format': format,
-          if (result != null) 'result': result,
+          'format': ?format,
+          'result': ?result,
         },
       );
       return response.data as Map<String, dynamic>;

@@ -9,7 +9,7 @@ import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_noti
 
 void main() {
   group('InningsData', () {
-    InningsData _createInningsData({
+    InningsData createInningsData({
       String teamName = 'Team A',
       String teamId = 'team-a',
       int totalRuns = 150,
@@ -48,32 +48,32 @@ void main() {
     }
 
     test('scoreDisplay returns runs/wickets format', () {
-      final data = _createInningsData(totalRuns: 187, totalWickets: 6);
+      final data = createInningsData(totalRuns: 187, totalWickets: 6);
       expect(data.scoreDisplay, '187/6');
     });
 
     test('oversDisplay returns overs.balls format', () {
-      final data = _createInningsData(totalBalls: 75);
+      final data = createInningsData(totalBalls: 75);
       expect(data.oversDisplay, '12.3');
     });
 
     test('oversDisplay shows exact overs when no remainder', () {
-      final data = _createInningsData(totalBalls: 120);
+      final data = createInningsData(totalBalls: 120);
       expect(data.oversDisplay, '20.0');
     });
 
     test('runRate computes correctly', () {
-      final data = _createInningsData(totalRuns: 60, totalBalls: 60);
+      final data = createInningsData(totalRuns: 60, totalBalls: 60);
       expect(data.runRate, 6.0);
     });
 
     test('runRate returns 0 for empty innings', () {
-      final data = _createInningsData(totalRuns: 0, totalBalls: 0);
+      final data = createInningsData(totalRuns: 0, totalBalls: 0);
       expect(data.runRate, 0);
     });
 
     test('extrasDisplay shows breakdown when all types present', () {
-      final data = _createInningsData(
+      final data = createInningsData(
         totalExtras: 11,
         totalWides: 5,
         totalNoBalls: 3,
@@ -84,7 +84,7 @@ void main() {
     });
 
     test('extrasDisplay shows "0" when no extras', () {
-      final data = _createInningsData(
+      final data = createInningsData(
         totalExtras: 0,
         totalWides: 0,
         totalNoBalls: 0,
@@ -95,7 +95,7 @@ void main() {
     });
 
     test('extrasDisplay omits zero-valued types', () {
-      final data = _createInningsData(
+      final data = createInningsData(
         totalExtras: 5,
         totalWides: 5,
         totalNoBalls: 0,
@@ -116,7 +116,7 @@ void main() {
         'p2': _batter('p2', 'Player 2'),
         'p3': _batter('p3', 'Player 3'),
       };
-      final data = _createInningsData(
+      final data = createInningsData(
         deliveryHistory: deliveries,
         batterStats: stats,
       );
@@ -134,7 +134,7 @@ void main() {
         'p2': _batter('p2', 'Player 2'),
         'p3': _batter('p3', 'Player 3'),
       };
-      final data = _createInningsData(
+      final data = createInningsData(
         deliveryHistory: deliveries,
         batterStats: stats,
       );
@@ -156,7 +156,7 @@ void main() {
       final stats = {
         'p1': _batter('p1', 'Player 1'),
       };
-      final data = _createInningsData(
+      final data = createInningsData(
         battingTeamPlayers: roster,
         batterStats: stats,
       );
@@ -173,7 +173,7 @@ void main() {
       final stats = {
         'p1': _batter('p1', 'Player 1'),
       };
-      final data = _createInningsData(
+      final data = createInningsData(
         battingTeamPlayers: roster,
         batterStats: stats,
       );
@@ -191,7 +191,7 @@ void main() {
         'b1': const BowlerSpell(playerId: 'b1', displayName: 'Bowler 1'),
         'b2': const BowlerSpell(playerId: 'b2', displayName: 'Bowler 2'),
       };
-      final data = _createInningsData(
+      final data = createInningsData(
         deliveryHistory: deliveries,
         bowlerStats: stats,
       );

@@ -1,11 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricapp/src/features/scoring/data/mappers/scoring_ws_mapper.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/batter_innings.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/bowler_spell.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/wicket_info.dart';
 import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
 
 void main() {
@@ -161,7 +158,7 @@ void main() {
       final data = payload['data'] as Map<String, dynamic>;
       final rr = data['currentRunRate'] as double;
       // Should be formatted to 2 decimal places
-      expect(rr.toStringAsFixed(2), rr.toString().contains('.') ? rr.toStringAsFixed(2) : '${rr.toStringAsFixed(2)}');
+      expect(rr.toStringAsFixed(2), rr.toString().contains('.') ? rr.toStringAsFixed(2) : rr.toStringAsFixed(2));
     });
   });
 

@@ -4,7 +4,6 @@ import 'dart:math';
 
 import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:cricapp/src/features/scoring/presentation/widgets/match_complete_modal.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/wicket_dialog.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -42,9 +41,7 @@ class UiDelivery {
   const UiDelivery._({
     this.runs,
     this.isWide = false,
-    this.isNoBall = false,
-    this.isBypass = false,        // true if this is a Bye delivery
-    this.isLegBypass = false,     // true if this is a Leg-Bye delivery
+    this.isNoBall = false, // true if this is a Leg-Bye delivery
     this.isWicket = false,
     this.dismissalType = 'Bowled',
     this.fielderName,
@@ -55,13 +52,14 @@ class UiDelivery {
   final int? runs;
   final bool isWide;
   final bool isNoBall;
-  final bool isBypass;
-  final bool isLegBypass;
+  final bool isBypass = false;
+  final bool isLegBypass = false;
   final bool isWicket;
   final String dismissalType;
   final String? fielderName;
-  final String? newBatterName;  // Required after a wicket (null = last wicket / auto-select)
-  final int extraRuns;          // Additional runs on wide/no-ball (default 0)
+  final String?
+  newBatterName; // Required after a wicket (null = last wicket / auto-select)
+  final int extraRuns; // Additional runs on wide/no-ball (default 0)
 
   // ── Factory constructors for common deliveries ──
 
@@ -78,25 +76,42 @@ class UiDelivery {
   factory UiDelivery.noBall({int batRuns = 0}) =>
       UiDelivery._(isNoBall: true, runs: batRuns);
 
-  factory UiDelivery.wicketBowled(String newBatter) =>
-      UiDelivery._(isWicket: true, dismissalType: 'Bowled', newBatterName: newBatter);
+  factory UiDelivery.wicketBowled(String newBatter) => UiDelivery._(
+    isWicket: true,
+    dismissalType: 'Bowled',
+    newBatterName: newBatter,
+  );
 
   factory UiDelivery.wicketBowledLastWicket() =>
       const UiDelivery._(isWicket: true, dismissalType: 'Bowled');
 
   factory UiDelivery.wicketCaught(String fielder, String newBatter) =>
-      UiDelivery._(isWicket: true, dismissalType: 'Caught',
-          fielderName: fielder, newBatterName: newBatter);
+      UiDelivery._(
+        isWicket: true,
+        dismissalType: 'Caught',
+        fielderName: fielder,
+        newBatterName: newBatter,
+      );
 
-  factory UiDelivery.wicketCaughtLastWicket(String fielder) =>
-      UiDelivery._(isWicket: true, dismissalType: 'Caught', fielderName: fielder);
+  factory UiDelivery.wicketCaughtLastWicket(String fielder) => UiDelivery._(
+    isWicket: true,
+    dismissalType: 'Caught',
+    fielderName: fielder,
+  );
 
-  factory UiDelivery.wicketLbw(String newBatter) =>
-      UiDelivery._(isWicket: true, dismissalType: 'LBW', newBatterName: newBatter);
+  factory UiDelivery.wicketLbw(String newBatter) => UiDelivery._(
+    isWicket: true,
+    dismissalType: 'LBW',
+    newBatterName: newBatter,
+  );
 
   factory UiDelivery.wicketRunOut(String fielder, String newBatter) =>
-      UiDelivery._(isWicket: true, dismissalType: 'Run Out',
-          fielderName: fielder, newBatterName: newBatter);
+      UiDelivery._(
+        isWicket: true,
+        dismissalType: 'Run Out',
+        fielderName: fielder,
+        newBatterName: newBatter,
+      );
 
   /// Create a delivery record from this UiDelivery for tracking.
   DeliveryRecord toRecord({required int overNumber, required int ballNumber}) {
@@ -145,10 +160,7 @@ class UiDelivery {
 
 /// An over's worth of deliveries.
 class UiOver {
-  const UiOver({
-    required this.bowlerName,
-    required this.deliveries,
-  });
+  const UiOver({required this.bowlerName, required this.deliveries});
 
   final String bowlerName;
   final List<UiDelivery> deliveries;
@@ -210,8 +222,8 @@ class MatchVerificationReport {
   final String? manOfMatchId;
   final String? webSocketInfo;
 
-  bool get deliveriesMatch => deliveryMismatches == 0 &&
-      deliveriesTracked == deliveriesInDB;
+  bool get deliveriesMatch =>
+      deliveryMismatches == 0 && deliveriesTracked == deliveriesInDB;
 
   @override
   String toString() {
@@ -255,10 +267,7 @@ class MatchVerificationReport {
 /// Based on the patterns in docs/testing/flows/E2E_FULL_MATCH.md and
 /// match_scoring_flow.md.
 class SingleMatchFlow {
-  SingleMatchFlow({
-    required this.tester,
-    required this.dio,
-  });
+  SingleMatchFlow({required this.tester, required this.dio});
 
   final WidgetTester tester;
   final Dio dio;
@@ -313,7 +322,9 @@ class SingleMatchFlow {
     int overs = 5,
     int playersPerSide = 6,
   }) async {
-    print('\n[SingleMatchFlow] Setting up match: $homeTeamName vs $awayTeamName');
+    print(
+      '\n[SingleMatchFlow] Setting up match: $homeTeamName vs $awayTeamName',
+    );
 
     // Navigate to My Cricket tab
     final myCricketTab = find.text('My Cricket');
@@ -390,7 +401,9 @@ class SingleMatchFlow {
     );
     await visualPause(tester, 1000);
     print('  ✓ ${config.tossWinnerName} bats first');
-    print('  ✓ Openers: ${config.battingOpener1} (str) + ${config.battingOpener2}');
+    print(
+      '  ✓ Openers: ${config.battingOpener1} (str) + ${config.battingOpener2}',
+    );
     print('  ✓ Bowler: ${config.openingBowler}');
   }
 
@@ -409,7 +422,9 @@ class SingleMatchFlow {
     required int inningsNumber,
   }) async {
     final records = inningsNumber == 1 ? _inn1Records : _inn2Records;
-    print('\n[SingleMatchFlow] Scoring innings $inningsNumber (${overs.length} over(s))');
+    print(
+      '\n[SingleMatchFlow] Scoring innings $inningsNumber (${overs.length} over(s))',
+    );
 
     for (var overIdx = 0; overIdx < overs.length; overIdx++) {
       final over = overs[overIdx];
@@ -434,7 +449,9 @@ class SingleMatchFlow {
         final deliveryStr = delivery.toString();
         final runningTotal = records.fold(0, (s, d) => s + d.totalRuns);
         final wickets = records.where((d) => d.isWicket).length;
-        print('    $overNumber.${delivery.isWide || delivery.isNoBall ? "ex" : _currentBallNumber}: $deliveryStr → $runningTotal/$wickets');
+        print(
+          '    $overNumber.${delivery.isWide || delivery.isNoBall ? "ex" : _currentBallNumber}: $deliveryStr → $runningTotal/$wickets',
+        );
 
         // Check again after delivery
         if (_isMatchComplete() || _isInningsTransition()) break;
@@ -544,7 +561,9 @@ class SingleMatchFlow {
       dbDeliveries = (r.data['deliveries'] as List)
           .map((d) => d as Map<String, dynamic>)
           .toList();
-      print('  Deliveries — UI:${allTracked.length}, DB:${dbDeliveries.length}');
+      print(
+        '  Deliveries — UI:${allTracked.length}, DB:${dbDeliveries.length}',
+      );
     } catch (e) {
       print('  ✗ Delivery fetch failed: $e');
     }
@@ -553,18 +572,25 @@ class SingleMatchFlow {
     var matches = 0;
     var mismatches = 0;
     final checkCount = allTracked.length < dbDeliveries.length
-        ? allTracked.length : dbDeliveries.length;
+        ? allTracked.length
+        : dbDeliveries.length;
 
     for (var i = 0; i < checkCount; i++) {
       final db = dbDeliveries[i];
       final ui = allTracked[i];
-      final ok = (db['total_runs'] as int? ?? 0) == ui.totalRuns &&
+      final ok =
+          (db['total_runs'] as int? ?? 0) == ui.totalRuns &&
           (db['is_wide'] as bool? ?? false) == ui.isWide &&
           (db['is_no_ball'] as bool? ?? false) == ui.isNoBall &&
           (db['is_wicket'] as bool? ?? false) == ui.isWicket;
-      if (ok) matches++; else mismatches++;
+      if (ok) {
+        matches++;
+      } else {
+        mismatches++;
+      }
     }
-    mismatches += (allTracked.length - checkCount).abs() +
+    mismatches +=
+        (allTracked.length - checkCount).abs() +
         (dbDeliveries.length - checkCount).abs();
 
     // Fetch match result
@@ -586,7 +612,8 @@ class SingleMatchFlow {
     }
 
     // WebSocket info
-    final wsInfo = 'ws://<server>:3001/ws → {"type":"join_match","matchId":"$matchId"}';
+    final wsInfo =
+        'ws://<server>:3001/ws → {"type":"join_match","matchId":"$matchId"}';
 
     final report = MatchVerificationReport(
       matchId: matchId,
@@ -617,10 +644,7 @@ class SingleMatchFlow {
       find.byType(InningsTransitionModal).evaluate().isNotEmpty;
 
   /// Execute one UI delivery and return its tracking record.
-  Future<DeliveryRecord?> _executeDelivery(
-    UiDelivery d,
-    int overNumber,
-  ) async {
+  Future<DeliveryRecord?> _executeDelivery(UiDelivery d, int overNumber) async {
     if (d.isWide) {
       await tapExtra(tester, 'WD');
       await confirmExtra(tester);
@@ -690,4 +714,3 @@ class SingleMatchFlow {
     }
   }
 }
-

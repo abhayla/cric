@@ -143,7 +143,7 @@ void main() {
     });
 
     testWidgets('shows standings section on Overview tab', (tester) async {
-      final standings = StandingsResult(
+      const standings = StandingsResult(
         standings: [
           Standing(
             tournamentId: 'tour-1',
@@ -186,7 +186,7 @@ void main() {
 
     testWidgets('shows fixtures on Fixtures tab', (tester) async {
       final fixtures = [
-        Fixture(
+        const Fixture(
           id: 'fix-1',
           tournamentId: 'tour-1',
           roundNumber: 1,

@@ -35,7 +35,7 @@ String generateCommentary(
       base = '$over $bowler to $batter, wide';
     }
     if (isMagic && delivery.totalRuns > 0) {
-      final original = delivery.totalRuns ~/ magicOverMultiplier!;
+      final original = delivery.totalRuns ~/ magicOverMultiplier;
       return 'MAGIC OVER! $base ($original -> ${delivery.totalRuns} awarded, ${magicOverMultiplier}x)';
     }
     return base;
@@ -50,7 +50,7 @@ String generateCommentary(
       base = '$over $bowler to $batter, no ball';
     }
     if (isMagic && delivery.totalRuns > 0) {
-      final original = delivery.totalRuns ~/ magicOverMultiplier!;
+      final original = delivery.totalRuns ~/ magicOverMultiplier;
       return 'MAGIC OVER! $base ($original -> ${delivery.totalRuns} awarded, ${magicOverMultiplier}x)';
     }
     return base;
@@ -59,7 +59,7 @@ String generateCommentary(
   if (delivery.isBye) {
     final base = '$over $bowler to $batter, ${delivery.byeRuns} ${_byeWord(delivery.byeRuns)}';
     if (isMagic && delivery.totalRuns > 0) {
-      final original = delivery.totalRuns ~/ magicOverMultiplier!;
+      final original = delivery.totalRuns ~/ magicOverMultiplier;
       return 'MAGIC OVER! $base ($original -> ${delivery.totalRuns} awarded, ${magicOverMultiplier}x)';
     }
     return base;
@@ -68,7 +68,7 @@ String generateCommentary(
   if (delivery.isLegBye) {
     final base = '$over $bowler to $batter, ${delivery.legByeRuns} leg ${_byeWord(delivery.legByeRuns)}';
     if (isMagic && delivery.totalRuns > 0) {
-      final original = delivery.totalRuns ~/ magicOverMultiplier!;
+      final original = delivery.totalRuns ~/ magicOverMultiplier;
       return 'MAGIC OVER! $base ($original -> ${delivery.totalRuns} awarded, ${magicOverMultiplier}x)';
     }
     return base;
@@ -77,7 +77,7 @@ String generateCommentary(
   if (delivery.isBoundarySix) {
     final base = '$over $bowler to $batter, SIX!';
     if (isMagic) {
-      final original = delivery.runsFromBat ~/ magicOverMultiplier!;
+      final original = delivery.runsFromBat ~/ magicOverMultiplier;
       return 'MAGIC OVER! $base ($original -> ${delivery.runsFromBat} awarded, ${magicOverMultiplier}x)';
     }
     return base;
@@ -86,7 +86,7 @@ String generateCommentary(
   if (delivery.isBoundaryFour) {
     final base = '$over $bowler to $batter, FOUR!';
     if (isMagic) {
-      final original = delivery.runsFromBat ~/ magicOverMultiplier!;
+      final original = delivery.runsFromBat ~/ magicOverMultiplier;
       return 'MAGIC OVER! $base ($original -> ${delivery.runsFromBat} awarded, ${magicOverMultiplier}x)';
     }
     return base;
@@ -100,7 +100,7 @@ String generateCommentary(
 
   final base = '$over $bowler to $batter, ${delivery.runsFromBat} ${_runsWord(delivery.runsFromBat)}';
   if (isMagic) {
-    final original = delivery.runsFromBat ~/ magicOverMultiplier!;
+    final original = delivery.runsFromBat ~/ magicOverMultiplier;
     return 'MAGIC OVER! $base ($original -> ${delivery.runsFromBat} awarded, ${magicOverMultiplier}x)';
   }
   return base;

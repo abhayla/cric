@@ -94,7 +94,7 @@ class MatchRecord {
 
   @override
   String toString() =>
-      'Match $matchId: ${firstInningsRuns}/${firstInningsWickets} vs '
-      '${secondInningsRuns}/${secondInningsWickets} '
+      'Match $matchId: $firstInningsRuns/$firstInningsWickets vs '
+      '$secondInningsRuns/$secondInningsWickets '
       '(${firstInningsDeliveries.length}+${secondInningsDeliveries.length} del)';
 }

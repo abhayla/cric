@@ -39,20 +39,20 @@ class TournamentRemoteDatasource {
           'format': format,
           'oversPerMatch': oversPerMatch,
           'ballTypeId': ballTypeId,
-          ?'pointsWin': pointsWin,
-          ?'pointsTie': pointsTie,
-          ?'pointsNoResult': pointsNoResult,
-          ?'pointsLoss': pointsLoss,
-          ?'numGroups': numGroups,
-          ?'qualifyPerGroup': qualifyPerGroup,
-          ?'hasThirdPlaceMatch': hasThirdPlaceMatch,
-          ?'playersPerSide': playersPerSide,
-          ?'maxOversPerBowler': maxOversPerBowler,
-          ?'wideRuns': wideRuns,
-          ?'noBallRuns': noBallRuns,
-          ?'powerplayOvers': powerplayOvers,
-          ?'startDate': startDate,
-          ?'endDate': endDate,
+          'pointsWin': pointsWin,
+          'pointsTie': pointsTie,
+          'pointsNoResult': pointsNoResult,
+          'pointsLoss': pointsLoss,
+          'numGroups': numGroups,
+          'qualifyPerGroup': qualifyPerGroup,
+          'hasThirdPlaceMatch': hasThirdPlaceMatch,
+          'playersPerSide': playersPerSide,
+          'maxOversPerBowler': maxOversPerBowler,
+          'wideRuns': wideRuns,
+          'noBallRuns': noBallRuns,
+          'powerplayOvers': powerplayOvers,
+          'startDate': startDate,
+          'endDate': endDate,
         },
       );
       return response.data['tournament'] as Map<String, dynamic>;
@@ -72,7 +72,7 @@ class TournamentRemoteDatasource {
         queryParameters: {
           'page': page.toString(),
           'limit': limit.toString(),
-          ?'status': status,
+          'status': status,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -130,8 +130,8 @@ class TournamentRemoteDatasource {
         '$_base/$tournamentId/teams',
         data: {
           'teamId': teamId,
-          ?'groupName': groupName,
-          ?'seedNumber': seedNumber,
+          'groupName': groupName,
+          'seedNumber': seedNumber,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -162,7 +162,7 @@ class TournamentRemoteDatasource {
     try {
       final response = await dio.get(
         '$_base/$tournamentId/requests',
-        queryParameters: {?'status': status},
+        queryParameters: {'status': status},
       );
       return (response.data['requests'] as List).cast<Map<String, dynamic>>();
     } on DioException catch (e) {
@@ -183,9 +183,9 @@ class TournamentRemoteDatasource {
         '$_base/$tournamentId/requests/$requestId',
         data: {
           'status': status,
-          ?'groupName': groupName,
-          ?'seedNumber': seedNumber,
-          ?'rejectionReason': rejectionReason,
+          'groupName': groupName,
+          'seedNumber': seedNumber,
+          'rejectionReason': rejectionReason,
         },
       );
       return response.data['request'] as Map<String, dynamic>;
@@ -222,8 +222,8 @@ class TournamentRemoteDatasource {
       final response = await dio.get(
         '$_base/$tournamentId/fixtures',
         queryParameters: {
-          ?'roundType': roundType,
-          ?'groupName': groupName,
+          'roundType': roundType,
+          'groupName': groupName,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -257,7 +257,7 @@ class TournamentRemoteDatasource {
     try {
       final response = await dio.get(
         '$_base/$tournamentId/standings',
-        queryParameters: {?'groupName': groupName},
+        queryParameters: {'groupName': groupName},
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {

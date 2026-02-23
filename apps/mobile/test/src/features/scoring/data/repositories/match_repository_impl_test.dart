@@ -52,7 +52,7 @@ void main() {
             powerplayOvers: any(named: 'powerplayOvers'),
           )).thenAnswer((_) async => matchJson);
 
-      final input = CreateMatchInput(
+      const input = CreateMatchInput(
         homeTeamId: 'team-home',
         awayTeamId: 'team-away',
         format: MatchFormat.t20,
@@ -150,7 +150,7 @@ void main() {
             keeperId: any(named: 'keeperId'),
           )).thenAnswer((_) async => playersJson);
 
-      final input = SetPlayingXIInput(
+      const input = SetPlayingXIInput(
         teamId: 'team-1',
         playerIds: ['p1', 'p2'],
         captainId: 'p1',
@@ -184,7 +184,7 @@ void main() {
             openingBowlerId: any(named: 'openingBowlerId'),
           )).thenAnswer((_) async => tossResponseJson);
 
-      final input = RecordTossInput(
+      const input = RecordTossInput(
         winnerId: 'team-home',
         decision: TossDecision.bat,
         openingStrikerId: 'p1',

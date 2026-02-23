@@ -701,7 +701,7 @@ ScorecardData _createMvpTestDataWithDeliveries({
       battingTeamPlayers: const [],
       bowlingTeamPlayers: firstBowlingTeamPlayers,
     ),
-    secondInnings: InningsData(
+    secondInnings: const InningsData(
       teamName: 'Team B',
       teamId: 'team-b',
       totalRuns: 0,
@@ -712,12 +712,12 @@ ScorecardData _createMvpTestDataWithDeliveries({
       totalByes: 0,
       totalLegByes: 0,
       totalExtras: 0,
-      batterStats: const {},
-      bowlerStats: const {},
-      fallOfWickets: const [],
-      deliveryHistory: const [],
-      battingTeamPlayers: const [],
-      bowlingTeamPlayers: const [],
+      batterStats: {},
+      bowlerStats: {},
+      fallOfWickets: [],
+      deliveryHistory: [],
+      battingTeamPlayers: [],
+      bowlingTeamPlayers: [],
     ),
     matchResult: const MatchResult(
       resultType: MatchResultType.tie,
@@ -759,7 +759,7 @@ ScorecardData _createFullAllRounderData(List<Delivery> deliveries) {
         PlayingXIPlayer(playerId: 'ar1', displayName: 'All Rounder'),
       ],
     ),
-    secondInnings: InningsData(
+    secondInnings: const InningsData(
       teamName: 'Team B',
       teamId: 'team-b',
       totalRuns: 120,
@@ -771,7 +771,7 @@ ScorecardData _createFullAllRounderData(List<Delivery> deliveries) {
       totalLegByes: 0,
       totalExtras: 0,
       batterStats: {
-        'ar1': const BatterInnings(
+        'ar1': BatterInnings(
           playerId: 'ar1',
           displayName: 'All Rounder',
           runsScored: 45,
@@ -780,13 +780,13 @@ ScorecardData _createFullAllRounderData(List<Delivery> deliveries) {
           sixes: 2,
         ),
       },
-      bowlerStats: const {},
-      fallOfWickets: const [],
-      deliveryHistory: const [],
-      battingTeamPlayers: const [
+      bowlerStats: {},
+      fallOfWickets: [],
+      deliveryHistory: [],
+      battingTeamPlayers: [
         PlayingXIPlayer(playerId: 'ar1', displayName: 'All Rounder'),
       ],
-      bowlingTeamPlayers: const [],
+      bowlingTeamPlayers: [],
     ),
     matchResult: const MatchResult(
       winnerTeamId: 'team-a',

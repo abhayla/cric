@@ -339,7 +339,7 @@ void main() {
 
   group('PlayingXIEntry', () {
     test('creates with required fields', () {
-      final entry = PlayingXIEntry(
+      const entry = PlayingXIEntry(
         playerId: 'player-1',
         displayName: 'Virat Kohli',
         isCaptain: true,
@@ -353,7 +353,7 @@ void main() {
     });
 
     test('creates with all optional fields', () {
-      final entry = PlayingXIEntry(
+      const entry = PlayingXIEntry(
         playerId: 'player-1',
         displayName: 'Virat Kohli',
         isCaptain: true,
@@ -371,7 +371,7 @@ void main() {
     });
 
     test('badge returns (C) for captain', () {
-      final entry = PlayingXIEntry(
+      const entry = PlayingXIEntry(
         playerId: 'p1',
         displayName: 'Test',
         isCaptain: true,
@@ -381,7 +381,7 @@ void main() {
     });
 
     test('badge returns (WK) for keeper', () {
-      final entry = PlayingXIEntry(
+      const entry = PlayingXIEntry(
         playerId: 'p1',
         displayName: 'Test',
         isCaptain: false,
@@ -391,7 +391,7 @@ void main() {
     });
 
     test('badge returns (C & WK) for captain+keeper', () {
-      final entry = PlayingXIEntry(
+      const entry = PlayingXIEntry(
         playerId: 'p1',
         displayName: 'Test',
         isCaptain: true,
@@ -401,7 +401,7 @@ void main() {
     });
 
     test('badge returns null for regular player', () {
-      final entry = PlayingXIEntry(
+      const entry = PlayingXIEntry(
         playerId: 'p1',
         displayName: 'Test',
         isCaptain: false,

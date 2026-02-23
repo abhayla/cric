@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
-import '../../core/constants/app_constants.dart';
 import 'data/datasources/home_remote_datasource.dart';
 import 'data/repositories/home_repository_impl.dart';
 import 'domain/repositories/home_repository.dart';

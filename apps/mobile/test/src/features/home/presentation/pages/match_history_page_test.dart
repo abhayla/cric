@@ -36,7 +36,7 @@ void main() {
     page: 1,
   );
 
-  final emptyData = const MatchListResult(
+  const emptyData = MatchListResult(
     matches: [],
     total: 0,
     page: 1,
@@ -48,7 +48,7 @@ void main() {
     return ProviderScope(
       overrides: [
         allMatchesProvider.overrideWith(
-          (ref, page) => (allMatches ?? AsyncValue.data(emptyData)).when(
+          (ref, page) => (allMatches ?? const AsyncValue.data(emptyData)).when(
             data: (d) => Future.value(d),
             loading: () => Future.any([]),
             error: (e, s) => Future.error(e, s),
@@ -80,7 +80,7 @@ void main() {
 
     testWidgets('shows empty state when no matches', (tester) async {
       await tester.pumpWidget(buildTestWidget(
-        allMatches: AsyncValue.data(emptyData),
+        allMatches: const AsyncValue.data(emptyData),
       ));
       await tester.pumpAndSettle();
 
@@ -116,7 +116,7 @@ void main() {
 
     testWidgets('shows Start a Match button in empty state', (tester) async {
       await tester.pumpWidget(buildTestWidget(
-        allMatches: AsyncValue.data(emptyData),
+        allMatches: const AsyncValue.data(emptyData),
       ));
       await tester.pumpAndSettle();
 

@@ -1,9 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/tournaments/domain/entities/fixture.dart';
-import 'package:cricapp/src/features/tournaments/domain/entities/standing.dart';
 import 'package:cricapp/src/features/tournaments/domain/entities/tournament.dart';
-import 'package:cricapp/src/features/tournaments/domain/entities/tournament_request.dart';
 import 'package:cricapp/src/features/tournaments/domain/repositories/tournament_repository.dart';
 
 void main() {

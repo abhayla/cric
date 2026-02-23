@@ -765,7 +765,7 @@ void main() {
 
   group('FirstInningsSummary round-trip', () {
     test('populated summary', () {
-      final summary = FirstInningsSummary(
+      const summary = FirstInningsSummary(
         teamName: 'Team Alpha',
         teamId: 'team-a',
         totalRuns: 187,
@@ -816,7 +816,7 @@ void main() {
         batterStats: {'bat-1': makeBatter()},
         bowlerStats: {'bowl-1': makeBowler()},
         fallOfWickets: [
-          FallOfWicket(
+          const FallOfWicket(
             wicketNumber: 1,
             scoreAtFall: 25,
             oversAtFall: '4.3',
@@ -897,7 +897,7 @@ void main() {
     });
 
     test('2nd innings with first innings summary and data', () {
-      final summary = FirstInningsSummary(
+      const summary = FirstInningsSummary(
         teamName: 'Team A',
         teamId: 'team-a',
         totalRuns: 180,
@@ -905,7 +905,7 @@ void main() {
         totalBalls: 120,
         oversDisplay: '20.0',
       );
-      final firstInningsData = InningsData(
+      const firstInningsData = InningsData(
         teamName: 'Team A',
         teamId: 'team-a',
         totalRuns: 180,
@@ -1146,7 +1146,7 @@ void main() {
 
   group('isDirectHit round-trip', () {
     test('preserves isDirectHit=true in WicketInfo', () {
-      final wicket = WicketInfo(
+      const wicket = WicketInfo(
         dismissedPlayerId: 'p1',
         dismissalType: DismissalType.runOut,
         bowlerCredited: false,

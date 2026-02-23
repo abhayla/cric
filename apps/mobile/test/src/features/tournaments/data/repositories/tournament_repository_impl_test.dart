@@ -66,7 +66,7 @@ void main() {
             endDate: any(named: 'endDate'),
           )).thenAnswer((_) async => tournamentJson);
 
-      final input = CreateTournamentInput(
+      const input = CreateTournamentInput(
         name: 'Summer League',
         format: TournamentFormat.roundRobin,
         oversPerMatch: 20,
@@ -166,7 +166,7 @@ void main() {
         'name': 'Updated League',
       });
 
-      final input = UpdateTournamentInput(name: 'Updated League');
+      const input = UpdateTournamentInput(name: 'Updated League');
       final result = await repository.updateTournament('tour-1', input);
 
       expect(result, isA<Tournament>());
@@ -181,7 +181,7 @@ void main() {
       when(() => mockDatasource.updateTournament(any(), any()))
           .thenAnswer((_) async => tournamentJson);
 
-      final input = UpdateTournamentInput(
+      const input = UpdateTournamentInput(
         name: 'New Name',
         oversPerMatch: 10,
         pointsWin: 3,

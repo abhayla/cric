@@ -7,7 +7,6 @@ import '../../../../shared/widgets/error_display.dart';
 import '../../domain/entities/fixture.dart';
 import '../../domain/entities/standing.dart';
 import '../../domain/entities/tournament.dart';
-import '../../domain/repositories/tournament_repository.dart';
 import '../../providers.dart';
 import '../widgets/fixture_card.dart';
 
@@ -71,10 +70,7 @@ class _TournamentDetailView extends StatelessWidget {
                       value: 'edit',
                       child: Text('Edit Tournament'),
                     ),
-                    const PopupMenuItem(
-                      value: 'share',
-                      child: Text('Share'),
-                    ),
+                    const PopupMenuItem(value: 'share', child: Text('Share')),
                   ],
                 ),
               ],
@@ -89,8 +85,9 @@ class _TournamentDetailView extends StatelessWidget {
                     Tab(text: 'Teams'),
                   ],
                   labelColor: Theme.of(context).colorScheme.primary,
-                  unselectedLabelColor:
-                      Theme.of(context).colorScheme.onSurfaceVariant,
+                  unselectedLabelColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
                   indicatorColor: Theme.of(context).colorScheme.primary,
                 ),
               ),
@@ -98,10 +95,7 @@ class _TournamentDetailView extends StatelessWidget {
           ],
           body: TabBarView(
             children: [
-              _OverviewTab(
-                tournament: tournament,
-                tournamentId: tournamentId,
-              ),
+              _OverviewTab(tournament: tournament, tournamentId: tournamentId),
               _FixturesTab(tournamentId: tournamentId, tournament: tournament),
               _TeamsTab(tournament: tournament),
             ],
@@ -165,12 +159,9 @@ class _HeroSection extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              _StatItem(
-                label: 'Teams',
-                value: '${tournament.teamCount ?? 0}',
-              ),
-              _StatItem(label: 'Matches', value: '0'),
-              _StatItem(label: 'Completed', value: '0'),
+              _StatItem(label: 'Teams', value: '${tournament.teamCount ?? 0}'),
+              const _StatItem(label: 'Matches', value: '0'),
+              const _StatItem(label: 'Completed', value: '0'),
             ],
           ),
         ],
@@ -195,9 +186,9 @@ class _HeroBadge extends StatelessWidget {
       child: Text(
         text,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -214,15 +205,17 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isLive ? const Color(0xFFEF4444) : Colors.white.withValues(alpha: 0.15),
+        color: isLive
+            ? const Color(0xFFEF4444)
+            : Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         status.label.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -291,10 +284,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 // -- Overview Tab --
 
 class _OverviewTab extends ConsumerWidget {
-  const _OverviewTab({
-    required this.tournament,
-    required this.tournamentId,
-  });
+  const _OverviewTab({required this.tournament, required this.tournamentId});
 
   final Tournament tournament;
   final String tournamentId;
@@ -308,12 +298,11 @@ class _OverviewTab extends ConsumerWidget {
       children: [
         // Standings preview
         standingsAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const SizedBox.shrink(),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, _) => const SizedBox.shrink(),
           data: (result) {
             if (result.standings.isEmpty) {
-              return _SectionEmptyState(
+              return const _SectionEmptyState(
                 icon: Icons.calendar_today,
                 title: 'No Upcoming Matches',
                 description:
@@ -333,9 +322,7 @@ class _OverviewTab extends ConsumerWidget {
             Expanded(
               child: OutlinedButton(
                 onPressed: () {
-                  context.push(
-                    AppRoutes.tournamentBracketPath(tournamentId),
-                  );
+                  context.push(AppRoutes.tournamentBracketPath(tournamentId));
                 },
                 child: const Text('Bracket'),
               ),
@@ -386,9 +373,7 @@ class _StandingsPreview extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                context.push(
-                  AppRoutes.tournamentStandingsPath(tournamentId),
-                );
+                context.push(AppRoutes.tournamentStandingsPath(tournamentId));
               },
               child: const Text('View Full'),
             ),
@@ -407,50 +392,59 @@ class _StandingsPreview extends StatelessWidget {
           children: [
             TableRow(
               children: ['Team', 'P', 'W', 'L', 'Pts', 'NRR']
-                  .map((h) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Text(
-                          h,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign:
-                              h == 'Team' ? TextAlign.left : TextAlign.center,
-                        ),
-                      ))
-                  .toList(),
-            ),
-            ...previewStandings.map((s) => TableRow(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
+                  .map(
+                    (h) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Text(
-                        s.teamName ?? s.teamId,
-                        style: theme.textTheme.bodySmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        h,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: h == 'Team'
+                            ? TextAlign.left
+                            : TextAlign.center,
                       ),
                     ),
-                    _cellText('${s.played}', theme),
-                    _cellText('${s.won}', theme),
-                    _cellText('${s.lost}', theme),
-                    _cellText('${s.points}', theme,
-                        bold: true),
-                    _cellText(s.formattedNrr, theme,
-                        color: s.hasPositiveNrr
-                            ? Colors.green
-                            : Colors.red),
-                  ],
-                )),
+                  )
+                  .toList(),
+            ),
+            ...previewStandings.map(
+              (s) => TableRow(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Text(
+                      s.teamName ?? s.teamId,
+                      style: theme.textTheme.bodySmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  _cellText('${s.played}', theme),
+                  _cellText('${s.won}', theme),
+                  _cellText('${s.lost}', theme),
+                  _cellText('${s.points}', theme, bold: true),
+                  _cellText(
+                    s.formattedNrr,
+                    theme,
+                    color: s.hasPositiveNrr ? Colors.green : Colors.red,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _cellText(String text, ThemeData theme,
-      {bool bold = false, Color? color}) {
+  Widget _cellText(
+    String text,
+    ThemeData theme, {
+    bool bold = false,
+    Color? color,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Text(
@@ -480,9 +474,9 @@ class _FixturesTab extends ConsumerWidget {
     return fixturesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => ErrorDisplay(
-            error: error,
-            onRetry: () => ref.invalidate(tournamentFixturesProvider(tournamentId)),
-          ),
+        error: error,
+        onRetry: () => ref.invalidate(tournamentFixturesProvider(tournamentId)),
+      ),
       data: (fixtures) {
         if (fixtures.isEmpty) {
           return const _SectionEmptyState(
@@ -563,10 +557,14 @@ class _TeamsTab extends StatelessWidget {
     }
 
     // Flatten grouped entries into a list of widgets for builder
-    final items = grouped.entries.expand((entry) => [
-          entry.key, // group header (String)
-          ...entry.value, // team rows (TournamentTeam)
-        ]).toList();
+    final items = grouped.entries
+        .expand(
+          (entry) => [
+            entry.key, // group header (String)
+            ...entry.value, // team rows (TournamentTeam)
+          ],
+        )
+        .toList();
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),

@@ -57,32 +57,36 @@ void main() {
 
     testWidgets('tapping run button 0 calls onRunTap with 0', (tester) async {
       int? tappedRuns;
-      await tester
-          .pumpWidget(buildControls(onRunTap: (runs) => tappedRuns = runs));
+      await tester.pumpWidget(
+        buildControls(onRunTap: (runs) => tappedRuns = runs),
+      );
       await tester.tap(find.text('0'));
       expect(tappedRuns, 0);
     });
 
     testWidgets('tapping run button 1 calls onRunTap with 1', (tester) async {
       int? tappedRuns;
-      await tester
-          .pumpWidget(buildControls(onRunTap: (runs) => tappedRuns = runs));
+      await tester.pumpWidget(
+        buildControls(onRunTap: (runs) => tappedRuns = runs),
+      );
       await tester.tap(find.text('1'));
       expect(tappedRuns, 1);
     });
 
     testWidgets('tapping run button 4 calls onRunTap with 4', (tester) async {
       int? tappedRuns;
-      await tester
-          .pumpWidget(buildControls(onRunTap: (runs) => tappedRuns = runs));
+      await tester.pumpWidget(
+        buildControls(onRunTap: (runs) => tappedRuns = runs),
+      );
       await tester.tap(find.text('4'));
       expect(tappedRuns, 4);
     });
 
     testWidgets('tapping run button 6 calls onRunTap with 6', (tester) async {
       int? tappedRuns;
-      await tester
-          .pumpWidget(buildControls(onRunTap: (runs) => tappedRuns = runs));
+      await tester.pumpWidget(
+        buildControls(onRunTap: (runs) => tappedRuns = runs),
+      );
       await tester.tap(find.text('6'));
       expect(tappedRuns, 6);
     });
@@ -126,11 +130,13 @@ void main() {
       expect(find.byIcon(Icons.undo), findsOneWidget);
     });
 
-    testWidgets('undo button calls onUndoTap when canUndo is true',
-        (tester) async {
+    testWidgets('undo button calls onUndoTap when canUndo is true', (
+      tester,
+    ) async {
       var called = false;
       await tester.pumpWidget(
-          buildControls(onUndoTap: () => called = true, canUndo: true));
+        buildControls(onUndoTap: () => called = true, canUndo: true),
+      );
       await tester.tap(find.byIcon(Icons.undo));
       expect(called, isTrue);
     });
@@ -138,7 +144,8 @@ void main() {
     testWidgets('undo button disabled when canUndo is false', (tester) async {
       var called = false;
       await tester.pumpWidget(
-          buildControls(onUndoTap: () => called = true, canUndo: false));
+        buildControls(onUndoTap: () => called = true, canUndo: false),
+      );
       await tester.tap(find.byIcon(Icons.undo));
       expect(called, isFalse);
     });
@@ -150,8 +157,7 @@ void main() {
 
     testWidgets('swap strike calls onSwapStrike', (tester) async {
       var called = false;
-      await tester
-          .pumpWidget(buildControls(onSwapStrike: () => called = true));
+      await tester.pumpWidget(buildControls(onSwapStrike: () => called = true));
       await tester.tap(find.byIcon(Icons.swap_horiz));
       expect(called, isTrue);
     });
@@ -163,9 +169,9 @@ void main() {
 
     testWidgets('overthrow button calls onOverthrowTap', (tester) async {
       var called = false;
-      await tester.pumpWidget(buildControls(
-        onOverthrowTap: () => called = true,
-      ));
+      await tester.pumpWidget(
+        buildControls(onOverthrowTap: () => called = true),
+      );
       await tester.tap(find.text('...'));
       expect(called, isTrue);
     });
@@ -174,10 +180,12 @@ void main() {
   group('ScoringControls — isInningsComplete', () {
     testWidgets('run buttons disabled when innings complete', (tester) async {
       int? tappedRuns;
-      await tester.pumpWidget(buildControls(
-        onRunTap: (runs) => tappedRuns = runs,
-        isInningsComplete: true,
-      ));
+      await tester.pumpWidget(
+        buildControls(
+          onRunTap: (runs) => tappedRuns = runs,
+          isInningsComplete: true,
+        ),
+      );
       // Tap each run button — none should fire
       await tester.tap(find.text('0'));
       await tester.tap(find.text('1'));
@@ -188,10 +196,9 @@ void main() {
 
     testWidgets('wide button disabled when innings complete', (tester) async {
       var called = false;
-      await tester.pumpWidget(buildControls(
-        onWideTap: () => called = true,
-        isInningsComplete: true,
-      ));
+      await tester.pumpWidget(
+        buildControls(onWideTap: () => called = true, isInningsComplete: true),
+      );
       // OutlinedButton has null onPressed — tap shouldn't fire
       final wdButton = find.widgetWithText(OutlinedButton, 'WD');
       expect(tester.widget<OutlinedButton>(wdButton).onPressed, isNull);
@@ -199,67 +206,57 @@ void main() {
       expect(called, isFalse);
     });
 
-    testWidgets('no-ball button disabled when innings complete',
-        (tester) async {
-      var called = false;
-      await tester.pumpWidget(buildControls(
-        onNoBallTap: () => called = true,
-        isInningsComplete: true,
-      ));
+    testWidgets('no-ball button disabled when innings complete', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildControls(isInningsComplete: true));
       final nbButton = find.widgetWithText(OutlinedButton, 'NB');
       expect(tester.widget<OutlinedButton>(nbButton).onPressed, isNull);
     });
 
     testWidgets('bye button disabled when innings complete', (tester) async {
-      var called = false;
-      await tester.pumpWidget(buildControls(
-        onByeTap: () => called = true,
-        isInningsComplete: true,
-      ));
+      await tester.pumpWidget(buildControls(isInningsComplete: true));
       final bButton = find.widgetWithText(OutlinedButton, 'B');
       expect(tester.widget<OutlinedButton>(bButton).onPressed, isNull);
     });
 
-    testWidgets('leg-bye button disabled when innings complete',
-        (tester) async {
-      var called = false;
-      await tester.pumpWidget(buildControls(
-        onLegByeTap: () => called = true,
-        isInningsComplete: true,
-      ));
+    testWidgets('leg-bye button disabled when innings complete', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildControls(isInningsComplete: true));
       final lbButton = find.widgetWithText(OutlinedButton, 'LB');
       expect(tester.widget<OutlinedButton>(lbButton).onPressed, isNull);
     });
 
-    testWidgets('wicket button disabled when innings complete',
-        (tester) async {
-      var called = false;
-      await tester.pumpWidget(buildControls(
-        onWicketTap: () => called = true,
-        isInningsComplete: true,
-      ));
+    testWidgets('wicket button disabled when innings complete', (tester) async {
+      await tester.pumpWidget(buildControls(isInningsComplete: true));
       final wButton = find.widgetWithText(OutlinedButton, 'W');
       expect(tester.widget<OutlinedButton>(wButton).onPressed, isNull);
     });
 
     testWidgets('undo button disabled when innings complete', (tester) async {
       var called = false;
-      await tester.pumpWidget(buildControls(
-        onUndoTap: () => called = true,
-        canUndo: true,
-        isInningsComplete: true,
-      ));
+      await tester.pumpWidget(
+        buildControls(
+          onUndoTap: () => called = true,
+          canUndo: true,
+          isInningsComplete: true,
+        ),
+      );
       await tester.tap(find.byIcon(Icons.undo));
       expect(called, isFalse);
     });
 
-    testWidgets('swap strike button disabled when innings complete',
-        (tester) async {
+    testWidgets('swap strike button disabled when innings complete', (
+      tester,
+    ) async {
       var called = false;
-      await tester.pumpWidget(buildControls(
-        onSwapStrike: () => called = true,
-        isInningsComplete: true,
-      ));
+      await tester.pumpWidget(
+        buildControls(
+          onSwapStrike: () => called = true,
+          isInningsComplete: true,
+        ),
+      );
       await tester.tap(find.byIcon(Icons.swap_horiz));
       expect(called, isFalse);
     });

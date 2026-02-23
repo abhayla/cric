@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'helpers/app_test_wrapper.dart';
-import 'helpers/data_generators.dart';
 import 'helpers/delivery_record.dart';
 import 'helpers/match_flow_helpers.dart';
 import 'helpers/scenario_test_data.dart';

@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/domain/entities/batter_innings.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/bowler_spell.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
 import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
 import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
@@ -47,31 +45,10 @@ void main() {
     );
 
     final notifier = ScoringNotifier(state);
-    notifier.selectNewBatter(
-      playerId: 'bat-1',
-      displayName: 'bat Player 1',
-    );
-    notifier.selectNewBatter(
-      playerId: 'bat-2',
-      displayName: 'bat Player 2',
-    );
-    notifier.selectNewBowler(
-      playerId: 'bowl-1',
-      displayName: 'bowl Player 1',
-    );
+    notifier.selectNewBatter(playerId: 'bat-1', displayName: 'bat Player 1');
+    notifier.selectNewBatter(playerId: 'bat-2', displayName: 'bat Player 2');
+    notifier.selectNewBowler(playerId: 'bowl-1', displayName: 'bowl Player 1');
     return notifier;
-  }
-
-  /// Bowl a complete over of dot balls through the notifier.
-  void bowlDotOver(ScoringNotifier n, {required String nextBowlerId}) {
-    for (var i = 0; i < 6; i++) {
-      n.recordDelivery(runsFromBat: 0);
-    }
-    // After over, select the next bowler
-    n.selectNewBowler(
-      playerId: nextBowlerId,
-      displayName: '$nextBowlerId name',
-    );
   }
 
   /// Transition from 1st to 2nd innings using bowling team's players.
@@ -89,52 +66,57 @@ void main() {
   // ── Full match: overs exhausted both innings, win by runs ────────────
 
   group('Full match — win by runs', () {
-    test('1st innings scores runs, 2nd innings overs exhausted below target',
-        () {
-      // 2-over match, 3 players per side
-      final n = makeMatchNotifier(totalOvers: 2, playersPerSide: 3);
+    test(
+      '1st innings scores runs, 2nd innings overs exhausted below target',
+      () {
+        // 2-over match, 3 players per side
+        final n = makeMatchNotifier(totalOvers: 2, playersPerSide: 3);
 
-      // 1st innings: score 6 singles in over 1
-      for (var i = 0; i < 6; i++) {
-        n.recordDelivery(runsFromBat: 1);
-      }
-      // Over complete — select new bowler
-      n.selectNewBowler(playerId: 'bowl-2', displayName: 'bowl Player 2');
+        // 1st innings: score 6 singles in over 1
+        for (var i = 0; i < 6; i++) {
+          n.recordDelivery(runsFromBat: 1);
+        }
+        // Over complete — select new bowler
+        n.selectNewBowler(playerId: 'bowl-2', displayName: 'bowl Player 2');
 
-      // Over 2: score a boundary 4 on each ball
-      for (var i = 0; i < 6; i++) {
-        n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
-      }
+        // Over 2: score a boundary 4 on each ball
+        for (var i = 0; i < 6; i++) {
+          n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+        }
 
-      // 1st innings complete (overs exhausted)
-      expect(n.state.isInningsComplete, isTrue);
-      expect(n.state.totalRuns, 30); // 6 + 24
-      expect(n.state.totalBalls, 12);
-      expect(n.state.completionReason, InningsCompletionReason.oversExhausted);
+        // 1st innings complete (overs exhausted)
+        expect(n.state.isInningsComplete, isTrue);
+        expect(n.state.totalRuns, 30); // 6 + 24
+        expect(n.state.totalBalls, 12);
+        expect(
+          n.state.completionReason,
+          InningsCompletionReason.oversExhausted,
+        );
 
-      // Transition to 2nd innings
-      transitionInnings(n);
-      expect(n.state.inningsNumber, 2);
-      expect(n.state.target, 31); // 30 + 1
+        // Transition to 2nd innings
+        transitionInnings(n);
+        expect(n.state.inningsNumber, 2);
+        expect(n.state.target, 31); // 30 + 1
 
-      // 2nd innings: all dot balls
-      for (var i = 0; i < 6; i++) {
-        n.recordDelivery(runsFromBat: 0);
-      }
-      n.selectNewBowler(playerId: 'bat-2', displayName: 'bat Player 2');
-      for (var i = 0; i < 6; i++) {
-        n.recordDelivery(runsFromBat: 0);
-      }
+        // 2nd innings: all dot balls
+        for (var i = 0; i < 6; i++) {
+          n.recordDelivery(runsFromBat: 0);
+        }
+        n.selectNewBowler(playerId: 'bat-2', displayName: 'bat Player 2');
+        for (var i = 0; i < 6; i++) {
+          n.recordDelivery(runsFromBat: 0);
+        }
 
-      // Match complete — win by runs
-      expect(n.state.isInningsComplete, isTrue);
-      expect(n.state.isMatchComplete, isTrue);
-      expect(n.state.totalRuns, 0);
-      expect(n.state.matchResult, isNotNull);
-      expect(n.state.matchResult!.resultType, MatchResultType.runs);
-      expect(n.state.matchResult!.margin, 30);
-      expect(n.state.matchResult!.winnerTeamName, 'Team Alpha');
-    });
+        // Match complete — win by runs
+        expect(n.state.isInningsComplete, isTrue);
+        expect(n.state.isMatchComplete, isTrue);
+        expect(n.state.totalRuns, 0);
+        expect(n.state.matchResult, isNotNull);
+        expect(n.state.matchResult!.resultType, MatchResultType.runs);
+        expect(n.state.matchResult!.margin, 30);
+        expect(n.state.matchResult!.winnerTeamName, 'Team Alpha');
+      },
+    );
   });
 
   // ── Full match: target chased, win by wickets ────────────────────────
@@ -191,10 +173,7 @@ void main() {
       expect(n.state.needsNewBatter, isTrue);
 
       // Select new batter
-      n.selectNewBatter(
-        playerId: 'bat-3',
-        displayName: 'bat Player 3',
-      );
+      n.selectNewBatter(playerId: 'bat-3', displayName: 'bat Player 3');
 
       // Wicket 2 (all-out: 3 - 1 = 2 wickets)
       n.recordWicket(
@@ -232,10 +211,7 @@ void main() {
         dismissalType: DismissalType.bowled,
         dismissedPlayerId: 'bowl-1',
       );
-      n.selectNewBatter(
-        playerId: 'bowl-3',
-        displayName: 'bowl Player 3',
-      );
+      n.selectNewBatter(playerId: 'bowl-3', displayName: 'bowl Player 3');
       n.recordWicket(
         dismissalType: DismissalType.bowled,
         dismissedPlayerId: n.state.strikerId!,
@@ -502,34 +478,36 @@ void main() {
 
   // ── Stumping off a wide ────────────────────────────────────────────
   group('Full match — stumping off wide', () {
-    test('wide + stumped: wide runs scored, wicket counted, bowler credited',
-        () {
-      final n = makeMatchNotifier(totalOvers: 2, playersPerSide: 3);
+    test(
+      'wide + stumped: wide runs scored, wicket counted, bowler credited',
+      () {
+        final n = makeMatchNotifier(totalOvers: 2, playersPerSide: 3);
 
-      // Record a stumping off a wide
-      n.recordWicket(
-        dismissalType: DismissalType.stumped,
-        dismissedPlayerId: 'bat-1',
-        fielderId: 'bowl-2', // keeper
-        isWide: true,
-      );
+        // Record a stumping off a wide
+        n.recordWicket(
+          dismissalType: DismissalType.stumped,
+          dismissedPlayerId: 'bat-1',
+          fielderId: 'bowl-2', // keeper
+          isWide: true,
+        );
 
-      // Wide runs should be added to total (1 penalty)
-      expect(n.state.totalRuns, 1); // 1 wide run
-      expect(n.state.totalWides, 1);
-      expect(n.state.totalWickets, 1);
+        // Wide runs should be added to total (1 penalty)
+        expect(n.state.totalRuns, 1); // 1 wide run
+        expect(n.state.totalWides, 1);
+        expect(n.state.totalWickets, 1);
 
-      // The delivery is NOT legal (wide)
-      expect(n.state.totalBalls, 0);
+        // The delivery is NOT legal (wide)
+        expect(n.state.totalBalls, 0);
 
-      // Batter dismissed
-      expect(n.state.needsNewBatter, isTrue);
+        // Batter dismissed
+        expect(n.state.needsNewBatter, isTrue);
 
-      // Bowler gets credit for stumped
-      final bowler = n.state.bowlerStats['bowl-1']!;
-      expect(bowler.wicketsTaken, 1);
-      expect(bowler.wides, 1);
-    });
+        // Bowler gets credit for stumped
+        final bowler = n.state.bowlerStats['bowl-1']!;
+        expect(bowler.wicketsTaken, 1);
+        expect(bowler.wides, 1);
+      },
+    );
   });
 
   // ── Declaration triggers innings complete ───────────────────────────
@@ -572,8 +550,7 @@ void main() {
       for (var i = 0; i < 12; i++) {
         n.recordDelivery(runsFromBat: 0);
         if (i == 5) {
-          n.selectNewBowler(
-              playerId: 'bowl-2', displayName: 'bowl Player 2');
+          n.selectNewBowler(playerId: 'bowl-2', displayName: 'bowl Player 2');
         }
       }
 
@@ -706,7 +683,10 @@ void main() {
       // Stats should accumulate on top of prior total
       final bat2 = n.state.batterStats['bat-2']!;
       expect(bat2.runsScored, 6); // 2 (before) + 4 (after return)
-      expect(bat2.ballsFaced, 3); // 2 (before, incl retire delivery) + 1 (after)
+      expect(
+        bat2.ballsFaced,
+        3,
+      ); // 2 (before, incl retire delivery) + 1 (after)
       expect(bat2.fours, 1);
     });
   });

@@ -24,7 +24,11 @@ const _testProfile = PlayerProfile(
   playerRole: PlayerRole.batter,
   battingStyle: BattingStyle.rightHand,
   teams: [
-    TeamAffiliation(teamId: 't1', teamName: 'Royal Challengers', role: 'player'),
+    TeamAffiliation(
+      teamId: 't1',
+      teamName: 'Royal Challengers',
+      role: 'player',
+    ),
     TeamAffiliation(teamId: 't2', teamName: 'India XI', role: 'captain'),
   ],
 );
@@ -55,32 +59,6 @@ const _testStats = CareerStats(
   fielding: FieldingCareerStats(catches: 15, runOuts: 5, stumpings: 0),
 );
 
-const _t20Stats = CareerStats(
-  format: 'T20',
-  batting: BattingCareerStats(
-    matchesPlayed: 15,
-    inningsBatted: 14,
-    totalRuns: 500,
-    highestScore: 95,
-    notOuts: 2,
-    fifties: 4,
-    hundreds: 0,
-    fours: 50,
-    sixes: 15,
-  ),
-  bowling: BowlingCareerStats(
-    inningsBowled: 5,
-    oversBowled: '20.0',
-    runsConceded: 150,
-    wicketsTaken: 6,
-    bestBowlingWickets: 2,
-    bestBowlingRuns: 15,
-    threeWicketHauls: 0,
-    fiveWicketHauls: 0,
-  ),
-  fielding: FieldingCareerStats(catches: 8, runOuts: 3, stumpings: 0),
-);
-
 const _matchWon = MatchPerformance(
   matchId: 'match-1',
   format: 'T20',
@@ -88,13 +66,35 @@ const _matchWon = MatchPerformance(
   homeTeam: MatchTeamInfo(id: 'h1', name: 'Mumbai Warriors'),
   awayTeam: MatchTeamInfo(id: 'a1', name: 'Delhi Strikers'),
   teamScores: [
-    TeamScore(teamId: 'h1', teamName: 'Mumbai Warriors', runs: 187, wickets: 6, overs: '20.0'),
-    TeamScore(teamId: 'a1', teamName: 'Delhi Strikers', runs: 172, wickets: 9, overs: '20.0'),
+    TeamScore(
+      teamId: 'h1',
+      teamName: 'Mumbai Warriors',
+      runs: 187,
+      wickets: 6,
+      overs: '20.0',
+    ),
+    TeamScore(
+      teamId: 'a1',
+      teamName: 'Delhi Strikers',
+      runs: 172,
+      wickets: 9,
+      overs: '20.0',
+    ),
   ],
-  result: MatchResultSummary(resultType: 'runs', summary: 'Won by 15 runs', winnerTeamId: 'h1'),
+  result: MatchResultSummary(
+    resultType: 'runs',
+    summary: 'Won by 15 runs',
+    winnerTeamId: 'h1',
+  ),
   playerResult: 'won',
   playerTeamId: 'h1',
-  batting: PersonalBatting(runsScored: 75, ballsFaced: 45, fours: 8, sixes: 3, isNotOut: true),
+  batting: PersonalBatting(
+    runsScored: 75,
+    ballsFaced: 45,
+    fours: 8,
+    sixes: 3,
+    isNotOut: true,
+  ),
 );
 
 const _matchLost = MatchPerformance(
@@ -104,13 +104,34 @@ const _matchLost = MatchPerformance(
   homeTeam: MatchTeamInfo(id: 'h1', name: 'Mumbai Warriors'),
   awayTeam: MatchTeamInfo(id: 'a1', name: 'Delhi Strikers'),
   teamScores: [
-    TeamScore(teamId: 'h1', teamName: 'Mumbai Warriors', runs: 140, wickets: 10, overs: '19.2'),
-    TeamScore(teamId: 'a1', teamName: 'Delhi Strikers', runs: 141, wickets: 3, overs: '17.4'),
+    TeamScore(
+      teamId: 'h1',
+      teamName: 'Mumbai Warriors',
+      runs: 140,
+      wickets: 10,
+      overs: '19.2',
+    ),
+    TeamScore(
+      teamId: 'a1',
+      teamName: 'Delhi Strikers',
+      runs: 141,
+      wickets: 3,
+      overs: '17.4',
+    ),
   ],
-  result: MatchResultSummary(resultType: 'wickets', summary: 'Won by 7 wickets', winnerTeamId: 'a1'),
+  result: MatchResultSummary(
+    resultType: 'wickets',
+    summary: 'Won by 7 wickets',
+    winnerTeamId: 'a1',
+  ),
   playerResult: 'lost',
   playerTeamId: 'h1',
-  bowling: PersonalBowling(oversBowled: '4.0', runsConceded: 35, wicketsTaken: 2, maidens: 0),
+  bowling: PersonalBowling(
+    oversBowled: '4.0',
+    runsConceded: 35,
+    wicketsTaken: 2,
+    maidens: 0,
+  ),
 );
 
 void main() {
@@ -122,20 +143,14 @@ void main() {
 
   Widget buildProfilePage() {
     return ProviderScope(
-      overrides: [
-        playerProfileRepositoryProvider.overrideWithValue(mockRepo),
-      ],
-      child: const MaterialApp(
-        home: PlayerProfilePage(playerId: _playerId),
-      ),
+      overrides: [playerProfileRepositoryProvider.overrideWithValue(mockRepo)],
+      child: const MaterialApp(home: PlayerProfilePage(playerId: _playerId)),
     );
   }
 
   Widget buildMatchHistoryPage() {
     return ProviderScope(
-      overrides: [
-        playerProfileRepositoryProvider.overrideWithValue(mockRepo),
-      ],
+      overrides: [playerProfileRepositoryProvider.overrideWithValue(mockRepo)],
       child: const MaterialApp(
         home: PlayerMatchHistoryPage(playerId: _playerId),
       ),
@@ -143,11 +158,15 @@ void main() {
   }
 
   group('Profile page full integration', () {
-    testWidgets('loads profile and stats, displays all sections', (tester) async {
-      when(() => mockRepo.getProfile(any()))
-          .thenAnswer((_) async => _testProfile);
-      when(() => mockRepo.getStats(any(), format: any(named: 'format')))
-          .thenAnswer((_) async => _testStats);
+    testWidgets('loads profile and stats, displays all sections', (
+      tester,
+    ) async {
+      when(
+        () => mockRepo.getProfile(any()),
+      ).thenAnswer((_) async => _testProfile);
+      when(
+        () => mockRepo.getStats(any(), format: any(named: 'format')),
+      ).thenAnswer((_) async => _testStats);
 
       await tester.pumpWidget(buildProfilePage());
       await tester.pumpAndSettle();
@@ -173,8 +192,9 @@ void main() {
     });
 
     testWidgets('error state shows error and can retry', (tester) async {
-      when(() => mockRepo.getProfile(any()))
-          .thenThrow(Exception('Network timeout'));
+      when(
+        () => mockRepo.getProfile(any()),
+      ).thenThrow(Exception('Network timeout'));
 
       await tester.pumpWidget(buildProfilePage());
       await tester.pumpAndSettle();
@@ -183,8 +203,9 @@ void main() {
     });
 
     testWidgets('loading state shows spinner', (tester) async {
-      when(() => mockRepo.getProfile(any()))
-          .thenAnswer((_) => Completer<PlayerProfile>().future);
+      when(
+        () => mockRepo.getProfile(any()),
+      ).thenAnswer((_) => Completer<PlayerProfile>().future);
 
       await tester.pumpWidget(buildProfilePage());
       await tester.pump();
@@ -192,11 +213,15 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('null stats shows empty message in batting tab', (tester) async {
-      when(() => mockRepo.getProfile(any()))
-          .thenAnswer((_) async => _testProfile);
-      when(() => mockRepo.getStats(any(), format: any(named: 'format')))
-          .thenAnswer((_) async => null);
+    testWidgets('null stats shows empty message in batting tab', (
+      tester,
+    ) async {
+      when(
+        () => mockRepo.getProfile(any()),
+      ).thenAnswer((_) async => _testProfile);
+      when(
+        () => mockRepo.getStats(any(), format: any(named: 'format')),
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(buildProfilePage());
       await tester.pumpAndSettle();
@@ -204,11 +229,15 @@ void main() {
       expect(find.text('No batting stats available'), findsOneWidget);
     });
 
-    testWidgets('profile with multiple teams shows first team chip', (tester) async {
-      when(() => mockRepo.getProfile(any()))
-          .thenAnswer((_) async => _testProfile);
-      when(() => mockRepo.getStats(any(), format: any(named: 'format')))
-          .thenAnswer((_) async => _testStats);
+    testWidgets('profile with multiple teams shows first team chip', (
+      tester,
+    ) async {
+      when(
+        () => mockRepo.getProfile(any()),
+      ).thenAnswer((_) async => _testProfile);
+      when(
+        () => mockRepo.getStats(any(), format: any(named: 'format')),
+      ).thenAnswer((_) async => _testStats);
 
       await tester.pumpWidget(buildProfilePage());
       await tester.pumpAndSettle();
@@ -220,17 +249,21 @@ void main() {
 
   group('Match history page full integration', () {
     testWidgets('loads and displays match cards with scores', (tester) async {
-      when(() => mockRepo.getMatchHistory(
-            any(),
-            page: any(named: 'page'),
-            limit: any(named: 'limit'),
-            result: any(named: 'result'),
-          )).thenAnswer((_) async => const MatchHistoryResult(
-            matches: [_matchWon, _matchLost],
-            total: 2,
-            page: 1,
-            limit: 20,
-          ));
+      when(
+        () => mockRepo.getMatchHistory(
+          any(),
+          page: any(named: 'page'),
+          limit: any(named: 'limit'),
+          result: any(named: 'result'),
+        ),
+      ).thenAnswer(
+        (_) async => const MatchHistoryResult(
+          matches: [_matchWon, _matchLost],
+          total: 2,
+          page: 1,
+          limit: 20,
+        ),
+      );
 
       await tester.pumpWidget(buildMatchHistoryPage());
       await tester.pumpAndSettle();
@@ -244,18 +277,24 @@ void main() {
       expect(find.text('Lost'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('filter chips trigger reload with correct result', (tester) async {
-      when(() => mockRepo.getMatchHistory(
-            any(),
-            page: any(named: 'page'),
-            limit: any(named: 'limit'),
-            result: any(named: 'result'),
-          )).thenAnswer((_) async => const MatchHistoryResult(
-            matches: [_matchWon],
-            total: 1,
-            page: 1,
-            limit: 20,
-          ));
+    testWidgets('filter chips trigger reload with correct result', (
+      tester,
+    ) async {
+      when(
+        () => mockRepo.getMatchHistory(
+          any(),
+          page: any(named: 'page'),
+          limit: any(named: 'limit'),
+          result: any(named: 'result'),
+        ),
+      ).thenAnswer(
+        (_) async => const MatchHistoryResult(
+          matches: [_matchWon],
+          total: 1,
+          page: 1,
+          limit: 20,
+        ),
+      );
 
       await tester.pumpWidget(buildMatchHistoryPage());
       await tester.pumpAndSettle();
@@ -266,26 +305,28 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify called with 'won' result filter
-      verify(() => mockRepo.getMatchHistory(
-            _playerId,
-            page: 1,
-            limit: 20,
-            result: 'won',
-          )).called(1);
+      verify(
+        () => mockRepo.getMatchHistory(
+          _playerId,
+          page: 1,
+          limit: 20,
+          result: 'won',
+        ),
+      ).called(1);
     });
 
     testWidgets('empty state shows no matches message', (tester) async {
-      when(() => mockRepo.getMatchHistory(
-            any(),
-            page: any(named: 'page'),
-            limit: any(named: 'limit'),
-            result: any(named: 'result'),
-          )).thenAnswer((_) async => const MatchHistoryResult(
-            matches: [],
-            total: 0,
-            page: 1,
-            limit: 20,
-          ));
+      when(
+        () => mockRepo.getMatchHistory(
+          any(),
+          page: any(named: 'page'),
+          limit: any(named: 'limit'),
+          result: any(named: 'result'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const MatchHistoryResult(matches: [], total: 0, page: 1, limit: 20),
+      );
 
       await tester.pumpWidget(buildMatchHistoryPage());
       await tester.pumpAndSettle();
@@ -294,17 +335,21 @@ void main() {
     });
 
     testWidgets('shows personal batting stats on match card', (tester) async {
-      when(() => mockRepo.getMatchHistory(
-            any(),
-            page: any(named: 'page'),
-            limit: any(named: 'limit'),
-            result: any(named: 'result'),
-          )).thenAnswer((_) async => const MatchHistoryResult(
-            matches: [_matchWon],
-            total: 1,
-            page: 1,
-            limit: 20,
-          ));
+      when(
+        () => mockRepo.getMatchHistory(
+          any(),
+          page: any(named: 'page'),
+          limit: any(named: 'limit'),
+          result: any(named: 'result'),
+        ),
+      ).thenAnswer(
+        (_) async => const MatchHistoryResult(
+          matches: [_matchWon],
+          total: 1,
+          page: 1,
+          limit: 20,
+        ),
+      );
 
       await tester.pumpWidget(buildMatchHistoryPage());
       await tester.pumpAndSettle();
@@ -314,17 +359,21 @@ void main() {
     });
 
     testWidgets('shows personal bowling stats on match card', (tester) async {
-      when(() => mockRepo.getMatchHistory(
-            any(),
-            page: any(named: 'page'),
-            limit: any(named: 'limit'),
-            result: any(named: 'result'),
-          )).thenAnswer((_) async => const MatchHistoryResult(
-            matches: [_matchLost],
-            total: 1,
-            page: 1,
-            limit: 20,
-          ));
+      when(
+        () => mockRepo.getMatchHistory(
+          any(),
+          page: any(named: 'page'),
+          limit: any(named: 'limit'),
+          result: any(named: 'result'),
+        ),
+      ).thenAnswer(
+        (_) async => const MatchHistoryResult(
+          matches: [_matchLost],
+          total: 1,
+          page: 1,
+          limit: 20,
+        ),
+      );
 
       await tester.pumpWidget(buildMatchHistoryPage());
       await tester.pumpAndSettle();

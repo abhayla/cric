@@ -66,5 +66,8 @@ key.properties
 # Prompt templates (personal workflow aids)
 prompts/
 
+# Analyzer artifacts
+apps/mobile/analyze_output*.txt
+
 # Misc
 *.log

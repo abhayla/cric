@@ -722,7 +722,7 @@ class ScoringNotifier {
       newTotalLegByes -= lastDel.legByeRuns;
     }
     if (lastDel.isWicket &&
-        (lastDel.wicketInfo?.dismissalType?.isRealWicket ?? true)) {
+        (lastDel.wicketInfo?.dismissalType.isRealWicket ?? true)) {
       newTotalWickets--;
     }
 

@@ -22,7 +22,8 @@ class AddPlayerPage extends StatefulWidget {
     String? playerRole,
     String? battingStyle,
     String? bowlingStyle,
-  )? onCreatePlayer;
+  )?
+  onCreatePlayer;
 
   /// Called when adding an existing player by ID.
   final void Function(String playerId)? onAddExisting;
@@ -48,12 +49,8 @@ class _AddPlayerPageState extends State<AddPlayerPage> {
         ),
         body: TabBarView(
           children: [
-            _SearchTab(
-              onAddExisting: widget.onAddExisting,
-            ),
-            _CreateTab(
-              onCreatePlayer: widget.onCreatePlayer,
-            ),
+            _SearchTab(onAddExisting: widget.onAddExisting),
+            _CreateTab(onCreatePlayer: widget.onCreatePlayer),
           ],
         ),
       ),
@@ -124,10 +121,7 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  '+91',
-                  style: theme.textTheme.bodyMedium,
-                ),
+                child: Text('+91', style: theme.textTheme.bodyMedium),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -155,9 +149,8 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
           if (_searchResult != null) ...[
             const SizedBox(height: 24),
             _searchResult!.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (_, __) => Text(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (_, _) => Text(
                 'Search failed. Please try again.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.error,
@@ -238,7 +231,8 @@ class _CreateTab extends StatefulWidget {
     String? playerRole,
     String? battingStyle,
     String? bowlingStyle,
-  )? onCreatePlayer;
+  )?
+  onCreatePlayer;
 
   @override
   State<_CreateTab> createState() => _CreateTabState();
@@ -263,8 +257,7 @@ class _CreateTabState extends State<_CreateTab> {
 
   bool get _isPhoneValid => _phoneRegex.hasMatch(_phoneController.text.trim());
 
-  bool get _isValid =>
-      _nameController.text.trim().length >= 2 && _isPhoneValid;
+  bool get _isValid => _nameController.text.trim().length >= 2 && _isPhoneValid;
 
   void _handleSubmit() {
     if (!_isValid) return;
@@ -326,10 +319,7 @@ class _CreateTabState extends State<_CreateTab> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  '+91',
-                  style: theme.textTheme.bodyMedium,
-                ),
+                child: Text('+91', style: theme.textTheme.bodyMedium),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -347,8 +337,7 @@ class _CreateTabState extends State<_CreateTab> {
               ),
             ],
           ),
-          if (_phoneController.text.trim().isNotEmpty &&
-              !_isPhoneValid)
+          if (_phoneController.text.trim().isNotEmpty && !_isPhoneValid)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
@@ -412,10 +401,7 @@ class _CreateTabState extends State<_CreateTab> {
             runSpacing: 8,
             children: [
               for (final style in BowlingStyle.values)
-                _buildBowlingChip(
-                  style.label,
-                  style.apiValue,
-                ),
+                _buildBowlingChip(style.label, style.apiValue),
             ],
           ),
 

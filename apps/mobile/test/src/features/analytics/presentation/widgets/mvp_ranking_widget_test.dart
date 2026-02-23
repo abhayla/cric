@@ -39,9 +39,9 @@ void main() {
     });
 
     testWidgets('shows points for each player', (tester) async {
-      final data = MatchMvpData(
+      const data = MatchMvpData(
         rankings: [
-          const MvpPlayerScore(
+          MvpPlayerScore(
             playerId: 'p1',
             displayName: 'Player 1',
             teamName: 'Team A',
@@ -61,9 +61,9 @@ void main() {
     });
 
     testWidgets('shows performance summary', (tester) async {
-      final data = MatchMvpData(
+      const data = MatchMvpData(
         rankings: [
-          const MvpPlayerScore(
+          MvpPlayerScore(
             playerId: 'p1',
             displayName: 'Player 1',
             teamName: 'Team A',
@@ -138,9 +138,9 @@ void main() {
     });
 
     testWidgets('player initials shown in avatar', (tester) async {
-      final data = MatchMvpData(
+      const data = MatchMvpData(
         rankings: [
-          const MvpPlayerScore(
+          MvpPlayerScore(
             playerId: 'p1',
             displayName: 'Virat Kohli',
             teamName: 'Team A',
@@ -166,9 +166,9 @@ void main() {
     });
 
     testWidgets('points displayed with one decimal place', (tester) async {
-      final data = MatchMvpData(
+      const data = MatchMvpData(
         rankings: [
-          const MvpPlayerScore(
+          MvpPlayerScore(
             playerId: 'p1',
             displayName: 'Player 1',
             teamName: 'Team A',

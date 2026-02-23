@@ -13,9 +13,9 @@ void main() {
     );
   }
 
-  final sampleStats = CareerStats(
+  const sampleStats = CareerStats(
     format: 'all',
-    batting: const BattingCareerStats(
+    batting: BattingCareerStats(
       matchesPlayed: 28,
       inningsBatted: 25,
       totalRuns: 892,
@@ -28,7 +28,7 @@ void main() {
       battingAverage: 31.86,
       battingStrikeRate: 125.0,
     ),
-    bowling: const BowlingCareerStats(
+    bowling: BowlingCareerStats(
       inningsBowled: 20,
       oversBowled: '48.0',
       runsConceded: 380,
@@ -41,7 +41,7 @@ void main() {
       bowlingEconomy: 7.92,
       bowlingStrikeRate: 24.0,
     ),
-    fielding: const FieldingCareerStats(
+    fielding: FieldingCareerStats(
       catches: 8,
       runOuts: 2,
       stumpings: 0,
@@ -68,9 +68,9 @@ void main() {
     });
 
     testWidgets('handles zero values', (tester) async {
-      final zeroStats = CareerStats(
+      const zeroStats = CareerStats(
         format: 'all',
-        batting: const BattingCareerStats(
+        batting: BattingCareerStats(
           matchesPlayed: 0,
           inningsBatted: 0,
           totalRuns: 0,
@@ -81,7 +81,7 @@ void main() {
           fours: 0,
           sixes: 0,
         ),
-        bowling: const BowlingCareerStats(
+        bowling: BowlingCareerStats(
           inningsBowled: 0,
           oversBowled: '0.0',
           runsConceded: 0,
@@ -91,7 +91,7 @@ void main() {
           threeWicketHauls: 0,
           fiveWicketHauls: 0,
         ),
-        fielding: const FieldingCareerStats(
+        fielding: FieldingCareerStats(
           catches: 0,
           runOuts: 0,
           stumpings: 0,
@@ -115,9 +115,9 @@ void main() {
     });
 
     testWidgets('handles large values', (tester) async {
-      final bigStats = CareerStats(
+      const bigStats = CareerStats(
         format: 'all',
-        batting: const BattingCareerStats(
+        batting: BattingCareerStats(
           matchesPlayed: 999,
           inningsBatted: 900,
           totalRuns: 25000,
@@ -130,7 +130,7 @@ void main() {
           battingAverage: 45.50,
           battingStrikeRate: 90.0,
         ),
-        bowling: const BowlingCareerStats(
+        bowling: BowlingCareerStats(
           inningsBowled: 500,
           oversBowled: '1500.0',
           runsConceded: 12000,
@@ -143,7 +143,7 @@ void main() {
           bowlingEconomy: 8.0,
           bowlingStrikeRate: 18.0,
         ),
-        fielding: const FieldingCareerStats(
+        fielding: FieldingCareerStats(
           catches: 200,
           runOuts: 50,
           stumpings: 30,

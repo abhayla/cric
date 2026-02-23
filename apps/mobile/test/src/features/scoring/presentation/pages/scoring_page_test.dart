@@ -13,20 +13,17 @@ import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transi
 import 'package:cricapp/src/features/scoring/presentation/widgets/wicket_dialog.dart';
 
 void main() {
-  List<PlayingXIPlayer> makePlayers({
-    required String prefix,
-    int count = 11,
-  }) {
+  List<PlayingXIPlayer> makePlayers({required String prefix, int count = 11}) {
     return List.generate(
-        count,
-        (i) => PlayingXIPlayer(
-              playerId: '$prefix-$i',
-              displayName: '${prefix.toUpperCase()} Player ${i + 1}',
-              playerRole:
-                  i < 3 ? 'batter' : (i < 6 ? 'bowler' : 'all_rounder'),
-              isCaptain: i == 0,
-              isKeeper: i == 4,
-            ));
+      count,
+      (i) => PlayingXIPlayer(
+        playerId: '$prefix-$i',
+        displayName: '${prefix.toUpperCase()} Player ${i + 1}',
+        playerRole: i < 3 ? 'batter' : (i < 6 ? 'bowler' : 'all_rounder'),
+        isCaptain: i == 0,
+        isKeeper: i == 4,
+      ),
+    );
   }
 
   Widget buildPage({
@@ -200,8 +197,9 @@ void main() {
       expect(find.text('Wide'), findsOneWidget);
     });
 
-    testWidgets('NB button opens ExtrasPanel with no-ball type',
-        (tester) async {
+    testWidgets('NB button opens ExtrasPanel with no-ball type', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       await tester.tap(findRunButton('NB'));
       await tester.pumpAndSettle();
@@ -217,8 +215,9 @@ void main() {
       expect(find.text('Bye'), findsOneWidget);
     });
 
-    testWidgets('LB button opens ExtrasPanel with leg-bye type',
-        (tester) async {
+    testWidgets('LB button opens ExtrasPanel with leg-bye type', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       await tester.tap(findRunButton('LB'));
       await tester.pumpAndSettle();
@@ -226,8 +225,9 @@ void main() {
       expect(find.text('Leg Bye'), findsOneWidget);
     });
 
-    testWidgets('Wide confirm with 0 additional updates score to 1/0',
-        (tester) async {
+    testWidgets('Wide confirm with 0 additional updates score to 1/0', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       // Open Wide panel
       await tester.tap(findRunButton('WD'));
@@ -240,17 +240,20 @@ void main() {
       expect(find.text('(0.0)'), findsOneWidget);
     });
 
-    testWidgets('NoBall confirm with 2 bat runs updates score to 3/0',
-        (tester) async {
+    testWidgets('NoBall confirm with 2 bat runs updates score to 3/0', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       // Open No Ball panel
       await tester.tap(findRunButton('NB'));
       await tester.pumpAndSettle();
       // Select 2 runs from bat
-      await tester.tap(find.ancestor(
-        of: find.text('2'),
-        matching: find.byType(OutlinedButton),
-      ));
+      await tester.tap(
+        find.ancestor(
+          of: find.text('2'),
+          matching: find.byType(OutlinedButton),
+        ),
+      );
       await tester.pump();
       // Confirm
       await tester.tap(find.text('Confirm'));
@@ -260,8 +263,9 @@ void main() {
       expect(find.text('(0.0)'), findsOneWidget);
     });
 
-    testWidgets('Bye confirm with default 1 updates score to 1/0 and overs',
-        (tester) async {
+    testWidgets('Bye confirm with default 1 updates score to 1/0 and overs', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       // Open Bye panel
       await tester.tap(findRunButton('B'));
@@ -274,8 +278,9 @@ void main() {
       expect(find.text('(0.1)'), findsOneWidget);
     });
 
-    testWidgets('after no-ball confirm, free hit badge appears in this over',
-        (tester) async {
+    testWidgets('after no-ball confirm, free hit badge appears in this over', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       // Open No Ball panel
       await tester.tap(findRunButton('NB'));
@@ -333,14 +338,12 @@ void main() {
         of: find.byType(ScoringControls),
         matching: find.widgetWithText(OutlinedButton, 'W'),
       );
-      expect(
-        tester.widget<OutlinedButton>(wButton).onPressed,
-        isNull,
-      );
+      expect(tester.widget<OutlinedButton>(wButton).onPressed, isNull);
     });
 
-    testWidgets('Caught wicket with fielder updates score to 0/1',
-        (tester) async {
+    testWidgets('Caught wicket with fielder updates score to 0/1', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildPage());
       // Open wicket dialog
       await tester.tap(findRunButton('W'));
@@ -366,8 +369,9 @@ void main() {
   });
 
   group('ScoringPage innings transition', () {
-    testWidgets('all-out in 1st innings shows innings transition modal',
-        (tester) async {
+    testWidgets('all-out in 1st innings shows innings transition modal', (
+      tester,
+    ) async {
       // 2 players per side: 1 wicket = all out
       await tester.pumpWidget(buildPage(playersPerSide: 2));
       // Record Bowled wicket
@@ -396,8 +400,9 @@ void main() {
       expect(find.byType(InningsTransitionModal), findsOneWidget);
     });
 
-    testWidgets('completing modal transitions to 2nd innings state',
-        (tester) async {
+    testWidgets('completing modal transitions to 2nd innings state', (
+      tester,
+    ) async {
       // 2 players per side for quick all-out
       await tester.pumpWidget(buildPage(playersPerSide: 2));
       // Record Bowled wicket → all-out → modal appears
@@ -414,24 +419,21 @@ void main() {
       await tester.pumpAndSettle();
       // Select 2 batters — scope to modal to avoid ambiguity
       final modal = find.byType(InningsTransitionModal);
-      await tester.tap(find.descendant(
-        of: modal,
-        matching: find.text('BOWL Player 1'),
-      ));
+      await tester.tap(
+        find.descendant(of: modal, matching: find.text('BOWL Player 1')),
+      );
       await tester.pump();
-      await tester.tap(find.descendant(
-        of: modal,
-        matching: find.text('BOWL Player 2'),
-      ));
+      await tester.tap(
+        find.descendant(of: modal, matching: find.text('BOWL Player 2')),
+      );
       await tester.pump();
       // Step 2 → 3
       await tester.tap(find.widgetWithText(FilledButton, 'Next'));
       await tester.pumpAndSettle();
       // Select bowler (batting team players)
-      await tester.tap(find.descendant(
-        of: modal,
-        matching: find.text('BAT Player 1'),
-      ));
+      await tester.tap(
+        find.descendant(of: modal, matching: find.text('BAT Player 1')),
+      );
       await tester.pump();
       // Start Innings
       await tester.tap(find.widgetWithText(FilledButton, 'Start Innings'));
@@ -443,8 +445,9 @@ void main() {
       expect(find.text('2nd Innings'), findsOneWidget);
     });
 
-    testWidgets('after transition, score header shows target and RRR',
-        (tester) async {
+    testWidgets('after transition, score header shows target and RRR', (
+      tester,
+    ) async {
       // Score some runs then all-out
       await tester.pumpWidget(buildPage(playersPerSide: 2));
       // Score a four first
@@ -462,22 +465,19 @@ void main() {
       final modal = find.byType(InningsTransitionModal);
       await tester.tap(find.widgetWithText(FilledButton, 'Next'));
       await tester.pumpAndSettle();
-      await tester.tap(find.descendant(
-        of: modal,
-        matching: find.text('BOWL Player 1'),
-      ));
+      await tester.tap(
+        find.descendant(of: modal, matching: find.text('BOWL Player 1')),
+      );
       await tester.pump();
-      await tester.tap(find.descendant(
-        of: modal,
-        matching: find.text('BOWL Player 2'),
-      ));
+      await tester.tap(
+        find.descendant(of: modal, matching: find.text('BOWL Player 2')),
+      );
       await tester.pump();
       await tester.tap(find.widgetWithText(FilledButton, 'Next'));
       await tester.pumpAndSettle();
-      await tester.tap(find.descendant(
-        of: modal,
-        matching: find.text('BAT Player 1'),
-      ));
+      await tester.tap(
+        find.descendant(of: modal, matching: find.text('BAT Player 1')),
+      );
       await tester.pump();
       await tester.tap(find.widgetWithText(FilledButton, 'Start Innings'));
       await tester.pumpAndSettle();
@@ -487,24 +487,27 @@ void main() {
       expect(find.textContaining('5'), findsWidgets);
     });
 
-    testWidgets('2nd innings completion shows match complete modal',
-        (tester) async {
+    testWidgets('2nd innings completion shows match complete modal', (
+      tester,
+    ) async {
       // Set up 2nd innings directly with target and firstInningsSummary
-      await tester.pumpWidget(buildPage(
-        inningsNumber: 2,
-        target: 5,
-        battingTeamName: 'Delhi Strikers',
-        bowlingTeamName: 'Mumbai Warriors',
-        playersPerSide: 11,
-        firstInningsSummary: const FirstInningsSummary(
-          teamName: 'Mumbai Warriors',
-          teamId: 'team-mw',
-          totalRuns: 4,
-          totalWickets: 10,
-          totalBalls: 30,
-          oversDisplay: '5.0',
+      await tester.pumpWidget(
+        buildPage(
+          inningsNumber: 2,
+          target: 5,
+          battingTeamName: 'Delhi Strikers',
+          bowlingTeamName: 'Mumbai Warriors',
+          playersPerSide: 11,
+          firstInningsSummary: const FirstInningsSummary(
+            teamName: 'Mumbai Warriors',
+            teamId: 'team-mw',
+            totalRuns: 4,
+            totalWickets: 10,
+            totalBalls: 30,
+            oversDisplay: '5.0',
+          ),
         ),
-      ));
+      );
       // Score a six to chase down target
       await tester.tap(findRunButton('6'));
       await tester.pumpAndSettle();
@@ -513,23 +516,26 @@ void main() {
       expect(find.text('Match Complete!'), findsOneWidget);
     });
 
-    testWidgets('match complete modal shows correct result text',
-        (tester) async {
-      await tester.pumpWidget(buildPage(
-        inningsNumber: 2,
-        target: 5,
-        battingTeamName: 'Delhi Strikers',
-        bowlingTeamName: 'Mumbai Warriors',
-        playersPerSide: 11,
-        firstInningsSummary: const FirstInningsSummary(
-          teamName: 'Mumbai Warriors',
-          teamId: 'team-mw',
-          totalRuns: 4,
-          totalWickets: 10,
-          totalBalls: 30,
-          oversDisplay: '5.0',
+    testWidgets('match complete modal shows correct result text', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildPage(
+          inningsNumber: 2,
+          target: 5,
+          battingTeamName: 'Delhi Strikers',
+          bowlingTeamName: 'Mumbai Warriors',
+          playersPerSide: 11,
+          firstInningsSummary: const FirstInningsSummary(
+            teamName: 'Mumbai Warriors',
+            teamId: 'team-mw',
+            totalRuns: 4,
+            totalWickets: 10,
+            totalBalls: 30,
+            oversDisplay: '5.0',
+          ),
         ),
-      ));
+      );
       // Score a six to chase target of 5
       await tester.tap(findRunButton('6'));
       await tester.pumpAndSettle();
@@ -545,14 +551,14 @@ void main() {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (_, __) {
+            builder: (_, _) {
               navigatedHome = true;
               return const Scaffold(body: Text('Home'));
             },
           ),
           GoRoute(
             path: '/scoring',
-            builder: (_, __) => ScoringPage(
+            builder: (_, _) => ScoringPage(
               args: ScoringPageArgs(
                 matchId: 'match-1',
                 inningsId: 'inn-2',
@@ -586,16 +592,18 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(MaterialApp.router(
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.seed,
-            brightness: Brightness.light,
+      await tester.pumpWidget(
+        MaterialApp.router(
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: AppColors.seed,
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
           ),
-          useMaterial3: true,
+          routerConfig: router,
         ),
-        routerConfig: router,
-      ));
+      );
       await tester.pumpAndSettle();
 
       // Score a six to complete the match
@@ -616,21 +624,23 @@ void main() {
     });
 
     testWidgets('View Scorecard dismisses modal and navigates', (tester) async {
-      await tester.pumpWidget(buildPage(
-        inningsNumber: 2,
-        target: 5,
-        battingTeamName: 'Delhi Strikers',
-        bowlingTeamName: 'Mumbai Warriors',
-        playersPerSide: 11,
-        firstInningsSummary: const FirstInningsSummary(
-          teamName: 'Mumbai Warriors',
-          teamId: 'team-mw',
-          totalRuns: 4,
-          totalWickets: 10,
-          totalBalls: 30,
-          oversDisplay: '5.0',
+      await tester.pumpWidget(
+        buildPage(
+          inningsNumber: 2,
+          target: 5,
+          battingTeamName: 'Delhi Strikers',
+          bowlingTeamName: 'Mumbai Warriors',
+          playersPerSide: 11,
+          firstInningsSummary: const FirstInningsSummary(
+            teamName: 'Mumbai Warriors',
+            teamId: 'team-mw',
+            totalRuns: 4,
+            totalWickets: 10,
+            totalBalls: 30,
+            oversDisplay: '5.0',
+          ),
         ),
-      ));
+      );
       // Score a six to complete match
       await tester.tap(findRunButton('6'));
       await tester.pumpAndSettle();

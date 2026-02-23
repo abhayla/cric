@@ -57,7 +57,7 @@ void main() {
     });
 
     testWidgets('shows standings table with data', (tester) async {
-      final result = StandingsResult(
+      const result = StandingsResult(
         standings: [
           Standing(
             tournamentId: 'tour-1',
@@ -89,7 +89,7 @@ void main() {
     });
 
     testWidgets('shows table headers', (tester) async {
-      final result = StandingsResult(
+      const result = StandingsResult(
         standings: [
           Standing(
             tournamentId: 'tour-1',
@@ -121,7 +121,7 @@ void main() {
     });
 
     testWidgets('shows group tabs when multiple groups', (tester) async {
-      final result = StandingsResult(
+      const result = StandingsResult(
         standings: [
           Standing(
             tournamentId: 'tour-1',

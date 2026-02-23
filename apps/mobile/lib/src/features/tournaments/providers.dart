@@ -5,7 +5,6 @@ import '../../app/providers.dart';
 import 'data/datasources/tournament_remote_datasource.dart';
 import 'data/repositories/tournament_repository_impl.dart';
 import 'domain/entities/fixture.dart';
-import 'domain/entities/standing.dart';
 import 'domain/entities/tournament.dart';
 import 'domain/repositories/tournament_repository.dart';
 

@@ -20,10 +20,7 @@ class LivePage extends ConsumerWidget {
     final tournamentsAsync = ref.watch(tournamentsListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Live'),
-        centerTitle: false,
-      ),
+      appBar: AppBar(title: const Text('Live'), centerTitle: false),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(liveMatchesProvider);
@@ -49,7 +46,7 @@ class LivePage extends ConsumerWidget {
                           ? [_CountBadge(count: data.matches.length)]
                           : <Widget>[],
                       loading: () => <Widget>[],
-                      error: (_, __) => <Widget>[],
+                      error: (_, _) => <Widget>[],
                     ),
                   ],
                 ),
@@ -93,7 +90,7 @@ class LivePage extends ConsumerWidget {
                   ),
                 ),
               ],
-              error: (_, __) => [
+              error: (_, _) => [
                 const SliverToBoxAdapter(
                   child: _EmptySectionCard(
                     icon: Icons.error_outline,
@@ -126,7 +123,7 @@ class LivePage extends ConsumerWidget {
                             : <Widget>[];
                       },
                       loading: () => <Widget>[],
-                      error: (_, __) => <Widget>[],
+                      error: (_, _) => <Widget>[],
                     ),
                   ],
                 ),
@@ -153,14 +150,15 @@ class LivePage extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList.separated(
                       itemCount: ongoing.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final tournament = ongoing[index];
                         return TournamentCard(
                           tournament: tournament,
                           onTap: () {
-                            context.push(AppRoutes.tournamentDetailPath(
-                                tournament.id));
+                            context.push(
+                              AppRoutes.tournamentDetailPath(tournament.id),
+                            );
                           },
                         );
                       },
@@ -178,7 +176,7 @@ class LivePage extends ConsumerWidget {
                   ),
                 ),
               ],
-              error: (_, __) => [
+              error: (_, _) => [
                 const SliverToBoxAdapter(
                   child: _EmptySectionCard(
                     icon: Icons.error_outline,
@@ -223,10 +221,7 @@ class _CountBadge extends StatelessWidget {
 }
 
 class _EmptySectionCard extends StatelessWidget {
-  const _EmptySectionCard({
-    required this.icon,
-    required this.message,
-  });
+  const _EmptySectionCard({required this.icon, required this.message});
 
   final IconData icon;
   final String message;

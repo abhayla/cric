@@ -117,7 +117,7 @@ class ServerManager {
   Future<String> createPlayerApi(String displayName, {String? playerRole}) async {
     final response = await _dio.post('/api/v1/players', data: {
       'displayName': displayName,
-      if (playerRole != null) 'playerRole': playerRole,
+      'playerRole': ?playerRole,
     });
     return response.data['player']['id'] as String;
   }
@@ -150,9 +150,9 @@ class ServerManager {
       'format': format,
       'oversPerMatch': oversPerMatch,
       'ballTypeId': ballTypeId,
-      if (numGroups != null) 'numGroups': numGroups,
-      if (qualifyPerGroup != null) 'qualifyPerGroup': qualifyPerGroup,
-      if (playersPerSide != null) 'playersPerSide': playersPerSide,
+      'numGroups': ?numGroups,
+      'qualifyPerGroup': ?qualifyPerGroup,
+      'playersPerSide': ?playersPerSide,
     });
     return response.data['tournament']['id'] as String;
   }
@@ -165,7 +165,7 @@ class ServerManager {
   }) async {
     await _dio.post('/api/v1/tournaments/$tournamentId/teams', data: {
       'teamId': teamId,
-      if (groupName != null) 'groupName': groupName,
+      'groupName': ?groupName,
     });
   }
 
