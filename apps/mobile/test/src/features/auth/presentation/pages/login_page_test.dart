@@ -20,7 +20,7 @@ void main() {
       );
 
       expect(find.textContaining('Cric'), findsOneWidget);
-      expect(find.textContaining('App'), findsOneWidget);
+      expect(find.textContaining('Scores'), findsOneWidget);
     });
 
     testWidgets('renders subtitle', (tester) async {
