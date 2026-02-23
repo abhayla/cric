@@ -86,15 +86,39 @@ final _dioProvider = Provider<Dio>((ref) {
 **Problem:** `build.gradle.kts:38` uses debug signing. Some Android devices refuse to install debug-signed APKs. Firebase Auth requires the release SHA-1 fingerprint registered in Firebase Console.
 
 **Files to modify:**
-- `apps/mobile/android/app/build.gradle.kts` — Add release signing config
+- `apps/mobile/android/app/build.gradle.kts` — Already has release signing config (reads `key.properties`)
 - `apps/mobile/android/key.properties` — NEW file (gitignored) with keystore path/passwords
 
 **Steps:**
 1. Generate keystore: `keytool -genkey -v -keystore cricscores-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias cricscores`
 2. Create `key.properties` with keystore path and passwords
-3. Update `build.gradle.kts` to read `key.properties` and use it for release builds
-4. Add SHA-1 fingerprint to Firebase Console (Project Settings > Your Apps > Add fingerprint)
+3. `build.gradle.kts` already reads `key.properties` — no code changes needed
+4. Add SHA-1 + SHA-256 fingerprints to Firebase Console (Project Settings > Your Apps > Add fingerprint)
 5. Add `key.properties` and `*.jks` to `.gitignore`
+
+> **See also:** `VPS_DEPLOYMENT_RUNBOOK.md` Phase 7 for the full Firebase production setup (adding prod app, fingerprints, test phone numbers).
+
+### A4b. Firebase Production App Setup (Dev Machine)
+
+**Problem:** Only the dev Android app (`com.cricapp.cricapp`) exists in Firebase project `cricapp-7403d`. The prod flavor (`in.cricscores.app`) needs its own `google-services.json`.
+
+**Steps:**
+1. Firebase Console > Project Settings > Add App > Android
+2. Package name: `in.cricscores.app`, nickname: `CricScores (Prod)`
+3. Download `google-services.json` and place at `apps/mobile/android/app/src/prod/google-services.json`
+4. Add release keystore SHA-1 and SHA-256 to the prod app (see A4 above)
+5. Verify Phone Auth is enabled with test numbers:
+   - `+919999999999` → OTP: `123456` (scorer)
+   - `+919999999998` → OTP: `123456` (viewer)
+
+**Server-side:** The same `firebase-service-account.json` (project-level) validates tokens from both dev and prod apps. No server changes needed.
+
+**Flavor config reference:**
+
+| Flavor | applicationId | google-services.json location | Build command |
+|--------|--------------|-------------------------------|---------------|
+| `dev` | `com.cricapp.cricapp` | `android/app/src/dev/google-services.json` | `flutter run --flavor dev` |
+| `prod` | `in.cricscores.app` | `android/app/src/prod/google-services.json` | `flutter run --flavor prod --dart-define=FLAVOR=prod` |
 
 ---
 
@@ -185,11 +209,12 @@ Add a "Retry" button on error states for detail pages (team detail, tournament d
 ## Build Command (after all changes)
 
 ```bash
-cd apps/mobile && flutter build apk --release \
-  --dart-define=API_BASE_URL=https://cricscores.in/api/v1 \
-  --dart-define=WS_BASE_URL=wss://cricscores.in/ws
+# Production APK (uses prod google-services.json, points to cricscores.in)
+cd apps/mobile && flutter build apk --flavor prod --release --dart-define=FLAVOR=prod
 ```
 
-Output APK: `apps/mobile/build/app/outputs/flutter-apk/app-release.apk`
+Output APK: `apps/mobile/build/app/outputs/flutter-apk/app-prod-release.apk`
 
 Share this APK file directly with friends (WhatsApp, Google Drive, etc).
+
+> **Note:** The `--dart-define=FLAVOR=prod` flag makes `AppConstants.isProduction` true, which auto-switches API/WS URLs to `https://cricscores.in/api/v1` and `wss://cricscores.in/ws`. No need to pass `API_BASE_URL`/`WS_BASE_URL` manually.
