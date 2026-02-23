@@ -39,7 +39,7 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 
 ## Current Status
 
-**Phases 1–6 COMPLETE.** Phase 7 (Polish & Testing) in progress. ~2120 Flutter tests, ~420 server tests. Full phase breakdown in [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md). Session context and next steps in [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md).
+**Phases 1–6 COMPLETE.** Phase 7 (Polish & Testing) in progress. ~2120 Flutter tests (heaviest in `test/src/features/scoring/`), ~420 server tests (heaviest in `test/services/`). Full phase breakdown in [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md). Session context and next steps in [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md).
 
 ## Key Documentation
 
@@ -94,6 +94,28 @@ cd apps/mobile && flutter test integration_test/multi_device_viewer_e2e_test.dar
 **Code generation:** Files matching `*.g.dart`, `*.freezed.dart`, `*.gr.dart` are auto-generated. Never edit them manually — re-run `build_runner` instead.
 
 **Server tests:** Use `bun run test` (not `bun test`) to run all tests — the npm script passes `--max-concurrency=1` to avoid DB contention from parallel execution. Individual files work with `bun test path/to.test.ts`.
+
+## First-Time Setup
+
+```bash
+# 1. Install dependencies
+cd apps/mobile && flutter pub get && cd ../..
+cd apps/server && bun install && cd ../..
+
+# 2. Server environment
+cp apps/server/.env.example apps/server/.env
+# Edit .env with PostgreSQL connection string + Firebase credentials
+
+# 3. Firebase config files
+# Place google-services.json in apps/mobile/android/app/
+# Place firebase-service-account.json in apps/server/
+
+# 4. Database
+cd apps/server && bun run db:generate && bun run db:migrate && bun run db:seed && cd ../..
+
+# 5. Flutter code generation (Drift, Freezed, Riverpod)
+cd apps/mobile && dart run build_runner build --delete-conflicting-outputs && cd ../..
+```
 
 ## CI Pipeline
 
@@ -245,6 +267,14 @@ Every bug, test failure, or code issue must be fixed by addressing its root caus
 ## Feature Architecture
 
 Each feature in `apps/mobile/lib/src/features/<feature>/` follows clean architecture: `data/` (datasources, models, repositories) + `domain/` (entities, repository interfaces) + `presentation/` (notifiers, pages, widgets) + `providers.dart`. Full placement rules and decision tree in [.claude/rules.md](.claude/rules.md).
+
+**Critical placement anti-patterns (from [.claude/rules.md](.claude/rules.md)):**
+- Never import from one feature's `data/` or `domain/` into another feature — features communicate only through `shared/` providers.
+- Never put Drift table definitions inside a feature — all tables go in `shared/data/database/tables/`.
+- Never put business logic in `presentation/` — notifiers orchestrate, but core logic goes in `domain/` or `data/`.
+- Never create a `models/` folder in `domain/` — domain has `entities/` (pure Dart), data has `models/` (Freezed/serializable).
+- Never put SQL queries directly in server route handlers — all DB access goes through services or `db/` layer.
+- Never define WebSocket message types inline at send/receive sites — use the centralized types files.
 
 ## Naming Conventions
 

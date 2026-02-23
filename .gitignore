@@ -24,6 +24,7 @@ apps/mobile/build/
 apps/mobile/.flutter-plugins
 apps/mobile/.flutter-plugins-dependencies
 *.iml
+apps/mobile/devtools_options.yaml
 
 # Bun / Node
 apps/server/node_modules/
