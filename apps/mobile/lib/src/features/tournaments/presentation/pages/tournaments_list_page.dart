@@ -51,7 +51,7 @@ class _TournamentsList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: tournaments.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      separatorBuilder: (_, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) => TournamentCard(
         tournament: tournaments[index],
         onTap: () =>

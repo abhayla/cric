@@ -34,7 +34,7 @@ class PlayerProfileHero extends StatelessWidget {
                 ? NetworkImage(profile.avatarUrl!)
                 : null,
             onForegroundImageError:
-                profile.avatarUrl != null ? (_, _) {} : null,
+                profile.avatarUrl != null ? (_, e) {} : null,
             child: Text(
               profile.initials,
               style: theme.textTheme.headlineMedium?.copyWith(
@@ -82,7 +82,7 @@ class PlayerProfileHero extends StatelessWidget {
                               : null,
                       onForegroundImageError:
                           profile.teams.first.teamLogoUrl != null
-                              ? (_, _) {}
+                              ? (_, e) {}
                               : null,
                       child: Text(
                         profile.teams.first.initial,

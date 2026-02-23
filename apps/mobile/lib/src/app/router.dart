@@ -40,6 +40,10 @@ import '../features/scoring/providers.dart' as scoring;
 import '../shared/providers/websocket_provider.dart';
 import 'providers.dart';
 
+/// Opt-in auth bypass: only active when built with `--dart-define=SKIP_AUTH=true`.
+/// Never use in externally-distributed builds.
+const bool _kSkipAuth = bool.fromEnvironment('SKIP_AUTH');
+
 /// Route paths.
 abstract final class AppRoutes {
   static const String splash = '/';
@@ -125,13 +129,25 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 /// route builders re-execute. GoRouter can only reconstruct routes from URLs,
 /// so `state.extra` becomes null on rebuild. This cache preserves the extra
 /// data across rebuilds, keyed by matched route path.
+/// Capped at 10 entries to prevent unbounded memory growth.
+const _kMaxCacheSize = 10;
 final _routeExtraCache = <String, Object>{};
+final _routeExtraCacheOrder = <String>[];
 
 /// Get or cache typed route extra data. On first navigation (non-null extra),
 /// stores it. On GoRouter rebuild (null extra), returns the cached value.
+/// Evicts oldest entries when cache exceeds [_kMaxCacheSize].
 T? _cachedRouteExtra<T extends Object>(String path, Object? extra) {
   if (extra is T) {
+    // Remove existing entry if present (will be re-added at end)
+    _routeExtraCacheOrder.remove(path);
     _routeExtraCache[path] = extra;
+    _routeExtraCacheOrder.add(path);
+    // Evict oldest entries if over limit
+    while (_routeExtraCacheOrder.length > _kMaxCacheSize) {
+      final oldest = _routeExtraCacheOrder.removeAt(0);
+      _routeExtraCache.remove(oldest);
+    }
     return extra;
   }
   final cached = _routeExtraCache[path];
@@ -164,8 +180,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: authNotifier,
     initialLocation: AppRoutes.splash,
     redirect: (context, state) {
-      // In debug mode, skip auth entirely for UI testing
-      if (kDebugMode) {
+      // Opt-in auth bypass: only when built with --dart-define=SKIP_AUTH=true
+      if (_kSkipAuth) {
         final currentPath = state.matchedLocation;
         if (currentPath == AppRoutes.splash ||
             currentPath == AppRoutes.login ||

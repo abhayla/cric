@@ -299,7 +299,7 @@ class _OverviewTab extends ConsumerWidget {
         // Standings preview
         standingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) => const SizedBox.shrink(),
+          error: (_, st) => const SizedBox.shrink(),
           data: (result) {
             if (result.standings.isEmpty) {
               return const _SectionEmptyState(

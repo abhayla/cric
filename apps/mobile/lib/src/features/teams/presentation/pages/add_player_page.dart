@@ -150,7 +150,7 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
             const SizedBox(height: 24),
             _searchResult!.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, _) => Text(
+              error: (_, st) => Text(
                 'Search failed. Please try again.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.error,

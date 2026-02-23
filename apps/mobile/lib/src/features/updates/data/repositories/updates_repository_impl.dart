@@ -41,17 +41,13 @@ class UpdatesRepositoryImpl implements UpdatesRepository {
   ActivityEvent _eventFromJson(Map<String, dynamic> json) {
     return ActivityEvent(
       id: json['id'] as String,
-      eventType: json['eventType'] as String? ?? json['event_type'] as String,
+      eventType: json['eventType'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
-      referenceType:
-          json['referenceType'] as String? ?? json['reference_type'] as String?,
-      referenceId:
-          json['referenceId'] as String? ?? json['reference_id'] as String?,
-      isRead: json['isRead'] as bool? ?? json['is_read'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String? ??
-          json['created_at'] as String? ??
-          DateTime.now().toIso8601String()),
+      referenceType: json['referenceType'] as String?,
+      referenceId: json['referenceId'] as String?,
+      isRead: json['isRead'] as bool? ?? false,
+      createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
 }

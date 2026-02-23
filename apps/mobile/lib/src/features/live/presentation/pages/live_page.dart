@@ -46,7 +46,7 @@ class LivePage extends ConsumerWidget {
                           ? [_CountBadge(count: data.matches.length)]
                           : <Widget>[],
                       loading: () => <Widget>[],
-                      error: (_, _) => <Widget>[],
+                      error: (_, st) => <Widget>[],
                     ),
                   ],
                 ),
@@ -90,7 +90,7 @@ class LivePage extends ConsumerWidget {
                   ),
                 ),
               ],
-              error: (_, _) => [
+              error: (_, st) => [
                 const SliverToBoxAdapter(
                   child: _EmptySectionCard(
                     icon: Icons.error_outline,
@@ -123,7 +123,7 @@ class LivePage extends ConsumerWidget {
                             : <Widget>[];
                       },
                       loading: () => <Widget>[],
-                      error: (_, _) => <Widget>[],
+                      error: (_, st) => <Widget>[],
                     ),
                   ],
                 ),
@@ -150,7 +150,7 @@ class LivePage extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList.separated(
                       itemCount: ongoing.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      separatorBuilder: (_, index) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final tournament = ongoing[index];
                         return TournamentCard(
@@ -176,7 +176,7 @@ class LivePage extends ConsumerWidget {
                   ),
                 ),
               ],
-              error: (_, _) => [
+              error: (_, st) => [
                 const SliverToBoxAdapter(
                   child: _EmptySectionCard(
                     icon: Icons.error_outline,

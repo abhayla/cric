@@ -217,8 +217,11 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
                   return switch (_filter) {
                     'live' => m.status == 'live',
                     'won' => m.result?.contains('Won') ?? false,
-                    'lost' =>
-                      m.isCompleted && !(m.result?.contains('Won') ?? true),
+                    'lost' => m.isCompleted &&
+                        m.result != null &&
+                        !m.result!.contains('Won') &&
+                        !m.result!.contains('Tied') &&
+                        !m.result!.contains('No Result'),
                     _ => true,
                   };
                 }).toList();

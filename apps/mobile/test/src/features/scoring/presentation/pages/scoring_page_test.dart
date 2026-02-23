@@ -551,14 +551,14 @@ void main() {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (_, _) {
+            builder: (_, state) {
               navigatedHome = true;
               return const Scaffold(body: Text('Home'));
             },
           ),
           GoRoute(
             path: '/scoring',
-            builder: (_, _) => ScoringPage(
+            builder: (_, state) => ScoringPage(
               args: ScoringPageArgs(
                 matchId: 'match-1',
                 inningsId: 'inn-2',

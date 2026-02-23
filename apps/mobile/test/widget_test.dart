@@ -38,9 +38,9 @@ void main() {
       ),
     );
 
-    // Debug mode redirects splash → home. Verify app renders.
+    // Without SKIP_AUTH, app starts at splash page. Verify app renders.
     await tester.pump();
-    expect(find.textContaining('My Cricket'), findsWidgets);
+    expect(find.textContaining('Cric'), findsWidgets);
   });
 }
 

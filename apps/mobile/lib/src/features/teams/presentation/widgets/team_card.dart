@@ -31,7 +31,7 @@ class TeamCard extends StatelessWidget {
                 foregroundImage:
                     team.logoUrl != null ? NetworkImage(team.logoUrl!) : null,
                 onForegroundImageError:
-                    team.logoUrl != null ? (_, _) {} : null,
+                    team.logoUrl != null ? (_, e) {} : null,
                 child: Text(
                   team.initial,
                   style: theme.textTheme.titleLarge?.copyWith(
