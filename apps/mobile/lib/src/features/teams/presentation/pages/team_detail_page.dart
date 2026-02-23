@@ -136,17 +136,17 @@ class _TeamHeader extends StatelessWidget {
           CircleAvatar(
             radius: 40,
             backgroundColor: theme.colorScheme.primaryContainer,
-            backgroundImage:
+            foregroundImage:
                 team.logoUrl != null ? NetworkImage(team.logoUrl!) : null,
-            child: team.logoUrl == null
-                ? Text(
-                    team.initial,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                : null,
+            onForegroundImageError:
+                team.logoUrl != null ? (_, _) {} : null,
+            child: Text(
+              team.initial,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           Text(

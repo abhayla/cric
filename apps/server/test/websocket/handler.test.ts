@@ -49,7 +49,7 @@ function waitForMessage(ws: WebSocket, timeoutMs = 5000): Promise<unknown> {
 }
 
 beforeAll(async () => {
-  // Create test data
+  // Create test data.
   const [scorer] = await db
     .insert(users)
     .values({
@@ -60,6 +60,19 @@ beforeAll(async () => {
     .returning();
   scorerUserId = scorer!.id;
   testUserIds.push(scorerUserId);
+
+  // Update scorer's firebaseUid to match what the test auth mode returns.
+  // ENABLE_TEST_AUTH maps all WS tokens to 'test-user-e2e-001'.
+  // This is needed for publish_score to pass verifyScorerForMatch.
+  // First clear any existing user with this UID to avoid unique constraint.
+  await db
+    .update(users)
+    .set({ firebaseUid: `stale-${TEST_SUFFIX}` })
+    .where(eq(users.firebaseUid, 'test-user-e2e-001'));
+  await db
+    .update(users)
+    .set({ firebaseUid: 'test-user-e2e-001' })
+    .where(eq(users.id, scorerUserId));
 
   const homeValues = Array.from({ length: 12 }, (_, i) => ({
     firebaseUid: `test-${TEST_SUFFIX}-home-${i}`,
@@ -276,8 +289,8 @@ describe('leave_match', () => {
 
 describe('publish_score', () => {
   it('relays payload to room subscribers', async () => {
-    // Scorer joins and publishes
-    const scorer = await connectWs();
+    // Scorer joins and publishes (with token so publish_score is authorized)
+    const scorer = await connectWs('/ws?token=test-scorer');
     const joinPromise = waitForMessage(scorer);
     scorer.send(JSON.stringify({ type: 'join_match', matchId: testMatchId }));
     await joinPromise; // consume match_state

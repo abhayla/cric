@@ -460,26 +460,34 @@ final routerProvider = Provider<GoRouter>((ref) {
                 final messenger = ScaffoldMessenger.of(context);
 
                 try {
-                  debugPrint('[onStartMatch] Starting match $matchId...');
+                  if (kDebugMode) {
+                    debugPrint('[onStartMatch] Starting match $matchId...');
+                  }
 
                   // 1. Set Playing XI for both teams
                   await matchRepo.setPlayingXI(
                     matchId,
                     tossState.toHomePlayingXIInput(),
                   );
-                  debugPrint('[onStartMatch] Home XI set, calling setPlayingXI for away...');
+                  if (kDebugMode) {
+                    debugPrint('[onStartMatch] Home XI set, calling setPlayingXI for away...');
+                  }
                   await matchRepo.setPlayingXI(
                     matchId,
                     tossState.toAwayPlayingXIInput(),
                   );
-                  debugPrint('[onStartMatch] Away XI set, recording toss...');
+                  if (kDebugMode) {
+                    debugPrint('[onStartMatch] Away XI set, recording toss...');
+                  }
 
                   // 2. Record toss (returns updated match with innings)
                   await matchRepo.recordToss(
                     matchId,
                     tossState.toRecordTossInput(),
                   );
-                  debugPrint('[onStartMatch] Toss recorded, building args...');
+                  if (kDebugMode) {
+                    debugPrint('[onStartMatch] Toss recorded, building args...');
+                  }
 
                   // 3. Build ScoringPageArgs from toss state
                   final battingXI = tossState.battingXI;
@@ -534,14 +542,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                     openingBowlerName: bowler.displayName,
                   );
 
-                  debugPrint('[onStartMatch] Args built, navigating to scoring page...');
+                  if (kDebugMode) {
+                    debugPrint('[onStartMatch] Args built, navigating to scoring page...');
+                  }
                   router.go(
                     AppRoutes.scoringPath(matchId),
                     extra: args,
                   );
                 } catch (e, stack) {
-                  debugPrint('[onStartMatch] ERROR: $e');
-                  debugPrint('[onStartMatch] Stack: $stack');
+                  if (kDebugMode) {
+                    debugPrint('[onStartMatch] ERROR: $e');
+                    debugPrint('[onStartMatch] Stack: $stack');
+                  }
                   if (context.mounted) {
                     messenger.showSnackBar(
                       SnackBar(content: Text('Failed to start match: $e')),

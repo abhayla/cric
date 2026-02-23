@@ -88,17 +88,27 @@ class _SelectBowlerSheetState extends State<SelectBowlerSheet> {
 
           // Bowler list
           Expanded(
-            child: ListView(
-              children: [
+            child: ListView.builder(
+              itemCount: eligible.length +
+                  (ineligible.isNotEmpty
+                      ? ineligible.length + 1 // +1 for spacing
+                      : 0),
+              itemBuilder: (context, index) {
                 // Eligible bowlers
-                ...eligible.map((o) => _buildBowlerRow(theme, o)),
+                if (index < eligible.length) {
+                  return _buildBowlerRow(theme, eligible[index]);
+                }
 
                 // Ineligible section
-                if (ineligible.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  ...ineligible.map((o) => _buildBowlerRow(theme, o)),
-                ],
-              ],
+                final ineligibleIndex = index - eligible.length;
+                if (ineligibleIndex == 0) {
+                  return const SizedBox(height: 12);
+                }
+                return _buildBowlerRow(
+                  theme,
+                  ineligible[ineligibleIndex - 1],
+                );
+              },
             ),
           ),
         ],

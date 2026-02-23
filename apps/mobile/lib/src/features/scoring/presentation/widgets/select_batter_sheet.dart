@@ -98,16 +98,24 @@ class _SelectBatterSheetState extends State<SelectBatterSheet> {
 
           // Yet to bat players
           Expanded(
-            child: ListView(
-              children: [
-                ...widget.yetToBatPlayers.map(
-                  (p) => _buildPlayerRow(theme, p),
-                ),
+            child: ListView.builder(
+              itemCount: widget.yetToBatPlayers.length +
+                  (widget.retiredHurtBatters.isNotEmpty
+                      ? widget.retiredHurtBatters.length + 2 // +2 for spacing + header
+                      : 0),
+              itemBuilder: (context, index) {
+                // Yet-to-bat players
+                if (index < widget.yetToBatPlayers.length) {
+                  return _buildPlayerRow(theme, widget.yetToBatPlayers[index]);
+                }
 
                 // Retired hurt section
-                if (widget.retiredHurtBatters.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Padding(
+                final retiredIndex = index - widget.yetToBatPlayers.length;
+                if (retiredIndex == 0) {
+                  return const SizedBox(height: 12);
+                }
+                if (retiredIndex == 1) {
+                  return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
                       'Retired Hurt',
@@ -116,12 +124,13 @@ class _SelectBatterSheetState extends State<SelectBatterSheet> {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  ),
-                  ...widget.retiredHurtBatters.map(
-                    (b) => _buildRetiredHurtRow(theme, b),
-                  ),
-                ],
-              ],
+                  );
+                }
+                return _buildRetiredHurtRow(
+                  theme,
+                  widget.retiredHurtBatters[retiredIndex - 2],
+                );
+              },
             ),
           ),
         ],

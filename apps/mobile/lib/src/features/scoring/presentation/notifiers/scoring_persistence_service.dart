@@ -29,6 +29,10 @@ class ScoringPersistenceService {
   final SyncService? _syncService;
   final WebSocketClient? _wsClient;
 
+  /// Last persistence error (observable for UI).
+  Object? _lastSaveError;
+  Object? get lastSaveError => _lastSaveError;
+
   /// The current scoring state.
   ScoringState get state => _notifier.state;
 
@@ -247,7 +251,9 @@ class ScoringPersistenceService {
   /// Fire-and-forget persist — errors are silently swallowed to avoid
   /// interrupting the scoring flow.
   void _persistState() {
-    _datasource.saveState(_notifier.state).catchError((_) {});
+    _datasource.saveState(_notifier.state).catchError((error) {
+      _lastSaveError = error;
+    });
   }
 
   /// Publish score update via WebSocket fast path (fire-and-forget).
@@ -284,7 +290,9 @@ class ScoringPersistenceService {
       }
     } catch (e) {
       // Fire-and-forget — never interrupt scoring flow
-      debugPrint('[ScoringPersistenceService] WS publish error: $e');
+      if (kDebugMode) {
+        debugPrint('[ScoringPersistenceService] WS publish error: $e');
+      }
     }
   }
 

@@ -30,18 +30,18 @@ class PlayerProfileHero extends StatelessWidget {
           CircleAvatar(
             radius: 40,
             backgroundColor: colorScheme.primaryContainer,
-            backgroundImage: profile.avatarUrl != null
+            foregroundImage: profile.avatarUrl != null
                 ? NetworkImage(profile.avatarUrl!)
                 : null,
-            child: profile.avatarUrl == null
-                ? Text(
-                    profile.initials,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                : null,
+            onForegroundImageError:
+                profile.avatarUrl != null ? (_, _) {} : null,
+            child: Text(
+              profile.initials,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                color: colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           // Name
@@ -75,21 +75,23 @@ class PlayerProfileHero extends StatelessWidget {
                     CircleAvatar(
                       radius: 10,
                       backgroundColor: colorScheme.primaryContainer,
-                      backgroundImage:
+                      foregroundImage:
                           profile.teams.first.teamLogoUrl != null
                               ? NetworkImage(
                                   profile.teams.first.teamLogoUrl!)
                               : null,
-                      child: profile.teams.first.teamLogoUrl == null
-                          ? Text(
-                              profile.teams.first.initial,
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                            )
-                          : null,
+                      onForegroundImageError:
+                          profile.teams.first.teamLogoUrl != null
+                              ? (_, _) {}
+                              : null,
+                      child: Text(
+                        profile.teams.first.initial,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Text(

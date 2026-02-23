@@ -2,6 +2,7 @@ import { Elysia } from 'elysia';
 import { initFirebase } from './config/firebase.ts';
 import { env } from './config/env.ts';
 import { corsMiddleware } from './middleware/cors.ts';
+import { rateLimiter } from './middleware/rate-limiter.ts';
 import { errorHandler } from './middleware/error-handler.ts';
 import { healthRoutes } from './routes/v1/health.ts';
 import { authRoutes } from './routes/v1/auth.ts';
@@ -25,6 +26,7 @@ if (env.NODE_ENV === 'production' && process.env.ENABLE_TEST_AUTH === 'true') {
 
 const app = new Elysia()
   .use(corsMiddleware)
+  .use(rateLimiter)
   .use(errorHandler)
   .use(websocketHandler)
   .use(healthRoutes)

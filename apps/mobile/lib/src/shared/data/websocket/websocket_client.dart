@@ -138,8 +138,10 @@ class WebSocketClient {
   /// Publish a score update to a match room (fast path for scorer).
   void publishToMatch(String matchId, Map<String, dynamic> payload) {
     if (_status != ConnectionStatus.connected) {
-      debugPrint('[WS] Message dropped — not connected '
-          '(status: $_status, type: ${payload['type']})');
+      if (kDebugMode) {
+        debugPrint('[WS] Message dropped — not connected '
+            '(status: $_status, type: ${payload['type']})');
+      }
       return;
     }
     _send({'type': 'publish_score', 'matchId': matchId, 'payload': payload});

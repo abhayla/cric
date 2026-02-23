@@ -109,15 +109,17 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       }
 
       // Broadcast full match state once (not per delivery)
+      let broadcastStatus: 'ok' | 'failed' = 'ok';
       try {
         const state = await getMatchState(matchId);
         broadcastMatchState(matchId, state);
       } catch (err) {
+        broadcastStatus = 'failed';
         console.error('Broadcast error after batch delivery:', err);
       }
 
       ctx.set.status = 201;
-      return result;
+      return { ...result, broadcastStatus };
     },
     {
       params: t.Object({ id: t.String() }),
@@ -201,6 +203,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       }
 
       // --- Broadcast score_update ---
+      let broadcastStatus: 'ok' | 'failed' = 'ok';
       const resultInningsId = result.delivery.inningsId;
       try {
         // Get striker batting stat + name
@@ -317,30 +320,37 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
 
         // Broadcast wicket if applicable
         if (result.delivery.isWicket && ctx.body.wicket) {
-          const [wicketRecord] = await db
+          // JOIN query: wicket + dismissed player name + dismissal type in one query
+          const [wicketDetail] = await db
             .select({
-              dismissedPlayerId: wicketsByDelivery.dismissedPlayerId,
-              dismissalTypeId: wicketsByDelivery.dismissalTypeId,
+              dismissedPlayerName: users.displayName,
+              dismissalTypeName: dismissalTypes.name,
               fielderId: wicketsByDelivery.fielderId,
             })
             .from(wicketsByDelivery)
+            .innerJoin(users, eq(users.id, wicketsByDelivery.dismissedPlayerId))
+            .innerJoin(dismissalTypes, eq(dismissalTypes.id, wicketsByDelivery.dismissalTypeId))
             .where(eq(wicketsByDelivery.deliveryId, result.delivery.id))
             .limit(1);
 
-          if (wicketRecord) {
-            const [dismissedPlayer] = await db.select({ name: users.displayName }).from(users).where(eq(users.id, wicketRecord.dismissedPlayerId)).limit(1);
-            const [dismissalType] = await db.select({ name: dismissalTypes.name }).from(dismissalTypes).where(eq(dismissalTypes.id, wicketRecord.dismissalTypeId)).limit(1);
-            const fielderName = wicketRecord.fielderId
-              ? (await db.select({ name: users.displayName }).from(users).where(eq(users.id, wicketRecord.fielderId)).limit(1))[0]?.name ?? null
-              : null;
-            const [bowlerUser] = await db.select({ name: users.displayName }).from(users).where(eq(users.id, ctx.body.bowlerId)).limit(1);
+          if (wicketDetail) {
+            // Parallel lookups for fielder name + bowler name
+            const [fielderResult, bowlerResult] = await Promise.all([
+              wicketDetail.fielderId
+                ? db.select({ name: users.displayName }).from(users).where(eq(users.id, wicketDetail.fielderId)).limit(1)
+                : Promise.resolve([undefined]),
+              db.select({ name: users.displayName }).from(users).where(eq(users.id, ctx.body.bowlerId)).limit(1),
+            ]);
+
+            const fielderName = fielderResult[0]?.name ?? null;
+            const bowlerName = bowlerResult[0]?.name ?? null;
 
             const wicketMsg = buildWicketMessage(
               matchId,
-              dismissedPlayer?.name ?? 'Unknown',
-              dismissalType?.name ?? 'unknown',
+              wicketDetail.dismissedPlayerName ?? 'Unknown',
+              wicketDetail.dismissalTypeName ?? 'unknown',
               fielderName,
-              bowlerUser?.name ?? null,
+              bowlerName,
               `${result.updatedInnings!.totalRuns}/${result.updatedInnings!.totalWickets}`,
               String(result.updatedInnings!.totalOvers),
             );
@@ -383,11 +393,12 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
         }
       } catch (err) {
         // Don't let broadcast errors affect the HTTP response
+        broadcastStatus = 'failed';
         console.error('Broadcast error after delivery:', err);
       }
 
       ctx.set.status = 201;
-      return result;
+      return { ...result, broadcastStatus };
     },
     {
       params: t.Object({ id: t.String() }),
@@ -451,6 +462,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       await undoDelivery(matchId, deliveryId, user.id);
 
       // --- Broadcast delivery_undone ---
+      let broadcastStatus: 'ok' | 'failed' = 'ok';
       try {
         if (deliveryInfo) {
           const [updatedInn] = await db
@@ -519,10 +531,11 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
           }
         }
       } catch (err) {
+        broadcastStatus = 'failed';
         console.error('Broadcast error after undo:', err);
       }
 
-      return { success: true };
+      return { success: true, broadcastStatus };
     },
     {
       params: t.Object({ id: t.String(), did: t.String() }),
@@ -563,6 +576,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       await abandonMatch(matchId, user.id);
 
       // --- Broadcast match_complete (abandoned) ---
+      let broadcastStatus: 'ok' | 'failed' = 'ok';
       try {
         const [mr] = await db
           .select()
@@ -575,10 +589,11 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
           broadcastMatchComplete(matchId, matchMsg);
         }
       } catch (err) {
+        broadcastStatus = 'failed';
         console.error('Broadcast error after abandon:', err);
       }
 
-      return { success: true };
+      return { success: true, broadcastStatus };
     },
     {
       params: t.Object({ id: t.String() }),
@@ -597,6 +612,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       await declareInnings(matchId, user.id);
 
       // --- Broadcast innings_complete ---
+      let broadcastStatus: 'ok' | 'failed' = 'ok';
       try {
         // Find the most recently completed innings
         const [completedInnings] = await db
@@ -626,10 +642,11 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
           broadcastInningsComplete(matchId, inningsMsg);
         }
       } catch (err) {
+        broadcastStatus = 'failed';
         console.error('Broadcast error after declare:', err);
       }
 
-      return { success: true };
+      return { success: true, broadcastStatus };
     },
     {
       params: t.Object({ id: t.String() }),
@@ -656,14 +673,16 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       }
 
       // --- Broadcast match_state (full refresh) ---
+      let broadcastStatus: 'ok' | 'failed' = 'ok';
       try {
         const state = await getMatchState(matchId);
         broadcastMatchState(matchId, state);
       } catch (err) {
+        broadcastStatus = 'failed';
         console.error('Broadcast error after reopen:', err);
       }
 
-      return { success: true };
+      return { success: true, broadcastStatus };
     },
     {
       params: t.Object({ id: t.String() }),

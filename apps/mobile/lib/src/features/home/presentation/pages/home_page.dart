@@ -11,6 +11,7 @@ import 'package:cricapp/src/features/teams/presentation/widgets/team_card.dart';
 import 'package:cricapp/src/features/tournaments/providers.dart' as tourn_prov;
 import 'package:cricapp/src/features/tournaments/domain/entities/tournament.dart';
 import 'package:cricapp/src/features/tournaments/presentation/widgets/tournament_card.dart';
+import '../../../../shared/widgets/error_display.dart';
 import '../widgets/match_card.dart';
 import '../widgets/expandable_fab.dart';
 
@@ -180,10 +181,9 @@ class _TeamsSubTab extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => _EmptyState(
-          icon: Icons.error_outline,
-          title: 'Failed to load teams',
-          subtitle: 'Pull to refresh',
+        error: (error, __) => ErrorDisplay(
+          error: error,
+          onRetry: () => ref.invalidate(teams_prov.teamsListProvider),
         ),
       ),
     );
@@ -224,40 +224,52 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
                   };
                 }).toList();
 
-          return ListView(
+          // Build items list: filter chips + matches (or empty state) + optional view all
+          final hasViewAll = filteredMatches.isNotEmpty &&
+              result.total > result.matches.length;
+          final itemCount = 1 + // filter chips
+              (filteredMatches.isEmpty ? 1 : filteredMatches.length) +
+              (hasViewAll ? 1 : 0);
+
+          return ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
-            children: [
-              // Filter chips
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Wrap(
-                  spacing: 8,
-                  children: [
-                    _FilterChip(
-                      label: 'All',
-                      selected: _filter == 'all',
-                      onSelected: () => setState(() => _filter = 'all'),
-                    ),
-                    _FilterChip(
-                      label: 'Live',
-                      selected: _filter == 'live',
-                      onSelected: () => setState(() => _filter = 'live'),
-                    ),
-                    _FilterChip(
-                      label: 'Won',
-                      selected: _filter == 'won',
-                      onSelected: () => setState(() => _filter = 'won'),
-                    ),
-                    _FilterChip(
-                      label: 'Lost',
-                      selected: _filter == 'lost',
-                      onSelected: () => setState(() => _filter = 'lost'),
-                    ),
-                  ],
-                ),
-              ),
-              if (filteredMatches.isEmpty)
-                Padding(
+            itemCount: itemCount,
+            itemBuilder: (context, index) {
+              // Filter chips row
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      _FilterChip(
+                        label: 'All',
+                        selected: _filter == 'all',
+                        onSelected: () => setState(() => _filter = 'all'),
+                      ),
+                      _FilterChip(
+                        label: 'Live',
+                        selected: _filter == 'live',
+                        onSelected: () => setState(() => _filter = 'live'),
+                      ),
+                      _FilterChip(
+                        label: 'Won',
+                        selected: _filter == 'won',
+                        onSelected: () => setState(() => _filter = 'won'),
+                      ),
+                      _FilterChip(
+                        label: 'Lost',
+                        selected: _filter == 'lost',
+                        onSelected: () => setState(() => _filter = 'lost'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Empty state
+              if (filteredMatches.isEmpty) {
+                return Padding(
                   padding: const EdgeInsets.only(top: 64),
                   child: _EmptyState(
                     icon: Icons.sports_cricket_outlined,
@@ -271,40 +283,42 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
                         ? () => context.push(AppRoutes.matchSetup)
                         : null,
                   ),
-                )
-              else ...[
-                ...filteredMatches.map(
-                  (match) => MatchCard(
-                    match: match,
-                    onTap: () {
-                      if (match.isLive) {
-                        context.push(AppRoutes.liveMatchPath(match.id));
-                      } else {
-                        context.push(AppRoutes.scorecardPath(match.id));
-                      }
-                    },
+                );
+              }
+
+              // Match cards
+              final matchIndex = index - 1;
+              if (matchIndex < filteredMatches.length) {
+                final match = filteredMatches[matchIndex];
+                return MatchCard(
+                  match: match,
+                  onTap: () {
+                    if (match.isLive) {
+                      context.push(AppRoutes.liveMatchPath(match.id));
+                    } else {
+                      context.push(AppRoutes.scorecardPath(match.id));
+                    }
+                  },
+                );
+              }
+
+              // View All link
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: TextButton(
+                    onPressed: () => context.push(AppRoutes.matches),
+                    child: const Text('View All Matches'),
                   ),
                 ),
-                // View All link
-                if (result.total > result.matches.length)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Center(
-                      child: TextButton(
-                        onPressed: () => context.push(AppRoutes.matches),
-                        child: const Text('View All Matches'),
-                      ),
-                    ),
-                  ),
-              ],
-            ],
+              );
+            },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => _EmptyState(
-          icon: Icons.error_outline,
-          title: 'Failed to load matches',
-          subtitle: 'Pull to refresh',
+        error: (error, __) => ErrorDisplay(
+          error: error,
+          onRetry: () => ref.invalidate(allMatchesProvider(1)),
         ),
       ),
     );
@@ -343,36 +357,48 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
                   };
                 }).toList();
 
-          return ListView(
+          // Build items list: filter chips + tournaments (or empty state) + optional view all
+          final hasViewAll = filtered.isNotEmpty &&
+              result.tournaments.length < result.total;
+          final itemCount = 1 + // filter chips
+              (filtered.isEmpty ? 1 : filtered.length) +
+              (hasViewAll ? 1 : 0);
+
+          return ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
-            children: [
-              // Filter chips
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Wrap(
-                  spacing: 8,
-                  children: [
-                    _FilterChip(
-                      label: 'All',
-                      selected: _filter == 'all',
-                      onSelected: () => setState(() => _filter = 'all'),
-                    ),
-                    _FilterChip(
-                      label: 'Live',
-                      selected: _filter == 'live',
-                      onSelected: () => setState(() => _filter = 'live'),
-                    ),
-                    _FilterChip(
-                      label: 'Completed',
-                      selected: _filter == 'completed',
-                      onSelected: () =>
-                          setState(() => _filter = 'completed'),
-                    ),
-                  ],
-                ),
-              ),
-              if (filtered.isEmpty)
-                Padding(
+            itemCount: itemCount,
+            itemBuilder: (context, index) {
+              // Filter chips row
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      _FilterChip(
+                        label: 'All',
+                        selected: _filter == 'all',
+                        onSelected: () => setState(() => _filter = 'all'),
+                      ),
+                      _FilterChip(
+                        label: 'Live',
+                        selected: _filter == 'live',
+                        onSelected: () => setState(() => _filter = 'live'),
+                      ),
+                      _FilterChip(
+                        label: 'Completed',
+                        selected: _filter == 'completed',
+                        onSelected: () =>
+                            setState(() => _filter = 'completed'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Empty state
+              if (filtered.isEmpty) {
+                return Padding(
                   padding: const EdgeInsets.only(top: 64),
                   child: _EmptyState(
                     icon: Icons.emoji_events_outlined,
@@ -386,42 +412,44 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
                         ? () => context.push(AppRoutes.createTournament)
                         : null,
                   ),
-                )
-              else ...[
-                ...filtered.map(
-                  (tournament) => Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 4),
-                    child: TournamentCard(
-                      tournament: tournament,
-                      onTap: () {
-                        context.push(AppRoutes.tournamentDetailPath(
-                            tournament.id));
-                      },
-                    ),
+                );
+              }
+
+              // Tournament cards
+              final tournamentIndex = index - 1;
+              if (tournamentIndex < filtered.length) {
+                final tournament = filtered[tournamentIndex];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 4),
+                  child: TournamentCard(
+                    tournament: tournament,
+                    onTap: () {
+                      context.push(AppRoutes.tournamentDetailPath(
+                          tournament.id));
+                    },
+                  ),
+                );
+              }
+
+              // View All link
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: TextButton(
+                    onPressed: () =>
+                        context.push(AppRoutes.tournaments),
+                    child: const Text('View All Tournaments'),
                   ),
                 ),
-                // View All link
-                if (result.tournaments.length < result.total)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Center(
-                      child: TextButton(
-                        onPressed: () =>
-                            context.push(AppRoutes.tournaments),
-                        child: const Text('View All Tournaments'),
-                      ),
-                    ),
-                  ),
-              ],
-            ],
+              );
+            },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => _EmptyState(
-          icon: Icons.error_outline,
-          title: 'Failed to load tournaments',
-          subtitle: 'Pull to refresh',
+        error: (error, __) => ErrorDisplay(
+          error: error,
+          onRetry: () => ref.invalidate(tourn_prov.tournamentsListProvider),
         ),
       ),
     );

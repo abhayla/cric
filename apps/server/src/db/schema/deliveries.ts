@@ -52,7 +52,10 @@ export const wicketsByDelivery = pgTable('wickets_by_delivery', {
   bowlerCredited: boolean('bowler_credited').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index('idx_wickets_delivery').on(table.deliveryId),
+  index('idx_wickets_dismissed_player').on(table.dismissedPlayerId),
+]);
 
 export const fallOfWickets = pgTable('fall_of_wickets', {
   id: uuid('id').defaultRandom().primaryKey(),

@@ -78,7 +78,7 @@ void main() {
     client.dispose();
   });
 
-  Widget buildPage({String matchId = 'test-match-1'}) {
+  Widget buildPage(WidgetTester tester, {String matchId = 'test-match-1'}) {
     return ProviderScope(
       overrides: [
         websocketClientProvider.overrideWithValue(client),
@@ -94,6 +94,12 @@ void main() {
         home: LiveMatchPage(matchId: matchId),
       ),
     );
+  }
+
+  /// Dispose the WS client to cancel the ping timer before the test
+  /// framework checks for pending timers during widget tree disposal.
+  void cleanupClient() {
+    client.dispose();
   }
 
   void sendMatchState({
@@ -163,15 +169,16 @@ void main() {
 
   group('LiveMatchPage', () {
     testWidgets('shows loading indicator initially', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       // Should show a loading/connecting state.
       expect(find.byType(CircularProgressIndicator), findsWidgets);
+      cleanupClient();
     });
 
     testWidgets('joins match on init', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       // Should have sent join_match message.
@@ -179,10 +186,11 @@ void main() {
       final sent = jsonDecode(fakeChannel.sentMessages.first);
       expect(sent['type'], 'join_match');
       expect(sent['matchId'], 'test-match-1');
+      cleanupClient();
     });
 
     testWidgets('displays score after receiving match_state', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState(
@@ -192,21 +200,23 @@ void main() {
       await tester.pump();
 
       expect(find.text('120/3'), findsOneWidget);
+      cleanupClient();
     });
 
     testWidgets('displays ScoreHeader widget', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState();
       await tester.pump();
 
       expect(find.byType(ScoreHeader), findsOneWidget);
+      cleanupClient();
     });
 
     testWidgets('displays batter cards when striker/non-striker present',
         (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState(
@@ -218,10 +228,11 @@ void main() {
       expect(find.byType(BatterCard), findsNWidgets(2));
       expect(find.text('Kohli *'), findsOneWidget);
       expect(find.text('Rohit'), findsOneWidget);
+      cleanupClient();
     });
 
     testWidgets('displays bowler card when bowler present', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState(bowler: sampleBowler);
@@ -229,10 +240,11 @@ void main() {
 
       expect(find.byType(BowlerCard), findsOneWidget);
       expect(find.text('Bumrah'), findsOneWidget);
+      cleanupClient();
     });
 
     testWidgets('shows current over balls', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState(
@@ -247,18 +259,20 @@ void main() {
       expect(find.text('1'), findsWidgets);
       expect(find.text('.'), findsWidgets);
       expect(find.text('4'), findsWidgets);
+      cleanupClient();
     });
 
     testWidgets('shows connection banner when disconnected', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       expect(find.byType(ConnectionStatusBanner), findsOneWidget);
+      cleanupClient();
     });
 
     testWidgets('hides connection banner when connected with data',
         (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState();
@@ -269,10 +283,11 @@ void main() {
         find.byType(ConnectionStatusBanner),
       );
       expect(banner.status, ConnectionStatus.connected);
+      cleanupClient();
     });
 
     testWidgets('displays match result when match completes', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState();
@@ -291,10 +306,11 @@ void main() {
       await tester.pump();
 
       expect(find.text('India won by 25 runs'), findsOneWidget);
+      cleanupClient();
     });
 
     testWidgets('displays innings complete info', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState();
@@ -316,10 +332,11 @@ void main() {
 
       // Should show target info.
       expect(find.textContaining('186'), findsWidgets);
+      cleanupClient();
     });
 
     testWidgets('updates live when score_update arrives', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState(totalRuns: 100, totalWickets: 2);
@@ -358,16 +375,18 @@ void main() {
       await tester.pump();
 
       expect(find.text('104/2'), findsOneWidget);
+      cleanupClient();
     });
 
     testWidgets('has app bar with Live Match title', (tester) async {
-      await tester.pumpWidget(buildPage());
+      await tester.pumpWidget(buildPage(tester));
       await tester.pump();
 
       sendMatchState();
       await tester.pump();
 
       expect(find.text('Live Match'), findsOneWidget);
+      cleanupClient();
     });
   });
 }

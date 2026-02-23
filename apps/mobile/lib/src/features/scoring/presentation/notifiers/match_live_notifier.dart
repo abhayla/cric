@@ -175,10 +175,20 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
     await _client.connect();
 
     _statusSubscription?.cancel();
-    _statusSubscription = _client.statusStream.listen(_onStatusChange);
+    _statusSubscription = _client.statusStream.listen(
+      _onStatusChange,
+      onError: (_) {
+        state = state.copyWith(connectionStatus: ConnectionStatus.disconnected);
+      },
+    );
 
     _messageSubscription?.cancel();
-    _messageSubscription = _client.messages.listen(_onMessage);
+    _messageSubscription = _client.messages.listen(
+      _onMessage,
+      onError: (_) {
+        state = state.copyWith(connectionStatus: ConnectionStatus.disconnected);
+      },
+    );
 
     state = state.copyWith(
       connectionStatus: _client.status,
@@ -307,9 +317,11 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
         _refreshRequested = true;
         final matchId = state.matchId;
         if (matchId != null) {
-          debugPrint('[WS] Gap detected: expected '
-              '${state.lastDeliveryCount + 1}, got $incoming. '
-              'Requesting match_state refresh.');
+          if (kDebugMode) {
+            debugPrint('[WS] Gap detected: expected '
+                '${state.lastDeliveryCount + 1}, got $incoming. '
+                'Requesting match_state refresh.');
+          }
           _client.joinMatch(matchId);
         }
       }

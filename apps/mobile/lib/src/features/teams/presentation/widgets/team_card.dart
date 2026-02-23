@@ -28,16 +28,16 @@ class TeamCard extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: theme.colorScheme.primaryContainer,
-                backgroundImage:
+                foregroundImage:
                     team.logoUrl != null ? NetworkImage(team.logoUrl!) : null,
-                child: team.logoUrl == null
-                    ? Text(
-                        team.initial,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      )
-                    : null,
+                onForegroundImageError:
+                    team.logoUrl != null ? (_, _) {} : null,
+                child: Text(
+                  team.initial,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               Text(

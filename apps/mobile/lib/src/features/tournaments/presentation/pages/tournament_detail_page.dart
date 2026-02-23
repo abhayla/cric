@@ -562,12 +562,22 @@ class _TeamsTab extends StatelessWidget {
       grouped.putIfAbsent(group, () => []).add(team);
     }
 
-    return ListView(
+    // Flatten grouped entries into a list of widgets for builder
+    final items = grouped.entries.expand((entry) => [
+          entry.key, // group header (String)
+          ...entry.value, // team rows (TournamentTeam)
+        ]).toList();
+
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      children: grouped.entries.expand((entry) => [
-            _GroupHeader(groupName: entry.key),
-            ...entry.value.map((team) => _TeamRow(team: team)),
-          ]).toList(),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        if (item is String) {
+          return _GroupHeader(groupName: item);
+        }
+        return _TeamRow(team: item as TournamentTeam);
+      },
     );
   }
 }

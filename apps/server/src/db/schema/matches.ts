@@ -73,4 +73,6 @@ export const matchAnalytics = pgTable('match_analytics', {
   mvpScores: jsonb('mvp_scores'),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index('idx_match_analytics_match').on(table.matchId),
+]);

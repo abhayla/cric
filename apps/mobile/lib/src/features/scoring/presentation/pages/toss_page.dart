@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/match.dart';
@@ -54,14 +55,18 @@ class _TossPageState extends State<TossPage> {
   }
 
   Future<void> _nextStep() async {
-    debugPrint('[TossPage._nextStep] step=${_state.currentStep}, canProceed=${_state.canProceed}');
-    if (_state.currentStep == TossStep.openers) {
-      debugPrint('[TossPage._nextStep] openers=${_state.openingBatterIds.length}, '
-          'striker=${_state.strikerId}, bowler=${_state.openingBowlerId}');
+    if (kDebugMode) {
+      debugPrint('[TossPage._nextStep] step=${_state.currentStep}, canProceed=${_state.canProceed}');
+      if (_state.currentStep == TossStep.openers) {
+        debugPrint('[TossPage._nextStep] openers=${_state.openingBatterIds.length}, '
+            'striker=${_state.strikerId}, bowler=${_state.openingBowlerId}');
+      }
     }
     if (!_state.canProceed) return;
     if (_state.isLastStep) {
-      debugPrint('[TossPage._nextStep] Calling onStartMatch...');
+      if (kDebugMode) {
+        debugPrint('[TossPage._nextStep] Calling onStartMatch...');
+      }
       await widget.onStartMatch(_state);
       return;
     }

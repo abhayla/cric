@@ -262,16 +262,20 @@ class SyncService {
           await _dao
               .markMultipleSynced(chunk.map((e) => e.id).toList());
         } on DioException catch (e) {
-          debugPrint('[SyncService] Batch sync failed for match=$matchId '
-              '(chunk ${i ~/ _maxBatchChunkSize + 1}, ${chunk.length} items): '
-              'status=${e.response?.statusCode} body=${e.response?.data}');
+          if (kDebugMode) {
+            debugPrint('[SyncService] Batch sync failed for match=$matchId '
+                '(chunk ${i ~/ _maxBatchChunkSize + 1}, ${chunk.length} items): '
+                'status=${e.response?.statusCode} body=${e.response?.data}');
+          }
           // Increment retry for entries in this failed chunk only
           for (final entry in chunk) {
             await _dao.incrementRetry(entry.id);
           }
           return false;
         } catch (e) {
-          debugPrint('[SyncService] Batch sync error for match=$matchId: $e');
+          if (kDebugMode) {
+            debugPrint('[SyncService] Batch sync error for match=$matchId: $e');
+          }
           for (final entry in chunk) {
             await _dao.incrementRetry(entry.id);
           }
@@ -305,14 +309,18 @@ class SyncService {
       return true;
     } on DioException catch (e) {
       final responseBody = e.response?.data;
-      debugPrint('[SyncService] DioException syncing ${entry.entityType} '
-          '${entry.entityId}: status=${e.response?.statusCode} '
-          'url=${e.requestOptions.uri} '
-          'body=$responseBody');
+      if (kDebugMode) {
+        debugPrint('[SyncService] DioException syncing ${entry.entityType} '
+            '${entry.entityId}: status=${e.response?.statusCode} '
+            'url=${e.requestOptions.uri} '
+            'body=$responseBody');
+      }
       return false;
     } catch (e) {
-      debugPrint('[SyncService] Error syncing ${entry.entityType} '
-          '${entry.entityId}: $e');
+      if (kDebugMode) {
+        debugPrint('[SyncService] Error syncing ${entry.entityType} '
+            '${entry.entityId}: $e');
+      }
       return false;
     }
   }

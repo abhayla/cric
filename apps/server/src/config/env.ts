@@ -13,7 +13,6 @@ export const env = {
     './firebase-service-account.json',
   ),
   PORT: Number(getEnvVar('PORT', '3000')),
-  WS_PORT: Number(getEnvVar('WS_PORT', '3001')),
   CORS_ORIGIN: getEnvVar('CORS_ORIGIN', '*'),
   NODE_ENV: getEnvVar('NODE_ENV', 'development'),
   LOG_LEVEL: getEnvVar('LOG_LEVEL', 'debug'),
