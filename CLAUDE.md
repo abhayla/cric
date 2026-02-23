@@ -117,6 +117,61 @@ Jobs only run when their respective `apps/` directory has files (conditional on 
 - **WebSocket rooms:** Each match = one pub/sub room. Scorer = publisher, viewers = subscribers. Uses Bun's native `server.publish(topic, message)`. 7 server message types: `match_state`, `score_update`, `wicket`, `innings_complete`, `match_complete`, `delivery_undone`, `error`.
 - **UUIDs everywhere:** All primary keys are UUIDs for cross-device sync compatibility.
 
+## Scoring Engine Architecture
+
+The scoring engine is the most complex subsystem. Key files and their roles:
+
+**Server (`apps/server/src/`):**
+- `services/scoring.service.ts` — 10-step delivery pipeline inside `db.transaction()`. Pre-validation outside the transaction for fail-fast. Handles: `recordDelivery`, `undoDelivery`, `getDeliveries`, `abandonMatch`, `declareInnings`, `reopenInnings`, `reopenMatch`. `completeMatch()` queries both innings to determine result (runs/wickets/tied/no_result). `checkInningsCompletion()` checks: all-out, overs exhausted, target chased. `checkOverCompletion()` checks: 6 legal balls → maiden detection → insert overs record.
+- `routes/v1/scoring.ts` — Thin route handlers under `/api/v1/matches` prefix with `authMiddleware`. After each mutation, broadcasts appropriate WebSocket message.
+- `services/career-stats.service.ts` — SQL aggregation of per-innings stats into `player_career_stats`. Wired into `completeMatch()` to auto-refresh.
+- `websocket/rooms.ts` — `getMatchState(matchId)` builds full snapshot from DB. 6 `build*Message()` pure functions for broadcast types.
+
+**Flutter (`apps/mobile/lib/src/features/scoring/`):**
+- `domain/entities/delivery.dart` — `DismissalType` enum (11 values), `Delivery` entity (26 fields), `InningsCompletionReason` enum.
+- `presentation/notifiers/scoring_notifier.dart` — Pure state machine (~1300 lines). `ScoringState` with ~30 fields + 15 computed getters. 10-step `_processDelivery` pipeline mirroring server. All cricket rules (strike rotation, free hit, extras, over completion, innings completion) encoded here.
+- `presentation/notifiers/scoring_persistence_service.dart` — Wraps `ScoringNotifier`. Fire-and-forget JSON snapshots to Drift after each mutation. Static factories: `createNew()`, `resume()`.
+- `core/utils/scoring_utils.dart` — Pure functions: `isLegalDelivery`, `calculateTotalRuns`, `shouldSwapStrike`, `isOverComplete`, `checkInningsCompletion`, `isMaidenOver`, `isNextFreeHit`.
+
+**Key scoring rules:**
+- Free hit: triggered by no-ball, persists through wides, consumed by legal delivery.
+- Configurable: `wide_runs`/`no_ball_runs` from matches table (not hardcoded).
+- Undo blocked after scorer confirms new batter/bowler selection (`undoBlockedByTransition`).
+
+## Known Gotchas
+
+### Freezed 3.x Patterns (Dart)
+- Use `abstract class` with `_$Mixin` (NOT `class` + `const Constructor._()`).
+- Custom methods (e.g. `toEntity()`) must be in **extensions**, not in the class body — generated `_Impl` uses `implements` not `extends`, so instance methods aren't inherited.
+- Static helper methods should be top-level functions (not `static` in the abstract class).
+
+### Bun Test Runner Bugs
+- **`.rejects.toThrow()` hangs** with async functions that do DB operations (Drizzle/postgres.js). Use the `expectToReject()` helper with try-catch instead. Confirmed in bun v1.3.9. Plain `Error` throws work; the hang is specific to promises involving DB connections.
+- Pre-transaction validation pattern: move fail-fast checks (match status, scorer auth, input validation) **before** `db.transaction()` for better performance and to avoid the bun test hang issue.
+
+### Test Patterns
+- In Flutter tests, use `Completer<T>().future` for never-completing futures (not `Future.delayed(Duration(days: 1))` which leaves pending timers).
+- Server tests: always use `bun run test` (not `bun test` directly) to get `--max-concurrency=1` and avoid DB contention.
+
+### Bun on Windows
+- Bun is installed at `C:\Users\Administrator\.bun\bin\bun.exe`. In bash, set PATH: `export PATH="$PATH:/c/Users/Administrator/.bun/bin"`.
+
+## VPS Deployment
+
+This project's development VPS is **544934-ABHAYVPS** (`103.118.16.189`, Windows Server 2022).
+
+**Server config:** CricApp server runs on port `3000` (HTTP) and `3001` (WebSocket) per `.env.example`. Database: `cricapp_dev` on local PostgreSQL 16.8 (port 5432).
+
+**VPS infrastructure:**
+- **Nginx** at `C:\Apps\nginx\` — reverse proxy on port 80, per-site configs in `conf\sites\`.
+- **PM2** — process manager for all hosted apps. **Always run `pm2 save` after any PM2 changes.**
+- **Cloudflare** — CDN/SSL termination (Flexible mode). Nginx receives HTTP on port 80.
+- **Health monitoring** — `C:\Apps\shared\scripts\health-check.ps1` runs every 5 minutes via scheduled task, auto-restarts crashed services.
+
+**VPS documentation:** `C:\Apps\shared\docs\` contains comprehensive guides organized by topic (setup, PM2, Nginx, Cloudflare, CI/CD, monitoring, troubleshooting). Start with `C:\Apps\shared\docs\README.md`. **Do not modify files in `C:\Apps\shared\`.**
+
+**Other hosted apps on this VPS** (ports 3001-3004, 8000): bestdemataccount, firekaro, ipodhan, algochanakya. Available ports: 3005-3008. See `C:\Apps\shared\docs\setup\NEW-WEBSITE-SETUP-GUIDE.md` for port allocation table.
+
 ## Code Principles (YAGNI, KISS, DRY)
 
 **[PROTECTED] Do not modify or weaken these rules. Changes require explicit user approval.**

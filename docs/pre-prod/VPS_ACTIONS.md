@@ -1,18 +1,23 @@
 # Pre-Production: VPS Actions (Server Deployment)
 
-These actions are performed on the VPS (`103.118.16.189`) running Windows Server. They set up the production server environment for friend testing.
+These actions are performed on the VPS (`103.118.16.189`) running Windows Server 2022. They set up the production server environment for friend testing.
 
-**Domain:** `cricscores.in` → A record pointing to `103.118.16.189`
+**Domain:** `cricscores.in` → Cloudflare DNS → `103.118.16.189` (Proxied)
+
+**VPS Infrastructure:** This VPS already runs 4 production sites using **Nginx + Cloudflare + PM2**. CricApp follows the same conventions documented in `C:\Apps\shared\docs\`. See `C:\Apps\shared\docs\README.md` for full VPS documentation.
 
 ---
 
 ## Prerequisites (Manual — Before Claude Code Session on VPS)
 
-- [ ] Point DNS A record for `cricscores.in` to `103.118.16.189` (TTL: 300s)
-- [ ] Verify DNS propagation: `nslookup cricscores.in` returns VPS IP
+- [ ] Point Cloudflare DNS A record for `cricscores.in` to `103.118.16.189` (Proxied / orange cloud)
+- [ ] Point Cloudflare DNS A record for `www.cricscores.in` to `103.118.16.189` (Proxied / orange cloud)
+- [ ] Verify DNS propagation: `nslookup cricscores.in` returns Cloudflare edge IP (not VPS IP — that's expected with Proxied mode)
 - [ ] Ensure PostgreSQL 16 is installed and running as Windows Service
 - [ ] Ensure Bun is installed (`bun --version`)
 - [ ] Ensure Git is installed (`git --version`)
+- [ ] Ensure PM2 is installed (`pm2 --version`) — already present for other hosted apps
+- [ ] Ensure Nginx is running (`C:\Apps\nginx\nginx.exe -t`)
 - [ ] Have `firebase-service-account.json` ready to copy to VPS
 
 ---
@@ -21,57 +26,65 @@ These actions are performed on the VPS (`103.118.16.189`) running Windows Server
 
 ### V1. Create Directory Structure
 
+Following the standard `C:\Apps\<appname>\` convention used by all VPS-hosted apps:
+
 ```
-C:\cricapp\
-├── server\          # Git clone of apps/server (or full repo)
+C:\Apps\cricapp\
+├── current\         # Server code (git clone of apps/server/ or full repo)
 ├── uploads\         # User-uploaded images
 ├── backups\         # pg_dump files
-├── logs\            # NSSM-captured stdout/stderr + deploy logs
+├── logs\            # PM2 logs + deploy logs
 └── scripts\         # deploy.ps1, backup-db.bat
+```
+
+```powershell
+mkdir C:\Apps\cricapp\current, C:\Apps\cricapp\uploads, C:\Apps\cricapp\backups, C:\Apps\cricapp\logs, C:\Apps\cricapp\scripts
 ```
 
 ### V2. Clone Repository and Install Dependencies
 
 ```powershell
-cd C:\cricapp
-git clone <repo-url> server   # Or copy apps/server/ content
-cd server
+cd C:\Apps\cricapp
+git clone <repo-url> current   # Or copy apps/server/ content into current/
+cd current
 bun install
 ```
 
 ### V3. Configure Production Environment
 
-Create `C:\cricapp\server\.env`:
+Create `C:\Apps\cricapp\current\.env`:
 ```dotenv
 DATABASE_URL=postgresql://cricapp_user:<password>@127.0.0.1:5432/cricapp
-FIREBASE_SERVICE_ACCOUNT_PATH=C:\cricapp\server\firebase-service-account.json
-PORT=3000
+FIREBASE_SERVICE_ACCOUNT_PATH=C:\Apps\cricapp\current\firebase-service-account.json
+PORT=3005
 CORS_ORIGIN=https://cricscores.in
 NODE_ENV=production
 LOG_LEVEL=info
-UPLOADS_DIR=C:\cricapp\uploads
+UPLOADS_DIR=C:\Apps\cricapp\uploads
 MAX_UPLOAD_SIZE_MB=5
 SYNC_BATCH_SIZE=50
 WS_HEARTBEAT_INTERVAL_MS=30000
 ```
 
-Copy `firebase-service-account.json` to `C:\cricapp\server\`.
+> **Note:** No separate `WS_PORT` — Bun/ElysiaJS handles WebSocket upgrade on the same HTTP port (3005). Port 3005 is the first available port per the VPS port allocation table in `C:\Apps\shared\docs\setup\NEW-WEBSITE-SETUP-GUIDE.md`.
+
+Copy `firebase-service-account.json` to `C:\Apps\cricapp\current\`.
 
 ### V4. PostgreSQL Setup
 
 ```sql
--- Create dedicated user (not postgres superuser)
+-- Connect as postgres superuser
 CREATE USER cricapp_user WITH PASSWORD '<strong_random_password>';
 CREATE DATABASE cricapp;
 GRANT ALL PRIVILEGES ON DATABASE cricapp TO cricapp_user;
 ```
 
-Harden `postgresql.conf`:
+Verify `postgresql.conf` (should already be configured for other apps):
 ```
 listen_addresses = 'localhost'
 ```
 
-Harden `pg_hba.conf` — only local connections:
+Verify `pg_hba.conf` — only local connections:
 ```
 host  all  all  127.0.0.1/32  scram-sha-256
 ```
@@ -79,7 +92,7 @@ host  all  all  127.0.0.1/32  scram-sha-256
 ### V5. Run Database Migrations and Seed
 
 ```powershell
-cd C:\cricapp\server
+cd C:\Apps\cricapp\current
 bun run db:migrate
 bun run db:seed
 ```
@@ -87,122 +100,172 @@ bun run db:seed
 ### V6. Verify Server Starts
 
 ```powershell
-cd C:\cricapp\server
+cd C:\Apps\cricapp\current
 $env:NODE_ENV="production"; bun run start
-# Check: http://localhost:3000/api/v1/health should return {"status":"ok","database":"connected"}
+# Check: http://localhost:3005/api/v1/health should return {"status":"ok","database":"connected"}
 # Ctrl+C to stop
 ```
 
 ---
 
-## Phase 2: Process Management (NSSM)
+## Phase 2: Process Management (PM2)
 
-### V7. Install NSSM
+All VPS-hosted apps use PM2 for process management. CricApp follows the same pattern.
 
-Download from https://nssm.cc/download (64-bit). Extract to `C:\nssm\`.
+### V7. Create PM2 Ecosystem Config
 
-```powershell
-# Add to system PATH
-[Environment]::SetEnvironmentVariable(
-  "Path",
-  $env:Path + ";C:\nssm\win64",
-  [System.EnvironmentVariableTarget]::Machine
-)
+Create `C:\Apps\cricapp\current\ecosystem.config.js`:
+```javascript
+module.exports = {
+  apps: [{
+    name: 'cricapp',
+    script: 'C:\\Users\\Administrator\\.bun\\bin\\bun.exe',
+    args: 'run start',
+    cwd: 'C:\\Apps\\cricapp\\current',
+    interpreter: 'none',
+    instances: 1,
+    exec_mode: 'fork',
+    max_memory_restart: '500M',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3005
+    },
+    error_file: 'C:\\Apps\\cricapp\\logs\\error.log',
+    out_file: 'C:\\Apps\\cricapp\\logs\\out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    autorestart: true,
+    watch: false,
+    max_restarts: 10,
+    min_uptime: '10s',
+    kill_timeout: 5000,
+    windowsHide: true
+  }]
+};
 ```
 
-### V8. Register CricApp as Windows Service
+> **Pattern:** Uses `interpreter: 'none'` with direct path to `bun.exe` — same approach as AlgoChanakya's Python/FastAPI backend. See `C:\Apps\shared\docs\pm2\PM2-ECOSYSTEM-TEMPLATES.md` Template 8.
+
+### V8. Start CricApp with PM2
 
 ```powershell
-# Install service
-nssm install cricapp "C:\Users\Administrator\.bun\bin\bun.exe"
-nssm set cricapp AppDirectory "C:\cricapp\server"
-nssm set cricapp AppParameters "run start"
-nssm set cricapp Start SERVICE_AUTO_START
-
-# Logging with rotation
-nssm set cricapp AppStdout "C:\cricapp\logs\cricapp.out.log"
-nssm set cricapp AppStderr "C:\cricapp\logs\cricapp.err.log"
-nssm set cricapp AppRotateFiles 1
-nssm set cricapp AppRotateBytes 10485760
-nssm set cricapp AppTimestampLog 1
-
-# Crash recovery — 3s restart delay
-nssm set cricapp AppRestartDelay 3000
-
-# Environment
-nssm set cricapp AppEnvironmentExtra "NODE_ENV=production"
-
-# Start
-nssm start cricapp
+cd C:\Apps\cricapp\current
+pm2 start ecosystem.config.js
+pm2 save   # CRITICAL — ensures PM2 resurrects the app on reboot
 ```
 
-### V9. Verify Service Running
+### V9. Verify Process Running
 
 ```powershell
-sc.exe query cricapp
-# Should show STATE: RUNNING
+pm2 describe cricapp
+# Should show: status = online, restarts = 0
 
-Invoke-WebRequest -Uri "http://localhost:3000/api/v1/health" -UseBasicParsing
+Invoke-WebRequest -Uri "http://localhost:3005/api/v1/health" -UseBasicParsing
 # Should return 200 OK with {"status":"ok","database":"connected"}
 ```
 
 ---
 
-## Phase 3: Reverse Proxy + SSL (Caddy)
+## Phase 3: Reverse Proxy (Nginx + Cloudflare SSL)
 
-### V10. Install Caddy
+The VPS uses **Nginx** as reverse proxy with **Cloudflare** handling SSL termination (Flexible mode). Nginx listens on port 80 only — Cloudflare terminates HTTPS on their edge and forwards HTTP to Nginx.
 
-Download Windows x64 binary from https://caddyserver.com/download. Place at `C:\caddy\caddy.exe`.
+### V10. Create Nginx Site Config
 
-### V11. Create Caddyfile
+Create `C:\Apps\nginx\conf\sites\cricscores.conf`:
+```nginx
+# CricApp - Cricket Scoring API + WebSocket
+server {
+    listen 80;
+    server_name cricscores.in www.cricscores.in;
 
-Create `C:\caddy\Caddyfile`:
-```
-cricscores.in {
-    reverse_proxy localhost:3000
+    access_log logs/cricscores-access.log;
+    error_log logs/cricscores-error.log;
 
-    encode gzip
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
 
-    header {
-        X-Content-Type-Options nosniff
-        X-Frame-Options DENY
-        -Server
+    # API requests
+    location /api/ {
+        proxy_pass http://127.0.0.1:3005/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 
-    # Serve uploaded images directly
-    handle /uploads/* {
-        root * C:\cricapp
-        file_server
+    # WebSocket
+    location /ws {
+        proxy_pass http://127.0.0.1:3005/ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+
+    # Uploaded images
+    location /uploads/ {
+        alias C:/Apps/cricapp/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Health check (no access log noise)
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
     }
 }
 ```
 
-Caddy automatically:
-- Obtains Let's Encrypt SSL certificate for `cricscores.in`
-- Redirects HTTP → HTTPS
-- Proxies WebSocket upgrade headers transparently
-- Renews certificates before expiry
+> **WebSocket config** modeled on `algochanakya.conf` lines 36-48 (proven WS proxy with 86400s timeouts for long-lived connections).
 
-### V12. Validate and Start Caddy
+### V11. Test and Reload Nginx
 
 ```powershell
-C:\caddy\caddy.exe validate --config C:\caddy\Caddyfile
-C:\caddy\caddy.exe run --config C:\caddy\Caddyfile
-# Verify HTTPS works, then Ctrl+C
+# Validate config syntax
+C:\Apps\nginx\nginx.exe -t
+
+# Reload (zero-downtime — does NOT restart existing connections for other sites)
+C:\Apps\nginx\nginx.exe -s reload
 ```
 
-### V13. Register Caddy as Windows Service
+### V12. Configure Cloudflare
+
+In the Cloudflare dashboard for `cricscores.in` (same setup as existing VPS sites):
+
+1. **DNS Records:**
+   - Type `A`, Name `@`, Content `103.118.16.189`, Proxy status: **Proxied** (orange cloud)
+   - Type `A`, Name `www`, Content `103.118.16.189`, Proxy status: **Proxied** (orange cloud)
+
+2. **SSL/TLS Settings:**
+   - Encryption mode: **Flexible** (Cloudflare terminates SSL, sends HTTP to Nginx on port 80)
+   - Always Use HTTPS: **ON**
+   - Automatic HTTPS Rewrites: **ON**
+   - Minimum TLS Version: **TLS 1.2**
+
+3. **Firewall/Security:**
+   - See `C:\Apps\shared\docs\cloudflare\CLOUDFLARE-FIREWALL-SETUP.md` for standard rules
+
+### V13. Verify HTTPS Access
 
 ```powershell
-nssm install caddy "C:\caddy\caddy.exe"
-nssm set caddy AppDirectory "C:\caddy"
-nssm set caddy AppParameters "run --config C:\caddy\Caddyfile"
-nssm set caddy Start SERVICE_AUTO_START
-nssm set caddy AppStdout "C:\cricapp\logs\caddy.out.log"
-nssm set caddy AppStderr "C:\cricapp\logs\caddy.err.log"
-nssm set caddy AppRotateFiles 1
-nssm set caddy AppRotateBytes 10485760
-nssm start caddy
+# From the VPS (tests Nginx directly)
+Invoke-WebRequest "http://localhost/api/v1/health" -Headers @{Host="cricscores.in"} -UseBasicParsing
+# Expected: 200 OK
+
+# From any machine (tests full Cloudflare → Nginx → Bun chain)
+# curl https://cricscores.in/api/v1/health
+# Expected: {"status":"ok","database":"connected"}
 ```
 
 ---
@@ -212,24 +275,17 @@ nssm start caddy
 ### V14. Configure Windows Firewall
 
 ```powershell
-# Allow HTTPS (Caddy)
-New-NetFirewallRule -DisplayName "CricApp HTTPS" `
-  -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
+# Block direct access to CricApp Bun server from outside
+# (all traffic must go through Nginx)
+New-NetFirewallRule -DisplayName "Block CricApp Direct" `
+  -Direction Inbound -Protocol TCP -LocalPort 3005 -Action Block
 
-# Allow HTTP (Caddy redirect + Let's Encrypt ACME challenge)
-New-NetFirewallRule -DisplayName "CricApp HTTP" `
-  -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
-
-# BLOCK direct access to Bun from outside
-New-NetFirewallRule -DisplayName "Block Bun Direct" `
-  -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Block
-
-# BLOCK PostgreSQL from outside
+# Block PostgreSQL from outside (may already exist for other apps)
 New-NetFirewallRule -DisplayName "Block PostgreSQL External" `
   -Direction Inbound -Protocol TCP -LocalPort 5432 -Action Block
 ```
 
-Also ensure VPS provider's security group / cloud firewall allows ports 80 and 443 inbound.
+> **Note:** Port 80 is already open for Nginx (serving 4 other sites). Port 443 is NOT needed on the VPS — Cloudflare terminates SSL at their edge and forwards HTTP to port 80. No changes needed for existing firewall rules.
 
 ---
 
@@ -237,14 +293,14 @@ Also ensure VPS provider's security group / cloud firewall allows ports 80 and 4
 
 ### V15. Create Backup Script
 
-Create `C:\cricapp\scripts\backup-db.bat`:
+Create `C:\Apps\cricapp\scripts\backup-db.bat`:
 ```batch
 @echo off
 setlocal
 set PGPASSWORD=<password>
 set DB_USER=cricapp_user
 set DB_NAME=cricapp
-set BACKUP_DIR=C:\cricapp\backups
+set BACKUP_DIR=C:\Apps\cricapp\backups
 set PG_BIN="C:\Program Files\PostgreSQL\16\bin"
 
 for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
@@ -263,7 +319,7 @@ endlocal
 ### V16. Schedule Daily Backup
 
 ```powershell
-$action = New-ScheduledTaskAction -Execute "C:\cricapp\scripts\backup-db.bat"
+$action = New-ScheduledTaskAction -Execute "C:\Apps\cricapp\scripts\backup-db.bat"
 $trigger = New-ScheduledTaskTrigger -Daily -At "03:00AM"
 Register-ScheduledTask -TaskName "CricApp DB Backup" `
   -Action $action -Trigger $trigger -RunLevel Highest -Force
@@ -275,16 +331,16 @@ Register-ScheduledTask -TaskName "CricApp DB Backup" `
 
 ### V17. Create Automated Deploy Script
 
-Create `C:\cricapp\scripts\deploy.ps1`:
+Create `C:\Apps\cricapp\scripts\deploy.ps1`:
 ```powershell
 param([string]$Branch = "main")
 $ErrorActionPreference = "Stop"
-$AppDir = "C:\cricapp\server"
+$AppDir = "C:\Apps\cricapp\current"
 
 function Log($msg) {
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "[$ts] $msg"
-    Add-Content "C:\cricapp\logs\deploy.log" "[$ts] $msg"
+    Add-Content "C:\Apps\cricapp\logs\deploy.log" "[$ts] $msg"
 }
 
 Log "=== Deploy starting (branch: $Branch) ==="
@@ -311,14 +367,15 @@ if ($LASTEXITCODE -ne 0) { Log "ERROR: Migration failed"; exit 1 }
 
 # Restart service
 Log "Restarting cricapp..."
-nssm restart cricapp
+pm2 restart cricapp
+pm2 save
 
 # Health check (30s timeout)
 $ok = $false
 for ($i = 0; $i -lt 10; $i++) {
     Start-Sleep 3
     try {
-        $r = Invoke-WebRequest "http://localhost:3000/api/v1/health" -UseBasicParsing -TimeoutSec 5
+        $r = Invoke-WebRequest "http://localhost:3005/api/v1/health" -UseBasicParsing -TimeoutSec 5
         $j = $r.Content | ConvertFrom-Json
         if ($j.status -eq "ok") { $ok = $true; break }
     } catch { Log "Not ready (attempt $($i+1)/10)..." }
@@ -327,29 +384,44 @@ for ($i = 0; $i -lt 10; $i++) {
 if ($ok) { Log "Deploy SUCCESS" } else { Log "ERROR: Health check failed"; exit 1 }
 ```
 
-**Usage:** `powershell -ExecutionPolicy Bypass -File C:\cricapp\scripts\deploy.ps1`
+**Usage:** `powershell -ExecutionPolicy Bypass -File C:\Apps\cricapp\scripts\deploy.ps1`
 
 ---
 
 ## Phase 7: Monitoring
 
-### V18. External Uptime Monitor (UptimeRobot)
+### V18. Add CricApp to VPS Health-Check Script
+
+The VPS health-check script (`C:\Apps\shared\scripts\health-check.ps1`) runs every 5 minutes and auto-restarts crashed services. Add CricApp to its `$sites` array:
+
+```powershell
+# In health-check.ps1's $sites array, add:
+@{ name = "cricapp"; url = "http://localhost:3005/api/v1/health"; pm2Name = "cricapp" }
+```
+
+### V19. External Uptime Monitor (UptimeRobot)
 
 1. Create free account at https://uptimerobot.com
 2. Add HTTP(S) monitor: `https://cricscores.in/api/v1/health`
 3. Check interval: 5 minutes
 4. Alert contacts: your email/Telegram
 
-### V19. Log Monitoring Commands
+### V20. Log Monitoring Commands
 
 ```powershell
-# Follow live logs
-Get-Content "C:\cricapp\logs\cricapp.out.log" -Wait -Tail 50
-Get-Content "C:\cricapp\logs\cricapp.err.log" -Wait -Tail 50
+# Follow live PM2 logs
+pm2 logs cricapp --lines 50
 
-# Check service status
-sc.exe query cricapp
-sc.exe query caddy
+# View PM2 log files directly
+Get-Content "C:\Apps\cricapp\logs\out.log" -Wait -Tail 50
+Get-Content "C:\Apps\cricapp\logs\error.log" -Wait -Tail 50
+
+# Check PM2 process status
+pm2 describe cricapp
+
+# Check Nginx access/error logs for cricscores.in
+Get-Content "C:\Apps\nginx\logs\cricscores-access.log" -Tail 50
+Get-Content "C:\Apps\nginx\logs\cricscores-error.log" -Tail 30
 ```
 
 ---
@@ -359,29 +431,35 @@ sc.exe query caddy
 Run these after every deployment:
 
 ```powershell
-# 1. Services running
-sc.exe query cricapp   # STATE: RUNNING
-sc.exe query caddy     # STATE: RUNNING
+# 1. PM2 process running
+pm2 describe cricapp
+# Should show: status = online
 
-# 2. Health endpoint via HTTPS
-Invoke-WebRequest "https://cricscores.in/api/v1/health" -UseBasicParsing
+# 2. Nginx serving cricscores.in
+Invoke-WebRequest "http://localhost/api/v1/health" -Headers @{Host="cricscores.in"} -UseBasicParsing
+# Expected: 200 OK
+
+# 3. Health endpoint via HTTPS (full chain: Cloudflare → Nginx → Bun)
+# From any external machine:
+# curl https://cricscores.in/api/v1/health
 # Expected: {"status":"ok","database":"connected"}
 
-# 3. HTTP redirects to HTTPS
-(Invoke-WebRequest "http://cricscores.in/api/v1/health" -MaximumRedirection 0 -ErrorAction SilentlyContinue).StatusCode
-# Expected: 301
+# 4. HTTPS enforced (Cloudflare Always Use HTTPS)
+# curl -I http://cricscores.in/api/v1/health
+# Expected: 301 redirect to https://
 
-# 4. WebSocket (manual test from local machine)
+# 5. WebSocket (manual test from local machine)
 # Install wscat: npm install -g wscat
 # wscat -c "wss://cricscores.in/ws"
 # Type: {"type":"join_match","matchId":"test"}
 # Expected: {"type":"error","message":"Match not found"}
 
-# 5. Bun port NOT accessible from outside
-# From another machine: telnet 103.118.16.189 3000 — should timeout
+# 6. Bun port NOT accessible from outside
+# From another machine: telnet 103.118.16.189 3005 — should timeout
 
-# 6. Check error logs
-Get-Content "C:\cricapp\logs\cricapp.err.log" -Tail 30
+# 7. Check error logs
+pm2 logs cricapp --err --lines 30
+Get-Content "C:\Apps\nginx\logs\cricscores-error.log" -Tail 30
 ```
 
 ---
@@ -393,14 +471,18 @@ Friends' Android Phones
     |
     | HTTPS (443) + WSS (443)
     v
+Cloudflare Edge (SSL termination, DDoS protection)
+    |
+    | HTTP (80)
+    v
 cricscores.in (DNS → 103.118.16.189)
     |
     v
-[Caddy] (ports 80+443, auto-SSL)
+[Nginx] (port 80, reverse proxy — also serves 4 other sites)
     |
-    | HTTP (3000, loopback only)
+    | HTTP (3005, loopback only)
     v
-[Bun/ElysiaJS] (127.0.0.1:3000, managed by NSSM)
+[Bun/ElysiaJS] (127.0.0.1:3005, managed by PM2)
     |
     v
 [PostgreSQL] (127.0.0.1:5432)
@@ -412,11 +494,16 @@ cricscores.in (DNS → 103.118.16.189)
 
 | Action | Command |
 |--------|---------|
-| Deploy latest code | `powershell -File C:\cricapp\scripts\deploy.ps1` |
-| Restart server | `nssm restart cricapp` |
-| Stop server | `nssm stop cricapp` |
-| View live logs | `Get-Content C:\cricapp\logs\cricapp.out.log -Wait -Tail 50` |
-| View errors | `Get-Content C:\cricapp\logs\cricapp.err.log -Tail 30` |
-| Manual backup | `C:\cricapp\scripts\backup-db.bat` |
-| Restart Caddy | `nssm restart caddy` |
-| Check all services | `sc.exe query cricapp; sc.exe query caddy` |
+| Deploy latest code | `powershell -File C:\Apps\cricapp\scripts\deploy.ps1` |
+| Restart server | `pm2 restart cricapp` |
+| Stop server | `pm2 stop cricapp` |
+| Start server | `pm2 start cricapp` |
+| View live logs | `pm2 logs cricapp --lines 50` |
+| View errors only | `pm2 logs cricapp --err --lines 30` |
+| Process details | `pm2 describe cricapp` |
+| All PM2 processes | `pm2 ls` |
+| Manual backup | `C:\Apps\cricapp\scripts\backup-db.bat` |
+| Reload Nginx | `C:\Apps\nginx\nginx.exe -s reload` |
+| Test Nginx config | `C:\Apps\nginx\nginx.exe -t` |
+| Nginx CricApp logs | `Get-Content C:\Apps\nginx\logs\cricscores-access.log -Tail 50` |
+| Save PM2 state | `pm2 save` |
