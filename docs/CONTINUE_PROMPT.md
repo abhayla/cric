@@ -1,8 +1,8 @@
-# CricApp - Continue Prompt
+# CricScores - Continue Prompt
 
 ## Context for Resuming Work
 
-**Project:** CricApp - Cricket scoring mobile app (CricHeroes competitor)
+**Project:** CricScores - Cricket scoring mobile app (CricHeroes competitor)
 **Status:** Phase 7 (Polish & Testing) IN PROGRESS — Full T20 E2E passing (scorer + viewer dual-emulator, 254 deliveries, 0 mismatches). ~2050 Flutter tests, ~420 server tests.
 **Working Directory:** `D:\Abhay\VibeCoding\cric\`
 
@@ -15,6 +15,17 @@ See [CLAUDE.md](../CLAUDE.md#tech-stack) for tech stack.
 See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full documentation map with all planning and process docs.
 
 ## What to Do Next
+
+### Session 2026-02-23c: Android Build Flavors (dev/prod)
+
+**Completed:** Added Android product flavors to decouple dev (existing Firebase `com.cricapp.cricapp`) from prod (`in.cricscores.app`).
+- `build.gradle.kts`: `dev` flavor with `applicationId = "com.cricapp.cricapp"`, `prod` with `in.cricscores.app`
+- `google-services.json` moved to `android/app/src/dev/` (prod placeholder at `src/prod/.gitkeep`)
+- `AppConstants` now has `flavor`, `isProduction`, and conditional API/WS URLs
+- Dev builds: `flutter run --flavor dev` (default, existing Firebase works)
+- Prod builds: `flutter run --flavor prod --dart-define=FLAVOR=prod` (requires prod Firebase config)
+
+**User TODO:** Create prod Firebase project, register `in.cricscores.app`, place `google-services.json` in `android/app/src/prod/`.
 
 ### Session 2026-02-23b: Code Review — Lint Fixes & Cleanup
 
@@ -591,7 +602,7 @@ Ran comprehensive audit of all 42 agents and 33 skills, then fixed all issues fo
 
 ### Session 2026-02-19: Imported & Remediated External Skills & Agents
 
-Imported skills and agents from 4 repositories, then ran a 26-point gap analysis and remediation to align everything with CricApp's actual tech stack.
+Imported skills and agents from 4 repositories, then ran a 26-point gap analysis and remediation to align everything with CricScores's actual tech stack.
 
 **Sources:**
 1. `github.com/shinpr/claude-code-workflows` — Process/workflow agents + skills
@@ -602,7 +613,7 @@ Imported skills and agents from 4 repositories, then ran a 26-point gap analysis
 **Final inventory after remediation:**
 
 *Skills kept (14 new):*
-ai-development-guide, coding-principles, documentation-criteria (+refs), implementation-approach, integration-e2e-testing, subagents-orchestration-guide (+refs), task-analyzer (+refs/skills-index.yaml updated with CricApp mappings), testing-principles, flutter-patterns (+5 pattern files updated)
+ai-development-guide, coding-principles, documentation-criteria (+refs), implementation-approach, integration-e2e-testing, subagents-orchestration-guide (+refs), task-analyzer (+refs/skills-index.yaml updated with CricScores mappings), testing-principles, flutter-patterns (+5 pattern files updated)
 
 *Agents kept (20 new):*
 requirement-analyzer, work-planner, task-decomposer, task-executor, quality-fixer, technical-designer, rule-advisor, investigator, verifier, solver, scope-discoverer, code-verifier, compliance-reviewer (renamed from code-reviewer), document-reviewer, design-sync, prd-creator, flutter-expert, flutter-firebase, flutter-ui-designer, flutter-ui-implementer, flutter-rest-api, flutter-design-iteration-coordinator, flutter-android-integration, typescript-pro
@@ -619,8 +630,8 @@ flutter-architect, flutter-state-management, flutter-testing, architecture-revie
 - firebase agent: Stripped to Phone OTP only (removed Email/Google/Apple, Firestore, Storage, FCM)
 - shinpr agents: Fixed doc paths to `docs/planning/`, added build_runner/drizzle-kit code generation steps
 - typescript-pro: Replaced Express/React with Bun/ElysiaJS/Drizzle/PostgreSQL
-- skills-index.yaml: Added 14 CricApp domain-to-skill mappings
-- Renamed original code-reviewer → CricApp-code-reviewer (updated 3 refs: reviewer.md, fix-loop/SKILL.md, issue-template.md)
+- skills-index.yaml: Added 14 CricScores domain-to-skill mappings
+- Renamed original code-reviewer → CricScores-code-reviewer (updated 3 refs: reviewer.md, fix-loop/SKILL.md, issue-template.md)
 
 ### Recommended: Update UI Wireframes for Magic Over, Then Continue Phase 7/8
 
@@ -1222,7 +1233,7 @@ Match domain entities and data layer (62 tests, TDD workflow):
 All presentation-layer screens built with TDD (RED tests first, then GREEN implementation):
 
 **Issue #5 — Splash screen (`splash_page.dart`):**
-- Cricket ball icon (`CricketBallIcon` custom painter), two-tone "CricApp" title (`Text.rich`), tagline, loading spinner
+- Cricket ball icon (`CricketBallIcon` custom painter), two-tone "CricScores" title (`Text.rich`), tagline, loading spinner
 - 4 tests pass
 
 **Issue #6 — Login page (`login_page.dart`):**
@@ -1297,7 +1308,7 @@ Firebase Auth (Phone OTP) + server middleware:
 - `android/settings.gradle.kts` — Added Google Services plugin
 - `android/app/build.gradle.kts` — Applied Google Services plugin
 
-**Firebase project:** `cricapp-7403d`, package `com.cricapp.cricapp`
+**Firebase project:** New project needed for `in.cricscores.app` (old: `cricapp-7403d`)
 - `google-services.json` at `apps/mobile/android/app/` (gitignored)
 - `firebase-service-account.json` at `apps/server/` (gitignored)
 - Both credential files added to `.gitignore`
@@ -1893,7 +1904,7 @@ Conducted live web research (30+ sources, 4 research agents covering auth/home/t
 ### CricHeroes Comparison System Setup
 
 Created automated competitive intelligence system:
-- **`docs/planning/CRICHEROES_REFERENCE.md`** — Comprehensive CricHeroes knowledge base covering all features organized by CricApp phase (auth, teams, tournaments, scoring, analytics, profiles, real-time). Includes gap analysis tables with ADOPT/SKIP/DEFER recommendations. 69 gaps reviewed: 7 ADOPT, 25 ALREADY DONE, 20 DEFER, 18+ SKIP.
+- **`docs/planning/CRICHEROES_REFERENCE.md`** — Comprehensive CricHeroes knowledge base covering all features organized by CricScores phase (auth, teams, tournaments, scoring, analytics, profiles, real-time). Includes gap analysis tables with ADOPT/SKIP/DEFER recommendations. 69 gaps reviewed: 7 ADOPT, 25 ALREADY DONE, 20 DEFER, 18+ SKIP.
 - **`.claude/agents/cricheroes-comparator.md`** — Research agent that reads knowledge base + does live web analysis, outputs structured comparison reports.
 - **CLAUDE.md rule added** — Main agent automatically invokes comparator before implementing any new feature/screen. All clarifying questions include CricHeroes option.
 - **Workflow integrated** — Step 2.5 added to IMPLEMENTATION_PRACTICES.md feature workflow.

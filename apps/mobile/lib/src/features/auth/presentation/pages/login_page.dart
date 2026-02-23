@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: 'App',
+                                  text: 'Scores',
                                   style:
                                       theme.textTheme.headlineLarge?.copyWith(
                                     fontWeight: FontWeight.bold,

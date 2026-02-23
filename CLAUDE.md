@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CricApp is a cricket scoring mobile app (CricHeroes competitor) for amateur cricketers in India. Monorepo with a Flutter frontend and Bun backend. **Status: Phases 1–6 complete, Phase 7 (Polish & Testing) in progress.**
+CricScores is a cricket scoring mobile app (CricHeroes competitor) for amateur cricketers in India. Monorepo with a Flutter frontend and Bun backend. **Status: Phases 1–6 complete, Phase 7 (Polish & Testing) in progress.**
 
 ## Tech Stack
 
@@ -58,8 +58,9 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 
 ```bash
 # Flutter app
-cd apps/mobile && flutter run              # Run on connected device
-cd apps/mobile && flutter build apk        # Build release APK
+cd apps/mobile && flutter run --flavor dev              # Run on connected device
+cd apps/mobile && flutter build apk --flavor dev        # Build dev APK
+cd apps/mobile && flutter build apk --flavor prod --release --dart-define=FLAVOR=prod  # Build prod APK
 cd apps/mobile && flutter test             # Run all tests
 cd apps/mobile && flutter test test/path/to_test.dart          # Run single test file
 cd apps/mobile && flutter test --name "test name"              # Run test by name
@@ -81,8 +82,8 @@ cd apps/server && bun run db:seed          # Seed master data (dismissal types, 
 ```bash
 # Integration / E2E tests (require running server + emulator/device)
 cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts   # Start test server
-cd apps/mobile && flutter test integration_test/single_match_e2e_test.dart -d emulator-5554  # Single match E2E
-cd apps/mobile && flutter test integration_test/multi_device_viewer_e2e_test.dart -d <device>  # Multi-device WebSocket test
+cd apps/mobile && flutter test --flavor dev integration_test/single_match_e2e_test.dart -d emulator-5554  # Single match E2E
+cd apps/mobile && flutter test --flavor dev integration_test/multi_device_viewer_e2e_test.dart -d <device>  # Multi-device WebSocket test
 ```
 
 **E2E test rule:** E2E/integration tests CAN be run directly from Claude's CLI on real connected devices. Use `flutter test integration_test/<test>.dart -d <device-id>` with the appropriate device ID from `flutter devices`.
@@ -186,10 +187,10 @@ Production/friend-testing VPS: **544934-ABHAYVPS** at `103.118.16.189` (Windows 
 |--------|-------|
 | VPS IP | `103.118.16.189` |
 | Domain | `cricscores.in` (via Cloudflare) |
-| CricApp port | `3005` (HTTP + WS on same port) |
-| Database | `cricapp` on PostgreSQL 16.8 (`127.0.0.1:5432` on VPS) |
+| CricScores port | `3005` (HTTP + WS on same port) |
+| Database | `cricscores` on PostgreSQL 16.8 (`127.0.0.1:5432` on VPS) |
 | Dev database | `cricapp_dev` on same PostgreSQL instance (on VPS) |
-| App directory | `C:\Apps\cricapp\` (on VPS, NOT local) |
+| App directory | `C:\Apps\cricscores\` (on VPS, NOT local) |
 | Process manager | PM2 — **always run `pm2 save` after changes** |
 | Reverse proxy | Nginx at `C:\Apps\nginx\` (on VPS) — port 80, site config in `conf\sites\cricscores.conf` |
 | SSL | Cloudflare Flexible mode (terminates HTTPS at edge, HTTP to Nginx) |

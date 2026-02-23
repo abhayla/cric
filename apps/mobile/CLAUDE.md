@@ -1,4 +1,4 @@
-# Flutter App — CricApp Mobile
+# Flutter App — CricScores Mobile
 
 ## Architecture
 Feature-first clean architecture with Riverpod 3.0 state management.
@@ -33,6 +33,24 @@ Run: `dart run build_runner build --delete-conflicting-outputs`
 - Prefer `Notifier` + `Freezed` state class for feature state
 - Split only when provider exceeds ~200 lines
 - Use `switch` expressions for cricket logic
+
+## Build Flavors
+
+Two Android product flavors configured in `android/app/build.gradle.kts`:
+
+| Flavor | applicationId | Firebase | Usage |
+|--------|--------------|----------|-------|
+| `dev` | `com.cricapp.cricapp` | Existing `cricapp-7403d` project | Daily development, testing |
+| `prod` | `in.cricscores.app` | Separate prod project (TBD) | Production releases |
+
+**Dev builds (default):** `flutter run --flavor dev` — uses existing Firebase config, no extra flags needed.
+**Prod builds:** `flutter run --flavor prod --dart-define=FLAVOR=prod` — requires prod `google-services.json` in `android/app/src/prod/`.
+
+Flavor-specific `google-services.json` files live in `android/app/src/<flavor>/`.
+
+Dart-side flavor detection via `AppConstants.flavor` and `AppConstants.isProduction` (in `lib/src/core/constants/app_constants.dart`). API/WS URLs auto-switch based on flavor.
+
+`flutter test` and `flutter analyze` don't need `--flavor` — they bypass the Android build system.
 
 ## Testing
 - Test files mirror `src/` structure in `test/`
