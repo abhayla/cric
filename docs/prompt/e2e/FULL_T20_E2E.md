@@ -115,12 +115,12 @@ After launching both tests, actively monitor the scorer output and take screensh
 ## What This Test Does
 
 ### Scorer (emulator-5554)
-- The automated test launches the CricApp, creates/reuses teams (Mumbai Warriors + Chennai Challengers), sets up a match, completes the toss, then **programmatically taps scoring buttons** for ~240 deliveries across 2 innings
+- The automated test launches the CricScores, creates/reuses teams (Mumbai Warriors + Chennai Challengers), sets up a match, completes the toss, then **programmatically taps scoring buttons** for ~240 deliveries across 2 innings
 - You see all of this happening live on the emulator screen — buttons being pressed, dialogs opening/closing, score ticking up
 - After the match completes, the test verifies every delivery, stat, and result against PostgreSQL
 
 ### Viewer (emulator-5556)
-- The automated test launches CricApp on the second emulator, navigates to the live match page, and **watches the score update in real-time via WebSocket**
+- The automated test launches CricScores on the second emulator, navigates to the live match page, and **watches the score update in real-time via WebSocket**
 - You see the live match page on this emulator showing the current score, batting/bowling stats, run rates — all updating as the scorer pushes deliveries
 - The terminal prints per-over sync reports showing what the viewer received
 

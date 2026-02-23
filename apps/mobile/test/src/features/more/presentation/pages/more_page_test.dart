@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/app/providers.dart';
-import 'package:cricapp/src/features/more/presentation/pages/more_page.dart';
+import 'package:cricscores/src/app/providers.dart';
+import 'package:cricscores/src/features/more/presentation/pages/more_page.dart';
 
 void main() {
   Widget buildTestWidget() {

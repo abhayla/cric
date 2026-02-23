@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:cricapp/src/app/router.dart';
+import 'package:cricscores/src/app/router.dart';
 import '../../domain/entities/activity_event.dart';
 import '../../providers.dart';
 import '../widgets/activity_event_card.dart';

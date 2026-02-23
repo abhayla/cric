@@ -1,4 +1,4 @@
-import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
+import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
 
 /// A team the player is affiliated with.
 class TeamAffiliation {

@@ -1,16 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/app/app.dart';
-import 'package:cricapp/src/features/home/domain/repositories/home_repository.dart';
-import 'package:cricapp/src/features/home/providers.dart';
-import 'package:cricapp/src/features/teams/providers.dart';
-import 'package:cricapp/src/features/teams/domain/repositories/team_repository.dart';
-import 'package:cricapp/src/features/tournaments/providers.dart';
-import 'package:cricapp/src/features/tournaments/domain/repositories/tournament_repository.dart';
+import 'package:cricscores/src/app/app.dart';
+import 'package:cricscores/src/features/home/domain/repositories/home_repository.dart';
+import 'package:cricscores/src/features/home/providers.dart';
+import 'package:cricscores/src/features/teams/providers.dart';
+import 'package:cricscores/src/features/teams/domain/repositories/team_repository.dart';
+import 'package:cricscores/src/features/tournaments/providers.dart';
+import 'package:cricscores/src/features/tournaments/domain/repositories/tournament_repository.dart';
 
 void main() {
-  testWidgets('CricApp renders with router', (WidgetTester tester) async {
+  testWidgets('CricScores renders with router', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -34,7 +34,7 @@ void main() {
             () => _FakeTournamentsNotifier(),
           ),
         ],
-        child: const CricApp(),
+        child: const CricScores(),
       ),
     );
 

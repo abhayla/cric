@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/features/player_profile/data/datasources/player_profile_remote_datasource.dart';
-import 'package:cricapp/src/features/player_profile/data/repositories/player_profile_repository_impl.dart';
-import 'package:cricapp/src/features/player_profile/domain/entities/player_profile.dart';
-import 'package:cricapp/src/features/player_profile/domain/entities/career_stats.dart';
-import 'package:cricapp/src/features/player_profile/domain/entities/match_performance.dart';
+import 'package:cricscores/src/features/player_profile/data/datasources/player_profile_remote_datasource.dart';
+import 'package:cricscores/src/features/player_profile/data/repositories/player_profile_repository_impl.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/player_profile.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/career_stats.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/match_performance.dart';
 
 class MockPlayerProfileRemoteDatasource extends Mock
     implements PlayerProfileRemoteDatasource {}

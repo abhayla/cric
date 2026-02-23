@@ -1,5 +1,5 @@
-import 'package:cricapp/src/features/player_profile/domain/entities/career_stats.dart';
-import 'package:cricapp/src/features/player_profile/presentation/widgets/quick_stats_grid.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/career_stats.dart';
+import 'package:cricscores/src/features/player_profile/presentation/widgets/quick_stats_grid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

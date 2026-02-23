@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/domain/entities/match.dart';
-import 'package:cricapp/src/features/scoring/domain/repositories/match_repository.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/match.dart';
+import 'package:cricscores/src/features/scoring/domain/repositories/match_repository.dart';
 
 void main() {
   group('MatchRepository interface', () {

@@ -15,31 +15,31 @@ void main() async {
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     if (kDebugMode) {
-      debugPrint('[CricApp] FlutterError: ${details.exceptionAsString()}');
+      debugPrint('[CricScores] FlutterError: ${details.exceptionAsString()}');
     }
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
     if (kDebugMode) {
-      debugPrint('[CricApp] Uncaught error: $error');
-      debugPrint('[CricApp] Stack: $stack');
+      debugPrint('[CricScores] Uncaught error: $error');
+      debugPrint('[CricScores] Stack: $stack');
     }
     return true;
   };
 
   runZonedGuarded(() async {
     if (kDebugMode) {
-      debugPrint('[CricApp] Initializing Firebase...');
+      debugPrint('[CricScores] Initializing Firebase...');
     }
     try {
       await Firebase.initializeApp()
           .timeout(const Duration(seconds: 10));
       if (kDebugMode) {
-        debugPrint('[CricApp] Firebase initialized successfully');
+        debugPrint('[CricScores] Firebase initialized successfully');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[CricApp] Firebase init failed/timed out: $e');
+        debugPrint('[CricScores] Firebase init failed/timed out: $e');
       }
       // Continue anyway — auth provider has its own 5s timeout
     }
@@ -51,17 +51,17 @@ void main() async {
     ]);
 
     if (kDebugMode) {
-      debugPrint('[CricApp] Starting app...');
+      debugPrint('[CricScores] Starting app...');
     }
     runApp(
       const ProviderScope(
-        child: CricApp(),
+        child: CricScores(),
       ),
     );
   }, (error, stack) {
     if (kDebugMode) {
-      debugPrint('[CricApp] Zoned error: $error');
-      debugPrint('[CricApp] Stack: $stack');
+      debugPrint('[CricScores] Zoned error: $error');
+      debugPrint('[CricScores] Stack: $stack');
     }
   });
 }

@@ -4,7 +4,7 @@ These actions are performed on the VPS (`103.118.16.189`) running Windows Server
 
 **Domain:** `cricscores.in` → Cloudflare DNS → `103.118.16.189` (Proxied)
 
-**VPS Infrastructure:** This VPS already runs 4 production sites using **Nginx + Cloudflare + PM2**. CricApp follows the same conventions documented in `C:\Apps\shared\docs\`. See `C:\Apps\shared\docs\README.md` for full VPS documentation.
+**VPS Infrastructure:** This VPS already runs 4 production sites using **Nginx + Cloudflare + PM2**. CricScores follows the same conventions documented in `C:\Apps\shared\docs\`. See `C:\Apps\shared\docs\README.md` for full VPS documentation.
 
 ---
 
@@ -29,7 +29,7 @@ These actions are performed on the VPS (`103.118.16.189`) running Windows Server
 Following the standard `C:\Apps\<appname>\` convention used by all VPS-hosted apps:
 
 ```
-C:\Apps\cricapp\
+C:\Apps\cricscores\
 ├── current\         # Server code (git clone of apps/server/ or full repo)
 ├── uploads\         # User-uploaded images
 ├── backups\         # pg_dump files
@@ -38,13 +38,13 @@ C:\Apps\cricapp\
 ```
 
 ```powershell
-mkdir C:\Apps\cricapp\current, C:\Apps\cricapp\uploads, C:\Apps\cricapp\backups, C:\Apps\cricapp\logs, C:\Apps\cricapp\scripts
+mkdir C:\Apps\cricscores\current, C:\Apps\cricscores\uploads, C:\Apps\cricscores\backups, C:\Apps\cricscores\logs, C:\Apps\cricscores\scripts
 ```
 
 ### V2. Clone Repository and Install Dependencies
 
 ```powershell
-cd C:\Apps\cricapp
+cd C:\Apps\cricscores
 git clone <repo-url> current   # Or copy apps/server/ content into current/
 cd current
 bun install
@@ -52,15 +52,15 @@ bun install
 
 ### V3. Configure Production Environment
 
-Create `C:\Apps\cricapp\current\.env`:
+Create `C:\Apps\cricscores\current\.env`:
 ```dotenv
-DATABASE_URL=postgresql://cricapp_user:<password>@127.0.0.1:5432/cricapp
-FIREBASE_SERVICE_ACCOUNT_PATH=C:\Apps\cricapp\current\firebase-service-account.json
+DATABASE_URL=postgresql://cricscores_user:<password>@127.0.0.1:5432/cricscores
+FIREBASE_SERVICE_ACCOUNT_PATH=C:\Apps\cricscores\current\firebase-service-account.json
 PORT=3005
 CORS_ORIGIN=https://cricscores.in
 NODE_ENV=production
 LOG_LEVEL=info
-UPLOADS_DIR=C:\Apps\cricapp\uploads
+UPLOADS_DIR=C:\Apps\cricscores\uploads
 MAX_UPLOAD_SIZE_MB=5
 SYNC_BATCH_SIZE=50
 WS_HEARTBEAT_INTERVAL_MS=30000
@@ -68,15 +68,15 @@ WS_HEARTBEAT_INTERVAL_MS=30000
 
 > **Note:** No separate `WS_PORT` — Bun/ElysiaJS handles WebSocket upgrade on the same HTTP port (3005). Port 3005 is the first available port per the VPS port allocation table in `C:\Apps\shared\docs\setup\NEW-WEBSITE-SETUP-GUIDE.md`.
 
-Copy `firebase-service-account.json` to `C:\Apps\cricapp\current\`.
+Copy `firebase-service-account.json` to `C:\Apps\cricscores\current\`.
 
 ### V4. PostgreSQL Setup
 
 ```sql
 -- Connect as postgres superuser
-CREATE USER cricapp_user WITH PASSWORD '<strong_random_password>';
-CREATE DATABASE cricapp;
-GRANT ALL PRIVILEGES ON DATABASE cricapp TO cricapp_user;
+CREATE USER cricscores_user WITH PASSWORD '<strong_random_password>';
+CREATE DATABASE cricscores;
+GRANT ALL PRIVILEGES ON DATABASE cricscores TO cricscores_user;
 ```
 
 Verify `postgresql.conf` (should already be configured for other apps):
@@ -92,7 +92,7 @@ host  all  all  127.0.0.1/32  scram-sha-256
 ### V5. Run Database Migrations and Seed
 
 ```powershell
-cd C:\Apps\cricapp\current
+cd C:\Apps\cricscores\current
 bun run db:migrate
 bun run db:seed
 ```
@@ -100,7 +100,7 @@ bun run db:seed
 ### V6. Verify Server Starts
 
 ```powershell
-cd C:\Apps\cricapp\current
+cd C:\Apps\cricscores\current
 $env:NODE_ENV="production"; bun run start
 # Check: http://localhost:3005/api/v1/health should return {"status":"ok","database":"connected"}
 # Ctrl+C to stop
@@ -110,18 +110,18 @@ $env:NODE_ENV="production"; bun run start
 
 ## Phase 2: Process Management (PM2)
 
-All VPS-hosted apps use PM2 for process management. CricApp follows the same pattern.
+All VPS-hosted apps use PM2 for process management. CricScores follows the same pattern.
 
 ### V7. Create PM2 Ecosystem Config
 
-Create `C:\Apps\cricapp\current\ecosystem.config.js`:
+Create `C:\Apps\cricscores\current\ecosystem.config.js`:
 ```javascript
 module.exports = {
   apps: [{
-    name: 'cricapp',
+    name: 'cricscores',
     script: 'C:\\Users\\Administrator\\.bun\\bin\\bun.exe',
     args: 'run start',
-    cwd: 'C:\\Apps\\cricapp\\current',
+    cwd: 'C:\\Apps\\cricscores\\current',
     interpreter: 'none',
     instances: 1,
     exec_mode: 'fork',
@@ -130,8 +130,8 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: 3005
     },
-    error_file: 'C:\\Apps\\cricapp\\logs\\error.log',
-    out_file: 'C:\\Apps\\cricapp\\logs\\out.log',
+    error_file: 'C:\\Apps\\cricscores\\logs\\error.log',
+    out_file: 'C:\\Apps\\cricscores\\logs\\out.log',
     log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
     autorestart: true,
     watch: false,
@@ -145,10 +145,10 @@ module.exports = {
 
 > **Pattern:** Uses `interpreter: 'none'` with direct path to `bun.exe` — same approach as AlgoChanakya's Python/FastAPI backend. See `C:\Apps\shared\docs\pm2\PM2-ECOSYSTEM-TEMPLATES.md` Template 8.
 
-### V8. Start CricApp with PM2
+### V8. Start CricScores with PM2
 
 ```powershell
-cd C:\Apps\cricapp\current
+cd C:\Apps\cricscores\current
 pm2 start ecosystem.config.js
 pm2 save   # CRITICAL — ensures PM2 resurrects the app on reboot
 ```
@@ -156,7 +156,7 @@ pm2 save   # CRITICAL — ensures PM2 resurrects the app on reboot
 ### V9. Verify Process Running
 
 ```powershell
-pm2 describe cricapp
+pm2 describe cricscores
 # Should show: status = online, restarts = 0
 
 Invoke-WebRequest -Uri "http://localhost:3005/api/v1/health" -UseBasicParsing
@@ -173,7 +173,7 @@ The VPS uses **Nginx** as reverse proxy with **Cloudflare** handling SSL termina
 
 Create `C:\Apps\nginx\conf\sites\cricscores.conf`:
 ```nginx
-# CricApp - Cricket Scoring API + WebSocket
+# CricScores - Cricket Scoring API + WebSocket
 server {
     listen 80;
     server_name cricscores.in www.cricscores.in;
@@ -213,7 +213,7 @@ server {
 
     # Uploaded images
     location /uploads/ {
-        alias C:/Apps/cricapp/uploads/;
+        alias C:/Apps/cricscores/uploads/;
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
@@ -275,9 +275,9 @@ Invoke-WebRequest "http://localhost/api/v1/health" -Headers @{Host="cricscores.i
 ### V14. Configure Windows Firewall
 
 ```powershell
-# Block direct access to CricApp Bun server from outside
+# Block direct access to CricScores Bun server from outside
 # (all traffic must go through Nginx)
-New-NetFirewallRule -DisplayName "Block CricApp Direct" `
+New-NetFirewallRule -DisplayName "Block CricScores Direct" `
   -Direction Inbound -Protocol TCP -LocalPort 3005 -Action Block
 
 # Block PostgreSQL from outside (may already exist for other apps)
@@ -293,19 +293,19 @@ New-NetFirewallRule -DisplayName "Block PostgreSQL External" `
 
 ### V15. Create Backup Script
 
-Create `C:\Apps\cricapp\scripts\backup-db.bat`:
+Create `C:\Apps\cricscores\scripts\backup-db.bat`:
 ```batch
 @echo off
 setlocal
 set PGPASSWORD=<password>
-set DB_USER=cricapp_user
-set DB_NAME=cricapp
-set BACKUP_DIR=C:\Apps\cricapp\backups
+set DB_USER=cricscores_user
+set DB_NAME=cricscores
+set BACKUP_DIR=C:\Apps\cricscores\backups
 set PG_BIN="C:\Program Files\PostgreSQL\16\bin"
 
 for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
 set TIMESTAMP=%datetime:~0,8%_%datetime:~8,4%
-set BACKUP_FILE=%BACKUP_DIR%\cricapp_%TIMESTAMP%.dump
+set BACKUP_FILE=%BACKUP_DIR%\cricscores_%TIMESTAMP%.dump
 
 if not exist "%BACKUP_DIR%" mkdir "%BACKUP_DIR%"
 
@@ -319,9 +319,9 @@ endlocal
 ### V16. Schedule Daily Backup
 
 ```powershell
-$action = New-ScheduledTaskAction -Execute "C:\Apps\cricapp\scripts\backup-db.bat"
+$action = New-ScheduledTaskAction -Execute "C:\Apps\cricscores\scripts\backup-db.bat"
 $trigger = New-ScheduledTaskTrigger -Daily -At "03:00AM"
-Register-ScheduledTask -TaskName "CricApp DB Backup" `
+Register-ScheduledTask -TaskName "CricScores DB Backup" `
   -Action $action -Trigger $trigger -RunLevel Highest -Force
 ```
 
@@ -331,16 +331,16 @@ Register-ScheduledTask -TaskName "CricApp DB Backup" `
 
 ### V17. Create Automated Deploy Script
 
-Create `C:\Apps\cricapp\scripts\deploy.ps1`:
+Create `C:\Apps\cricscores\scripts\deploy.ps1`:
 ```powershell
 param([string]$Branch = "main")
 $ErrorActionPreference = "Stop"
-$AppDir = "C:\Apps\cricapp\current"
+$AppDir = "C:\Apps\cricscores\current"
 
 function Log($msg) {
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "[$ts] $msg"
-    Add-Content "C:\Apps\cricapp\logs\deploy.log" "[$ts] $msg"
+    Add-Content "C:\Apps\cricscores\logs\deploy.log" "[$ts] $msg"
 }
 
 Log "=== Deploy starting (branch: $Branch) ==="
@@ -366,8 +366,8 @@ bun run db:migrate
 if ($LASTEXITCODE -ne 0) { Log "ERROR: Migration failed"; exit 1 }
 
 # Restart service
-Log "Restarting cricapp..."
-pm2 restart cricapp
+Log "Restarting cricscores..."
+pm2 restart cricscores
 pm2 save
 
 # Health check (30s timeout)
@@ -384,19 +384,19 @@ for ($i = 0; $i -lt 10; $i++) {
 if ($ok) { Log "Deploy SUCCESS" } else { Log "ERROR: Health check failed"; exit 1 }
 ```
 
-**Usage:** `powershell -ExecutionPolicy Bypass -File C:\Apps\cricapp\scripts\deploy.ps1`
+**Usage:** `powershell -ExecutionPolicy Bypass -File C:\Apps\cricscores\scripts\deploy.ps1`
 
 ---
 
 ## Phase 7: Monitoring
 
-### V18. Add CricApp to VPS Health-Check Script
+### V18. Add CricScores to VPS Health-Check Script
 
-The VPS health-check script (`C:\Apps\shared\scripts\health-check.ps1`) runs every 5 minutes and auto-restarts crashed services. Add CricApp to its `$sites` array:
+The VPS health-check script (`C:\Apps\shared\scripts\health-check.ps1`) runs every 5 minutes and auto-restarts crashed services. Add CricScores to its `$sites` array:
 
 ```powershell
 # In health-check.ps1's $sites array, add:
-@{ name = "cricapp"; url = "http://localhost:3005/api/v1/health"; pm2Name = "cricapp" }
+@{ name = "cricscores"; url = "http://localhost:3005/api/v1/health"; pm2Name = "cricscores" }
 ```
 
 ### V19. External Uptime Monitor (UptimeRobot)
@@ -410,14 +410,14 @@ The VPS health-check script (`C:\Apps\shared\scripts\health-check.ps1`) runs eve
 
 ```powershell
 # Follow live PM2 logs
-pm2 logs cricapp --lines 50
+pm2 logs cricscores --lines 50
 
 # View PM2 log files directly
-Get-Content "C:\Apps\cricapp\logs\out.log" -Wait -Tail 50
-Get-Content "C:\Apps\cricapp\logs\error.log" -Wait -Tail 50
+Get-Content "C:\Apps\cricscores\logs\out.log" -Wait -Tail 50
+Get-Content "C:\Apps\cricscores\logs\error.log" -Wait -Tail 50
 
 # Check PM2 process status
-pm2 describe cricapp
+pm2 describe cricscores
 
 # Check Nginx access/error logs for cricscores.in
 Get-Content "C:\Apps\nginx\logs\cricscores-access.log" -Tail 50
@@ -432,7 +432,7 @@ Run these after every deployment:
 
 ```powershell
 # 1. PM2 process running
-pm2 describe cricapp
+pm2 describe cricscores
 # Should show: status = online
 
 # 2. Nginx serving cricscores.in
@@ -458,7 +458,7 @@ Invoke-WebRequest "http://localhost/api/v1/health" -Headers @{Host="cricscores.i
 # From another machine: telnet 103.118.16.189 3005 — should timeout
 
 # 7. Check error logs
-pm2 logs cricapp --err --lines 30
+pm2 logs cricscores --err --lines 30
 Get-Content "C:\Apps\nginx\logs\cricscores-error.log" -Tail 30
 ```
 
@@ -494,16 +494,16 @@ cricscores.in (DNS → 103.118.16.189)
 
 | Action | Command |
 |--------|---------|
-| Deploy latest code | `powershell -File C:\Apps\cricapp\scripts\deploy.ps1` |
-| Restart server | `pm2 restart cricapp` |
-| Stop server | `pm2 stop cricapp` |
-| Start server | `pm2 start cricapp` |
-| View live logs | `pm2 logs cricapp --lines 50` |
-| View errors only | `pm2 logs cricapp --err --lines 30` |
-| Process details | `pm2 describe cricapp` |
+| Deploy latest code | `powershell -File C:\Apps\cricscores\scripts\deploy.ps1` |
+| Restart server | `pm2 restart cricscores` |
+| Stop server | `pm2 stop cricscores` |
+| Start server | `pm2 start cricscores` |
+| View live logs | `pm2 logs cricscores --lines 50` |
+| View errors only | `pm2 logs cricscores --err --lines 30` |
+| Process details | `pm2 describe cricscores` |
 | All PM2 processes | `pm2 ls` |
-| Manual backup | `C:\Apps\cricapp\scripts\backup-db.bat` |
+| Manual backup | `C:\Apps\cricscores\scripts\backup-db.bat` |
 | Reload Nginx | `C:\Apps\nginx\nginx.exe -s reload` |
 | Test Nginx config | `C:\Apps\nginx\nginx.exe -t` |
-| Nginx CricApp logs | `Get-Content C:\Apps\nginx\logs\cricscores-access.log -Tail 50` |
+| Nginx CricScores logs | `Get-Content C:\Apps\nginx\logs\cricscores-access.log -Tail 50` |
 | Save PM2 state | `pm2 save` |

@@ -7,7 +7,7 @@ skills: documentation-criteria, coding-principles
 
 You are an AI assistant specializing in consistency verification between Design Docs.
 
-Operates within CricApp's CLAUDE.md principles and project conventions, executing autonomously until task completion.
+Operates within CricScores's CLAUDE.md principles and project conventions, executing autonomously until task completion.
 
 ## Initial Mandatory Tasks
 

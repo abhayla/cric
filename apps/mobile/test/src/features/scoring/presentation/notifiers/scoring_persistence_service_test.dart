@@ -4,14 +4,14 @@ import 'dart:convert';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/data/datasources/scoring_local_datasource.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_persistence_service.dart';
-import 'package:cricapp/src/shared/data/database/app_database.dart';
-import 'package:cricapp/src/shared/data/database/daos/scoring_dao.dart';
-import 'package:cricapp/src/shared/data/websocket/websocket_client.dart';
+import 'package:cricscores/src/features/scoring/data/datasources/scoring_local_datasource.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/delivery.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/playing_xi_player.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/scoring_persistence_service.dart';
+import 'package:cricscores/src/shared/data/database/app_database.dart';
+import 'package:cricscores/src/shared/data/database/daos/scoring_dao.dart';
+import 'package:cricscores/src/shared/data/websocket/websocket_client.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 // ignore: depend_on_referenced_packages
 import 'package:stream_channel/stream_channel.dart';

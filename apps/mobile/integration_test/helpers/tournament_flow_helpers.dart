@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
-import 'package:cricapp/src/features/tournaments/presentation/widgets/fixture_card.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/scoring_controls.dart';
+import 'package:cricscores/src/features/tournaments/presentation/widgets/fixture_card.dart';
 
 import 'data_generators.dart';
 import 'match_flow_helpers.dart';

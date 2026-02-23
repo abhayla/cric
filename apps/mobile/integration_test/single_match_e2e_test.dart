@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print
 
-import 'package:cricapp/src/features/scoring/presentation/widgets/match_complete_modal.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/match_complete_modal.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/scoring_controls.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
-import 'package:cricapp/src/features/teams/domain/entities/team.dart';
-import 'package:cricapp/src/features/teams/domain/repositories/team_repository.dart';
-import 'package:cricapp/src/features/teams/presentation/pages/team_detail_page.dart';
-import 'package:cricapp/src/features/teams/providers.dart';
+import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
+import 'package:cricscores/src/features/teams/domain/entities/team.dart';
+import 'package:cricscores/src/features/teams/domain/repositories/team_repository.dart';
+import 'package:cricscores/src/features/teams/presentation/pages/team_detail_page.dart';
+import 'package:cricscores/src/features/teams/providers.dart';
 
 void main() {
   final testTeam = Team(

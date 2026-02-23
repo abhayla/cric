@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 
-import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
-import 'package:cricapp/src/shared/data/database/app_database.dart' as db;
-import 'package:cricapp/src/shared/data/database/daos/teams_dao.dart';
+import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
+import 'package:cricscores/src/shared/data/database/app_database.dart' as db;
+import 'package:cricscores/src/shared/data/database/daos/teams_dao.dart';
 
 import '../../domain/entities/team.dart';
 import '../../domain/repositories/team_repository.dart';

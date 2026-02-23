@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/core/errors/exceptions.dart';
-import 'package:cricapp/src/features/home/data/datasources/home_remote_datasource.dart';
-import 'package:cricapp/src/features/home/data/repositories/home_repository_impl.dart';
+import 'package:cricscores/src/core/errors/exceptions.dart';
+import 'package:cricscores/src/features/home/data/datasources/home_remote_datasource.dart';
+import 'package:cricscores/src/features/home/data/repositories/home_repository_impl.dart';
 
 class MockHomeRemoteDatasource extends Mock implements HomeRemoteDatasource {}
 

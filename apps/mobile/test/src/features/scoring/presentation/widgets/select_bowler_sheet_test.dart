@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/core/theme/app_colors.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/bowler_spell.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/select_bowler_sheet.dart';
+import 'package:cricscores/src/core/theme/app_colors.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/bowler_spell.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/select_bowler_sheet.dart';
 
 void main() {
   Widget buildSheet({

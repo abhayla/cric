@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/tournaments/data/models/tournament_model.dart';
-import 'package:cricapp/src/features/tournaments/domain/entities/tournament.dart';
+import 'package:cricscores/src/features/tournaments/data/models/tournament_model.dart';
+import 'package:cricscores/src/features/tournaments/domain/entities/tournament.dart';
 
 void main() {
   group('TournamentModel', () {

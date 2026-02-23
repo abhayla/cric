@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/tournaments/data/models/fixture_model.dart';
-import 'package:cricapp/src/features/tournaments/domain/entities/fixture.dart';
+import 'package:cricscores/src/features/tournaments/data/models/fixture_model.dart';
+import 'package:cricscores/src/features/tournaments/domain/entities/fixture.dart';
 
 void main() {
   group('FixtureModel', () {

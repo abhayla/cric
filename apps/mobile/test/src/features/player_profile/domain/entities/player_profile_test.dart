@@ -1,5 +1,5 @@
-import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
-import 'package:cricapp/src/features/player_profile/domain/entities/player_profile.dart';
+import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/player_profile.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

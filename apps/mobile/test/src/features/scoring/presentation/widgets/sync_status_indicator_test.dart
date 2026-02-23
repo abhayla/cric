@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/presentation/widgets/score_header.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/sync_status_indicator.dart';
-import 'package:cricapp/src/shared/data/sync/sync_service.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/score_header.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/sync_status_indicator.dart';
+import 'package:cricscores/src/shared/data/sync/sync_service.dart';
 
 void main() {
   Widget wrapWidget(Widget child) {

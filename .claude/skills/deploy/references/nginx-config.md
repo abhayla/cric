@@ -1,9 +1,9 @@
 # Nginx Reverse Proxy Configuration
 
-Template for CricApp API with WebSocket support.
+Template for CricScores API with WebSocket support.
 
 ```nginx
-upstream cricapp_api {
+upstream cricscores_api {
     server 127.0.0.1:3000;
 }
 
@@ -23,7 +23,7 @@ server {
 
     # API routes
     location /api/ {
-        proxy_pass http://cricapp_api;
+        proxy_pass http://cricscores_api;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -32,7 +32,7 @@ server {
 
     # WebSocket upgrade for match rooms
     location /ws/ {
-        proxy_pass http://cricapp_api;
+        proxy_pass http://cricscores_api;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -43,7 +43,7 @@ server {
 
     # Health check (no auth required)
     location /health {
-        proxy_pass http://cricapp_api;
+        proxy_pass http://cricscores_api;
     }
 }
 ```

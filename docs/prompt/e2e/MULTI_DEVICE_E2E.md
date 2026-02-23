@@ -178,7 +178,7 @@ Start an emulator: Android Studio -> Virtual Device Manager -> Play
 
 ### Viewer can't connect to server
 - Verify the real device can reach the host: on the device, open browser and go to `http://<LAN_IP>:3001/api/v1/test/health`
-- Add Windows Firewall inbound rule: `netsh advfirewall firewall add rule name="CricApp E2E" dir=in action=allow protocol=TCP localport=3001`
+- Add Windows Firewall inbound rule: `netsh advfirewall firewall add rule name="CricScores E2E" dir=in action=allow protocol=TCP localport=3001`
 - Make sure device and host are on the same Wi-Fi network
 
 ### Gradle lock contention / build failure

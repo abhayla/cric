@@ -1,4 +1,4 @@
-# CricApp - Implementation Plan
+# CricScores - Implementation Plan
 
 ## 1. Architecture Overview
 
@@ -501,7 +501,7 @@ dev_dependencies:
 | CI/CD | GitHub Actions with self-hosted runner on VPS |
 | Firebase | **Single project for MVP** (no staging/production split). Post-MVP: create separate projects per environment. |
 | Domain | TBD — register domain, add Cloudflare A record → 103.118.16.189 |
-| Monitoring | Existing VPS health check script (every 5 min) — add CricApp to `$sites` array |
+| Monitoring | Existing VPS health check script (every 5 min) — add CricScores to `$sites` array |
 | Backups | Daily `pg_dump` cron to `C:\Apps\backups\` with 7-day retention |
 
 #### Development API URL (D1)
@@ -541,13 +541,13 @@ WS_HEARTBEAT_INTERVAL_MS=30000
 
 #### Deployment tasks
 
-- [ ] Create PostgreSQL database + user for CricApp (`cricapp` / `cricapp_user`)
+- [ ] Create PostgreSQL database + user for CricScores (`cricapp` / `cricapp_user`)
 - [ ] Deploy Bun server via PM2 (`ecosystem.config.js`)
 - [ ] Create Nginx site config (`C:\Apps\nginx\conf\sites\cricapp.conf`) — HTTP proxy to port 3000 + WebSocket upgrade headers. SSL via Cloudflare (Nginx on HTTP). For development: use direct port 3000 access (no Nginx needed).
 - [ ] Register domain, configure Cloudflare DNS (A record → VPS IP, proxied)
-- [ ] Set up GitHub Actions self-hosted runner for CricApp repo
+- [ ] Set up GitHub Actions self-hosted runner for CricScores repo
 - [ ] Create `.github/workflows/deploy.yml` for auto-deploy on push to main
-- [ ] Add CricApp to VPS health monitoring (`health-check.ps1` `$sites` array)
+- [ ] Add CricScores to VPS health monitoring (`health-check.ps1` `$sites` array)
 - [ ] Configure daily `pg_dump` backup for `cricapp` database
 - [ ] Set up Firebase project (Auth provider: Phone OTP only)
 - [ ] Build release APK, sign with upload key

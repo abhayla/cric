@@ -47,7 +47,7 @@ integration_test/
 `AppTestWrapper` provides `pumpApp(tester)` to boot the full Flutter app in test mode.
 
 ### What It Does
-1. Wraps `CricApp` in a `ProviderScope`
+1. Wraps `CricScores` in a `ProviderScope`
 2. Overrides Dio base URL to `http://localhost:3001`
 3. Sets up mock Firebase Auth (returns authenticated user)
 4. Debug mode router skips auth screens, routes to `/home`

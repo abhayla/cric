@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cricapp/src/core/errors/exceptions.dart';
-import 'package:cricapp/src/features/auth/data/datasources/firebase_auth_datasource.dart';
+import 'package:cricscores/src/core/errors/exceptions.dart';
+import 'package:cricscores/src/features/auth/data/datasources/firebase_auth_datasource.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockFirebaseAuth extends Mock implements FirebaseAuth {}

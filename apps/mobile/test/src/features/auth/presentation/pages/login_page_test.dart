@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/auth/presentation/pages/login_page.dart';
-import 'package:cricapp/src/shared/widgets/cricket_ball_icon.dart';
+import 'package:cricscores/src/features/auth/presentation/pages/login_page.dart';
+import 'package:cricscores/src/shared/widgets/cricket_ball_icon.dart';
 
 void main() {
   group('LoginPage', () {

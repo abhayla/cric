@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:cricapp/src/core/theme/app_colors.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
-import 'package:cricapp/src/features/scoring/presentation/pages/scoring_page.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/extras_panel.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/match_complete_modal.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/wicket_dialog.dart';
+import 'package:cricscores/src/core/theme/app_colors.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/playing_xi_player.dart';
+import 'package:cricscores/src/features/scoring/presentation/pages/scoring_page.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/extras_panel.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/match_complete_modal.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/scoring_controls.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/wicket_dialog.dart';
 
 void main() {
   List<PlayingXIPlayer> makePlayers({required String prefix, int count = 11}) {

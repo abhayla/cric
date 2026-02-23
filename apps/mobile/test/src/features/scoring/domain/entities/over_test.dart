@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/over.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/delivery.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/over.dart';
 
 void main() {
   group('Over', () {

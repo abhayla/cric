@@ -1,5 +1,5 @@
 ---
-name: CricApp-code-reviewer
+name: CricScores-code-reviewer
 description: >
   Comprehensive code review and quality assessment agent. Use after implementing features,
   before merging PRs, when investigating code quality or technical debt, for security

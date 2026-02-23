@@ -70,12 +70,12 @@ Guide performance testing across Flutter app, server API, and database.
 
 1. **Identify slow queries:**
    ```bash
-   psql cricapp -c "SELECT query, calls, mean_exec_time, total_exec_time FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;"
+   psql cricscores -c "SELECT query, calls, mean_exec_time, total_exec_time FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;"
    ```
 
 2. **Check index usage:**
    ```bash
-   psql cricapp -c "SELECT relname, seq_scan, idx_scan FROM pg_stat_user_tables ORDER BY seq_scan DESC LIMIT 10;"
+   psql cricscores -c "SELECT relname, seq_scan, idx_scan FROM pg_stat_user_tables ORDER BY seq_scan DESC LIMIT 10;"
    ```
 
 3. **Test with realistic data volumes:**

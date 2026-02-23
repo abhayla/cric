@@ -2,8 +2,8 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/shared/data/database/app_database.dart';
-import 'package:cricapp/src/shared/data/database/daos/scoring_dao.dart';
+import 'package:cricscores/src/shared/data/database/app_database.dart';
+import 'package:cricscores/src/shared/data/database/daos/scoring_dao.dart';
 
 void main() {
   late AppDatabase db;

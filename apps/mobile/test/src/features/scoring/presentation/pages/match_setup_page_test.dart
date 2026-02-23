@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/presentation/pages/match_setup_page.dart';
+import 'package:cricscores/src/features/scoring/presentation/pages/match_setup_page.dart';
 
 void main() {
   Widget buildPage({

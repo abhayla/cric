@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/core/theme/app_colors.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/score_header.dart';
-import 'package:cricapp/src/shared/data/sync/sync_service.dart';
+import 'package:cricscores/src/core/theme/app_colors.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/score_header.dart';
+import 'package:cricscores/src/shared/data/sync/sync_service.dart';
 
 void main() {
   Widget buildHeader({

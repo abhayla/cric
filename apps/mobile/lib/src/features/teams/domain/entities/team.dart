@@ -1,4 +1,4 @@
-import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
+import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
 
 /// Role of the current user within a team (for display purposes).
 enum TeamMemberRole {

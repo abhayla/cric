@@ -1,6 +1,6 @@
 # Implementation Playbook
 
-Autonomous implementation workflow for CricApp. Ties together all planning docs, agents, skills, and hooks into a step-by-step process.
+Autonomous implementation workflow for CricScores. Ties together all planning docs, agents, skills, and hooks into a step-by-step process.
 
 **Prerequisites:** Read [CLAUDE.md](../../CLAUDE.md) and [IMPLEMENTATION_PLAN.md](../planning/IMPLEMENTATION_PLAN.md) before starting.
 

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/teams/data/models/team_model.dart';
+import 'package:cricscores/src/features/teams/data/models/team_model.dart';
 
 void main() {
   group('RosterEntryModel', () {

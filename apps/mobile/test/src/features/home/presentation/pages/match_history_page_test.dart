@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/home/domain/entities/match_list_item.dart';
-import 'package:cricapp/src/features/home/domain/repositories/home_repository.dart';
-import 'package:cricapp/src/features/home/presentation/pages/match_history_page.dart';
-import 'package:cricapp/src/features/home/presentation/widgets/match_card.dart';
-import 'package:cricapp/src/features/home/providers.dart';
+import 'package:cricscores/src/features/home/domain/entities/match_list_item.dart';
+import 'package:cricscores/src/features/home/domain/repositories/home_repository.dart';
+import 'package:cricscores/src/features/home/presentation/pages/match_history_page.dart';
+import 'package:cricscores/src/features/home/presentation/widgets/match_card.dart';
+import 'package:cricscores/src/features/home/providers.dart';
 
 void main() {
   final matchData = MatchListResult(

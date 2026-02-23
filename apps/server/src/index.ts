@@ -50,7 +50,7 @@ app.listen(env.PORT);
 initBroadcaster(app.server!);
 
 console.log(
-  `CricApp server running at ${app.server?.hostname}:${app.server?.port}`,
+  `CricScores server running at ${app.server?.hostname}:${app.server?.port}`,
 );
 
 export type App = typeof app;

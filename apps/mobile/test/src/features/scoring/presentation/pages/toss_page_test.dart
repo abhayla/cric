@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/presentation/notifiers/toss_notifier.dart';
-import 'package:cricapp/src/features/scoring/presentation/pages/toss_page.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/toss_notifier.dart';
+import 'package:cricscores/src/features/scoring/presentation/pages/toss_page.dart';
 
 void main() {
   // -- Test data --

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/analytics/domain/entities/mvp_data.dart';
+import 'package:cricscores/src/features/analytics/domain/entities/mvp_data.dart';
 
 void main() {
   group('MvpPlayerScore', () {

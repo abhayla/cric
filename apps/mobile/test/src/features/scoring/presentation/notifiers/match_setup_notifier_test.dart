@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/features/scoring/domain/entities/match.dart';
-import 'package:cricapp/src/features/scoring/domain/repositories/match_repository.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/match_setup_notifier.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/match.dart';
+import 'package:cricscores/src/features/scoring/domain/repositories/match_repository.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/match_setup_notifier.dart';
 
 class MockMatchRepository extends Mock implements MatchRepository {}
 

@@ -342,7 +342,7 @@ During rapid scoring or brief WS disconnects, the fast-path relay can silently d
 
 ## Deferred: Option C (WebSocket Bidirectional) — Phase 8+
 
-Option C is a legitimate optimization for a future where CricApp has:
+Option C is a legitimate optimization for a future where CricScores has:
 - Automated ball-tracking (no human scorer delay)
 - Sub-second live betting integration
 - Real-time commentary AI that needs instant delivery data
@@ -368,4 +368,4 @@ If Option C is implemented later, it would **complement** A+E (not replace it):
 - [CQRS Pattern — Azure Architecture Center](https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs)
 - [How to Architect a Scalable Sports Data Pipeline](https://medium.com/@marketing_25315/how-to-architect-a-scalable-low-latency-sports-data-pipeline-for-real-time-apps-385b18246fd8)
 - [The Complete Guide to Offline-First Architecture in Android](https://androidengineers.substack.com/p/the-complete-guide-to-offline-first)
-- CricApp API.md Section 1.7 — Batch sync endpoint spec (`POST /api/v1/sync/push`)
+- CricScores API.md Section 1.7 — Batch sync endpoint spec (`POST /api/v1/sync/push`)

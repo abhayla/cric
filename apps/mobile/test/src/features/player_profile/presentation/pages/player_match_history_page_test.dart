@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:cricapp/src/features/player_profile/domain/entities/match_performance.dart';
-import 'package:cricapp/src/features/player_profile/domain/repositories/player_profile_repository.dart';
-import 'package:cricapp/src/features/player_profile/presentation/pages/player_match_history_page.dart';
-import 'package:cricapp/src/features/player_profile/providers.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/match_performance.dart';
+import 'package:cricscores/src/features/player_profile/domain/repositories/player_profile_repository.dart';
+import 'package:cricscores/src/features/player_profile/presentation/pages/player_match_history_page.dart';
+import 'package:cricscores/src/features/player_profile/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

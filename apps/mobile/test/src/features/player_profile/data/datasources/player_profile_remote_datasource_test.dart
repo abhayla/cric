@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/core/errors/exceptions.dart';
-import 'package:cricapp/src/features/player_profile/data/datasources/player_profile_remote_datasource.dart';
+import 'package:cricscores/src/core/errors/exceptions.dart';
+import 'package:cricscores/src/features/player_profile/data/datasources/player_profile_remote_datasource.dart';
 
 class MockDio extends Mock implements Dio {}
 

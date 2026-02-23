@@ -1,6 +1,6 @@
-# E2E Test Scenarios — CricApp
+# E2E Test Scenarios — CricScores
 
-Comprehensive list of real-life test scenarios to validate CricApp on emulator + local server. These go beyond unit tests by exercising the full stack: Flutter UI → Notifier → Drift persistence → REST/WebSocket → Bun server → PostgreSQL.
+Comprehensive list of real-life test scenarios to validate CricScores on emulator + local server. These go beyond unit tests by exercising the full stack: Flutter UI → Notifier → Drift persistence → REST/WebSocket → Bun server → PostgreSQL.
 
 ## Test Infrastructure
 

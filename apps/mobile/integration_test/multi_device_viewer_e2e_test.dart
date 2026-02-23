@@ -1,9 +1,9 @@
 // ignore_for_file: avoid_print
 
-import 'package:cricapp/src/app/router.dart';
-import 'package:cricapp/src/core/constants/app_constants.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/match_live_notifier.dart';
-import 'package:cricapp/src/features/scoring/providers.dart';
+import 'package:cricscores/src/app/router.dart';
+import 'package:cricscores/src/core/constants/app_constants.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/match_live_notifier.dart';
+import 'package:cricscores/src/features/scoring/providers.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

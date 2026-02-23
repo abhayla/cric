@@ -153,7 +153,7 @@ RETURN { fix_applied: true, fix: proposed_fix, review: review, build: "PASSED" }
 // Caller is responsible for retesting
 ```
 
-## CricApp-Specific Build Commands
+## CricScores-Specific Build Commands
 
 | Platform | Build Command | Test Command |
 |----------|--------------|-------------|
@@ -161,7 +161,7 @@ RETURN { fix_applied: true, fix: proposed_fix, review: review, build: "PASSED" }
 | Flutter (full) | `cd apps/mobile && flutter analyze` | `cd apps/mobile && flutter test` |
 | Server | `cd apps/server && bunx tsc --noEmit` | `cd apps/server && bun test {test_path}` |
 
-## Error Pattern → Likely Root Cause (CricApp-Specific)
+## Error Pattern → Likely Root Cause (CricScores-Specific)
 
 | Error Pattern | Likely Root Cause | Fix Strategy |
 |--------------|-------------------|-------------|

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cricapp/src/features/scoring/presentation/notifiers/match_live_notifier.dart';
-import 'package:cricapp/src/features/scoring/providers.dart';
-import 'package:cricapp/src/shared/data/websocket/websocket_client.dart';
-import 'package:cricapp/src/shared/providers/websocket_provider.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/match_live_notifier.dart';
+import 'package:cricscores/src/features/scoring/providers.dart';
+import 'package:cricscores/src/shared/data/websocket/websocket_client.dart';
+import 'package:cricscores/src/shared/providers/websocket_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';

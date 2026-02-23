@@ -3,9 +3,9 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/shared/data/database/app_database.dart';
-import 'package:cricapp/src/shared/data/database/daos/scoring_dao.dart';
-import 'package:cricapp/src/shared/data/sync/sync_service.dart';
+import 'package:cricscores/src/shared/data/database/app_database.dart';
+import 'package:cricscores/src/shared/data/database/daos/scoring_dao.dart';
+import 'package:cricscores/src/shared/data/sync/sync_service.dart';
 
 class MockDio extends Mock implements Dio {}
 

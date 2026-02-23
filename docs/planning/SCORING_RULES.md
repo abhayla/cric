@@ -1,4 +1,4 @@
-# CricApp - Scoring Rules & Engine
+# CricScores - Scoring Rules & Engine
 
 ## 1. Match State Machine
 

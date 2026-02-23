@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:cricapp/src/features/home/providers.dart';
+import 'package:cricscores/src/features/home/providers.dart';
 import '../widgets/match_card.dart';
 
 /// Match history page showing list of all matches.

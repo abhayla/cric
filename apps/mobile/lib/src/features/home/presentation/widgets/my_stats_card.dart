@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:cricapp/src/features/player_profile/domain/entities/career_stats.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/career_stats.dart';
 
 class MyStatsCard extends StatelessWidget {
   const MyStatsCard({super.key, required this.stats});

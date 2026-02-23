@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/core/theme/app_colors.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/extras_panel.dart';
+import 'package:cricscores/src/core/theme/app_colors.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/extras_panel.dart';
 
 void main() {
   Widget buildPanel({

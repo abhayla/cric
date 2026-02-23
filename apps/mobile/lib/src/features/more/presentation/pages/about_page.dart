@@ -22,7 +22,7 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'CricApp',
+              'CricScores',
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),

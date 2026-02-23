@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/analytics/domain/entities/mvp_data.dart';
-import 'package:cricapp/src/features/analytics/presentation/widgets/mvp_ranking_widget.dart';
+import 'package:cricscores/src/features/analytics/domain/entities/mvp_data.dart';
+import 'package:cricscores/src/features/analytics/presentation/widgets/mvp_ranking_widget.dart';
 
 void main() {
   Widget buildWidget(MatchMvpData data) {

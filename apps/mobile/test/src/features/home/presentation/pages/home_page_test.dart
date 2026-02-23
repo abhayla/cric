@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/app/providers.dart';
-import 'package:cricapp/src/features/home/domain/repositories/home_repository.dart';
-import 'package:cricapp/src/features/home/presentation/pages/home_page.dart';
-import 'package:cricapp/src/features/home/presentation/widgets/expandable_fab.dart';
-import 'package:cricapp/src/features/home/providers.dart';
-import 'package:cricapp/src/features/teams/providers.dart';
-import 'package:cricapp/src/features/teams/domain/repositories/team_repository.dart';
-import 'package:cricapp/src/features/tournaments/providers.dart';
-import 'package:cricapp/src/features/tournaments/domain/repositories/tournament_repository.dart';
+import 'package:cricscores/src/app/providers.dart';
+import 'package:cricscores/src/features/home/domain/repositories/home_repository.dart';
+import 'package:cricscores/src/features/home/presentation/pages/home_page.dart';
+import 'package:cricscores/src/features/home/presentation/widgets/expandable_fab.dart';
+import 'package:cricscores/src/features/home/providers.dart';
+import 'package:cricscores/src/features/teams/providers.dart';
+import 'package:cricscores/src/features/teams/domain/repositories/team_repository.dart';
+import 'package:cricscores/src/features/tournaments/providers.dart';
+import 'package:cricscores/src/features/tournaments/domain/repositories/tournament_repository.dart';
 
 void main() {
   Widget buildTestWidget({

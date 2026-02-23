@@ -5,7 +5,7 @@ library;
 
 import 'dart:math';
 
-import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:cricapp/src/shared/providers/database_provider.dart';
+import 'package:cricscores/src/shared/providers/database_provider.dart';
 
 import '../../app/providers.dart';
 import 'data/datasources/team_local_datasource.dart';

@@ -80,7 +80,7 @@ For the detailed pseudocode and edge cases, see [references/iteration-algorithm.
 
 1. **ANALYZE** — Read failure output, trace to source code, identify root cause
 2. **FIX** — Apply minimal, targeted change. Check against `prohibited_actions`
-3. **CODE REVIEW GATE** — Launch `CricApp-code-reviewer` agent (via Task tool, read-only) to review the fix
+3. **CODE REVIEW GATE** — Launch `CricScores-code-reviewer` agent (via Task tool, read-only) to review the fix
    - If APPROVED → proceed
    - If FLAGGED with Critical → revert fix, re-attempt with rejection context
 4. **BUILD** (if `build_command` provided) — Rebuild. If build fails `3` times → revert, mark FAILED_BUILD

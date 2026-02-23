@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cricapp/src/core/constants/app_constants.dart';
+import 'package:cricscores/src/core/constants/app_constants.dart';
 import 'package:dio/dio.dart';
 
 /// Manages connectivity to an externally-running Bun test server for E2E tests.

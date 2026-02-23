@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/app/app.dart';
-import 'package:cricapp/src/shared/data/database/app_database.dart';
-import 'package:cricapp/src/shared/providers/database_provider.dart';
+import 'package:cricscores/src/app/app.dart';
+import 'package:cricscores/src/shared/data/database/app_database.dart';
+import 'package:cricscores/src/shared/providers/database_provider.dart';
 
 /// Whether Firebase has been initialized in this test process.
 bool _firebaseInitialized = false;
@@ -19,7 +19,7 @@ const testPhoneDevice2 = '9999999998';
 /// Fixed OTP code for both test phone numbers.
 const testOtpCode = '123456';
 
-/// Wraps the full CricApp in a ProviderScope for E2E testing.
+/// Wraps the full CricScores in a ProviderScope for E2E testing.
 ///
 /// Use [pumpApp] for single-device tests, [pumpAppAndWaitForHome] for
 /// multi-device tests where Firebase init may be slower on real devices.
@@ -50,7 +50,7 @@ class AppTestWrapper {
         overrides: [
           databaseProvider.overrideWithValue(db),
         ],
-        child: const CricApp(),
+        child: const CricScores(),
       ),
     );
     // Use pump with fixed duration instead of pumpAndSettle to avoid
@@ -81,7 +81,7 @@ class AppTestWrapper {
         overrides: [
           databaseProvider.overrideWithValue(db),
         ],
-        child: const CricApp(),
+        child: const CricScores(),
       ),
     );
 
@@ -228,7 +228,7 @@ class AppTestWrapper {
       overrides: [
         databaseProvider.overrideWithValue(db),
       ],
-      child: const CricApp(),
+      child: const CricScores(),
     );
   }
 }

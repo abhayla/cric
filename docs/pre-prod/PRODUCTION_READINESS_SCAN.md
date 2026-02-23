@@ -1,4 +1,4 @@
-# Production Readiness Scan — CricApp
+# Production Readiness Scan — CricScores
 
 **Date:** 2026-02-23
 **Scanned by:** Claude Code (Opus 4.6)
@@ -326,7 +326,7 @@ Recommend bumping to `1.0.0+1` for the first distribution build. The `+1` is the
 
 #### O2. Application ID is Generic
 
-**File:** `apps/mobile/android/app/build.gradle.kts:34` — `applicationId = "com.cricapp.cricapp"`
+**File:** `apps/mobile/android/app/build.gradle.kts:34` — `applicationId = "in.cricscores.app"`
 
 Consider changing to `in.cricscores.app` to match the domain branding.
 

@@ -11,7 +11,7 @@ metadata:
 
 Guide PostgreSQL backup configuration with pg_dump, retention, and restore testing.
 
-> **Platform note:** CricApp deploys on Windows Server. The examples below use Linux/bash syntax as reference. On Windows, replace cron with Task Scheduler, use PowerShell scripts (`.ps1`) instead of `.sh`, and adjust paths (e.g., `C:\backups\cricapp\` instead of `/var/backups/cricapp/`).
+> **Platform note:** CricScores deploys on Windows Server. The examples below use Linux/bash syntax as reference. On Windows, replace cron with Task Scheduler, use PowerShell scripts (`.ps1`) instead of `.sh`, and adjust paths (e.g., `C:\backups\cricscores\` instead of `/var/backups/cricscores/`).
 
 ## Arguments
 
@@ -21,15 +21,15 @@ Guide PostgreSQL backup configuration with pg_dump, retention, and restore testi
 
 1. **Create backup directory:**
    ```bash
-   mkdir -p /var/backups/cricapp
+   mkdir -p /var/backups/cricscores
    ```
 
-2. **Create backup script** at `/opt/cricapp/backup.sh`:
+2. **Create backup script** at `/opt/cricscores/backup.sh`:
    ```bash
    #!/bin/bash
    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-   BACKUP_DIR="/var/backups/cricapp"
-   DB_NAME="cricapp"
+   BACKUP_DIR="/var/backups/cricscores"
+   DB_NAME="cricscores"
 
    # Dump with compression
    pg_dump -Fc "$DB_NAME" > "$BACKUP_DIR/cricapp_$TIMESTAMP.dump"
@@ -43,19 +43,19 @@ Guide PostgreSQL backup configuration with pg_dump, retention, and restore testi
 3. **Set up cron job** (daily at 2 AM):
    ```bash
    crontab -e
-   # Add: 0 2 * * * /opt/cricapp/backup.sh >> /var/log/cricapp-backup.log 2>&1
+   # Add: 0 2 * * * /opt/cricscores/backup.sh >> /var/log/cricscores-backup.log 2>&1
    ```
 
 4. **Verify permissions:**
    ```bash
-   chmod +x /opt/cricapp/backup.sh
+   chmod +x /opt/cricscores/backup.sh
    ```
 
 ## Steps — Manual Run (`run`)
 
 1. Run backup manually:
    ```bash
-   pg_dump -Fc cricapp > /var/backups/cricapp/cricapp_manual_$(date +%Y%m%d).dump
+   pg_dump -Fc cricscores > /var/backups/cricscores/cricapp_manual_$(date +%Y%m%d).dump
    ```
 
 2. Verify backup file size and timestamp.
@@ -69,7 +69,7 @@ Guide PostgreSQL backup configuration with pg_dump, retention, and restore testi
 
 2. **Restore from latest backup:**
    ```bash
-   LATEST=$(ls -t /var/backups/cricapp/*.dump | head -1)
+   LATEST=$(ls -t /var/backups/cricscores/*.dump | head -1)
    pg_restore -d cricapp_restore_test "$LATEST"
    ```
 
@@ -87,7 +87,7 @@ Guide PostgreSQL backup configuration with pg_dump, retention, and restore testi
 
 ## Steps — Status Check (`status`)
 
-1. List backups: `ls -lh /var/backups/cricapp/`
-2. Check disk usage: `du -sh /var/backups/cricapp/`
-3. Check cron job: `crontab -l | grep cricapp`
-4. Check last backup log: `tail -5 /var/log/cricapp-backup.log`
+1. List backups: `ls -lh /var/backups/cricscores/`
+2. Check disk usage: `du -sh /var/backups/cricscores/`
+3. Check cron job: `crontab -l | grep cricscores`
+4. Check last backup log: `tail -5 /var/log/cricscores-backup.log`

@@ -41,7 +41,7 @@ Guide Bun server deployment to a VPS (Windows Server).
 
 5. **Start with PM2:**
    ```bash
-   cd apps/server && pm2 start --interpreter bun src/index.ts --name cricapp-api
+   cd apps/server && pm2 start --interpreter bun src/index.ts --name cricscores-api
    pm2 save
    pm2 startup
    ```
@@ -63,12 +63,12 @@ Guide Bun server deployment to a VPS (Windows Server).
 1. Pull latest code: `git pull origin main`
 2. Install dependencies: `cd apps/server && bun install`
 3. Run migrations: `cd apps/server && bunx drizzle-kit migrate`
-4. Restart PM2: `pm2 restart cricapp-api`
+4. Restart PM2: `pm2 restart cricscores-api`
 5. Verify health: `curl https://api.yourdomain.com/health`
 
 ## Steps — Health Check (`status`)
 
-1. Check PM2 process: `pm2 status cricapp-api`
-2. Check PM2 logs: `pm2 logs cricapp-api --lines 50`
+1. Check PM2 process: `pm2 status cricscores-api`
+2. Check PM2 logs: `pm2 logs cricscores-api --lines 50`
 3. Check endpoint health: `curl https://api.yourdomain.com/health`
 4. Check database connection via API health endpoint

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:cricapp/src/app/router.dart';
-import 'package:cricapp/src/features/home/providers.dart';
-import 'package:cricapp/src/features/home/presentation/widgets/match_card.dart';
-import 'package:cricapp/src/features/tournaments/providers.dart';
-import 'package:cricapp/src/features/tournaments/presentation/widgets/tournament_card.dart';
-import 'package:cricapp/src/features/tournaments/domain/entities/tournament.dart';
+import 'package:cricscores/src/app/router.dart';
+import 'package:cricscores/src/features/home/providers.dart';
+import 'package:cricscores/src/features/home/presentation/widgets/match_card.dart';
+import 'package:cricscores/src/features/tournaments/providers.dart';
+import 'package:cricscores/src/features/tournaments/presentation/widgets/tournament_card.dart';
+import 'package:cricscores/src/features/tournaments/domain/entities/tournament.dart';
 
 /// Live hub page showing live matches and ongoing tournaments.
 class LivePage extends ConsumerWidget {

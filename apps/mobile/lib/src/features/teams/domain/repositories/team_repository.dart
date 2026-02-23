@@ -1,6 +1,6 @@
 import 'package:image_picker/image_picker.dart';
 
-import 'package:cricapp/src/features/teams/domain/entities/team.dart';
+import 'package:cricscores/src/features/teams/domain/entities/team.dart';
 
 /// Paginated team list response.
 class TeamListResult {

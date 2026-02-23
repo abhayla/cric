@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/core/theme/app_colors.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/connection_status_banner.dart';
-import 'package:cricapp/src/shared/data/websocket/websocket_client.dart';
+import 'package:cricscores/src/core/theme/app_colors.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/connection_status_banner.dart';
+import 'package:cricscores/src/shared/data/websocket/websocket_client.dart';
 
 void main() {
   Widget buildBanner({

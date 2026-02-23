@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Material 3 light theme for CricApp.
+/// Material 3 light theme for CricScores.
 ///
 /// Seed color: #1976D2 (blue).
 /// Uses M3 ColorScheme.fromSeed for dynamic tonal palette.

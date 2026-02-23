@@ -2,8 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/analytics/domain/entities/chart_data.dart';
-import 'package:cricapp/src/features/analytics/presentation/widgets/run_rate_chart.dart';
+import 'package:cricscores/src/features/analytics/domain/entities/chart_data.dart';
+import 'package:cricscores/src/features/analytics/presentation/widgets/run_rate_chart.dart';
 
 void main() {
   Widget buildWidget(MatchChartData data) {

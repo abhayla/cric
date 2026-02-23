@@ -1,4 +1,4 @@
-# CricApp - Database Schema
+# CricScores - Database Schema
 
 ## Overview
 

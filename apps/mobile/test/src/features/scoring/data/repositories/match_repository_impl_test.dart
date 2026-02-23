@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/features/scoring/data/datasources/match_remote_datasource.dart';
-import 'package:cricapp/src/features/scoring/data/repositories/match_repository_impl.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/match.dart';
-import 'package:cricapp/src/features/scoring/domain/repositories/match_repository.dart';
+import 'package:cricscores/src/features/scoring/data/datasources/match_remote_datasource.dart';
+import 'package:cricscores/src/features/scoring/data/repositories/match_repository_impl.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/match.dart';
+import 'package:cricscores/src/features/scoring/domain/repositories/match_repository.dart';
 
 class MockMatchRemoteDatasource extends Mock implements MatchRemoteDatasource {}
 

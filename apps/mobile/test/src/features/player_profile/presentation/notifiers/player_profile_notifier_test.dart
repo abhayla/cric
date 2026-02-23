@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/features/player_profile/domain/entities/career_stats.dart';
-import 'package:cricapp/src/features/player_profile/domain/entities/player_profile.dart';
-import 'package:cricapp/src/features/player_profile/domain/repositories/player_profile_repository.dart';
-import 'package:cricapp/src/features/player_profile/presentation/notifiers/player_profile_notifier.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/career_stats.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/player_profile.dart';
+import 'package:cricscores/src/features/player_profile/domain/repositories/player_profile_repository.dart';
+import 'package:cricscores/src/features/player_profile/presentation/notifiers/player_profile_notifier.dart';
 
 class MockPlayerProfileRepository extends Mock
     implements PlayerProfileRepository {}

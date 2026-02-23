@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/tournaments/domain/entities/tournament.dart';
-import 'package:cricapp/src/features/tournaments/domain/repositories/tournament_repository.dart';
-import 'package:cricapp/src/features/tournaments/presentation/pages/tournaments_list_page.dart';
-import 'package:cricapp/src/features/tournaments/providers.dart';
+import 'package:cricscores/src/features/tournaments/domain/entities/tournament.dart';
+import 'package:cricscores/src/features/tournaments/domain/repositories/tournament_repository.dart';
+import 'package:cricscores/src/features/tournaments/presentation/pages/tournaments_list_page.dart';
+import 'package:cricscores/src/features/tournaments/providers.dart';
 
 Tournament _makeTournament({
   String id = 'tour-1',

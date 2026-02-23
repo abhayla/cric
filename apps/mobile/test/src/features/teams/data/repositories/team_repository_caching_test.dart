@@ -2,12 +2,12 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/core/errors/exceptions.dart';
-import 'package:cricapp/src/features/teams/data/datasources/team_local_datasource.dart';
-import 'package:cricapp/src/features/teams/data/datasources/team_remote_datasource.dart';
-import 'package:cricapp/src/features/teams/data/repositories/team_repository_impl.dart';
-import 'package:cricapp/src/shared/data/database/app_database.dart';
-import 'package:cricapp/src/shared/data/database/daos/teams_dao.dart';
+import 'package:cricscores/src/core/errors/exceptions.dart';
+import 'package:cricscores/src/features/teams/data/datasources/team_local_datasource.dart';
+import 'package:cricscores/src/features/teams/data/datasources/team_remote_datasource.dart';
+import 'package:cricscores/src/features/teams/data/repositories/team_repository_impl.dart';
+import 'package:cricscores/src/shared/data/database/app_database.dart';
+import 'package:cricscores/src/shared/data/database/daos/teams_dao.dart';
 
 class MockTeamRemoteDatasource extends Mock implements TeamRemoteDatasource {}
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/auth/presentation/pages/otp_page.dart';
+import 'package:cricscores/src/features/auth/presentation/pages/otp_page.dart';
 
 void main() {
   group('OtpPage', () {

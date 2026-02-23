@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/tournaments/presentation/pages/create_tournament_page.dart';
+import 'package:cricscores/src/features/tournaments/presentation/pages/create_tournament_page.dart';
 
 void main() {
   Widget buildTestWidget({

@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
+import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
 import '../../domain/entities/player_profile.dart';
 
 part 'player_profile_model.freezed.dart';

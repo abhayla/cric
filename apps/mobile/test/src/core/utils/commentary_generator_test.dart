@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/core/utils/commentary_generator.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/wicket_info.dart';
+import 'package:cricscores/src/core/utils/commentary_generator.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/delivery.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/wicket_info.dart';
 
 void main() {
   group('generateCommentary', () {

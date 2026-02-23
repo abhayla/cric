@@ -1,8 +1,8 @@
 # Automation Workflows Reference
 
-A comprehensive guide to the CricApp automation ecosystem: hooks, agents, skills, CI/CD, and workflow integrations. Designed as a reusable reference for replicating this system in new projects.
+A comprehensive guide to the CricScores automation ecosystem: hooks, agents, skills, CI/CD, and workflow integrations. Designed as a reusable reference for replicating this system in new projects.
 
-**Project:** CricApp (Cricket Scoring Mobile App)
+**Project:** CricScores (Cricket Scoring Mobile App)
 **Stack:** Flutter + Riverpod | Bun + ElysiaJS + Drizzle | PostgreSQL | Firebase Auth
 **Maturity:** Built across Phases 1-4 over 6 months (1,600+ Flutter tests, 200+ server tests)
 
@@ -30,7 +30,7 @@ A comprehensive guide to the CricApp automation ecosystem: hooks, agents, skills
 
 ### Purpose
 
-This document captures every automation pattern in CricApp so the system can be replicated in new projects without reverse-engineering the original config files. It is structured in layers:
+This document captures every automation pattern in CricScores so the system can be replicated in new projects without reverse-engineering the original config files. It is structured in layers:
 
 - **Newcomers** — Read Sections 1-2 for concepts, then jump to the tier you need
 - **Experienced users** — Jump directly to any section; each is self-contained
@@ -132,7 +132,7 @@ Stop hooks fire
 | Invoked by | Main agent via `Task()` | User via `/skill-name` |
 | Autonomy | Runs independently, returns findings | Guides the main agent step-by-step |
 | Context | Gets its own fresh context window | Runs within main conversation context |
-| Writes code? | Never (research only in CricApp) | Indirectly (guides main agent to write) |
+| Writes code? | Never (research only in CricScores) | Indirectly (guides main agent to write) |
 | Model | Can specify different model (haiku/sonnet) | Uses main conversation model |
 | Best for | Research, analysis, review | Multi-step workflows, guided processes |
 | Example | `code-reviewer` analyzes code quality | `/tdd auth domain` guides TDD workflow |
@@ -477,7 +477,7 @@ ON Stop:
 
 ### Overview
 
-CricApp uses 14 agents across 3 categories. All agents are research-only (Read/Grep/Glob tools) and never write code. The main agent reads their findings and implements changes.
+CricScores uses 14 agents across 3 categories. All agents are research-only (Read/Grep/Glob tools) and never write code. The main agent reads their findings and implements changes.
 
 ### Agent Categories
 
@@ -590,7 +590,7 @@ Six agents maintain persistent memory files in `.claude/agents/memory/`:
 | Output | UI comparison table, UX flow comparison, feature gaps with ADOPT/SKIP/DEFER recommendations |
 | Has Memory | No |
 
-**Behavioral rules:** Always identifies at least one CricApp advantage. Never recommends ADOPT for features excluded from MVP. Suggests which phase DEFER items belong to.
+**Behavioral rules:** Always identifies at least one CricScores advantage. Never recommends ADOPT for features excluded from MVP. Suggests which phase DEFER items belong to.
 
 ---
 
@@ -696,7 +696,7 @@ Six agents maintain persistent memory files in `.claude/agents/memory/`:
 
 ### Overview
 
-CricApp uses 16 skills organized into 4 categories. All skills except `cricket-domain` have `disable-model-invocation: true`, meaning they must be explicitly invoked by the user via `/skill-name`.
+CricScores uses 16 skills organized into 4 categories. All skills except `cricket-domain` have `disable-model-invocation: true`, meaning they must be explicitly invoked by the user via `/skill-name`.
 
 ### Skill Categories
 
@@ -862,7 +862,7 @@ CricApp uses 16 skills organized into 4 categories. All skills except `cricket-d
 
 ### Allow Rules Strategy (47 Rules)
 
-CricApp uses a whitelist approach: only explicitly allowed commands can run without user confirmation. Rules are organized by category:
+CricScores uses a whitelist approach: only explicitly allowed commands can run without user confirmation. Rules are organized by category:
 
 ```
 Flutter Development (12 rules)
@@ -997,7 +997,7 @@ Some files are too important to modify accidentally:
 
 ### 5-Job Architecture
 
-CricApp uses GitHub Actions with a self-hosted Windows runner. The pipeline has 5 jobs organized in 2 dependency chains plus 1 standalone job:
+CricScores uses GitHub Actions with a self-hosted Windows runner. The pipeline has 5 jobs organized in 2 dependency chains plus 1 standalone job:
 
 ```
                     push/PR to main|develop
@@ -1085,7 +1085,7 @@ This prevents CI failures in early project phases when one app directory might n
 
 ### Flutter build_runner
 
-CricApp uses three code generators that produce `.g.dart`, `.freezed.dart`, and `.gr.dart` files:
+CricScores uses three code generators that produce `.g.dart`, `.freezed.dart`, and `.gr.dart` files:
 
 | Generator | Output | Trigger |
 |-----------|--------|---------|
@@ -1135,7 +1135,7 @@ Write *.ts schema → remind-schema-parity hook REMINDS
 
 ### Red-Green-Refactor Cycle
 
-CricApp enforces strict TDD per architectural layer, building from the inside out:
+CricScores enforces strict TDD per architectural layer, building from the inside out:
 
 ```
   DOMAIN LAYER          DATA LAYER          PRESENTATION LAYER
@@ -1497,7 +1497,7 @@ The automation patterns are stack-agnostic. Here's how to adapt each component:
 
 #### Hooks
 
-| CricApp (Flutter + Bun) | React + Node | Python + FastAPI |
+| CricScores (Flutter + Bun) | React + Node | Python + FastAPI |
 |-------------------------|-------------|-----------------|
 | `dart format` | `prettier --write` | `black` or `ruff format` |
 | `npx prettier` (TS) | `eslint --fix` | `ruff check --fix` |
@@ -1510,10 +1510,10 @@ The automation patterns are stack-agnostic. Here's how to adapt each component:
 
 #### File Placement Rules
 
-Replace CricApp's clean architecture rules with your project's structure:
+Replace CricScores's clean architecture rules with your project's structure:
 
 ```
-CricApp:                    React Example:
+CricScores:                    React Example:
   features/<name>/            features/<name>/
     data/datasources/           api/          (API calls)
     data/models/                hooks/        (React hooks)
@@ -1528,7 +1528,7 @@ CricApp:                    React Example:
 
 #### Shell Language
 
-CricApp hooks use PowerShell (Windows Server). Adapt for your platform:
+CricScores hooks use PowerShell (Windows Server). Adapt for your platform:
 
 | Pattern | PowerShell | Bash |
 |---------|-----------|------|
@@ -1543,7 +1543,7 @@ CricApp hooks use PowerShell (Windows Server). Adapt for your platform:
 
 Replace the domain-specific agents with your domain:
 
-| CricApp Agent | Generic Equivalent | E-commerce Example |
+| CricScores Agent | Generic Equivalent | E-commerce Example |
 |--------------|-------------------|-------------------|
 | scoring-researcher | domain-researcher | payment-researcher |
 | cricket-domain skill | domain-rules skill | commerce-rules skill |

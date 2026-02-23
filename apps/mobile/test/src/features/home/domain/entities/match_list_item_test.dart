@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/home/domain/entities/match_list_item.dart';
+import 'package:cricscores/src/features/home/domain/entities/match_list_item.dart';
 
 void main() {
   group('MatchListItem', () {

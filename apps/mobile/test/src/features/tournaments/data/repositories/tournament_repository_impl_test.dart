@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/features/tournaments/data/datasources/tournament_remote_datasource.dart';
-import 'package:cricapp/src/features/tournaments/data/repositories/tournament_repository_impl.dart';
-import 'package:cricapp/src/features/tournaments/domain/entities/fixture.dart';
-import 'package:cricapp/src/features/tournaments/domain/entities/standing.dart';
-import 'package:cricapp/src/features/tournaments/domain/entities/tournament.dart';
-import 'package:cricapp/src/features/tournaments/domain/entities/tournament_request.dart';
-import 'package:cricapp/src/features/tournaments/domain/repositories/tournament_repository.dart';
+import 'package:cricscores/src/features/tournaments/data/datasources/tournament_remote_datasource.dart';
+import 'package:cricscores/src/features/tournaments/data/repositories/tournament_repository_impl.dart';
+import 'package:cricscores/src/features/tournaments/domain/entities/fixture.dart';
+import 'package:cricscores/src/features/tournaments/domain/entities/standing.dart';
+import 'package:cricscores/src/features/tournaments/domain/entities/tournament.dart';
+import 'package:cricscores/src/features/tournaments/domain/entities/tournament_request.dart';
+import 'package:cricscores/src/features/tournaments/domain/repositories/tournament_repository.dart';
 
 class MockTournamentRemoteDatasource extends Mock
     implements TournamentRemoteDatasource {}

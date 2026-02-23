@@ -4,16 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
 import 'router.dart';
 
-/// Root widget for CricApp.
-class CricApp extends ConsumerWidget {
-  const CricApp({super.key});
+/// Root widget for CricScores.
+class CricScores extends ConsumerWidget {
+  const CricScores({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'CricApp',
+      title: 'CricScores',
       theme: AppTheme.light,
       debugShowCheckedModeBanner: false,
       routerConfig: router,

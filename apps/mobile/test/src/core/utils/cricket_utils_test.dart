@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/core/utils/cricket_utils.dart';
+import 'package:cricscores/src/core/utils/cricket_utils.dart';
 
 void main() {
   // ── ballsToOvers ────────────────────────────────────────────────────

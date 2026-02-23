@@ -1,6 +1,6 @@
 # Gap Analysis Working Document (Q11-62)
 
-This document contains all context needed to resolve questions 11-62 of the CricApp gap analysis. It is self-contained -- all relevant excerpts from planning docs are included below.
+This document contains all context needed to resolve questions 11-62 of the CricScores gap analysis. It is self-contained -- all relevant excerpts from planning docs are included below.
 
 ---
 
@@ -72,7 +72,7 @@ This document contains all context needed to resolve questions 11-62 of the Cric
 |---|----------|---------|---------|
 | 51 | **VPS provider and specs** | Phase 7 says "Set up VPS" with no provider, RAM, CPU, region, or OS specified. |
 | 52 | **CI/CD service** | No mention of GitHub Actions, Railway, Vercel, or any CI service. |
-| 53 | **Domain name** | API.md references `wss://api.cricapp.com` but no domain registration or DNS mentioned. |
+| 53 | **Domain name** | API.md references `wss://cricscores.in` but no domain registration or DNS mentioned. |
 | 54 | **Database hosting** | Self-hosted PostgreSQL on VPS? Managed service (Supabase, Neon, RDS)? |
 | 55 | **Firebase project setup** | Separate projects for dev/prod? Project naming? |
 | 56 | **Play Store listing** | App name, description, screenshots, privacy policy -- none specified. |
@@ -682,10 +682,10 @@ The `GET /matches/:id` response only shows current innings summary (totalRuns, t
 #### WebSocket Connection URL (relevant to Q53)
 
 ```
-wss://api.cricapp.com/ws?token=<firebase_jwt>
+wss://cricscores.in/ws?token=<firebase_jwt>
 ```
 
-This domain `api.cricapp.com` is referenced but no domain registration, DNS setup, or infrastructure provisioning is documented.
+This domain `cricscores.in` is referenced but no domain registration, DNS setup, or infrastructure provisioning is documented.
 
 #### Anonymous Viewers
 
@@ -879,7 +879,7 @@ Phase 7: Deployment & Launch (Week 14)
 **KEY GAPS for Q51-58:** Phase 7 is the shortest phase description with the least detail:
 - Q51: "Set up VPS" -- no provider (DigitalOcean, Hetzner, AWS, etc.), no specs (RAM, CPU, region, OS)
 - Q52: "Set up CI/CD pipeline" -- no service specified (GitHub Actions, Railway, etc.)
-- Q53: Domain `api.cricapp.com` referenced in API.md but no registration/DNS steps
+- Q53: Domain `cricscores.in` referenced in API.md but no registration/DNS steps
 - Q54: "PostgreSQL" on VPS -- self-hosted vs managed service not decided
 - Q55: Firebase project -- IMPLEMENTATION_PRACTICES Section 17 mentions "Separate Firebase projects per environment" but no project naming or setup steps
 - Q56: "Google Play Store listing" -- no app name, description, screenshots, privacy policy
@@ -1158,7 +1158,7 @@ These error codes can be used to fill gaps in Q14 (incomplete endpoint error res
 
 #### Auth Flow Screens
 
-**Splash Screen:** Shows CricApp logo, "Loading..." text, progress bar. Annotation: checks auth state on launch -- if logged in + profile complete -> Home; if logged in but no profile -> Profile Setup; else -> Login.
+**Splash Screen:** Shows CricScores logo, "Loading..." text, progress bar. Annotation: checks auth state on launch -- if logged in + profile complete -> Home; if logged in but no profile -> Profile Setup; else -> Login.
 
 **Login Screen:** Phone number input with "+91" prefix, "Send OTP" primary button, divider with "or sign in with", two buttons: "Google" and "Email". Annotation: Firebase Auth providers: Phone OTP (primary), Google Sign-In, Email/Password.
 
@@ -1446,7 +1446,7 @@ Last Delivery: lastDeliveryId (for undo)
 | 50 | IMPLEMENTATION_PLAN folder structure | -- | Dark theme surface hierarchy mapping |
 | 51 | IMPLEMENTATION_PLAN Phase 7 | -- | VPS provider, specs, region |
 | 52 | IMPLEMENTATION_PLAN Phase 7 | -- | CI/CD service |
-| 53 | API.md wss://api.cricapp.com | -- | Domain registration, DNS |
+| 53 | API.md wss://cricscores.in | -- | Domain registration, DNS |
 | 54 | IMPLEMENTATION_PLAN Phase 7 | -- | Database hosting decision |
 | 55 | IMPL_PRACTICES Section 17 | -- | Firebase project naming, setup |
 | 56 | IMPLEMENTATION_PLAN Phase 7 | -- | Play Store listing content |

@@ -4,11 +4,11 @@
 
 | Field | Value |
 |-------|-------|
-| Purpose | Pre-built reference for automated CricApp vs CricHeroes comparison via `cricheroes-comparator` agent |
+| Purpose | Pre-built reference for automated CricScores vs CricHeroes comparison via `cricheroes-comparator` agent |
 | Last Researched | 2026-02-11 |
 | CricHeroes Version | ~13.x (Android), ~11.x (iOS) |
 | Sources | cricheroes.com, blog.cricheroes.com, Play Store, App Store, Tracxn, getlatka.com |
-| Update Policy | Refresh when starting a new CricApp phase. Supplement with live web research for recent changes. |
+| Update Policy | Refresh when starting a new CricScores phase. Supplement with live web research for recent changes. |
 
 ---
 
@@ -40,9 +40,9 @@
 
 "Even a fifth grader can score" — CricHeroes positions itself as the simplest way to digitally score amateur cricket matches. Core pitch: **score matches, organize tournaments, build your cricket profile** — all free. Revenue comes from PRO subscriptions, live streaming, advertising, merchandise (The Dressing Room store), and white-label solutions.
 
-### 1.3 CricApp vs CricHeroes Differentiation
+### 1.3 CricScores vs CricHeroes Differentiation
 
-| Dimension | CricHeroes | CricApp (Planned) |
+| Dimension | CricHeroes | CricScores (Planned) |
 |-----------|-----------|-------------------|
 | Primary Market | Global (100+ countries, India-centric) | India (amateur cricket) |
 | Theme | Light default, dark available | Material 3 Light only |
@@ -79,7 +79,7 @@
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Google Sign-In | Not confirmed (phone OTP only for India) | Phone OTP only (per Q13) | — | — |
 | 5-digit OTP | 5-digit OTP with auto-read | Not specified | ADOPT | High |
@@ -89,7 +89,7 @@
 
 **Decision Points:**
 - SMS auto-read is trivial to add with `sms_autofill` or `smart_auth` Flutter package — strongly recommend ADOPT.
-- Profile wizard: CricApp should collect playing role + batting/bowling style during onboarding (needed for player profiles later).
+- Profile wizard: CricScores should collect playing role + batting/bowling style during onboarding (needed for player profiles later).
 
 ### 2.2 Navigation & Home Screen
 
@@ -109,7 +109,7 @@
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Tab count | 5 tabs (Home, My Cricket, Discover, Notifications, Profile) | 4 tabs (My Cricket, Updates, Live, More) | SKIP — different but valid structure | — |
 | Discover/Looking For | Dedicated tab for community discovery | Not in MVP | SKIP | Low |
@@ -130,7 +130,7 @@
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Default theme | Light mode | Light mode only (M3 Light, seed #1976D2) | — | — |
 | Dark mode option | Available as toggle | Not in MVP | DEFER (post-MVP) | Low |
@@ -160,7 +160,7 @@
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Contact import | Bulk import from phone contacts | "Search by phone" + "Create new" per Q21 | ADOPT (bulk select) | Medium |
 | Attendance tracker | Built-in attendance for practices | Not planned | SKIP | Low |
@@ -203,7 +203,7 @@
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Match formats | 5 types (Limited, Test, Box, Pair, Hundred) | Limited Overs only (MVP) | DEFER (post-MVP for Box/Pair/Hundred) | Low |
 | Virtual toss animation | 3D coin flip with sound | Manual toss entry planned | DEFER | Low |
@@ -222,7 +222,7 @@
 
 **CricHeroes Approach:**
 - **Tournament creation:** Comprehensive wizard — name, format, dates, venue, rules, team size, ball type
-- **Formats:** Round-Robin, Knockout, Group Stage + Knockout (same as CricApp)
+- **Formats:** Round-Robin, Knockout, Group Stage + Knockout (same as CricScores)
 - **Auto-scheduling:** Generate fixture schedule automatically with conflict detection
 - **Points table:** Auto-calculated with configurable point values (W/L/T/NR)
 - **NRR calculation:** Automatic Net Run Rate calculation and display
@@ -244,7 +244,7 @@
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Formats | RR, KO, Group+KO | Same three formats | — | — |
 | Auto-schedule | Generate + manual edit | Same (per T3) | — | — |
@@ -259,7 +259,7 @@
 | Venue conflict detection | Warning on overlapping fixtures | Planned (per T13, warning only) | — | — |
 | Organizer handbook | Help guide for tournament setup | Not planned | SKIP | Low |
 
-**CricHeroes-Only Tournament Features (Not in CricApp):**
+**CricHeroes-Only Tournament Features (Not in CricScores):**
 - Sponsor visibility and paid promotion
 - Fee collection and payment processing
 - White-label solutions for cricket associations
@@ -299,7 +299,7 @@
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Layout | Fixed-scroll-fixed (same approach) | Same layout planned (per CLAUDE.md) | — | — |
 | Single-tap scoring | Yes (no confirmation) | Planned | — | — |
@@ -329,9 +329,9 @@
 - Combined extras: Wide + stumping (possible), No-ball + run out (possible on free hit)
 
 **Gap Analysis:**
-Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches CricHeroes.
+Minimal gap — cricket laws dictate behavior. CricScores's extras handling matches CricHeroes.
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Free hit indicator | Visual badge on scoring screen | Tracked in ScoringState (Q6) | ADOPT (visible indicator) | Medium |
 | Extra + runs flow | Tap extra → tap runs | Same approach planned | — | — |
@@ -348,7 +348,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Wicket flow | Type → fielder → batter → confirm | Same flow planned (SCORING_RULES.md) | — | — |
 | Field position map | Visual field for fielder selection | Not specified (list-based per B1) | DEFER | Medium |
@@ -367,7 +367,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Undo last ball | Single-tap undo | Planned (SCORING_RULES.md §4) | — | — |
 | Live Match Edit | Edit any past delivery | Not planned (only undo last) | DEFER (significant effort) | Medium |
@@ -410,7 +410,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Wagon wheel | Interactive with shot directions | Planned (12-zone system, G25) | — | — |
 | Manhattan | Per-over bar chart | Planned in IMPLEMENTATION_PLAN | — | — |
@@ -453,7 +453,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | Cricket resume | Full career summary page | Career stats planned (player_career_stats table) | — | — |
 | Badges | Achievement system with visual badges | Not in MVP | DEFER | Medium |
@@ -484,7 +484,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 **Gap Analysis:**
 
-| Gap | CricHeroes | CricApp | Recommendation | Priority |
+| Gap | CricHeroes | CricScores | Recommendation | Priority |
 |-----|-----------|---------|----------------|----------|
 | WebSocket live updates | Real-time ball-by-ball | Planned (Bun native WebSockets) | — | — |
 | Score ticker/widget | Notification bar widget | Not planned | DEFER | Low |
@@ -496,7 +496,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 ---
 
-## 9. CricHeroes-Only Features (Not in CricApp MVP)
+## 9. CricHeroes-Only Features (Not in CricScores MVP)
 
 ### 9.1 Community & Social
 
@@ -588,7 +588,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 ## 10. Performance Benchmarks
 
-| Metric | CricHeroes | CricApp (Target) |
+| Metric | CricHeroes | CricScores (Target) |
 |--------|-----------|-----------------|
 | APK Size | ~51-53MB (base), ~100MB (full) | <30MB |
 | iOS Size | 230.5 MB | N/A (Android only MVP) |
@@ -605,7 +605,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 ### 11.1 Navigation Comparison
 
-| Pattern | CricHeroes | CricApp |
+| Pattern | CricHeroes | CricScores |
 |---------|-----------|---------|
 | Bottom nav tabs | 5: Home, My Cricket, Discover, Notifications, Profile | 4: My Cricket, Updates, Live, More |
 | Side drawer | Yes (settings, language, help) | No (settings in Profile) |
@@ -614,7 +614,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 ### 11.2 Color & Theme Comparison
 
-| Element | CricHeroes | CricApp |
+| Element | CricHeroes | CricScores |
 |---------|-----------|---------|
 | Default | Light mode | Light mode (M3) |
 | Primary | Green (~#4CAF50) | Blue (#1976D2) |
@@ -625,7 +625,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 ### 11.3 Scoring Interface Layout Comparison
 
-| Zone | CricHeroes | CricApp |
+| Zone | CricHeroes | CricScores |
 |------|-----------|---------|
 | Top (fixed) | Team name, score, overs, CRR, projected | Team name, score, overs (+ connectivity dot) |
 | Middle (scroll) | Batter cards (R/B/SR), bowler card (O/M/R/W/ER), current over, partnership | Batter cards, bowler card, current over |
@@ -633,7 +633,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 
 ### 11.4 Common Interaction Patterns
 
-| Interaction | CricHeroes | CricApp |
+| Interaction | CricHeroes | CricScores |
 |-------------|-----------|---------|
 | Record delivery | Single tap (run button) | Single tap (planned) |
 | Record extra | Tap extra → tap runs | Same approach |
@@ -722,7 +722,7 @@ Minimal gap — cricket laws dictate behavior. CricApp's extras handling matches
 | # | Feature | Reason |
 |---|---------|--------|
 | 2 | OTP digit count (5 vs 6) | Keep 6-digit (Firebase default). No benefit to changing. |
-| 8 | Different tab structure | CricApp's 4-tab structure (My Cricket, Updates, Live, More) is valid and well-designed |
+| 8 | Different tab structure | CricScores's 4-tab structure (My Cricket, Updates, Live, More) is valid and well-designed |
 | 9 | "Matches of Your Interest" | Contact+location-based suggestions, complex |
 | 10 | Stories (Instagram-like feed) | Social feature, out of MVP scope |
 | 11 | Side drawer navigation | Settings in Profile tab is simpler |

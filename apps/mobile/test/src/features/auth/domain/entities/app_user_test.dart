@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
+import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
 
 void main() {
   group('AppUser', () {

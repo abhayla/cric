@@ -58,7 +58,7 @@ If no changed files match scope: report "No changes in scope" and exit SUCCESS.
 
 For each changed file, find tests using prioritized lookup.
 
-### Priority 0 — Convention-Based (CricApp-Specific)
+### Priority 0 — Convention-Based (CricScores-Specific)
 
 | Source Pattern | Test Pattern |
 |---|---|
@@ -188,7 +188,7 @@ try {
 
 ---
 
-## Step 6: Regression Check (CricApp Adjacency Map)
+## Step 6: Regression Check (CricScores Adjacency Map)
 
 After targeted tests pass, run adjacent tests to catch regressions.
 

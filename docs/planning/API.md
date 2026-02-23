@@ -1,4 +1,4 @@
-# CricApp - API Design
+# CricScores - API Design
 
 ## Overview
 
@@ -1581,7 +1581,7 @@ Tournament-scoped player leaderboard.
 
 ### 2.1 Connection
 
-**URL:** `wss://api.cricapp.com/ws?token=<firebase_jwt>`
+**URL:** `wss://cricscores.in/ws?token=<firebase_jwt>`
 
 Connection is authenticated via JWT query parameter. Server verifies the token and associates the WebSocket with the user.
 

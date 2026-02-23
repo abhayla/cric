@@ -1,11 +1,11 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
-import 'package:cricapp/src/features/teams/data/datasources/team_local_datasource.dart';
-import 'package:cricapp/src/features/teams/domain/entities/team.dart';
-import 'package:cricapp/src/shared/data/database/app_database.dart' hide Team;
-import 'package:cricapp/src/shared/data/database/daos/teams_dao.dart';
+import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
+import 'package:cricscores/src/features/teams/data/datasources/team_local_datasource.dart';
+import 'package:cricscores/src/features/teams/domain/entities/team.dart';
+import 'package:cricscores/src/shared/data/database/app_database.dart' hide Team;
+import 'package:cricscores/src/shared/data/database/daos/teams_dao.dart';
 
 void main() {
   late AppDatabase db;

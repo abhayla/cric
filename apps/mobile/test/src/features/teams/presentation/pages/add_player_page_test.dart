@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/features/teams/domain/repositories/team_repository.dart';
-import 'package:cricapp/src/features/teams/presentation/pages/add_player_page.dart';
-import 'package:cricapp/src/features/teams/providers.dart';
+import 'package:cricscores/src/features/teams/domain/repositories/team_repository.dart';
+import 'package:cricscores/src/features/teams/presentation/pages/add_player_page.dart';
+import 'package:cricscores/src/features/teams/providers.dart';
 
 class MockTeamRepository extends Mock implements TeamRepository {}
 

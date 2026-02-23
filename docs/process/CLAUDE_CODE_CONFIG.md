@@ -1,6 +1,6 @@
 # Claude Code Configuration
 
-This document defines sub-agent specifications, skill definitions, hooks, and MCP server configuration for Claude Code when working on CricApp. Agents and skills are implemented as actual config files in `.claude/agents/` and `.claude/skills/`.
+This document defines sub-agent specifications, skill definitions, hooks, and MCP server configuration for Claude Code when working on CricScores. Agents and skills are implemented as actual config files in `.claude/agents/` and `.claude/skills/`.
 
 ---
 
@@ -132,13 +132,13 @@ All skills use `disable-model-invocation: true`. This means Claude Code will nev
 
 ### 5. CricHeroes Comparator — `cricheroes-comparator`
 
-**Purpose:** Compare CricApp features against CricHeroes (market leader, 40M+ users). Produces structured comparison reports with adopt/skip/defer gap recommendations.
+**Purpose:** Compare CricScores features against CricHeroes (market leader, 40M+ users). Produces structured comparison reports with adopt/skip/defer gap recommendations.
 
 **Config file:** `.claude/agents/cricheroes-comparator.md`
 
 **Context files read before every task:**
 - [CRICHEROES_REFERENCE.md](../planning/CRICHEROES_REFERENCE.md) — Pre-built CricHeroes knowledge base (relevant section for the feature)
-- Relevant CricApp planning doc (DATABASE.md, API.md, SCORING_RULES.md, blueprint.html)
+- Relevant CricScores planning doc (DATABASE.md, API.md, SCORING_RULES.md, blueprint.html)
 
 **Domain expertise:**
 - CricHeroes feature inventory (scoring, teams, tournaments, analytics, profiles, community)
@@ -153,7 +153,7 @@ All skills use `disable-model-invocation: true`. This means Claude Code will nev
 
 **Key files this agent investigates:**
 - `docs/planning/CRICHEROES_REFERENCE.md` — primary knowledge base
-- `docs/planning/DATABASE.md`, `API.md`, `SCORING_RULES.md`, `blueprint.html` — CricApp specs
+- `docs/planning/DATABASE.md`, `API.md`, `SCORING_RULES.md`, `blueprint.html` — CricScores specs
 - `apps/mobile/lib/src/features/` — existing implementation (if any)
 - Live web: `blog.cricheroes.com`, `cricheroes.com`, Play Store listing
 
@@ -161,7 +161,7 @@ All skills use `disable-model-invocation: true`. This means Claude Code will nev
 
 ### 6. System Architect — `system-architect`
 
-**Purpose:** Expert system architect for CricApp. Architectural decisions, system design reviews, database schema analysis, API design, scoring engine architecture, offline-first patterns, and WebSocket protocol design.
+**Purpose:** Expert system architect for CricScores. Architectural decisions, system design reviews, database schema analysis, API design, scoring engine architecture, offline-first patterns, and WebSocket protocol design.
 
 **Config file:** `.claude/agents/system-architect.md`
 

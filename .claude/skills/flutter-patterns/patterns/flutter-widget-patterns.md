@@ -442,7 +442,7 @@ class DetailsPage extends StatelessWidget {
 ## Phone-Only Layout Pattern
 
 ```dart
-// CricApp targets Android phones only — no tablet/desktop breakpoints needed.
+// CricScores targets Android phones only — no tablet/desktop breakpoints needed.
 // Use MediaQuery for minor phone-size adaptations if necessary.
 class PhoneLayout extends StatelessWidget {
   final Widget child;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/auth/presentation/pages/splash_page.dart';
+import 'package:cricscores/src/features/auth/presentation/pages/splash_page.dart';
 
 void main() {
   group('SplashPage', () {
@@ -12,7 +12,7 @@ void main() {
 
       // Verify both parts of the two-tone title exist
       expect(find.textContaining('Cric'), findsOneWidget);
-      expect(find.textContaining('App'), findsOneWidget);
+      expect(find.textContaining('Scores'), findsOneWidget);
 
       // Verify it's a Text.rich with two styled spans
       final textFinder = find.byWidgetPredicate((widget) {

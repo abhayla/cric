@@ -90,7 +90,7 @@ final _dioProvider = Provider<Dio>((ref) {
 - `apps/mobile/android/key.properties` — NEW file (gitignored) with keystore path/passwords
 
 **Steps:**
-1. Generate keystore: `keytool -genkey -v -keystore cricapp-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias cricapp`
+1. Generate keystore: `keytool -genkey -v -keystore cricscores-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias cricscores`
 2. Create `key.properties` with keystore path and passwords
 3. Update `build.gradle.kts` to read `key.properties` and use it for release builds
 4. Add SHA-1 fingerprint to Firebase Console (Project Settings > Your Apps > Add fingerprint)
@@ -164,7 +164,7 @@ Add a "Retry" button on error states for detail pages (team detail, tournament d
 
 ### A10. App Label in AndroidManifest
 
-**Problem:** `android:label="cricapp"` (lowercase, no space). Shows as "cricapp" under the icon.
+**Problem:** `android:label="CricScores"` (lowercase, no space). Shows as "cricscores" under the icon.
 
 **File:** `apps/mobile/android/app/src/main/AndroidManifest.xml:3`
 

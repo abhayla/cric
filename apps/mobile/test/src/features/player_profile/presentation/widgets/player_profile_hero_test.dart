@@ -1,6 +1,6 @@
-import 'package:cricapp/src/features/auth/domain/entities/app_user.dart';
-import 'package:cricapp/src/features/player_profile/domain/entities/player_profile.dart';
-import 'package:cricapp/src/features/player_profile/presentation/widgets/player_profile_hero.dart';
+import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/player_profile.dart';
+import 'package:cricscores/src/features/player_profile/presentation/widgets/player_profile_hero.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

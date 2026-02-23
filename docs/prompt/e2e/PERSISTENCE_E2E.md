@@ -72,7 +72,7 @@ Timeout: 30 minutes.
 
 ## How Persistence Works
 
-CricApp uses `ScoringPersistenceService` to save scoring state to local Drift/SQLite after each delivery mutation. On app restart:
+CricScores uses `ScoringPersistenceService` to save scoring state to local Drift/SQLite after each delivery mutation. On app restart:
 
 1. `ScoringPersistenceService.checkForResumableMatch()` checks Drift for saved state
 2. If found, the home page shows a "Resume Match" indicator
@@ -105,8 +105,8 @@ In Flutter integration tests, we cannot truly kill the process. Instead:
 
 This simulates a "warm restart" rather than a cold kill. For true crash recovery testing, manually:
 1. Run the test up to Phase 5 (score 3 overs)
-2. Force-kill the app: `adb shell am force-stop com.cricapp.mobile`
-3. Relaunch: `adb shell am start com.cricapp.mobile/.MainActivity`
+2. Force-kill the app: `adb shell am force-stop in.cricscores.app`
+3. Relaunch: `adb shell am start in.cricscores.app/.MainActivity`
 4. Verify the resume prompt appears
 
 ---

@@ -1,6 +1,6 @@
 # Code Standards
 
-Single reference for all coding conventions in CricApp. Covers naming, API design, state management, error handling, testing, performance, logging, linting, and tooling.
+Single reference for all coding conventions in CricScores. Covers naming, API design, state management, error handling, testing, performance, logging, linting, and tooling.
 
 For file naming and placement rules, see [.claude/rules.md](../../.claude/rules.md).
 For code principles (YAGNI, KISS, DRY), see [CLAUDE.md](../../CLAUDE.md#code-principles-yagni-kiss-dry).
@@ -837,7 +837,7 @@ Generated at display time from delivery record fields. No `commentary_text` colu
 
 When a captain adds a player to their team roster, the dialog offers two options:
 
-1. **"Search by phone number"** — Finds an existing CricApp user by phone number. If found, sends a join invite (player appears in roster immediately for MVP — invitation system deferred to post-MVP).
+1. **"Search by phone number"** — Finds an existing CricScores user by phone number. If found, sends a join invite (player appears in roster immediately for MVP — invitation system deferred to post-MVP).
 2. **"Create new player"** — Captain enters name + phone number. Creates a placeholder user profile that the player can later claim by signing up with that phone number.
 
 **Dialog layout:**

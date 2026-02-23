@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/data/mappers/scoring_ws_mapper.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
+import 'package:cricscores/src/features/scoring/data/mappers/scoring_ws_mapper.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/delivery.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/playing_xi_player.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
 
 void main() {
   List<PlayingXIPlayer> makeBattingTeam() => [

@@ -1,4 +1,4 @@
-# Auto-Verify — CricApp Test Mapping Reference
+# Auto-Verify — CricScores Test Mapping Reference
 
 ## Flutter Test Directory Structure
 
@@ -74,7 +74,7 @@ stats.service → scoring.service (aggregation queries)
 db/schema → ALL services (schema is foundation)
 ```
 
-## Automated Diagnosis Patterns (CricApp-Specific)
+## Automated Diagnosis Patterns (CricScores-Specific)
 
 | Error Pattern | Automated Action |
 |---|---|

@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cricapp/src/core/theme/app_colors.dart';
-import 'package:cricapp/src/features/scoring/presentation/pages/live_match_page.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/batter_card.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/bowler_card.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/connection_status_banner.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/score_header.dart';
-import 'package:cricapp/src/shared/data/websocket/websocket_client.dart';
-import 'package:cricapp/src/shared/providers/websocket_provider.dart';
+import 'package:cricscores/src/core/theme/app_colors.dart';
+import 'package:cricscores/src/features/scoring/presentation/pages/live_match_page.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/batter_card.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/bowler_card.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/connection_status_banner.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/score_header.dart';
+import 'package:cricscores/src/shared/data/websocket/websocket_client.dart';
+import 'package:cricscores/src/shared/providers/websocket_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

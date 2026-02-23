@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
-import 'package:cricapp/src/core/constants/app_constants.dart';
-import 'package:cricapp/src/core/errors/exceptions.dart';
+import 'package:cricscores/src/core/constants/app_constants.dart';
+import 'package:cricscores/src/core/errors/exceptions.dart';
 
 class MatchRemoteDatasource {
   MatchRemoteDatasource({required this.dio});

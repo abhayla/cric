@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/domain/entities/innings_data.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/scorecard_data.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/innings_data.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/scorecard_data.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
 
 void main() {
   group('ScorecardData', () {

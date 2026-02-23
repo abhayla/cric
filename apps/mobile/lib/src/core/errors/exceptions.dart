@@ -1,4 +1,4 @@
-/// Base exception for CricApp.
+/// Base exception for CricScores.
 class AppException implements Exception {
   const AppException(this.message, [this.code]);
 

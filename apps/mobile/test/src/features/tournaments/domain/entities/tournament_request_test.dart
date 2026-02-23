@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/tournaments/domain/entities/tournament_request.dart';
+import 'package:cricscores/src/features/tournaments/domain/entities/tournament_request.dart';
 
 void main() {
   group('RequestStatus', () {

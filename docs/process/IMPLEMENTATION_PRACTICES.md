@@ -56,7 +56,7 @@ The agent reads `docs/planning/CRICHEROES_REFERENCE.md` and produces a structure
 |---------------|--------|
 | **ADOPT** | Incorporate into current implementation. Mention in commit message. |
 | **DEFER** | Log in CONTINUE_PROMPT.md under future enhancements. Do not build now. |
-| **SKIP** | Ignore — not relevant for CricApp MVP. |
+| **SKIP** | Ignore — not relevant for CricScores MVP. |
 
 If an ADOPT gap has effort "medium" or "large", confirm with user before proceeding — it may change scope.
 
@@ -237,7 +237,7 @@ GoRouter(
 
 ### Deep Linking
 
-- Match URLs: `cricapp://match/:matchId` — opens match detail or live scoring view.
+- Match URLs: `cricscores://match/:matchId` — opens match detail or live scoring view.
 
 ### Scoring Flow Navigation
 
@@ -807,7 +807,7 @@ void main() {
     WidgetsFlutterBinding.ensureInitialized();
     await Firebase.initializeApp();
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    runApp(const ProviderScope(child: CricApp()));
+    runApp(const ProviderScope(child: CricScores()));
   }, (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
   });

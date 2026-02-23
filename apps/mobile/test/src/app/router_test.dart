@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/app/router.dart';
+import 'package:cricscores/src/app/router.dart';
 
 void main() {
   group('AppRoutes', () {

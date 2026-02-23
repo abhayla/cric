@@ -1,4 +1,4 @@
-import 'package:cricapp/src/features/player_profile/data/models/match_performance_model.dart';
+import 'package:cricscores/src/features/player_profile/data/models/match_performance_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

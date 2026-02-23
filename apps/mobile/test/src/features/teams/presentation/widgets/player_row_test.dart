@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/teams/domain/entities/team.dart';
-import 'package:cricapp/src/features/teams/presentation/widgets/player_row.dart';
+import 'package:cricscores/src/features/teams/domain/entities/team.dart';
+import 'package:cricscores/src/features/teams/presentation/widgets/player_row.dart';
 
 void main() {
   Widget buildTestWidget(RosterEntry entry) {

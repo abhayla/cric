@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/innings.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/delivery.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/innings.dart';
 
 void main() {
   group('Innings', () {

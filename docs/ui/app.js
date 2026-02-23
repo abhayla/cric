@@ -1,5 +1,5 @@
 /* =====================================================
-   CricApp Shared JavaScript — app.js
+   CricScores Shared JavaScript — app.js
    Navigation, interactions, state, and sample data
    ===================================================== */
 

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricapp/src/features/player_profile/domain/entities/match_performance.dart';
-import 'package:cricapp/src/features/player_profile/domain/repositories/player_profile_repository.dart';
-import 'package:cricapp/src/features/player_profile/presentation/notifiers/player_match_history_notifier.dart';
+import 'package:cricscores/src/features/player_profile/domain/entities/match_performance.dart';
+import 'package:cricscores/src/features/player_profile/domain/repositories/player_profile_repository.dart';
+import 'package:cricscores/src/features/player_profile/presentation/notifiers/player_match_history_notifier.dart';
 
 class MockPlayerProfileRepository extends Mock
     implements PlayerProfileRepository {}

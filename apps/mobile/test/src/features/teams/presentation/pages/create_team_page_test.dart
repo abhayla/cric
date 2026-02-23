@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:cricapp/src/features/teams/presentation/pages/create_team_page.dart';
+import 'package:cricscores/src/features/teams/presentation/pages/create_team_page.dart';
 
 void main() {
   Widget buildTestWidget({

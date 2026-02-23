@@ -162,7 +162,7 @@ skills:
       - "Action Checklist"
       - "References"
 
-  # Mobile-Specific Skills (CricApp)
+  # Mobile-Specific Skills (CricScores)
   cricket-domain:
     skill: "cricket-domain"
     tags: [cricket, scoring, rules, domain]

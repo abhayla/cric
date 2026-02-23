@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/home/domain/entities/match_list_item.dart';
-import 'package:cricapp/src/features/home/presentation/widgets/match_card.dart';
+import 'package:cricscores/src/features/home/domain/entities/match_list_item.dart';
+import 'package:cricscores/src/features/home/presentation/widgets/match_card.dart';
 
 void main() {
   Widget buildTestWidget(MatchListItem match, {VoidCallback? onTap}) {

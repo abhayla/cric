@@ -1,4 +1,4 @@
-# Bun Server — CricApp Backend
+# Bun Server — CricScores Backend
 
 ## Architecture
 ElysiaJS REST API + Bun native WebSockets, Drizzle ORM on PostgreSQL.

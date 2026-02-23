@@ -66,7 +66,7 @@ If the bug affected the UI, take a screenshot after the fix and visually verify 
 
 ## Common Issue Patterns
 
-These are CricApp-specific issues that are likely to occur during implementation.
+These are CricScores-specific issues that are likely to occur during implementation.
 
 ### Strike Rotation After Wicket
 

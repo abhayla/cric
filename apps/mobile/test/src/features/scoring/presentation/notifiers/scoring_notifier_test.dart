@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cricapp/src/features/scoring/domain/entities/batter_innings.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/bowler_spell.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/delivery.dart';
-import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/batter_innings.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/bowler_spell.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/delivery.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/playing_xi_player.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
 
 void main() {
   /// Helper: create a default ScoringState for testing.

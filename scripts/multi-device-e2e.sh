@@ -3,7 +3,7 @@
 # Multi-Device E2E Test Orchestrator
 # ═══════════════════════════════════════════════════════════════════════════
 #
-# Runs the CricApp multi-device E2E test:
+# Runs the CricScores multi-device E2E test:
 #   - Scorer on one Android device (scores a full predetermined match)
 #   - Viewer on another Android device (verifies WebSocket live updates)
 #

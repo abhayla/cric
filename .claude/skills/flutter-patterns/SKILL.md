@@ -26,13 +26,13 @@ Use this skill when you need:
 - Animation implementation examples
 - Best practices for common Flutter development scenarios
 
-## CricApp Conventions
+## CricScores Conventions
 
 ### Per-Feature Providers
 Each feature has a `providers.dart` at its root declaring all Riverpod providers. This is the single source of truth for provider declarations within that feature.
 
 ### Offline-First / Drift Pattern
-CricApp uses offline-first architecture: all writes go to local Drift/SQLite first (via DAOs), then sync to server. Each delivery has a `synced` flag. The presentation layer reads from local Drift tables, and a background sync service pushes unsynced records to the server when connectivity is available.
+CricScores uses offline-first architecture: all writes go to local Drift/SQLite first (via DAOs), then sync to server. Each delivery has a `synced` flag. The presentation layer reads from local Drift tables, and a background sync service pushes unsynced records to the server when connectivity is available.
 
 ## Pattern Categories
 

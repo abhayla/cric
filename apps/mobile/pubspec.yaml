@@ -1,5 +1,5 @@
-name: cricapp
-description: "CricApp - Cricket scoring app for amateur cricketers"
+name: cricscores
+description: "CricScores - Cricket scoring app for amateur cricketers"
 publish_to: 'none'
 version: 1.0.0+1
 

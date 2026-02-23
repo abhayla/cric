@@ -66,15 +66,15 @@ CricHeroes builds **separate native apps** for Android and iOS:
 
 ---
 
-## Comparison: CricHeroes vs CricApp Stack
+## Comparison: CricHeroes vs CricScores Stack
 
-| Layer | CricHeroes | CricApp | Notes |
+| Layer | CricHeroes | CricScores | Notes |
 |-------|-----------|---------|-------|
-| **Mobile** | Native (Kotlin + Swift) | Flutter (Dart) | CricApp saves 2x dev effort with cross-platform |
+| **Mobile** | Native (Kotlin + Swift) | Flutter (Dart) | CricScores saves 2x dev effort with cross-platform |
 | **State Mgmt** | MVVM + Jetpack (Android) | Riverpod 3.0 | Both use reactive/declarative patterns |
 | **Backend** | Node.js | Bun + ElysiaJS | Both JS ecosystem; Bun is faster runtime |
 | **Relational DB** | MySQL | PostgreSQL | PostgreSQL has better JSON, UUID, enum support |
-| **NoSQL DB** | MongoDB | None (PostgreSQL JSONB) | CricApp uses single DB, simpler ops |
+| **NoSQL DB** | MongoDB | None (PostgreSQL JSONB) | CricScores uses single DB, simpler ops |
 | **Cache** | Redis | None (MVP) | Could add later if needed |
 | **Real-time** | Unknown (likely Socket.io on Node) | Bun native WebSockets | Bun WS is faster than Socket.io |
 | **Auth** | Firebase (likely) | Firebase Phone OTP | Same approach |
@@ -86,11 +86,11 @@ CricHeroes builds **separate native apps** for Android and iOS:
 
 1. **CricHeroes does NOT use Flutter or any cross-platform framework** — they maintain separate native Android (Kotlin) and iOS (Swift) codebases. This is significant because it means their 32-person team spends roughly double the effort on mobile.
 
-2. **CricHeroes uses a dual-database strategy** (MySQL + MongoDB) — likely MySQL for structured relational data and MongoDB for high-throughput write paths (deliveries, real-time events). CricApp achieves this with PostgreSQL alone (JSONB for semi-structured data).
+2. **CricHeroes uses a dual-database strategy** (MySQL + MongoDB) — likely MySQL for structured relational data and MongoDB for high-throughput write paths (deliveries, real-time events). CricScores achieves this with PostgreSQL alone (JSONB for semi-structured data).
 
-3. **Redis is essential at CricHeroes scale** (40M users) — for live match state caching, leaderboard reads, and session management. CricApp doesn't need this at MVP scale but should plan for it.
+3. **Redis is essential at CricHeroes scale** (40M users) — for live match state caching, leaderboard reads, and session management. CricScores doesn't need this at MVP scale but should plan for it.
 
-4. **Node.js is the proven backend** for cricket scoring at scale — CricHeroes validates that the JS ecosystem handles real-time cricket scoring well. CricApp's Bun choice is the next evolution of this (faster, built-in WS).
+4. **Node.js is the proven backend** for cricket scoring at scale — CricHeroes validates that the JS ecosystem handles real-time cricket scoring well. CricScores's Bun choice is the next evolution of this (faster, built-in WS).
 
 5. **No evidence of BLoC** — CricHeroes Android uses MVVM (the standard Android Jetpack pattern), not BLoC. BLoC is Flutter-specific. Their iOS app uses SwiftUI patterns. The "BLoC vs Riverpod" debate is only relevant within the Flutter ecosystem.
 

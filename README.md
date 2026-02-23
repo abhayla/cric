@@ -1,4 +1,4 @@
-# CricApp - Cricket Scoring App
+# CricScores - Cricket Scoring App
 
 A cricket scoring mobile app targeting amateur/grassroots cricketers in India. Built with Flutter + Bun for optimal performance on low-end Android devices.
 

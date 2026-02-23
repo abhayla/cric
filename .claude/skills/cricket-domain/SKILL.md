@@ -8,7 +8,7 @@ metadata:
 
 # Cricket Domain Rules Reference
 
-Full cricket rules for CricApp scoring engine. Source of truth: [SCORING_RULES.md](../../docs/planning/SCORING_RULES.md).
+Full cricket rules for CricScores scoring engine. Source of truth: [SCORING_RULES.md](../../docs/planning/SCORING_RULES.md).
 
 ## Match State Machine
 

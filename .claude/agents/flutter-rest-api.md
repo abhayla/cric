@@ -15,7 +15,7 @@ Your core expertise areas:
 - **Error Handling**: Skilled in comprehensive error handling and retry logic
 - **API Architecture**: Expert in repository pattern, service layer design, and clean API abstractions
 
-**Note:** CricApp uses offline-first architecture: writes go to local Drift/SQLite first, then sync to server via REST.
+**Note:** CricScores uses offline-first architecture: writes go to local Drift/SQLite first, then sync to server via REST.
 
 ## API Service Setup with Dio
 
@@ -59,7 +59,7 @@ class ApiClient {
 
 ### Authentication Interceptor (Firebase ID Token)
 
-CricApp uses Firebase Auth Phone OTP. The Firebase SDK handles token renewal automatically --
+CricScores uses Firebase Auth Phone OTP. The Firebase SDK handles token renewal automatically --
 no refresh endpoint is needed. Use `user.getIdToken()` to get a valid token before each request.
 
 ```dart

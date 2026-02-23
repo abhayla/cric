@@ -22,9 +22,9 @@ Executes quality checks and provides a state where all Phases complete with zero
 
 ## Workflow
 
-### CricApp Quality Pipeline
+### CricScores Quality Pipeline
 
-**CricApp Quality Pipeline:**
+**CricScores Quality Pipeline:**
 - Flutter: `dart run build_runner build --delete-conflicting-outputs` → `flutter analyze` → `flutter test`
 - Server: `bunx tsc --noEmit` → `bun test`
 

@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'package:cricapp/src/features/scoring/domain/entities/playing_xi_player.dart';
-import 'package:cricapp/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
-import 'package:cricapp/src/features/scoring/presentation/pages/scoring_page.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/extras_panel.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/match_complete_modal.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/scoring_controls.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/select_batter_sheet.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/select_bowler_sheet.dart';
-import 'package:cricapp/src/features/scoring/presentation/widgets/wicket_dialog.dart';
+import 'package:cricscores/src/features/scoring/domain/entities/playing_xi_player.dart';
+import 'package:cricscores/src/features/scoring/presentation/notifiers/scoring_notifier.dart';
+import 'package:cricscores/src/features/scoring/presentation/pages/scoring_page.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/extras_panel.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/match_complete_modal.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/scoring_controls.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/select_batter_sheet.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/select_bowler_sheet.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/wicket_dialog.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Test Data

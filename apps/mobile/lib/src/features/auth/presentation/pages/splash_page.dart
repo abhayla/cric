@@ -24,7 +24,7 @@ class SplashPage extends StatelessWidget {
               child: CricketBallIcon(),
             ),
 
-            // App name — two-tone: "Cric" in primary, "App" in onSurface
+            // App name — two-tone: "Cric" in primary, "Scores" in onSurface
             Text.rich(
               TextSpan(
                 children: [
@@ -36,7 +36,7 @@ class SplashPage extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text: 'App',
+                    text: 'Scores',
                     style: theme.textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
