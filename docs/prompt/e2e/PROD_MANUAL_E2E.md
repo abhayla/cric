@@ -4,6 +4,8 @@
 
 Comprehensive production test: create 16 teams (96 players), run 5 tournaments (~256 matches) with fully random scoring. All data persists permanently on the prod server (`cricscores.in`). Runs overnight (~13-17 hours).
 
+**IMPORTANT: All actions (team creation, player addition, tournament creation, scoring) must go through the app UI — the exact same process any real user would follow. No API shortcuts. No exceptions.** API calls are allowed ONLY for read-only verification (checking existing teams/rosters to avoid duplicates).
+
 ## Pre-Test Checklist
 
 - [ ] Prod server running at `cricscores.in` (verify: `curl https://cricscores.in/api/v1/test/health` or just open in browser)

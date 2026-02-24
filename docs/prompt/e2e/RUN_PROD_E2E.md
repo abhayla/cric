@@ -4,24 +4,31 @@ Use this prompt to instruct Claude to execute the production E2E test suite.
 
 ---
 
+## Critical Rule
+
+**IMPORTANT: All actions (team creation, player addition, tournament creation, scoring) must go through the app UI — the exact same process any real user would follow. No API shortcuts. No exceptions.**
+
+API calls are allowed ONLY for read-only verification (checking existing teams/rosters to avoid duplicates).
+
 ## Pre-requisites
 
 Before running, verify:
-1. Android emulator is running (`flutter devices` should show emulator-5554)
+1. Android emulator is running (`flutter devices` should show emulator-5556)
 2. Prod server is live at cricscores.in
 3. Prod debug APK is built: `cd apps/mobile && flutter build apk --flavor prod --debug --dart-define=FLAVOR=prod`
 
 ## Execution Steps
 
-### Step 1: Team Setup (one-time, ~5 min)
+### Step 1: Team Setup (one-time, ~20 min)
 
-Run the team setup test to create 16 teams with 6 players each:
+Run the team setup test to create 16 teams with 6 players each via UI:
 
 ```bash
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_team_setup_test.dart -d emulator-5554
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_team_setup_test.dart -d emulator-5556
 ```
 
-Wait for completion. Verify output shows all 16 teams created.
+Wait for completion. Verify output shows all 16 teams created with 6 players each.
+Abhay Kumar (viewer, phone 9999999998) is automatically added to Bangalore Titans.
 
 ### Step 2: Run Tournaments (overnight, ~15 hours)
 
@@ -33,19 +40,19 @@ bash scripts/prod-e2e-overnight.sh --skip-teams
 Option B — Run individually (useful if one fails and needs re-run):
 ```bash
 # Tournament 1: Champions Trophy (Group+KO, 5ov, ~31 matches, ~2hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_1_test.dart -d emulator-5554
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_1_test.dart -d emulator-5556
 
 # Tournament 2: Premier League (Group+KO, 10ov, ~27 matches, ~2.5hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_2_test.dart -d emulator-5554
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_2_test.dart -d emulator-5556
 
 # Tournament 3: Knockout Cup (KO, 5ov, 15 matches, ~1hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_3_test.dart -d emulator-5554
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_3_test.dart -d emulator-5556
 
 # Tournament 4: Super League (Round Robin, 5ov, 120 matches, ~7hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_4_test.dart -d emulator-5554
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_4_test.dart -d emulator-5556
 
 # Tournament 5: Masters Trophy (Group+KO, 3ov, ~63 matches, ~3hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_5_test.dart -d emulator-5554
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_5_test.dart -d emulator-5556
 ```
 
 ### Step 3: Verify Results
@@ -71,8 +78,8 @@ After completion, check:
 
 | File | Purpose |
 |------|---------|
-| `apps/mobile/integration_test/prod/prod_helpers.dart` | API client, team/tournament setup, scoring helpers |
-| `apps/mobile/integration_test/prod/prod_team_setup_test.dart` | Create 16 teams x 6 players |
+| `apps/mobile/integration_test/prod/prod_helpers.dart` | UI helpers, team/tournament setup, scoring helpers |
+| `apps/mobile/integration_test/prod/prod_team_setup_test.dart` | Create 16 teams x 6 players via UI |
 | `apps/mobile/integration_test/prod/prod_tournament_[1-5]_test.dart` | Individual tournament tests |
 | `scripts/prod-e2e-overnight.sh` | Sequential runner with logging |
 | `docs/prompt/e2e/PROD_MANUAL_E2E.md` | Full test plan reference |

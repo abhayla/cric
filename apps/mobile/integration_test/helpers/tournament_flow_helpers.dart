@@ -209,17 +209,36 @@ Future<void> addPlayersToRoster(
     print('    [addPlayers] "Add Player" button not found — will use GoRouter for all players');
   }
 
-  // Extract teamId from current GoRouter location for direct navigation
-  await settle(tester);
-  final routerState = GoRouterState.of(
-    tester.element(find.byType(Scaffold).first),
-  );
-  final currentPath = routerState.uri.toString();
-  final teamIdMatch = RegExp(r'/teams/([^/]+)').firstMatch(currentPath);
-  final teamId = teamIdMatch?.group(1);
+  // Extract teamId from current GoRouter location for direct navigation.
+  // After team creation, GoRouter.go() replaces /teams/create → /teams/<uuid>.
+  // We must wait for the route to contain a valid UUID (not "create").
+  String? teamId;
+  final uuidRegex = RegExp(r'/teams/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', caseSensitive: false);
+  for (var attempt = 0; attempt < 30; attempt++) {
+    await tester.pump(const Duration(milliseconds: 200));
+    try {
+      final routerState = GoRouterState.of(
+        tester.element(find.byType(Scaffold).first),
+      );
+      final currentPath = routerState.uri.toString();
+      final match = uuidRegex.firstMatch(currentPath);
+      if (match != null) {
+        teamId = match.group(1);
+        print('    [addPlayers] Extracted teamId=$teamId from $currentPath');
+        break;
+      }
+      if (attempt == 29) {
+        print('    [addPlayers] ERROR: Route still has no UUID after 6s: $currentPath');
+      }
+    } catch (e) {
+      if (attempt == 29) {
+        print('    [addPlayers] ERROR: Could not read GoRouter state: $e');
+      }
+    }
+  }
 
   if (teamId == null) {
-    print('    [addPlayers] ERROR: Could not extract teamId from $currentPath');
+    print('    [addPlayers] ERROR: Could not extract teamId — aborting player addition');
     return;
   }
 

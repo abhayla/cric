@@ -13,6 +13,9 @@
 -keep class com.google.firebase.** { *; }
 -dontwarn com.google.firebase.**
 
+# Play Core (referenced by Flutter deferred components)
+-dontwarn com.google.android.play.core.**
+
 # OkHttp (used by Dio / http packages under the hood)
 -dontwarn okhttp3.**
 -dontwarn okio.**

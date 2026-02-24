@@ -188,9 +188,9 @@ class ProdApiClient {
 
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 60),
+      sendTimeout: const Duration(seconds: 60),
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
@@ -245,6 +245,11 @@ class ProdApiClient {
     return response.data['team'] as Map<String, dynamic>;
   }
 
+  /// Delete a team (soft-delete: sets isActive=false).
+  Future<void> deleteTeam(String teamId) async {
+    await _dio.delete('/teams/$teamId');
+  }
+
   /// Get team detail including roster.
   Future<Map<String, dynamic>> getTeam(String teamId) async {
     final response = await _dio.get('/teams/$teamId');
@@ -259,7 +264,7 @@ class ProdApiClient {
   }) async {
     final response = await _dio.post('/teams/$teamId/players', data: {
       'playerId': playerId,
-      'role': role,
+      if (role != null) 'role': role,
     });
     return response.data['rosterEntry'] as Map<String, dynamic>;
   }
@@ -278,6 +283,13 @@ class ProdApiClient {
       if (phone != null) 'phone': phone,
     });
     return response.data['player'] as Map<String, dynamic>;
+  }
+
+  /// Search for a player by phone number.
+  Future<Map<String, dynamic>?> searchPlayerByPhone(String phone) async {
+    final response = await _dio.get('/players/search-by-phone',
+        queryParameters: {'phone': phone});
+    return response.data['player'] as Map<String, dynamic>?;
   }
 
   // ── Tournaments ──────────────────────────────────────────────────────
@@ -374,42 +386,121 @@ class ProdApiClient {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Team Setup via UI
+// Team Setup via API (fast, reliable)
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Create all 16 teams via UI navigation.
+/// Create all 16 teams via authenticated prod API.
 ///
-/// Uses the existing `createTeam` and `addPlayersToRoster` helpers from
-/// tournament_flow_helpers.dart. Skips teams that already exist (checks
-/// by navigating to Teams tab and looking for the name).
-Future<void> createAllTeamsViaUI(WidgetTester tester) async {
+/// For each team:
+/// Create all 16 teams with 6 players each through the app UI.
+///
+/// Uses the same flow a normal user would:
+/// 1. Navigate to Teams tab
+/// 2. Create Team (fill name → submit)
+/// 3. Add 6 players (Create New → fill name/phone/role → Add to Team)
+/// 4. Navigate back to Teams list
+/// 5. Repeat for next team
+///
+/// Also adds Abhay Kumar (viewer, phone 9999999998) to Bangalore Titans.
+///
+/// Idempotent: checks existing teams via API and skips those with full rosters.
+Future<void> createAllTeamsViaUI(
+  WidgetTester tester,
+  ProdApiClient api,
+) async {
+  // Get existing teams to skip already-complete ones
+  final existingTeams = await api.listTeams(limit: 50);
+  final existingByName = <String, Map<String, dynamic>>{};
+  for (final t in existingTeams) {
+    existingByName[t['name'] as String] = t;
+  }
+
   for (var i = 0; i < prodTeams.length; i++) {
     final team = prodTeams[i];
-    print('\n[TEAM ${i + 1}/${prodTeams.length}] Creating: ${team.name}');
+    print('\n[TEAM ${i + 1}/${prodTeams.length}] ${team.name}');
 
-    // Navigate to Teams tab
-    await navigateToTeams(tester);
-    await settle(tester);
-
-    // Check if team already exists (scroll through list)
-    final existing = find.text(team.name);
-    if (existing.evaluate().isNotEmpty) {
-      print('  [SKIP] ${team.name} already exists');
+    // Check if team already exists with enough players
+    final existing = existingByName[team.name];
+    if (existing != null) {
+      final teamDetail = await api.getTeam(existing['id'] as String);
+      final roster = (teamDetail['roster'] as List?) ?? [];
+      final existingNames = <String>{};
+      for (final r in roster) {
+        final name = (r as Map<String, dynamic>)['displayName'] as String?;
+        if (name != null) existingNames.add(name);
+      }
+      // Check if all expected players are present
+      final missing = team.players.where((p) => !existingNames.contains(p.name)).toList();
+      if (missing.isEmpty) {
+        print('  [SKIP] Already has ${existingNames.length} players (all present)');
+        continue;
+      }
+      print('  [FIX] Missing ${missing.length} players: ${missing.map((p) => p.name).join(', ')}');
+      // Navigate to team detail and add missing players
+      await navigateToTeams(tester);
+      await _navigateToExistingTeam(tester, team.name);
+      await addPlayersToRoster(tester, missing);
+      await _navigateBackToTeamsList(tester);
       continue;
     }
 
-    // Create team
+    // Create new team via UI
+    await navigateToTeams(tester);
     await createTeam(tester, team);
 
-    // Add players to roster (we're now on Team Detail page)
-    await addPlayersToRoster(tester, team.players);
+    // Add players to roster (including Abhay Kumar for Bangalore Titans)
+    final players = List<PlayerData>.from(team.players);
+    if (team.name == 'Bangalore Titans') {
+      players.add(PlayerData(name: 'Abhay Kumar', role: 'all_rounder'));
+    }
+    await addPlayersToRoster(tester, players);
 
-    // Navigate back to teams list for next iteration
-    await goBack(tester);
-    await settle(tester);
+    // Navigate back for next team
+    await _navigateBackToTeamsList(tester);
 
-    print('  [DONE] ${team.name} created with ${team.players.length} players');
+    print('  [DONE] ${team.name} — ${players.length} players added');
   }
+}
+
+/// Navigate to an existing team's detail page by tapping its name in the list.
+Future<void> _navigateToExistingTeam(
+  WidgetTester tester,
+  String teamName,
+) async {
+  // Look for the team name in the list and tap it
+  final teamFinder = find.text(teamName);
+  for (var attempt = 0; attempt < 10; attempt++) {
+    if (teamFinder.evaluate().isNotEmpty) {
+      await tester.tap(teamFinder.first);
+      await settle(tester);
+      await visualPause(tester);
+      print('  [NAV] Tapped team: $teamName');
+      return;
+    }
+    // Scroll down to find it
+    final listView = find.byType(ListView);
+    if (listView.evaluate().isNotEmpty) {
+      await tester.drag(listView.first, const Offset(0, -300));
+      await settle(tester);
+    } else {
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+  }
+  print('  [NAV] WARNING: Could not find team "$teamName" in list');
+}
+
+/// Navigate back from team detail to the teams list.
+Future<void> _navigateBackToTeamsList(WidgetTester tester) async {
+  // Try the back button in AppBar
+  final backButton = find.byType(BackButton);
+  if (backButton.evaluate().isNotEmpty) {
+    await tester.tap(backButton.first);
+    await settle(tester);
+    await visualPause(tester);
+    return;
+  }
+  // Fallback: use GoRouter to navigate to teams
+  await navigateToTeams(tester);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

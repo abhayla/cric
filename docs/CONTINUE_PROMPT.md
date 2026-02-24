@@ -16,6 +16,29 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-24b: Firebase Prod Setup + Prod APK Built
+
+**Completed:** Local-side Firebase production setup and first prod APK build.
+
+1. **Firebase prod app** — Added `in.cricscores.app` to Firebase project `cricapp-7403d` via Console
+2. **SHA fingerprints** — Added 3 fingerprints to prod app:
+   - Release SHA-1: `A5:18:18:D8:11:A9:7A:A7:7C:3D:E5:98:4E:85:9B:3B:24:4A:AE:E0`
+   - Release SHA-256: `E5:50:D5:1A:D8:8A:20:8D:14:B4:69:95:E0:96:3F:63:F3:3F:DD:31:3C:1A:20:5A:A0:F6:59:DB:AC:22:66:D0`
+   - Debug SHA-1: `0D:1C:9D:5D:36:70:91:06:7E:16:C8:D8:EC:5F:AF:C1:6C:39:1D:6E`
+3. **Prod google-services.json** — Downloaded and placed at `android/app/src/prod/google-services.json` (trimmed to only `in.cricscores.app` client)
+4. **ProGuard fix** — Added `-dontwarn com.google.android.play.core.**` to fix R8 missing Play Core classes
+5. **Prod APK built** — `flutter build apk --flavor prod --release --dart-define=FLAVOR=prod` → `app-prod-release.apk` (61.4MB)
+6. **Installed on phone** — APK installed on real device (843773fe) via `adb install`
+
+**APK details:** Package `in.cricscores.app`, API `https://cricscores.in/api/v1`, WS `wss://cricscores.in/ws`, release-signed, R8 minified.
+
+**All 2120 Flutter tests passing.** Fixed missed `'App'` → `'Scores'` assertion in login_page_test.
+
+**Next steps:**
+1. Test login on real phone (prod APK → VPS server at cricscores.in)
+2. Work through ANYWHERE_ACTIONS.md remaining items (A1-A3: Dio timeouts, auth tokens, WS heartbeat)
+3. Continue Phase 7 polish
+
 ### Session 2026-02-24: VPS Deployment Complete
 
 **Completed:** Full CricScores server deployment to VPS (`103.118.16.189`, Windows Server 2022). All 11 phases done. Server live at `https://cricscores.in`.
@@ -49,7 +72,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - Dev builds: `flutter run --flavor dev` (default, existing Firebase works)
 - Prod builds: `flutter run --flavor prod --dart-define=FLAVOR=prod` (requires prod Firebase config)
 
-**User TODO:** Create prod Firebase project, register `in.cricscores.app`, place `google-services.json` in `android/app/src/prod/`.
+**Done (Session 2026-02-24b):** Prod Firebase app created, `google-services.json` placed in `android/app/src/prod/`, SHA fingerprints added, prod APK built and installed.
 
 ### Session 2026-02-23b: Code Review — Lint Fixes & Cleanup
 
