@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { eq, and, desc } from 'drizzle-orm';
 import { authMiddleware } from '../../middleware/auth.ts';
-import { AppError } from '../../middleware/error-handler.ts';
+import { AppError, validateUuid } from '../../middleware/error-handler.ts';
 import { getUserByFirebaseUid } from '../../services/auth.service.ts';
 import {
   recordDelivery,
@@ -98,6 +98,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
       const matchId = ctx.params.id;
+      validateUuid(matchId, 'match id');
       let result;
       try {
         result = await recordDeliveryBatch(matchId, user.id, {
@@ -171,6 +172,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
       const matchId = ctx.params.id;
+      validateUuid(matchId, 'match id');
       let result;
       try {
         result = await recordDelivery(matchId, user.id, {
@@ -446,6 +448,8 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
 
       const matchId = ctx.params.id;
       const deliveryId = ctx.params.did;
+      validateUuid(matchId, 'match id');
+      validateUuid(deliveryId, 'delivery id');
 
       // Read delivery info before undo (it gets deleted)
       const [deliveryInfo] = await db
@@ -544,6 +548,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
   .get(
     '/:id/deliveries',
     async (ctx) => {
+      validateUuid(ctx.params.id, 'match id');
       const inningsId = ctx.query.inningsId;
       if (!inningsId) {
         throw new AppError('VALIDATION_ERROR', 'inningsId query parameter is required', 400);
@@ -573,6 +578,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
       const matchId = ctx.params.id;
+      validateUuid(matchId, 'match id');
       await abandonMatch(matchId, user.id);
 
       // --- Broadcast match_complete (abandoned) ---
@@ -609,6 +615,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
       const matchId = ctx.params.id;
+      validateUuid(matchId, 'match id');
       await declareInnings(matchId, user.id);
 
       // --- Broadcast innings_complete ---
@@ -662,6 +669,7 @@ export const scoringRoutes = new Elysia({ prefix: '/api/v1/matches' })
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
       const matchId = ctx.params.id;
+      validateUuid(matchId, 'match id');
       const target = ctx.body.target;
 
       if (target === 'innings') {

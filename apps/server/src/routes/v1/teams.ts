@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { authMiddleware } from '../../middleware/auth.ts';
-import { AppError } from '../../middleware/error-handler.ts';
+import { AppError, validateUuid } from '../../middleware/error-handler.ts';
 import { getUserByFirebaseUid } from '../../services/auth.service.ts';
 import {
   createTeam,
@@ -73,6 +73,7 @@ export const teamRoutes = new Elysia({ prefix: '/api/v1/teams' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'team id');
       const team = await getTeam(ctx.params.id);
       if (!team) throw new AppError('NOT_FOUND', 'Team not found', 404);
 
@@ -106,6 +107,7 @@ export const teamRoutes = new Elysia({ prefix: '/api/v1/teams' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'team id');
       const updated = await updateTeam(ctx.params.id, user.id, {
         name: ctx.body.name,
         location: ctx.body.location,
@@ -132,6 +134,7 @@ export const teamRoutes = new Elysia({ prefix: '/api/v1/teams' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'team id');
       await deleteTeam(ctx.params.id, user.id);
       return { message: 'Team deleted successfully' };
     },
@@ -148,6 +151,7 @@ export const teamRoutes = new Elysia({ prefix: '/api/v1/teams' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'team id');
       const entry = await addPlayer(ctx.params.id, user.id, {
         playerId: ctx.body.playerId,
         jerseyNumber: ctx.body.jerseyNumber,
@@ -175,6 +179,8 @@ export const teamRoutes = new Elysia({ prefix: '/api/v1/teams' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'team id');
+      validateUuid(ctx.params.pid, 'player id');
       await removePlayer(ctx.params.id, user.id, ctx.params.pid);
       return { message: 'Player removed from roster' };
     },

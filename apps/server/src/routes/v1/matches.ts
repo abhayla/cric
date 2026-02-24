@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { authMiddleware } from '../../middleware/auth.ts';
-import { AppError } from '../../middleware/error-handler.ts';
+import { AppError, validateUuid } from '../../middleware/error-handler.ts';
 import { getUserByFirebaseUid } from '../../services/auth.service.ts';
 import {
   createMatch,
@@ -95,6 +95,7 @@ export const matchRoutes = new Elysia({ prefix: '/api/v1/matches' })
   .get(
     '/:id',
     async (ctx) => {
+      validateUuid(ctx.params.id, 'match id');
       const match = await getMatch(ctx.params.id);
       if (!match) throw new AppError('NOT_FOUND', 'Match not found', 404);
       return { match };
@@ -112,6 +113,7 @@ export const matchRoutes = new Elysia({ prefix: '/api/v1/matches' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'match id');
       const players = await setPlayingXI(ctx.params.id, {
         teamId: ctx.body.teamId,
         playerIds: ctx.body.playerIds,
@@ -142,6 +144,7 @@ export const matchRoutes = new Elysia({ prefix: '/api/v1/matches' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'match id');
       const result = await recordToss(ctx.params.id, {
         winnerId: ctx.body.winnerId,
         decision: ctx.body.decision,

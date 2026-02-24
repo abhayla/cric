@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { authMiddleware } from '../../middleware/auth.ts';
-import { AppError } from '../../middleware/error-handler.ts';
+import { AppError, validateUuid } from '../../middleware/error-handler.ts';
 import { getUserByFirebaseUid } from '../../services/auth.service.ts';
 import {
   createTournament,
@@ -96,6 +96,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
   .get(
     '/:id',
     async (ctx) => {
+      validateUuid(ctx.params.id, 'tournament id');
       const tournament = await getTournament(ctx.params.id);
       if (!tournament) throw new AppError('NOT_FOUND', 'Tournament not found', 404);
       return { tournament };
@@ -114,6 +115,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'tournament id');
       const updated = await updateTournament(ctx.params.id, user.id, ctx.body);
       return { tournament: updated };
     },
@@ -153,6 +155,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'tournament id');
       const updated = await transitionStatus(ctx.params.id, user.id, ctx.body.status);
       return { tournament: updated };
     },
@@ -173,6 +176,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'tournament id');
       const entry = await addTeam(
         ctx.params.id,
         user.id,
@@ -203,6 +207,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'tournament id');
       const request = await registerTeam(ctx.params.id, user.id, ctx.body.teamId);
 
       ctx.set.status = 201;
@@ -225,6 +230,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'tournament id');
       const requests = await getRequests(ctx.params.id, user.id, ctx.query.status);
       return { requests, total: requests.length };
     },
@@ -245,6 +251,8 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'tournament id');
+      validateUuid(ctx.params.requestId, 'request id');
       const result = await resolveRequest(
         ctx.params.id,
         user.id,
@@ -277,6 +285,8 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'tournament id');
+      validateUuid(ctx.params.teamId, 'team id');
       await removeTeam(ctx.params.id, user.id, ctx.params.teamId);
       return { message: 'Team removed from tournament' };
     },
@@ -294,6 +304,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'tournament id');
       const result = await generateFixtures(ctx.params.id, user.id);
 
       ctx.set.status = 201;
@@ -307,6 +318,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
   .get(
     '/:id/fixtures',
     async (ctx) => {
+      validateUuid(ctx.params.id, 'tournament id');
       const fixtures = await getFixtures(
         ctx.params.id,
         ctx.query.roundType,
@@ -332,6 +344,8 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
       const user = await getUserByFirebaseUid(firebaseUser.uid);
       if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
 
+      validateUuid(ctx.params.id, 'tournament id');
+      validateUuid(ctx.params.fixtureId, 'fixture id');
       const result = await editFixture(ctx.params.id, user.id, ctx.params.fixtureId, ctx.body);
       return result;
     },
@@ -351,6 +365,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
   .get(
     '/:id/standings',
     async (ctx) => {
+      validateUuid(ctx.params.id, 'tournament id');
       return await getStandings(ctx.params.id, ctx.query.groupName);
     },
     {
@@ -364,6 +379,7 @@ export const tournamentRoutes = new Elysia({ prefix: '/api/v1/tournaments' })
   .get(
     '/:id/leaderboard',
     async (ctx) => {
+      validateUuid(ctx.params.id, 'tournament id');
       const limit = Math.min(Number(ctx.query.limit) || 10, 100);
       return await getLeaderboard(ctx.params.id, ctx.query.category ?? 'runs', limit);
     },

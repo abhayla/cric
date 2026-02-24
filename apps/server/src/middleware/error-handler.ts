@@ -34,6 +34,15 @@ function toErrorResponse(
   };
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Throws 400 AppError if the string is not a valid UUID. */
+export function validateUuid(id: string, label = 'id'): void {
+  if (!UUID_REGEX.test(id)) {
+    throw new AppError('VALIDATION_ERROR', `Invalid ${label}: must be a valid UUID`, 400);
+  }
+}
+
 export const errorHandler = new Elysia({ name: 'error-handler' })
   .onError(({ error, set, code: elysiaCode }) => {
     if (error instanceof AppError) {
@@ -50,6 +59,17 @@ export const errorHandler = new Elysia({ name: 'error-handler' })
       set.status = 400;
       console.error('Validation error:', JSON.stringify(error, null, 2));
       return toErrorResponse('VALIDATION_ERROR', 'Invalid request data', error.message);
+    }
+
+    // Catch PostgreSQL invalid UUID syntax errors (code 22P02) as 400
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code: string }).code === '22P02'
+    ) {
+      set.status = 400;
+      return toErrorResponse('VALIDATION_ERROR', 'Invalid ID format: must be a valid UUID');
     }
 
     console.error('Unhandled error:', error);
