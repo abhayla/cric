@@ -16,6 +16,11 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Uncommitted changes from prior sessions (needs review before committing)
+- `tournament_detail_page.dart` — Status transitions, generate fixtures, add team UI
+- `player_profile_page.dart` — Unknown changes, review before committing
+- `integration_test/` — Prod E2E rewrite (5 tournament tests + helpers)
+
 ### Session 2026-02-24d: Live Page Tabs (Matches + Tournaments)
 
 **Completed:** Restructured Live hub page from single scrollable page into tabbed layout with Matches and Tournaments tabs, each with filter chips.

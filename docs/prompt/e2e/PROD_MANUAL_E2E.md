@@ -4,7 +4,15 @@
 
 Comprehensive production test: create 16 teams (96 players), run 5 tournaments (~256 matches) with fully random scoring. All data persists permanently on the prod server (`cricscores.in`). Runs overnight (~13-17 hours).
 
-**IMPORTANT: All actions (team creation, player addition, tournament creation, scoring) must go through the app UI — the exact same process any real user would follow. No API shortcuts. No exceptions.** API calls are allowed ONLY for read-only verification (checking existing teams/rosters to avoid duplicates).
+**All actions (team creation, player addition, tournament creation, tournament status transitions, team registration, fixture generation, scoring) go through the app UI — the exact same process any real user would follow. No API shortcuts. No exceptions.** API calls are allowed ONLY for read-only queries (listing tournaments by name to get IDs, fetching fixture lists for scoring order, checking standings after completion).
+
+### Full UI Flow Per Tournament
+1. **Create Tournament** — Fill form (name, format chip, overs, ball type, players per side, group settings) → Submit
+2. **Open Registration** — Tap ⋮ menu → "Open Registration"
+3. **Add Teams** — Tap "Add Team" on Teams tab → select group (if applicable) → tap team name. Repeat for all teams.
+4. **Generate Fixtures** — Tap "Generate Fixtures" on Overview tab
+5. **Start Tournament** — Tap ⋮ menu → "Start Tournament"
+6. **Score Matches** — Navigate to each fixture, complete toss, score all deliveries via UI
 
 ## Pre-Test Checklist
 
