@@ -6,9 +6,17 @@ Use this prompt to instruct Claude to execute the production E2E test suite.
 
 ## Critical Rule
 
-**IMPORTANT: All actions (team creation, player addition, tournament creation, scoring) must go through the app UI — the exact same process any real user would follow. No API shortcuts. No exceptions.**
+**All actions (team creation, player addition, tournament creation, status transitions, team registration, fixture generation, scoring) go through the app UI — no API shortcuts, no exceptions.**
 
-API calls are allowed ONLY for read-only verification (checking existing teams/rosters to avoid duplicates).
+API calls are allowed ONLY for read-only queries: listing tournaments by name to get IDs, fetching fixture lists for scoring order, checking standings after completion.
+
+### Tournament UI Flow (per tournament)
+Each `setupTournamentViaUI()` call performs these steps through the real app UI:
+1. Create tournament (form: name, format, overs, ball type, players per side, groups)
+2. Open Registration (⋮ menu → "Open Registration")
+3. Add all teams (Teams tab → "Add Team" → group chip → team name, repeated N times)
+4. Generate Fixtures (Overview tab → "Generate Fixtures")
+5. Start Tournament (⋮ menu → "Start Tournament")
 
 ## Pre-requisites
 
@@ -78,7 +86,8 @@ After completion, check:
 
 | File | Purpose |
 |------|---------|
-| `apps/mobile/integration_test/prod/prod_helpers.dart` | UI helpers, team/tournament setup, scoring helpers |
+| `apps/mobile/integration_test/prod/prod_helpers.dart` | `setupTournamentViaUI()`, `scoreAllFixtures()`, scoring helpers |
+| `apps/mobile/integration_test/helpers/tournament_flow_helpers.dart` | `createTournament()`, `addTeamToTournament()`, `generateFixtures()`, `transitionTournamentStatus()` |
 | `apps/mobile/integration_test/prod/prod_team_setup_test.dart` | Create 16 teams x 6 players via UI |
 | `apps/mobile/integration_test/prod/prod_tournament_[1-5]_test.dart` | Individual tournament tests |
 | `scripts/prod-e2e-overnight.sh` | Sequential runner with logging |
