@@ -54,6 +54,13 @@ final liveMatchesProvider = FutureProvider<MatchListResult>((ref) {
   return repository.getMatches(status: 'live');
 });
 
+/// Fetch matches filtered by optional status ('live', 'completed', or null for all).
+final matchesByStatusProvider =
+    FutureProvider.family<MatchListResult, String?>((ref, status) {
+  final repository = ref.read(homeRepositoryProvider);
+  return repository.getMatches(status: status);
+});
+
 /// Fetch recent completed matches (latest 5).
 final recentMatchesProvider = FutureProvider<MatchListResult>((ref) {
   final repository = ref.read(homeRepositoryProvider);

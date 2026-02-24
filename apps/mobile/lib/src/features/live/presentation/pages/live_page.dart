@@ -3,219 +3,334 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:cricscores/src/app/router.dart';
-import 'package:cricscores/src/features/home/providers.dart';
+import 'package:cricscores/src/features/live/providers.dart';
 import 'package:cricscores/src/features/home/presentation/widgets/match_card.dart';
-import 'package:cricscores/src/features/tournaments/providers.dart';
 import 'package:cricscores/src/features/tournaments/presentation/widgets/tournament_card.dart';
 import 'package:cricscores/src/features/tournaments/domain/entities/tournament.dart';
 
-/// Live hub page showing live matches and ongoing tournaments.
-class LivePage extends ConsumerWidget {
+/// Live hub page with Matches and Tournaments tabs.
+class LivePage extends ConsumerStatefulWidget {
   const LivePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LivePage> createState() => _LivePageState();
+}
+
+class _LivePageState extends ConsumerState<LivePage>
+    with TickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final liveMatches = ref.watch(liveMatchesProvider);
-    final tournamentsAsync = ref.watch(tournamentsListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Live'), centerTitle: false),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(liveMatchesProvider);
-          ref.read(tournamentsListProvider.notifier).refresh();
-        },
-        child: CustomScrollView(
-          slivers: [
-            // Live Matches section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
-                  children: [
-                    Text(
-                      'Live Matches',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ...liveMatches.when(
-                      data: (data) => data.matches.isNotEmpty
-                          ? [_CountBadge(count: data.matches.length)]
-                          : <Widget>[],
-                      loading: () => <Widget>[],
-                      error: (_, st) => <Widget>[],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            ...liveMatches.when(
-              data: (data) {
-                if (data.matches.isEmpty) {
-                  return [
-                    const SliverToBoxAdapter(
-                      child: _EmptySectionCard(
-                        icon: Icons.sports_cricket_outlined,
-                        message: 'No live matches right now',
-                      ),
-                    ),
-                  ];
-                }
-                return [
-                  SliverList.builder(
-                    itemCount: data.matches.length,
-                    itemBuilder: (context, index) {
-                      final match = data.matches[index];
-                      return MatchCard(
-                        match: match,
-                        onTap: () {
-                          context.push(AppRoutes.liveMatchPath(match.id));
-                        },
-                      );
-                    },
-                  ),
-                ];
-              },
-              loading: () => [
-                const SliverToBoxAdapter(
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-                ),
-              ],
-              error: (_, st) => [
-                const SliverToBoxAdapter(
-                  child: _EmptySectionCard(
-                    icon: Icons.error_outline,
-                    message: 'Failed to load live matches',
-                  ),
-                ),
-              ],
-            ),
-
-            // Ongoing Tournaments section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                child: Row(
-                  children: [
-                    Text(
-                      'Ongoing Tournaments',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ...tournamentsAsync.when(
-                      data: (data) {
-                        final ongoing = data.tournaments
-                            .where((t) => t.status == TournamentStatus.live)
-                            .toList();
-                        return ongoing.isNotEmpty
-                            ? [_CountBadge(count: ongoing.length)]
-                            : <Widget>[];
-                      },
-                      loading: () => <Widget>[],
-                      error: (_, st) => <Widget>[],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            ...tournamentsAsync.when(
-              data: (data) {
-                final ongoing = data.tournaments
-                    .where((t) => t.status == TournamentStatus.live)
-                    .toList();
-                if (ongoing.isEmpty) {
-                  return [
-                    const SliverToBoxAdapter(
-                      child: _EmptySectionCard(
-                        icon: Icons.emoji_events_outlined,
-                        message: 'No ongoing tournaments',
-                      ),
-                    ),
-                  ];
-                }
-                return [
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: SliverList.separated(
-                      itemCount: ongoing.length,
-                      separatorBuilder: (_, index) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final tournament = ongoing[index];
-                        return TournamentCard(
-                          tournament: tournament,
-                          onTap: () {
-                            context.push(
-                              AppRoutes.tournamentDetailPath(tournament.id),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ];
-              },
-              loading: () => [
-                const SliverToBoxAdapter(
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-                ),
-              ],
-              error: (_, st) => [
-                const SliverToBoxAdapter(
-                  child: _EmptySectionCard(
-                    icon: Icons.error_outline,
-                    message: 'Failed to load tournaments',
-                  ),
-                ),
-              ],
-            ),
-
-            // Bottom padding
-            const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+      appBar: AppBar(
+        title: Text(
+          'Live',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        centerTitle: false,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Matches'),
+            Tab(text: 'Tournaments'),
           ],
         ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          _MatchesSubTab(),
+          _TournamentsSubTab(),
+        ],
       ),
     );
   }
 }
 
-class _CountBadge extends StatelessWidget {
-  const _CountBadge({required this.count});
+class _MatchesSubTab extends ConsumerStatefulWidget {
+  const _MatchesSubTab();
 
-  final int count;
+  @override
+  ConsumerState<_MatchesSubTab> createState() => _MatchesSubTabState();
+}
+
+class _MatchesSubTabState extends ConsumerState<_MatchesSubTab>
+    with AutomaticKeepAliveClientMixin {
+  String _filter = 'live';
+
+  @override
+  bool get wantKeepAlive => true;
+
+  /// Maps filter label to provider arg: 'live' -> 'live', 'completed' -> 'completed', 'all' -> null.
+  String? get _statusArg => _filter == 'all' ? null : _filter;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(12),
+    super.build(context);
+    final matchesAsync = ref.watch(matchesByStatusProvider(_statusArg));
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(matchesByStatusProvider(_statusArg));
+      },
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  _FilterChip(
+                    label: 'Live',
+                    selected: _filter == 'live',
+                    onSelected: () => setState(() => _filter = 'live'),
+                  ),
+                  _FilterChip(
+                    label: 'Completed',
+                    selected: _filter == 'completed',
+                    onSelected: () => setState(() => _filter = 'completed'),
+                  ),
+                  _FilterChip(
+                    label: 'All',
+                    selected: _filter == 'all',
+                    onSelected: () => setState(() => _filter = 'all'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ...matchesAsync.when(
+            data: (data) {
+              if (data.matches.isEmpty) {
+                return [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptySectionCard(
+                      icon: Icons.sports_cricket_outlined,
+                      message: _emptyMessageForFilter(_filter, 'matches'),
+                    ),
+                  ),
+                ];
+              }
+              return [
+                SliverList.builder(
+                  itemCount: data.matches.length,
+                  itemBuilder: (context, index) {
+                    final match = data.matches[index];
+                    return MatchCard(
+                      match: match,
+                      onTap: () {
+                        final path = match.status == 'completed'
+                            ? AppRoutes.scorecardPath(match.id)
+                            : AppRoutes.liveMatchPath(match.id);
+                        context.push(path);
+                      },
+                    );
+                  },
+                ),
+              ];
+            },
+            loading: () => [
+              const SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              ),
+            ],
+            error: (_, _) => [
+              const SliverToBoxAdapter(
+                child: _EmptySectionCard(
+                  icon: Icons.error_outline,
+                  message: 'Failed to load matches',
+                ),
+              ),
+            ],
+          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+        ],
       ),
-      child: Text(
-        count.toString(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.w600,
-        ),
+    );
+  }
+}
+
+class _TournamentsSubTab extends ConsumerStatefulWidget {
+  const _TournamentsSubTab();
+
+  @override
+  ConsumerState<_TournamentsSubTab> createState() =>
+      _TournamentsSubTabState();
+}
+
+class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab>
+    with AutomaticKeepAliveClientMixin {
+  String _filter = 'live';
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final tournamentsAsync = ref.watch(tournamentsListProvider);
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(tournamentsListProvider.notifier).refresh();
+      },
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  _FilterChip(
+                    label: 'Live',
+                    selected: _filter == 'live',
+                    onSelected: () => setState(() => _filter = 'live'),
+                  ),
+                  _FilterChip(
+                    label: 'Completed',
+                    selected: _filter == 'completed',
+                    onSelected: () => setState(() => _filter = 'completed'),
+                  ),
+                  _FilterChip(
+                    label: 'All',
+                    selected: _filter == 'all',
+                    onSelected: () => setState(() => _filter = 'all'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ...tournamentsAsync.when(
+            data: (data) {
+              final filtered = _filterTournaments(data.tournaments);
+              if (filtered.isEmpty) {
+                return [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptySectionCard(
+                      icon: Icons.emoji_events_outlined,
+                      message:
+                          _emptyMessageForFilter(_filter, 'tournaments'),
+                    ),
+                  ),
+                ];
+              }
+              return [
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverList.separated(
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final tournament = filtered[index];
+                      return TournamentCard(
+                        tournament: tournament,
+                        onTap: () {
+                          context.push(
+                            AppRoutes.tournamentDetailPath(tournament.id),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ];
+            },
+            loading: () => [
+              const SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              ),
+            ],
+            error: (_, _) => [
+              const SliverToBoxAdapter(
+                child: _EmptySectionCard(
+                  icon: Icons.error_outline,
+                  message: 'Failed to load tournaments',
+                ),
+              ),
+            ],
+          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+        ],
       ),
+    );
+  }
+
+  List<Tournament> _filterTournaments(List<Tournament> tournaments) {
+    switch (_filter) {
+      case 'live':
+        return tournaments
+            .where((t) => t.status == TournamentStatus.live)
+            .toList();
+      case 'completed':
+        return tournaments
+            .where((t) => t.status == TournamentStatus.completed)
+            .toList();
+      default:
+        return tournaments;
+    }
+  }
+}
+
+String _emptyMessageForFilter(String filter, String type) {
+  switch (filter) {
+    case 'live':
+      return 'No live $type right now';
+    case 'completed':
+      return 'No completed $type';
+    default:
+      return 'No $type found';
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onSelected(),
     );
   }
 }
@@ -238,6 +353,7 @@ class _EmptySectionCard extends StatelessWidget {
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 40, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(height: 8),

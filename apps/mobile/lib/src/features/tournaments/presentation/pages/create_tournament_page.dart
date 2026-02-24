@@ -244,6 +244,7 @@ class _CreateTournamentPageState extends ConsumerState<CreateTournamentPage> {
       child: Column(
         children: [
           _StepperRow(
+            key: const Key('playersPerSideStepper'),
             label: 'Players Per Side',
             value: _playersPerSide,
             min: 2,
@@ -326,6 +327,7 @@ class _CreateTournamentPageState extends ConsumerState<CreateTournamentPage> {
       child: Column(
         children: [
           _StepperRow(
+            key: const Key('numGroupsStepper'),
             label: 'Number of Groups',
             value: _numGroups,
             min: 1,
@@ -333,6 +335,7 @@ class _CreateTournamentPageState extends ConsumerState<CreateTournamentPage> {
             onChanged: (v) => setState(() => _numGroups = v),
           ),
           _StepperRow(
+            key: const Key('qualifyPerGroupStepper'),
             label: 'Top N Qualify',
             value: _qualifyPerGroup,
             min: 1,
@@ -460,6 +463,7 @@ class _ConditionalSection extends StatelessWidget {
 
 class _StepperRow extends StatelessWidget {
   const _StepperRow({
+    super.key,
     required this.label,
     required this.value,
     required this.min,

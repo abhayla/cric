@@ -16,6 +16,53 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-24d: Live Page Tabs (Matches + Tournaments)
+
+**Completed:** Restructured Live hub page from single scrollable page into tabbed layout with Matches and Tournaments tabs, each with filter chips.
+
+**Changes:**
+- `home/providers.dart` — Added `matchesByStatusProvider` (FutureProvider.family by status)
+- `live/providers.dart` — Added `matchesByStatusProvider` to re-export
+- `live/presentation/pages/live_page.dart` — **Rewritten** from `ConsumerWidget` to `ConsumerStatefulWidget` with `TabController(length: 2)`. Two tabs: Matches (uses `matchesByStatusProvider`) and Tournaments (client-side filter on `tournamentsListProvider`). Each tab has Live/Completed/All filter chips defaulting to "Live". Both tabs have pull-to-refresh and `AutomaticKeepAliveClientMixin`.
+- `create_tournament_page.dart` — Fixed pre-existing compile error (added `super.key` to `_StepperRow`)
+- **New:** `test/src/features/live/presentation/pages/live_page_test.dart` — 12 tests all passing
+
+**Verification:** `flutter analyze` — 0 errors, 0 warnings. 12/12 live page tests pass.
+
+**Next steps:**
+1. Run full `flutter test` regression to confirm no breakage
+2. Continue Phase 7 polish
+
+### Session 2026-02-24c: Tournament Management UI + Prod E2E Rewrite
+
+**Completed:** Added 3 missing UI features to `TournamentDetailPage` and rewrote all 5 prod E2E tournament tests to use UI instead of API shortcuts.
+
+**App changes (`tournament_detail_page.dart`):**
+- **Status Transitions** — PopupMenuButton now shows "Open Registration" (draft→registration) and "Start Tournament" (registration→live) menu items
+- **Generate Fixtures** — `FilledButton.tonal('Generate Fixtures')` on Overview tab when status=registration
+- **Add Team** — `FilledButton.tonal('Add Team')` on Teams tab when status is editable. Opens bottom sheet with group selector chips and team list from `teamsListProvider`
+- Converted `_TournamentDetailView`, `_OverviewTab`, `_TeamsTab` from stateless to `ConsumerStatefulWidget`
+
+**Create Tournament form (`create_tournament_page.dart`):**
+- Added `Key` identifiers to steppers: `playersPerSideStepper`, `numGroupsStepper`, `qualifyPerGroupStepper`
+
+**Test helpers:**
+- Fixed format chip label bug: `'Group + Knockout'` → `'Group + KO'` in `tournament_flow_helpers.dart`
+- Rewrote `addTeamToTournament()` for bottom sheet UI flow
+- Added `transitionTournamentStatus()` and `_adjustStepper()` helpers
+- Extended `createTournament()` to handle ball type, players per side, group settings
+- Added `setupTournamentViaUI()` to `prod_helpers.dart` — full UI flow replacing API shortcuts
+- Fixed `_playFixtureViaUI` to navigate back to tournament detail page via GoRouter
+
+**Prod E2E tests (5 files):** All now use `setupTournamentViaUI()` instead of `setupTournamentViaApi()`. Read-only API calls still used for fixture list queries and standings verification.
+
+**Verification:** `flutter analyze` — 0 errors, 0 warnings.
+
+**Next steps:**
+1. Run `prod_tournament_1_test.dart` on emulator to verify full UI flow works end-to-end
+2. Update `PROD_MANUAL_E2E.md` and `RUN_PROD_E2E.md` docs to reflect UI-only flow
+3. Continue Phase 7 polish
+
 ### Session 2026-02-24b: Firebase Prod Setup + Prod APK Built
 
 **Completed:** Local-side Firebase production setup and first prod APK build.
