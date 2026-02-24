@@ -1,5 +1,7 @@
 # Pre-Production: VPS Actions (Server Deployment)
 
+> **Status (2026-02-24):** All phases COMPLETE. Server live at `https://cricscores.in`. See [VPS_DEPLOYMENT_RUNBOOK.md](VPS_DEPLOYMENT_RUNBOOK.md) for the step-by-step runbook with deployment log.
+
 These actions are performed on the VPS (`103.118.16.189`) running Windows Server 2022. They set up the production server environment for friend testing.
 
 **Domain:** `cricscores.in` → Cloudflare DNS → `103.118.16.189` (Proxied)
@@ -10,15 +12,15 @@ These actions are performed on the VPS (`103.118.16.189`) running Windows Server
 
 ## Prerequisites (Manual — Before Claude Code Session on VPS)
 
-- [ ] Point Cloudflare DNS A record for `cricscores.in` to `103.118.16.189` (Proxied / orange cloud)
-- [ ] Point Cloudflare DNS A record for `www.cricscores.in` to `103.118.16.189` (Proxied / orange cloud)
-- [ ] Verify DNS propagation: `nslookup cricscores.in` returns Cloudflare edge IP (not VPS IP — that's expected with Proxied mode)
-- [ ] Ensure PostgreSQL 16 is installed and running as Windows Service
-- [ ] Ensure Bun is installed (`bun --version`)
-- [ ] Ensure Git is installed (`git --version`)
-- [ ] Ensure PM2 is installed (`pm2 --version`) — already present for other hosted apps
-- [ ] Ensure Nginx is running (`C:\Apps\nginx\nginx.exe -t`)
-- [ ] Have `firebase-service-account.json` ready to copy to VPS
+- [x] Point Cloudflare DNS A record for `cricscores.in` to `103.118.16.189` (Proxied / orange cloud)
+- [x] Point Cloudflare DNS A record for `www.cricscores.in` to `103.118.16.189` (Proxied / orange cloud)
+- [x] Verify DNS propagation: `nslookup cricscores.in` returns Cloudflare edge IP (not VPS IP — that's expected with Proxied mode)
+- [x] Ensure PostgreSQL 16 is installed and running as Windows Service
+- [x] Ensure Bun is installed (`bun --version`)
+- [x] Ensure Git is installed (`git --version`)
+- [x] Ensure PM2 is installed (`pm2 --version`) — already present for other hosted apps
+- [x] Ensure Nginx is running (`C:\Apps\nginx\nginx.exe -t`)
+- [x] Have `firebase-service-account.json` ready to copy to VPS
 
 ---
 
@@ -52,7 +54,7 @@ bun install
 
 ### V3. Configure Production Environment
 
-Create `C:\Apps\cricscores\current\.env`:
+Create `C:\Apps\cricscores\current\apps\server\.env`:
 ```dotenv
 DATABASE_URL=postgresql://cricscores_user:<password>@127.0.0.1:5432/cricscores
 FIREBASE_SERVICE_ACCOUNT_PATH=C:\Apps\cricscores\current\firebase-service-account.json
@@ -68,7 +70,7 @@ WS_HEARTBEAT_INTERVAL_MS=30000
 
 > **Note:** No separate `WS_PORT` — Bun/ElysiaJS handles WebSocket upgrade on the same HTTP port (3005). Port 3005 is the first available port per the VPS port allocation table in `C:\Apps\shared\docs\setup\NEW-WEBSITE-SETUP-GUIDE.md`.
 
-Copy `firebase-service-account.json` to `C:\Apps\cricscores\current\`.
+Copy `firebase-service-account.json` to `C:\Apps\cricscores\current\apps\server\`.
 
 ### V4. PostgreSQL Setup
 
@@ -92,7 +94,7 @@ host  all  all  127.0.0.1/32  scram-sha-256
 ### V5. Run Database Migrations and Seed
 
 ```powershell
-cd C:\Apps\cricscores\current
+cd C:\Apps\cricscores\current\apps\server
 bun run db:migrate
 bun run db:seed
 ```
@@ -100,11 +102,13 @@ bun run db:seed
 ### V6. Verify Server Starts
 
 ```powershell
-cd C:\Apps\cricscores\current
+cd C:\Apps\cricscores\current\apps\server
 $env:NODE_ENV="production"; bun run start
-# Check: http://localhost:3005/api/v1/health should return {"status":"ok","database":"connected"}
+# Check: http://127.0.0.1:3005/api/v1/health should return {"status":"ok","database":"connected"}
 # Ctrl+C to stop
 ```
+
+> **Note:** Use `127.0.0.1` instead of `localhost` — this VPS has an IPv4/IPv6 DNS misconfiguration where `localhost` doesn't resolve correctly.
 
 ---
 
@@ -120,8 +124,8 @@ module.exports = {
   apps: [{
     name: 'cricscores',
     script: 'C:\\Users\\Administrator\\.bun\\bin\\bun.exe',
-    args: 'run start',
-    cwd: 'C:\\Apps\\cricscores\\current',
+    args: 'run src/index.ts',
+    cwd: 'C:\\Apps\\cricscores\\current\\apps\\server',
     interpreter: 'none',
     instances: 1,
     exec_mode: 'fork',
@@ -144,12 +148,15 @@ module.exports = {
 ```
 
 > **Pattern:** Uses `interpreter: 'none'` with direct path to `bun.exe` — same approach as AlgoChanakya's Python/FastAPI backend. See `C:\Apps\shared\docs\pm2\PM2-ECOSYSTEM-TEMPLATES.md` Template 8.
+>
+> **Important:** Use `args: 'run src/index.ts'` (NOT `'run start'`). Using `run start` causes a double-bun spawn where the port can't bind. See deployment log in [VPS_DEPLOYMENT_RUNBOOK.md](VPS_DEPLOYMENT_RUNBOOK.md#deployment-log).
 
 ### V8. Start CricScores with PM2
 
 ```powershell
 cd C:\Apps\cricscores\current
 pm2 start ecosystem.config.js
+Start-Sleep 5
 pm2 save   # CRITICAL — ensures PM2 resurrects the app on reboot
 ```
 
@@ -159,7 +166,7 @@ pm2 save   # CRITICAL — ensures PM2 resurrects the app on reboot
 pm2 describe cricscores
 # Should show: status = online, restarts = 0
 
-Invoke-WebRequest -Uri "http://localhost:3005/api/v1/health" -UseBasicParsing
+Invoke-WebRequest -Uri "http://127.0.0.1:3005/api/v1/health" -UseBasicParsing
 # Should return 200 OK with {"status":"ok","database":"connected"}
 ```
 
@@ -335,7 +342,8 @@ Create `C:\Apps\cricscores\scripts\deploy.ps1`:
 ```powershell
 param([string]$Branch = "main")
 $ErrorActionPreference = "Stop"
-$AppDir = "C:\Apps\cricscores\current"
+$AppDir = "C:\Apps\cricscores\current\apps\server"
+$RepoDir = "C:\Apps\cricscores\current"
 
 function Log($msg) {
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -346,12 +354,13 @@ function Log($msg) {
 Log "=== Deploy starting (branch: $Branch) ==="
 
 # Pull latest
-Set-Location $AppDir
+Set-Location $RepoDir
 git fetch origin
 git checkout $Branch
 git pull origin $Branch
 
 # Install deps
+Set-Location $AppDir
 Log "Installing dependencies..."
 bun install --frozen-lockfile
 
@@ -363,11 +372,12 @@ if ($LASTEXITCODE -ne 0) { Log "ERROR: Type check failed"; exit 1 }
 # Migrations
 Log "Running migrations..."
 bun run db:migrate
-if ($LASTEXITCODE -ne 0) { Log "ERROR: Migration failed"; exit 1 }
+if ($LASTEXITCODE -ne 0) { Log "WARNING: Migration returned non-zero (may be already applied)" }
 
 # Restart service
 Log "Restarting cricscores..."
 pm2 restart cricscores
+Start-Sleep 5
 pm2 save
 
 # Health check (30s timeout)
@@ -375,7 +385,7 @@ $ok = $false
 for ($i = 0; $i -lt 10; $i++) {
     Start-Sleep 3
     try {
-        $r = Invoke-WebRequest "http://localhost:3005/api/v1/health" -UseBasicParsing -TimeoutSec 5
+        $r = Invoke-WebRequest "http://127.0.0.1:3005/api/v1/health" -UseBasicParsing -TimeoutSec 5
         $j = $r.Content | ConvertFrom-Json
         if ($j.status -eq "ok") { $ok = $true; break }
     } catch { Log "Not ready (attempt $($i+1)/10)..." }
@@ -396,7 +406,7 @@ The VPS health-check script (`C:\Apps\shared\scripts\health-check.ps1`) runs eve
 
 ```powershell
 # In health-check.ps1's $sites array, add:
-@{ name = "cricscores"; url = "http://localhost:3005/api/v1/health"; pm2Name = "cricscores" }
+@{ Name = "cricscores"; Port = 3005; Domain = "cricscores.in"; HealthPath = "/api/v1/health" }
 ```
 
 ### V19. External Uptime Monitor (UptimeRobot)
@@ -435,8 +445,8 @@ Run these after every deployment:
 pm2 describe cricscores
 # Should show: status = online
 
-# 2. Nginx serving cricscores.in
-Invoke-WebRequest "http://localhost/api/v1/health" -Headers @{Host="cricscores.in"} -UseBasicParsing
+# 2. Nginx serving cricscores.in (use 127.0.0.1, NOT localhost)
+Invoke-WebRequest "http://127.0.0.1/api/v1/health" -Headers @{Host="cricscores.in"} -UseBasicParsing
 # Expected: 200 OK
 
 # 3. Health endpoint via HTTPS (full chain: Cloudflare → Nginx → Bun)

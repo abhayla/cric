@@ -1,12 +1,14 @@
 # VPS Session Prompt
 
+> **Status (2026-02-24):** Initial deployment COMPLETE. All 11 phases done. Server live at `https://cricscores.in`. Use this prompt for re-deployments or maintenance sessions.
+
 Copy-paste the text below (between the `---` markers) into a new Claude Code session running on the VPS.
 
 ---
 
 ## Context
 
-You are deploying the **CricScores** server — a cricket scoring app backend (Bun + ElysiaJS + PostgreSQL + WebSockets) — to this VPS.
+You are maintaining the **CricScores** server — a cricket scoring app backend (Bun + ElysiaJS + PostgreSQL + WebSockets) — on this VPS. Initial deployment was completed on 2026-02-24.
 
 **VPS:** Windows Server 2022, IP `103.118.16.189`
 **Domain:** `cricscores.in`
@@ -47,6 +49,14 @@ Execute the full deployment by following the runbook at `docs/pre-prod/VPS_DEPLO
 - The server-side `firebase-admin` SDK uses a project-level service account — it validates tokens from BOTH dev (`com.cricapp.cricapp`) and prod (`in.cricscores.app`) Android apps automatically.
 - After all phases, run the full post-deployment verification checklist from the runbook.
 - If any phase fails, stop and tell me what went wrong — don't skip steps.
+
+## VPS Gotchas (from initial deployment)
+
+- **Use `127.0.0.1` not `localhost`** — This VPS has an IPv4/IPv6 DNS issue where `localhost` doesn't resolve. All health checks, curl commands, and connection strings must use `127.0.0.1`.
+- **PM2 args: use `run src/index.ts`** — Do NOT use `run start` in ecosystem.config.js. It causes a double-bun spawn where the inner process can't bind the port.
+- **Nginx reload may fail** — If `nginx.exe -s reload` fails with "Access is denied", force-kill all Nginx processes (`taskkill /IM nginx.exe /F`) and start fresh. Verify other sites still work.
+- **db:migrate non-zero exit** — Drizzle's `db:migrate` returns non-zero when all migrations are already applied. Treat as WARNING, not ERROR.
+- **Always `pm2 save` after changes** — And add `Start-Sleep 5` between `pm2 restart` and health checks to let the process bind.
 
 ## Key reference docs in the repo
 

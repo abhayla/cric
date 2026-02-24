@@ -16,6 +16,30 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-24: VPS Deployment Complete
+
+**Completed:** Full CricScores server deployment to VPS (`103.118.16.189`, Windows Server 2022). All 11 phases done. Server live at `https://cricscores.in`.
+
+**What was deployed:**
+- Bun/ElysiaJS server on port 3005 (PM2 managed, `ecosystem.config.js` at repo root)
+- PostgreSQL database `cricscores` with user `cricscores_user` (27 tables, 43 seed records)
+- Nginx reverse proxy (`C:\Apps\nginx\conf\sites\cricscores.conf`) — API + WebSocket + uploads
+- Cloudflare DNS (proxied A records), SSL Flexible, Always HTTPS, WebSocket ON
+- Windows Firewall blocking ports 3005 and 5432 from external access
+- Daily DB backup at 3 AM (`C:\Apps\cricscores\scripts\backup-db.bat`)
+- Deploy script (`C:\Apps\cricscores\scripts\deploy.ps1`) for future deployments
+- Health monitoring every 5 min via `C:\Apps\shared\scripts\health-check.ps1`
+
+**Deployment fixes applied (documented in runbook):**
+- PM2 `args: 'run src/index.ts'` (not `run start` — double-bun spawn issue)
+- All health checks use `127.0.0.1` (not `localhost` — IPv4/IPv6 resolution issue on VPS)
+- Deploy script migration step uses WARNING (not fatal ERROR)
+- `Start-Sleep 5` after `pm2 restart` before health checks
+
+**Firebase production app (`in.cricscores.app`):** Already exists in project `cricapp-7403d` with 3 SHA fingerprints and Phone Auth enabled (2 test numbers).
+
+**Docs updated:** VPS_DEPLOYMENT_RUNBOOK.md, VPS_ACTIONS.md, VPS_SESSION_PROMPT.md — all reflect actual deployed state.
+
 ### Session 2026-02-23c: Android Build Flavors (dev/prod)
 
 **Completed:** Added Android product flavors to decouple dev (existing Firebase `com.cricapp.cricapp`) from prod (`in.cricscores.app`).
