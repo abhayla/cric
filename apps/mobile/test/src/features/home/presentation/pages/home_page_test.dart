@@ -75,8 +75,16 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Teams tab is the default tab
-      expect(find.text('No Teams Yet'), findsOneWidget);
+      // Teams tab is the default tab — default filter is 'member'
+      expect(find.text('No Teams Found'), findsOneWidget);
+      expect(find.text('No teams match this filter'), findsOneWidget);
+    });
+
+    testWidgets('shows filter chips on Teams tab', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FilterChip), findsAtLeast(1));
     });
 
     testWidgets('shows matches empty state on Matches tab', (tester) async {
@@ -87,7 +95,9 @@ void main() {
       await tester.tap(find.text('Matches'));
       await tester.pumpAndSettle();
 
+      // Default filter is 'live', so shows filter-specific empty state
       expect(find.text('No Matches Found'), findsOneWidget);
+      expect(find.text('No matches match this filter'), findsOneWidget);
     });
 
     testWidgets('shows tournaments empty state on Tournaments tab',
@@ -99,7 +109,9 @@ void main() {
       await tester.tap(find.text('Tournaments'));
       await tester.pumpAndSettle();
 
+      // Default filter is 'live', so shows filter-specific empty state
       expect(find.text('No Tournaments Found'), findsOneWidget);
+      expect(find.text('No tournaments match this filter'), findsOneWidget);
     });
 
     testWidgets('has pull-to-refresh on Teams tab', (tester) async {

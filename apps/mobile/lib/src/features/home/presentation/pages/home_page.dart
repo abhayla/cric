@@ -133,13 +133,19 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 }
 
-/// Teams sub-tab: "Teams I Own" + "Teams I'm In".
-class _TeamsSubTab extends ConsumerWidget {
+/// Teams sub-tab: filter chips (Member / Owner / All) + team grid.
+class _TeamsSubTab extends ConsumerStatefulWidget {
   const _TeamsSubTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+  ConsumerState<_TeamsSubTab> createState() => _TeamsSubTabState();
+}
+
+class _TeamsSubTabState extends ConsumerState<_TeamsSubTab> {
+  String _filter = 'member';
+
+  @override
+  Widget build(BuildContext context) {
     final teamsAsync = ref.watch(teams_prov.teamsListProvider);
 
     return RefreshIndicator(
@@ -148,35 +154,72 @@ class _TeamsSubTab extends ConsumerWidget {
       },
       child: teamsAsync.when(
         data: (result) {
-          final owned = result.teams
-              .where((t) => t.role == TeamMemberRole.owner)
-              .toList();
-          final member = result.teams
-              .where((t) => t.role != TeamMemberRole.owner)
-              .toList();
+          final filtered = _filter == 'all'
+              ? result.teams
+              : result.teams.where((t) {
+                  return switch (_filter) {
+                    'member' => t.role != TeamMemberRole.owner,
+                    'owner' => t.role == TeamMemberRole.owner,
+                    _ => true,
+                  };
+                }).toList();
 
-          if (owned.isEmpty && member.isEmpty) {
-            return _EmptyState(
-              icon: Icons.groups_outlined,
-              title: 'No Teams Yet',
-              subtitle: 'Create a team to get started',
-              actionLabel: 'Create a Team',
-              onAction: () => context.push(AppRoutes.createTeam),
-            );
-          }
+          final itemCount =
+              1 + // filter chips
+              (filtered.isEmpty ? 1 : 1); // empty state or grid
 
-          return ListView(
+          return ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
-            children: [
-              if (owned.isNotEmpty) ...[
-                _SectionHeader(title: 'Teams I Own', theme: theme),
-                _TeamGrid(teams: owned),
-              ],
-              if (member.isNotEmpty) ...[
-                _SectionHeader(title: "Teams I'm In", theme: theme),
-                _TeamGrid(teams: member),
-              ],
-            ],
+            itemCount: itemCount,
+            itemBuilder: (context, index) {
+              // Filter chips row
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      _FilterChip(
+                        label: 'Member',
+                        selected: _filter == 'member',
+                        onSelected: () => setState(() => _filter = 'member'),
+                      ),
+                      _FilterChip(
+                        label: 'Owner',
+                        selected: _filter == 'owner',
+                        onSelected: () => setState(() => _filter = 'owner'),
+                      ),
+                      _FilterChip(
+                        label: 'All',
+                        selected: _filter == 'all',
+                        onSelected: () => setState(() => _filter = 'all'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              // Empty state
+              if (filtered.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 64),
+                  child: _EmptyState(
+                    icon: Icons.groups_outlined,
+                    title: 'No Teams Found',
+                    subtitle: _filter == 'all'
+                        ? 'Create a team to get started'
+                        : 'No teams match this filter',
+                    actionLabel: _filter == 'all' ? 'Create a Team' : null,
+                    onAction: _filter == 'all'
+                        ? () => context.push(AppRoutes.createTeam)
+                        : null,
+                  ),
+                );
+              }
+
+              // Team grid
+              return _TeamGrid(teams: filtered);
+            },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -198,7 +241,7 @@ class _MatchesSubTab extends ConsumerStatefulWidget {
 }
 
 class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
-  String _filter = 'all';
+  String _filter = 'live';
 
   @override
   Widget build(BuildContext context) {
@@ -246,11 +289,6 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
                     spacing: 8,
                     children: [
                       _FilterChip(
-                        label: 'All',
-                        selected: _filter == 'all',
-                        onSelected: () => setState(() => _filter = 'all'),
-                      ),
-                      _FilterChip(
                         label: 'Live',
                         selected: _filter == 'live',
                         onSelected: () => setState(() => _filter = 'live'),
@@ -264,6 +302,11 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
                         label: 'Lost',
                         selected: _filter == 'lost',
                         onSelected: () => setState(() => _filter = 'lost'),
+                      ),
+                      _FilterChip(
+                        label: 'All',
+                        selected: _filter == 'all',
+                        onSelected: () => setState(() => _filter = 'all'),
                       ),
                     ],
                   ),
@@ -336,7 +379,7 @@ class _TournamentsSubTab extends ConsumerStatefulWidget {
 }
 
 class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
-  String _filter = 'all';
+  String _filter = 'live';
 
   @override
   Widget build(BuildContext context) {
@@ -353,6 +396,7 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
               : result.tournaments.where((t) {
                   return switch (_filter) {
                     'live' => t.status == TournamentStatus.live,
+                    'registered' => t.status == TournamentStatus.registration,
                     'completed' => t.status == TournamentStatus.completed,
                     _ => true,
                   };
@@ -378,19 +422,24 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
                     spacing: 8,
                     children: [
                       _FilterChip(
-                        label: 'All',
-                        selected: _filter == 'all',
-                        onSelected: () => setState(() => _filter = 'all'),
-                      ),
-                      _FilterChip(
                         label: 'Live',
                         selected: _filter == 'live',
                         onSelected: () => setState(() => _filter = 'live'),
                       ),
                       _FilterChip(
+                        label: 'Registered',
+                        selected: _filter == 'registered',
+                        onSelected: () => setState(() => _filter = 'registered'),
+                      ),
+                      _FilterChip(
                         label: 'Completed',
                         selected: _filter == 'completed',
                         onSelected: () => setState(() => _filter = 'completed'),
+                      ),
+                      _FilterChip(
+                        label: 'All',
+                        selected: _filter == 'all',
+                        onSelected: () => setState(() => _filter = 'all'),
                       ),
                     ],
                   ),
@@ -461,27 +510,6 @@ class _TournamentsSubTabState extends ConsumerState<_TournamentsSubTab> {
 // ============================================================
 // Shared Widgets
 // ============================================================
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.theme});
-
-  final String title;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
 
 class _TeamGrid extends StatelessWidget {
   const _TeamGrid({required this.teams});
