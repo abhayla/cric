@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:cricscores/src/app/router.dart';
-import 'package:cricscores/src/app/providers.dart';
+import 'package:cricscores/src/app/providers.dart' show currentUserIdProvider;
 import 'package:cricscores/src/features/home/providers.dart';
 import 'package:cricscores/src/features/teams/providers.dart' as teams_prov;
 import 'package:cricscores/src/features/teams/domain/entities/team.dart';
@@ -46,8 +46,7 @@ class _HomePageState extends ConsumerState<HomePage>
   Widget build(BuildContext context) {
     super.build(context);
     final theme = Theme.of(context);
-    final authState = ref.watch(authStateProvider);
-    final userId = authState.value?.uid;
+    final userId = ref.watch(currentUserIdProvider).value;
 
     return Scaffold(
       appBar: AppBar(

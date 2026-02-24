@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/constants/app_constants.dart';
 import '../features/auth/data/datasources/firebase_auth_datasource.dart';
 
 /// Firebase Auth datasource singleton.
@@ -44,4 +47,34 @@ final authStateProvider = StreamProvider<User?>((ref) {
   });
 
   return controller.stream;
+});
+
+/// The current authenticated user's server-assigned UUID.
+/// Fetches from GET /auth/me using the Firebase ID token.
+/// Returns null if not authenticated or if the server call fails.
+final currentUserIdProvider = FutureProvider<String?>((ref) async {
+  final authState = ref.watch(authStateProvider);
+  final user = authState.value;
+  if (user == null) return null;
+
+  try {
+    final idToken = await user.getIdToken();
+    if (idToken == null) return null;
+
+    final dio = Dio(BaseOptions(
+      baseUrl: AppConstants.apiBaseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      headers: {'Authorization': 'Bearer $idToken'},
+    ));
+
+    final response = await dio.get('/auth/me');
+    final userId = response.data['user']?['id'] as String?;
+    return userId;
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('[currentUserIdProvider] Failed to fetch user ID: $e');
+    }
+    return null;
+  }
 });

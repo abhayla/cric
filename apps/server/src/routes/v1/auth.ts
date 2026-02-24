@@ -79,6 +79,22 @@ export const authRoutes = new Elysia({ prefix: '/api/v1/auth' })
     },
   )
   .use(authMiddleware)
+  .get(
+    '/me',
+    async (ctx) => {
+      const { firebaseUser } = ctx as typeof ctx & {
+        firebaseUser: { uid: string; phone: string | null; email: string | null };
+      };
+
+      const { getUserByFirebaseUid } = await import('../../services/auth.service.ts');
+      const user = await getUserByFirebaseUid(firebaseUser.uid);
+      if (!user) {
+        throw new AppError('NOT_FOUND', 'User not found', 404);
+      }
+
+      return formatUserResponse(user, false);
+    },
+  )
   .put(
     '/profile',
     async (ctx) => {

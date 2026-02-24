@@ -3,15 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
-import '../../../../app/providers.dart';
+import '../../../../app/providers.dart' show currentUserIdProvider;
 
 class MorePage extends ConsumerWidget {
   const MorePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateProvider);
-    final userId = authState.value?.uid;
+    final userId = ref.watch(currentUserIdProvider).value;
 
     return Scaffold(
       appBar: AppBar(

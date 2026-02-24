@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { authMiddleware } from '../../middleware/auth.ts';
+import { AppError } from '../../middleware/error-handler.ts';
 import {
   searchPlayersByName,
   searchPlayerByPhone,
@@ -8,6 +9,14 @@ import {
   getPlayerStats,
   getPlayerMatches,
 } from '../../services/player.service.ts';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function validateUuid(id: string, label = 'id'): void {
+  if (!UUID_REGEX.test(id)) {
+    throw new AppError('VALIDATION_ERROR', `Invalid ${label}: must be a valid UUID`, 400);
+  }
+}
 
 const BATTING_STYLES = ['right_hand', 'left_hand'] as const;
 const BOWLING_STYLES = [
@@ -81,6 +90,7 @@ export const playerRoutes = new Elysia({ prefix: '/api/v1/players' })
   .get(
     '/:id',
     async (ctx) => {
+      validateUuid(ctx.params.id, 'player id');
       const profile = await getPlayerProfile(ctx.params.id);
       return { player: profile };
     },
@@ -91,6 +101,7 @@ export const playerRoutes = new Elysia({ prefix: '/api/v1/players' })
   .get(
     '/:id/stats',
     async (ctx) => {
+      validateUuid(ctx.params.id, 'player id');
       const format = ctx.query.format || 'all';
       const stats = await getPlayerStats(ctx.params.id, format);
       return { stats };
@@ -105,6 +116,7 @@ export const playerRoutes = new Elysia({ prefix: '/api/v1/players' })
   .get(
     '/:id/matches',
     async (ctx) => {
+      validateUuid(ctx.params.id, 'player id');
       const result = await getPlayerMatches(ctx.params.id, {
         page: ctx.query.page ? Number(ctx.query.page) : undefined,
         limit: ctx.query.limit ? Number(ctx.query.limit) : undefined,

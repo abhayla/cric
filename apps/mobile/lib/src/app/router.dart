@@ -841,14 +841,14 @@ class _AppShell extends StatelessWidget {
   }
 }
 
-/// Wraps PlayerProfilePage with current user's ID from Firebase Auth.
+/// Wraps PlayerProfilePage with current user's server-assigned UUID.
 class _CurrentUserProfilePage extends ConsumerWidget {
   const _CurrentUserProfilePage();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateProvider);
-    return authState.when(
+    final userIdAsync = ref.watch(currentUserIdProvider);
+    return userIdAsync.when(
       loading: () => Scaffold(
         appBar: AppBar(title: const Text('Profile')),
         body: const Center(child: CircularProgressIndicator()),
@@ -857,14 +857,14 @@ class _CurrentUserProfilePage extends ConsumerWidget {
         appBar: AppBar(title: const Text('Profile')),
         body: Center(child: Text('Error: $error')),
       ),
-      data: (user) {
-        if (user == null) {
+      data: (userId) {
+        if (userId == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('Profile')),
             body: const Center(child: Text('Not logged in')),
           );
         }
-        return PlayerProfilePage(playerId: user.uid);
+        return PlayerProfilePage(playerId: userId);
       },
     );
   }
