@@ -76,32 +76,39 @@ class MatchCard extends StatelessWidget {
     return parts.join(' \u2022 ');
   }
 
-  // The currentInnings tells us which team is batting.
-  // We show score for the batting team. For the other team, show dash.
-  // For completed matches, both teams played — we show the current innings data
-  // associated with the batting team.
+  InningsSnapshot? _inningsForTeam(String teamId) {
+    if (match.firstInnings?.battingTeamId == teamId) return match.firstInnings;
+    if (match.secondInnings?.battingTeamId == teamId) {
+      return match.secondInnings;
+    }
+    // Fallback for live matches: use currentInnings if batting team matches
+    if (match.currentInnings?.battingTeamId == teamId) {
+      return match.currentInnings;
+    }
+    return null;
+  }
+
   String get _homeScore {
-    final innings = match.currentInnings;
-    if (innings == null) return '—';
-    // The innings data shows the latest innings. We don't have separate
-    // first/second innings scores in MatchListItem, so we show innings data
-    // for now. In a real scenario, we'd have both innings.
-    return innings.scoreDisplay;
+    final innings = _inningsForTeam(match.homeTeamId);
+    return innings?.scoreDisplay ?? '—';
   }
 
   String get _homeOvers {
-    final innings = match.currentInnings;
+    final innings = _inningsForTeam(match.homeTeamId);
     if (innings == null) return '';
     return '(${innings.overs})';
   }
 
   String get _awayScore {
-    if (match.currentInnings == null) return '—';
-    // For the non-batting team, show dash (score not available in current innings)
-    return '—';
+    final innings = _inningsForTeam(match.awayTeamId);
+    return innings?.scoreDisplay ?? '—';
   }
 
-  String get _awayOvers => '';
+  String get _awayOvers {
+    final innings = _inningsForTeam(match.awayTeamId);
+    if (innings == null) return '';
+    return '(${innings.overs})';
+  }
 }
 
 class _StatusBadge extends StatelessWidget {

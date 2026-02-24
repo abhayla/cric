@@ -187,12 +187,15 @@ export async function getMatches(userId: string, options: GetMatchesOptions = {}
     .where(inArray(innings.matchId, matchIds))
     .orderBy(desc(innings.inningsNumber));
 
-  // Build a map: matchId → latest innings data
-  const inningsMap = new Map<string, typeof inningsRows[0]>();
+  // Build a map: matchId → { first?, second? } innings data
+  const inningsMap = new Map<string, { first?: typeof inningsRows[0]; second?: typeof inningsRows[0] }>();
   for (const row of inningsRows) {
     if (!inningsMap.has(row.matchId)) {
-      inningsMap.set(row.matchId, row);
+      inningsMap.set(row.matchId, {});
     }
+    const entry = inningsMap.get(row.matchId)!;
+    if (row.inningsNumber === 1) entry.first = row;
+    else if (row.inningsNumber === 2) entry.second = row;
   }
 
   // Fetch match results for completed matches
@@ -207,7 +210,18 @@ export async function getMatches(userId: string, options: GetMatchesOptions = {}
 
   // Assemble enriched response
   const enrichedMatches = result.map((m) => {
-    const currentInnings = inningsMap.get(m.id);
+    const matchInnings = inningsMap.get(m.id);
+    // currentInnings = latest innings (for live match display)
+    const currentInnings = matchInnings?.second ?? matchInnings?.first;
+    const formatInnings = (inn: typeof inningsRows[0] | undefined) =>
+      inn
+        ? {
+            battingTeamId: inn.battingTeamId,
+            totalRuns: inn.totalRuns,
+            totalWickets: inn.totalWickets,
+            overs: inn.totalOvers,
+          }
+        : null;
     return {
       id: m.id,
       homeTeam: { id: m.homeTeamId, name: teamNameMap.get(m.homeTeamId) ?? null },
@@ -219,14 +233,9 @@ export async function getMatches(userId: string, options: GetMatchesOptions = {}
       matchDate: m.matchDate,
       scorerId: m.scorerId,
       createdAt: m.createdAt,
-      currentInnings: currentInnings
-        ? {
-            battingTeamId: currentInnings.battingTeamId,
-            totalRuns: currentInnings.totalRuns,
-            totalWickets: currentInnings.totalWickets,
-            overs: currentInnings.totalOvers,
-          }
-        : null,
+      currentInnings: formatInnings(currentInnings),
+      firstInnings: formatInnings(matchInnings?.first),
+      secondInnings: formatInnings(matchInnings?.second),
       result: resultMap.get(m.id) ?? null,
     };
   });

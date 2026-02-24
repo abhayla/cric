@@ -13,6 +13,8 @@ void main() {
     matches: [
       MatchListItem(
         id: 'match-1',
+        homeTeamId: 'team-1',
+        awayTeamId: 'team-2',
         homeTeamName: 'Mumbai Warriors',
         awayTeamName: 'Delhi Strikers',
         format: 'T20',
@@ -23,6 +25,8 @@ void main() {
       ),
       MatchListItem(
         id: 'match-2',
+        homeTeamId: 'team-3',
+        awayTeamId: 'team-4',
         homeTeamName: 'Chennai Kings',
         awayTeamName: 'Kolkata Thunder',
         format: 'T20',

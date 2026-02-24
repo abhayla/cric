@@ -41,6 +41,8 @@ abstract class MatchListItemModel with _$MatchListItemModel {
     required String matchDate,
     String? venue,
     InningsSnapshotModel? currentInnings,
+    InningsSnapshotModel? firstInnings,
+    InningsSnapshotModel? secondInnings,
     String? result,
   }) = _MatchListItemModel;
 
@@ -48,9 +50,21 @@ abstract class MatchListItemModel with _$MatchListItemModel {
       _$MatchListItemModelFromJson(json);
 }
 
+InningsSnapshot? _toInningsSnapshot(InningsSnapshotModel? model) {
+  if (model == null) return null;
+  return InningsSnapshot(
+    battingTeamId: model.battingTeamId,
+    totalRuns: model.totalRuns,
+    totalWickets: model.totalWickets,
+    overs: model.overs,
+  );
+}
+
 extension MatchListItemModelX on MatchListItemModel {
   MatchListItem toEntity() => MatchListItem(
         id: id,
+        homeTeamId: homeTeam.id,
+        awayTeamId: awayTeam.id,
         homeTeamName: homeTeam.name,
         awayTeamName: awayTeam.name,
         format: format,
@@ -58,14 +72,9 @@ extension MatchListItemModelX on MatchListItemModel {
         status: status,
         matchDate: matchDate,
         venue: venue,
-        currentInnings: currentInnings != null
-            ? InningsSnapshot(
-                battingTeamId: currentInnings!.battingTeamId,
-                totalRuns: currentInnings!.totalRuns,
-                totalWickets: currentInnings!.totalWickets,
-                overs: currentInnings!.overs,
-              )
-            : null,
+        currentInnings: _toInningsSnapshot(currentInnings),
+        firstInnings: _toInningsSnapshot(firstInnings),
+        secondInnings: _toInningsSnapshot(secondInnings),
         result: result,
       );
 }

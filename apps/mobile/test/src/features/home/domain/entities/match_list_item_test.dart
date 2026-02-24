@@ -7,6 +7,8 @@ void main() {
     test('constructs with required fields', () {
       final item = MatchListItem(
         id: 'match-1',
+        homeTeamId: 'team-1',
+        awayTeamId: 'team-2',
         homeTeamName: 'Mumbai',
         awayTeamName: 'Chennai',
         format: 'T20',
@@ -30,6 +32,8 @@ void main() {
     test('constructs with all optional fields', () {
       final item = MatchListItem(
         id: 'match-2',
+        homeTeamId: 'team-1',
+        awayTeamId: 'team-2',
         homeTeamName: 'Mumbai',
         awayTeamName: 'Chennai',
         format: 'ODI',
@@ -43,6 +47,18 @@ void main() {
           totalWickets: 7,
           overs: '20.0',
         ),
+        firstInnings: const InningsSnapshot(
+          battingTeamId: 'team-1',
+          totalRuns: 185,
+          totalWickets: 7,
+          overs: '20.0',
+        ),
+        secondInnings: const InningsSnapshot(
+          battingTeamId: 'team-2',
+          totalRuns: 170,
+          totalWickets: 9,
+          overs: '20.0',
+        ),
         result: 'Mumbai won by 15 runs',
       );
 
@@ -51,12 +67,16 @@ void main() {
       expect(item.currentInnings!.totalRuns, 185);
       expect(item.currentInnings!.totalWickets, 7);
       expect(item.currentInnings!.overs, '20.0');
+      expect(item.firstInnings, isNotNull);
+      expect(item.secondInnings, isNotNull);
       expect(item.result, 'Mumbai won by 15 runs');
     });
 
     test('title returns "HomeTeam vs AwayTeam"', () {
       final item = MatchListItem(
         id: 'match-1',
+        homeTeamId: 'team-1',
+        awayTeamId: 'team-2',
         homeTeamName: 'Mumbai',
         awayTeamName: 'Chennai',
         format: 'T20',
@@ -71,6 +91,8 @@ void main() {
     test('isLive returns true for live status', () {
       final item = MatchListItem(
         id: 'match-1',
+        homeTeamId: 'team-1',
+        awayTeamId: 'team-2',
         homeTeamName: 'Mumbai',
         awayTeamName: 'Chennai',
         format: 'T20',
@@ -86,6 +108,8 @@ void main() {
     test('isCompleted returns true for completed status', () {
       final item = MatchListItem(
         id: 'match-1',
+        homeTeamId: 'team-1',
+        awayTeamId: 'team-2',
         homeTeamName: 'Mumbai',
         awayTeamName: 'Chennai',
         format: 'T20',

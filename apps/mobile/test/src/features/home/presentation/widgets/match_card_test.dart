@@ -15,6 +15,8 @@ void main() {
 
   final liveMatch = MatchListItem(
     id: 'match-1',
+    homeTeamId: 'team-1',
+    awayTeamId: 'team-2',
     homeTeamName: 'Mumbai Warriors',
     awayTeamName: 'Chennai Kings',
     format: 'T20',
@@ -32,6 +34,8 @@ void main() {
 
   final completedMatch = MatchListItem(
     id: 'match-2',
+    homeTeamId: 'team-3',
+    awayTeamId: 'team-4',
     homeTeamName: 'Delhi Strikers',
     awayTeamName: 'Kolkata Thunder',
     format: 'ODI',
@@ -39,8 +43,14 @@ void main() {
     status: 'completed',
     matchDate: '2026-02-08',
     result: 'Delhi Strikers won by 15 runs',
-    currentInnings: const InningsSnapshot(
-      battingTeamId: 'team-2',
+    firstInnings: const InningsSnapshot(
+      battingTeamId: 'team-3',
+      totalRuns: 187,
+      totalWickets: 6,
+      overs: '50.0',
+    ),
+    secondInnings: const InningsSnapshot(
+      battingTeamId: 'team-4',
       totalRuns: 172,
       totalWickets: 9,
       overs: '50.0',
@@ -49,6 +59,8 @@ void main() {
 
   final setupMatch = MatchListItem(
     id: 'match-3',
+    homeTeamId: 'team-5',
+    awayTeamId: 'team-6',
     homeTeamName: 'Team A',
     awayTeamName: 'Team B',
     format: 'T20',
@@ -65,11 +77,20 @@ void main() {
       expect(find.text('Chennai Kings'), findsOneWidget);
     });
 
-    testWidgets('displays score for current innings', (tester) async {
+    testWidgets('displays score for current innings (live match)',
+        (tester) async {
       await tester.pumpWidget(buildTestWidget(liveMatch));
 
       expect(find.text('156/4'), findsOneWidget);
       expect(find.text('(18.2)'), findsOneWidget);
+    });
+
+    testWidgets('displays both teams scores for completed match',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget(completedMatch));
+
+      expect(find.text('187/6'), findsOneWidget);
+      expect(find.text('172/9'), findsOneWidget);
     });
 
     testWidgets('displays LIVE badge for live match', (tester) async {

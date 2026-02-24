@@ -2,6 +2,8 @@
 class MatchListItem {
   MatchListItem({
     required this.id,
+    required this.homeTeamId,
+    required this.awayTeamId,
     required this.homeTeamName,
     required this.awayTeamName,
     required this.format,
@@ -10,10 +12,14 @@ class MatchListItem {
     required this.matchDate,
     this.venue,
     this.currentInnings,
+    this.firstInnings,
+    this.secondInnings,
     this.result,
   });
 
   final String id;
+  final String homeTeamId;
+  final String awayTeamId;
   final String homeTeamName;
   final String awayTeamName;
   final String format;
@@ -22,6 +28,8 @@ class MatchListItem {
   final String matchDate;
   final String? venue;
   final InningsSnapshot? currentInnings;
+  final InningsSnapshot? firstInnings;
+  final InningsSnapshot? secondInnings;
   final String? result;
 
   String get title => '$homeTeamName vs $awayTeamName';
