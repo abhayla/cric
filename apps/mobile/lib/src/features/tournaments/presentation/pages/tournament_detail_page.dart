@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
 import '../../../../shared/widgets/error_display.dart';
+import '../../../teams/providers.dart' show teamsListProvider;
 import '../../domain/entities/fixture.dart';
 import '../../domain/entities/standing.dart';
 import '../../domain/entities/tournament.dart';
@@ -39,7 +40,7 @@ class TournamentDetailPage extends ConsumerWidget {
   }
 }
 
-class _TournamentDetailView extends StatelessWidget {
+class _TournamentDetailView extends ConsumerStatefulWidget {
   const _TournamentDetailView({
     required this.tournament,
     required this.tournamentId,
@@ -49,7 +50,35 @@ class _TournamentDetailView extends StatelessWidget {
   final String tournamentId;
 
   @override
+  ConsumerState<_TournamentDetailView> createState() =>
+      _TournamentDetailViewState();
+}
+
+class _TournamentDetailViewState extends ConsumerState<_TournamentDetailView> {
+  Future<void> _handleStatusTransition(TournamentStatus newStatus) async {
+    try {
+      final repository = ref.read(tournamentRepositoryProvider);
+      await repository.transitionStatus(widget.tournamentId, newStatus);
+      ref.invalidate(tournamentDetailProvider(widget.tournamentId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Status changed to ${newStatus.label}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to change status: $e')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final tournament = widget.tournament;
+    final status = tournament.status;
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -64,13 +93,31 @@ class _TournamentDetailView extends StatelessWidget {
               ),
               actions: [
                 PopupMenuButton<String>(
-                  onSelected: (_) {},
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'open_registration':
+                        _handleStatusTransition(TournamentStatus.registration);
+                      case 'start_tournament':
+                        _handleStatusTransition(TournamentStatus.live);
+                    }
+                  },
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'edit',
                       child: Text('Edit Tournament'),
                     ),
-                    const PopupMenuItem(value: 'share', child: Text('Share')),
+                    const PopupMenuItem(
+                        value: 'share', child: Text('Share')),
+                    if (status == TournamentStatus.draft)
+                      const PopupMenuItem(
+                        value: 'open_registration',
+                        child: Text('Open Registration'),
+                      ),
+                    if (status == TournamentStatus.registration)
+                      const PopupMenuItem(
+                        value: 'start_tournament',
+                        child: Text('Start Tournament'),
+                      ),
                   ],
                 ),
               ],
@@ -95,9 +142,18 @@ class _TournamentDetailView extends StatelessWidget {
           ],
           body: TabBarView(
             children: [
-              _OverviewTab(tournament: tournament, tournamentId: tournamentId),
-              _FixturesTab(tournamentId: tournamentId, tournament: tournament),
-              _TeamsTab(tournament: tournament),
+              _OverviewTab(
+                tournament: tournament,
+                tournamentId: widget.tournamentId,
+              ),
+              _FixturesTab(
+                tournamentId: widget.tournamentId,
+                tournament: tournament,
+              ),
+              _TeamsTab(
+                tournament: tournament,
+                tournamentId: widget.tournamentId,
+              ),
             ],
           ),
         ),
@@ -283,19 +339,66 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 
 // -- Overview Tab --
 
-class _OverviewTab extends ConsumerWidget {
+class _OverviewTab extends ConsumerStatefulWidget {
   const _OverviewTab({required this.tournament, required this.tournamentId});
 
   final Tournament tournament;
   final String tournamentId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final standingsAsync = ref.watch(tournamentStandingsProvider(tournamentId));
+  ConsumerState<_OverviewTab> createState() => _OverviewTabState();
+}
+
+class _OverviewTabState extends ConsumerState<_OverviewTab> {
+  bool _isGenerating = false;
+
+  Future<void> _generateFixtures() async {
+    setState(() => _isGenerating = true);
+    try {
+      final repository = ref.read(tournamentRepositoryProvider);
+      await repository.generateFixtures(widget.tournamentId);
+      ref.invalidate(tournamentFixturesProvider(widget.tournamentId));
+      ref.invalidate(tournamentDetailProvider(widget.tournamentId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fixtures generated')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate fixtures: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final standingsAsync =
+        ref.watch(tournamentStandingsProvider(widget.tournamentId));
+    final showGenerateButton =
+        widget.tournament.status == TournamentStatus.registration;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Generate Fixtures button (registration status only)
+        if (showGenerateButton) ...[
+          FilledButton.tonal(
+            onPressed: _isGenerating ? null : _generateFixtures,
+            child: _isGenerating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Generate Fixtures'),
+          ),
+          const SizedBox(height: 16),
+        ],
         // Standings preview
         standingsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -311,7 +414,7 @@ class _OverviewTab extends ConsumerWidget {
             }
             return _StandingsPreview(
               standings: result.standings,
-              tournamentId: tournamentId,
+              tournamentId: widget.tournamentId,
             );
           },
         ),
@@ -322,7 +425,8 @@ class _OverviewTab extends ConsumerWidget {
             Expanded(
               child: OutlinedButton(
                 onPressed: () {
-                  context.push(AppRoutes.tournamentBracketPath(tournamentId));
+                  context
+                      .push(AppRoutes.tournamentBracketPath(widget.tournamentId));
                 },
                 child: const Text('Bracket'),
               ),
@@ -332,7 +436,7 @@ class _OverviewTab extends ConsumerWidget {
               child: OutlinedButton(
                 onPressed: () {
                   context.push(
-                    AppRoutes.tournamentLeaderboardPath(tournamentId),
+                    AppRoutes.tournamentLeaderboardPath(widget.tournamentId),
                   );
                 },
                 child: const Text('Leaderboard'),
@@ -506,13 +610,10 @@ class _FixturesTab extends ConsumerWidget {
 
   void _onFixtureTap(BuildContext context, Fixture fixture) {
     if (fixture.isCompleted && fixture.matchId != null) {
-      // Completed match — navigate to scorecard
       context.push(AppRoutes.scorecardPath(fixture.matchId!));
     } else if (fixture.hasMatch) {
-      // Live match — navigate to scoring
       context.push(AppRoutes.scoringPath(fixture.matchId!));
     } else {
-      // No match yet — navigate to match setup with pre-selected teams
       context.push(
         AppRoutes.matchSetup,
         extra: <String, dynamic>{
@@ -532,20 +633,61 @@ class _FixturesTab extends ConsumerWidget {
 
 // -- Teams Tab --
 
-class _TeamsTab extends StatelessWidget {
-  const _TeamsTab({required this.tournament});
+class _TeamsTab extends ConsumerStatefulWidget {
+  const _TeamsTab({
+    required this.tournament,
+    required this.tournamentId,
+  });
 
   final Tournament tournament;
+  final String tournamentId;
+
+  @override
+  ConsumerState<_TeamsTab> createState() => _TeamsTabState();
+}
+
+class _TeamsTabState extends ConsumerState<_TeamsTab> {
+  void _showAddTeamSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _AddTeamSheet(
+        tournamentId: widget.tournamentId,
+        numGroups: widget.tournament.numGroups,
+        hasGroupStage: widget.tournament.hasGroupStage,
+        parentRef: ref,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final teams = tournament.teams;
+    final teams = widget.tournament.teams;
+    final showAddButton = widget.tournament.status.isEditable;
+
     if (teams == null || teams.isEmpty) {
-      return const _SectionEmptyState(
-        icon: Icons.groups,
-        title: 'No Teams Registered',
-        description:
-            'Teams will appear here once they register for the tournament.',
+      return Column(
+        children: [
+          const Expanded(
+            child: _SectionEmptyState(
+              icon: Icons.groups,
+              title: 'No Teams Registered',
+              description:
+                  'Teams will appear here once they register for the tournament.',
+            ),
+          ),
+          if (showAddButton)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonal(
+                  onPressed: _showAddTeamSheet,
+                  child: const Text('Add Team'),
+                ),
+              ),
+            ),
+        ],
       );
     }
 
@@ -556,25 +698,192 @@ class _TeamsTab extends StatelessWidget {
       grouped.putIfAbsent(group, () => []).add(team);
     }
 
-    // Flatten grouped entries into a list of widgets for builder
     final items = grouped.entries
         .expand(
           (entry) => [
-            entry.key, // group header (String)
-            ...entry.value, // team rows (TournamentTeam)
+            entry.key,
+            ...entry.value,
           ],
         )
         .toList();
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        if (item is String) {
-          return _GroupHeader(groupName: item);
-        }
-        return _TeamRow(team: item as TournamentTeam);
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              if (item is String) {
+                return _GroupHeader(groupName: item);
+              }
+              return _TeamRow(team: item as TournamentTeam);
+            },
+          ),
+        ),
+        if (showAddButton)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonal(
+                onPressed: _showAddTeamSheet,
+                child: const Text('Add Team'),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// -- Add Team Bottom Sheet --
+
+class _AddTeamSheet extends ConsumerStatefulWidget {
+  const _AddTeamSheet({
+    required this.tournamentId,
+    required this.numGroups,
+    required this.hasGroupStage,
+    required this.parentRef,
+  });
+
+  final String tournamentId;
+  final int numGroups;
+  final bool hasGroupStage;
+  final WidgetRef parentRef;
+
+  @override
+  ConsumerState<_AddTeamSheet> createState() => _AddTeamSheetState();
+}
+
+class _AddTeamSheetState extends ConsumerState<_AddTeamSheet> {
+  String _selectedGroup = 'A';
+  bool _isLoading = false;
+
+  Future<void> _addTeam(String teamId, String teamName) async {
+    setState(() => _isLoading = true);
+    try {
+      final repository = ref.read(tournamentRepositoryProvider);
+      await repository.addTeam(
+        widget.tournamentId,
+        teamId: teamId,
+        groupName: widget.hasGroupStage ? _selectedGroup : null,
+      );
+      widget.parentRef
+          .invalidate(tournamentDetailProvider(widget.tournamentId));
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$teamName added')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add team: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final teamsAsync = ref.watch(teamsListProvider);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            // Handle
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Container(
+                width: 32,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Add Team',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Group selector chips
+            if (widget.hasGroupStage) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 8,
+                  children: List.generate(widget.numGroups, (i) {
+                    final groupName =
+                        String.fromCharCode('A'.codeUnitAt(0) + i);
+                    return ChoiceChip(
+                      label: Text('Group $groupName'),
+                      selected: _selectedGroup == groupName,
+                      onSelected: (_) =>
+                          setState(() => _selectedGroup = groupName),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            // Team list
+            Expanded(
+              child: teamsAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error loading teams: $e')),
+                data: (result) {
+                  if (result.teams.isEmpty) {
+                    return const Center(
+                      child: Text('No teams found. Create a team first.'),
+                    );
+                  }
+                  return ListView.builder(
+                    controller: scrollController,
+                    itemCount: result.teams.length,
+                    itemBuilder: (context, index) {
+                      final team = result.teams[index];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          child: Text(
+                            team.name[0],
+                            style: TextStyle(
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                        title: Text(team.name),
+                        subtitle:
+                            Text('${team.playerCount} players'),
+                        enabled: !_isLoading,
+                        onTap: () => _addTeam(team.id, team.name),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
       },
     );
   }
