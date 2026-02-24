@@ -29,6 +29,7 @@ class TournamentConfig {
     required this.playersPerSide,
     required this.numGroups,
     required this.qualifyPerGroup,
+    this.ballTypeId = 1,
     this.magicOverNumber,
     this.wideRuns = 1,
     this.noBallRuns = 1,
@@ -40,6 +41,7 @@ class TournamentConfig {
   final int playersPerSide;
   final int numGroups;
   final int qualifyPerGroup;
+  final int ballTypeId; // 1=Leather, 2=Tennis, 3=Tape, 4=Other
   final int? magicOverNumber;
   final int wideRuns;
   final int noBallRuns;

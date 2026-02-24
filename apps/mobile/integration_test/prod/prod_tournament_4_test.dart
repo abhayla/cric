@@ -18,7 +18,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../helpers/app_test_wrapper.dart';
-import '../helpers/tournament_flow_helpers.dart';
 import 'prod_helpers.dart';
 
 void main() {
@@ -34,28 +33,22 @@ void main() {
 
     final api = await ProdApiClient.create();
 
-    final tournamentId = await setupTournamentViaApi(
-      api: api,
+    // Setup tournament entirely via UI
+    await setupTournamentViaUI(
+      tester: tester,
       name: 'Super League',
       format: 'round_robin',
       oversPerMatch: 5,
       ballTypeId: 2, // Tennis
       playersPerSide: 6,
-      // round_robin doesn't use groups
     );
 
-    await navigateToTournaments(tester);
-    await settle(tester);
-
-    final tournamentCard = find.text('Super League');
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 500));
-      if (tournamentCard.evaluate().isNotEmpty) break;
-    }
-    if (tournamentCard.evaluate().isNotEmpty) {
-      await tester.tap(tournamentCard.first);
-      await settle(tester);
-    }
+    // Get tournament ID from API
+    final tournaments = await api.listTournaments();
+    final tournament = tournaments.firstWhere(
+      (t) => t['name'] == 'Super League',
+    );
+    final tournamentId = tournament['id'] as String;
 
     await scoreAllFixtures(
       tester: tester,

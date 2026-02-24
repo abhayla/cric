@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:cricscores/src/features/scoring/presentation/widgets/match_complete_modal.dart';
+import 'package:go_router/go_router.dart';
 
 import '../helpers/data_generators.dart';
 import '../helpers/delivery_record.dart';
@@ -521,6 +522,85 @@ const Map<String, List<int>> twoGroupAssignments = {
   'B': [8, 9, 10, 11, 12, 13, 14, 15],
 };
 
+/// Set up a tournament entirely through the app UI.
+///
+/// Flow:
+/// 1. Navigate to Tournaments tab → Create Tournament form
+/// 2. Fill all form fields (name, format, overs, ball type, players/side, groups)
+/// 3. Submit → lands on tournament detail page (draft status)
+/// 4. Open Registration (popup menu)
+/// 5. Add teams via bottom sheet (with group assignments if applicable)
+/// 6. Generate Fixtures (Overview tab)
+/// 7. Start Tournament (popup menu)
+///
+/// After this, the tester is on the tournament detail page in "live" status.
+Future<void> setupTournamentViaUI({
+  required WidgetTester tester,
+  required String name,
+  required String format,
+  required int oversPerMatch,
+  int ballTypeId = 2,
+  int playersPerSide = 6,
+  int numGroups = 1,
+  int qualifyPerGroup = 2,
+  Map<String, List<int>>? groupAssignments,
+  List<int>? teamIndices,
+}) async {
+  print('\n[TOURNAMENT SETUP VIA UI] $name ($format, ${oversPerMatch}ov)');
+
+  // 1. Create tournament via UI
+  await createTournament(
+    tester,
+    TournamentConfig(
+      name: name,
+      format: format,
+      overs: oversPerMatch,
+      playersPerSide: playersPerSide,
+      numGroups: numGroups,
+      qualifyPerGroup: qualifyPerGroup,
+      ballTypeId: ballTypeId,
+    ),
+  );
+  print('  [UI] Tournament created');
+
+  // 2. Transition: draft → registration
+  await transitionTournamentStatus(tester, 'Open Registration');
+  print('  [UI] Status: draft → registration');
+
+  // 3. Add teams via bottom sheet
+  if (groupAssignments != null) {
+    for (final entry in groupAssignments.entries) {
+      final groupName = entry.key;
+      for (final teamIdx in entry.value) {
+        final teamName = prodTeamNames[teamIdx];
+        await addTeamToTournament(tester, teamName, groupName: groupName);
+      }
+    }
+  } else if (teamIndices != null) {
+    for (final teamIdx in teamIndices) {
+      final teamName = prodTeamNames[teamIdx];
+      await addTeamToTournament(tester, teamName);
+    }
+  } else {
+    // Add all 16 teams (no groups)
+    for (final teamName in prodTeamNames) {
+      await addTeamToTournament(tester, teamName);
+    }
+  }
+  print('  [UI] All teams added');
+
+  // 4. Generate fixtures
+  await generateFixtures(tester);
+  print('  [UI] Fixtures generated');
+
+  // 5. Transition: registration → live
+  await transitionTournamentStatus(tester, 'Start Tournament');
+  print('  [UI] Status: registration → live');
+
+  print('  [TOURNAMENT SETUP VIA UI COMPLETE] $name is now live');
+}
+
+/// @Deprecated('Use setupTournamentViaUI instead — goes through real UI')
 /// Create a tournament via API, add teams with groups, generate fixtures.
 /// Returns the tournament ID.
 Future<String> setupTournamentViaApi({
@@ -663,6 +743,7 @@ Future<void> scoreAllFixtures({
       totalOvers: totalOvers,
       playersPerSide: playersPerSide,
       random: rng,
+      tournamentId: tournamentId,
     );
 
     print('  [COMPLETE] Match ${i + 1} done');
@@ -710,6 +791,7 @@ Future<void> scoreAllFixtures({
         totalOvers: totalOvers,
         playersPerSide: playersPerSide,
         random: rng,
+        tournamentId: tournamentId,
       );
 
       print('  [COMPLETE] Knockout match ${i + 1} done');
@@ -731,6 +813,7 @@ Future<void> scoreAllFixtures({
         totalOvers: totalOvers,
         playersPerSide: playersPerSide,
         random: rng,
+        tournamentId: tournamentId,
       );
     }
   }
@@ -744,6 +827,7 @@ Future<void> _playFixtureViaUI({
   required int totalOvers,
   required int playersPerSide,
   required Random random,
+  String? tournamentId,
 }) async {
   // 1. Navigate to fixture and tap it
   await tapFixtureCard(tester, homeTeamName: homeTeam, awayTeamName: awayTeam);
@@ -837,13 +921,28 @@ Future<void> _playFixtureViaUI({
   await settle(tester);
   await _dismissMatchCompleteModal(tester);
 
-  // 9. Navigate back to tournament
-  await navigateToHome(tester);
-  await settle(tester);
-
-  // Navigate back to tournament page
-  await navigateToTournaments(tester);
-  await settle(tester);
+  // 9. Navigate back to tournament detail page
+  //    Use GoRouter to go directly to the tournament page (avoids multi-step nav)
+  if (tournamentId != null) {
+    try {
+      final ctx = tester.element(find.byType(Navigator).last);
+      GoRouter.of(ctx).go('/tournaments/$tournamentId');
+      await settle(tester);
+      await visualPause(tester, 1000);
+      print('  [NAV] Returned to tournament detail via GoRouter');
+    } catch (e) {
+      print('  [NAV] GoRouter failed, falling back to home: $e');
+      await navigateToHome(tester);
+      await settle(tester);
+      await navigateToTournaments(tester);
+      await settle(tester);
+    }
+  } else {
+    await navigateToHome(tester);
+    await settle(tester);
+    await navigateToTournaments(tester);
+    await settle(tester);
+  }
 
   print('  Result: ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets} '
       'vs ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}');

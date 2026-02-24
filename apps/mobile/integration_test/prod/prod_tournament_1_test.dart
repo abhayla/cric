@@ -16,7 +16,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../helpers/app_test_wrapper.dart';
-import '../helpers/tournament_flow_helpers.dart';
 import 'prod_helpers.dart';
 
 void main() {
@@ -30,12 +29,11 @@ void main() {
     final stopwatch = Stopwatch()..start();
     final rng = Random();
 
-    // Create API client
     final api = await ProdApiClient.create();
 
-    // Setup tournament via API
-    final tournamentId = await setupTournamentViaApi(
-      api: api,
+    // Setup tournament entirely via UI
+    await setupTournamentViaUI(
+      tester: tester,
       name: 'Champions Trophy 2026',
       format: 'group_knockout',
       oversPerMatch: 5,
@@ -46,22 +44,14 @@ void main() {
       groupAssignments: fourGroupAssignments,
     );
 
-    // Navigate to tournament in UI
-    await navigateToTournaments(tester);
-    await settle(tester);
+    // Get tournament ID from API (needed for fixture queries)
+    final tournaments = await api.listTournaments();
+    final tournament = tournaments.firstWhere(
+      (t) => t['name'] == 'Champions Trophy 2026',
+    );
+    final tournamentId = tournament['id'] as String;
 
-    // Find and tap the tournament
-    final tournamentCard = find.text('Champions Trophy 2026');
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 500));
-      if (tournamentCard.evaluate().isNotEmpty) break;
-    }
-    if (tournamentCard.evaluate().isNotEmpty) {
-      await tester.tap(tournamentCard.first);
-      await settle(tester);
-    }
-
-    // Score all fixtures
+    // Score all fixtures (already on tournament detail page)
     await scoreAllFixtures(
       tester: tester,
       api: api,

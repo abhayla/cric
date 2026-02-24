@@ -379,6 +379,11 @@ Future<void> _fillAndSubmitPlayer(
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Create a tournament through the UI.
+///
+/// Fills in all form fields: name, format, overs, ball type, players per side,
+/// group settings (if group_knockout format). Then submits the form.
+///
+/// After creation, lands on the Tournament Detail page (draft status).
 Future<void> createTournament(
   WidgetTester tester,
   TournamentConfig config,
@@ -406,12 +411,12 @@ Future<void> createTournament(
     await settle(tester);
   }
 
-  // Select format (scroll to find the right chip)
+  // Select format chip
   final formatLabel = switch (config.format) {
-    'group_knockout' => 'Group + Knockout',
+    'group_knockout' => 'Group + KO',
     'knockout' => 'Knockout',
     'round_robin' => 'Round Robin',
-    _ => 'Group + Knockout',
+    _ => 'Group + KO',
   };
   final formatChip = find.text(formatLabel);
   if (formatChip.evaluate().isNotEmpty) {
@@ -419,29 +424,71 @@ Future<void> createTournament(
     await settle(tester);
   }
 
-  // Set overs (find and tap the preset or enter manually)
+  // Set overs — tap preset chip if available, otherwise enter manually
   final oversPreset = find.text('${config.overs}');
   if (oversPreset.evaluate().isNotEmpty) {
-    // Try to tap the preset chip
     await tester.tap(oversPreset.first);
+    await settle(tester);
+  } else {
+    // Enter manually in the overs input field
+    final oversInput = find.byKey(const Key('oversInput'));
+    if (oversInput.evaluate().isNotEmpty) {
+      await tester.enterText(oversInput.first, '${config.overs}');
+      await settle(tester);
+    }
+  }
+
+  // Select ball type chip
+  final ballTypeLabel = switch (config.ballTypeId) {
+    1 => 'Leather',
+    2 => 'Tennis',
+    3 => 'Tape',
+    4 => 'Other',
+    _ => 'Leather',
+  };
+  final ballChip = find.text(ballTypeLabel);
+  if (ballChip.evaluate().isNotEmpty) {
+    await tester.ensureVisible(ballChip.first);
+    await tester.pumpAndSettle();
+    await tester.tap(ballChip.first);
     await settle(tester);
   }
 
-  // Submit the form — use FilledButton finder for reliability
-  await settle(tester);
+  // Set players per side via stepper (default is 11)
+  await _adjustStepper(
+    tester,
+    stepperKey: 'playersPerSideStepper',
+    targetValue: config.playersPerSide,
+    defaultValue: 11,
+  );
 
-  // Find the FilledButton directly
+  // Set group settings if format is group_knockout
+  if (config.format == 'group_knockout') {
+    await _adjustStepper(
+      tester,
+      stepperKey: 'numGroupsStepper',
+      targetValue: config.numGroups,
+      defaultValue: 2,
+    );
+    await _adjustStepper(
+      tester,
+      stepperKey: 'qualifyPerGroupStepper',
+      targetValue: config.qualifyPerGroup,
+      defaultValue: 2,
+    );
+  }
+
+  // Submit the form
+  await settle(tester);
   final filledButtons = find.byType(FilledButton);
   print('    [createTournament] FilledButtons found: ${filledButtons.evaluate().length}');
   if (filledButtons.evaluate().isNotEmpty) {
-    // Ensure button is visible (scroll if needed)
     await tester.ensureVisible(filledButtons.first);
     await tester.pumpAndSettle();
     await tester.tap(filledButtons.first);
     print('    [createTournament] Tapped FilledButton');
   } else {
     print('    [createTournament] ERROR: No FilledButton found!');
-    // Fallback to text finder
     final submitButton = find.text('Create Tournament');
     if (submitButton.evaluate().length > 1) {
       await tester.tap(submitButton.last);
@@ -456,8 +503,53 @@ Future<void> createTournament(
     print('    [createTournament] WARNING: Still on create form after submit!');
     dumpVisibleTexts(tester, 'createTournament STUCK', 30);
   } else {
-    print('    [createTournament] Successfully navigated away from form');
+    print('    [createTournament] ✓ Tournament created: ${config.name}');
   }
+}
+
+/// Adjust a stepper widget to a target value by tapping +/- buttons.
+///
+/// Finds the stepper by its [stepperKey], then taps the minus or plus
+/// button the appropriate number of times.
+Future<void> _adjustStepper(
+  WidgetTester tester, {
+  required String stepperKey,
+  required int targetValue,
+  required int defaultValue,
+}) async {
+  final stepper = find.byKey(Key(stepperKey));
+  if (stepper.evaluate().isEmpty) {
+    print('    [adjustStepper] WARNING: Stepper "$stepperKey" not found');
+    return;
+  }
+
+  // Ensure stepper is visible (may need scrolling)
+  await tester.ensureVisible(stepper.first);
+  await tester.pumpAndSettle();
+
+  final diff = targetValue - defaultValue;
+  if (diff == 0) return;
+
+  // Find + or - button inside this stepper
+  final iconToTap = diff > 0 ? Icons.add : Icons.remove;
+  final tapsNeeded = diff.abs();
+
+  final buttons = find.descendant(
+    of: stepper,
+    matching: find.byIcon(iconToTap),
+  );
+
+  if (buttons.evaluate().isEmpty) {
+    print('    [adjustStepper] WARNING: ${diff > 0 ? "+" : "-"} button not found in "$stepperKey"');
+    return;
+  }
+
+  for (var i = 0; i < tapsNeeded; i++) {
+    await tester.tap(buttons.first);
+    await tester.pump();
+  }
+  await settle(tester);
+  print('    [adjustStepper] $stepperKey: $defaultValue → $targetValue');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -465,41 +557,76 @@ Future<void> createTournament(
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Add a team to a tournament from the tournament detail page.
+///
+/// Flow: Tap "Add Team" → bottom sheet appears → select group chip (if needed)
+/// → tap team name → sheet dismisses → tournament refreshes.
+///
+/// Must be on the Teams tab of the tournament detail page.
 Future<void> addTeamToTournament(
   WidgetTester tester,
   String teamName, {
   String? groupName,
 }) async {
-  // Tap "Add Team" button
-  final addTeamButton = find.text('Add Team');
-  if (addTeamButton.evaluate().isNotEmpty) {
-    await tester.tap(addTeamButton.first);
+  // Switch to Teams tab first
+  final teamsTab = find.text('Teams');
+  if (teamsTab.evaluate().isNotEmpty) {
+    await tester.tap(teamsTab.first);
     await settle(tester);
+    await visualPause(tester);
   }
 
-  // Select team from list
+  // Tap "Add Team" button
+  final addTeamButton = find.text('Add Team');
+  if (addTeamButton.evaluate().isEmpty) {
+    print('    [addTeamToTournament] ERROR: "Add Team" button not found!');
+    dumpVisibleTexts(tester, 'addTeam-noButton', 30);
+    return;
+  }
+  await tester.tap(addTeamButton.first);
+  await settle(tester);
+  await visualPause(tester, 500);
+
+  // Wait for bottom sheet to appear (look for "Add Team" title inside sheet)
+  for (var i = 0; i < 10; i++) {
+    if (find.byType(DraggableScrollableSheet).evaluate().isNotEmpty) break;
+    await tester.pump(const Duration(milliseconds: 200));
+  }
+
+  // Select group chip if provided (e.g., "Group A", "Group B")
+  if (groupName != null) {
+    final groupChip = find.text('Group $groupName');
+    if (groupChip.evaluate().isNotEmpty) {
+      await tester.tap(groupChip.first);
+      await settle(tester);
+      print('    [addTeamToTournament] Selected group: $groupName');
+    } else {
+      print('    [addTeamToTournament] WARNING: Group chip "Group $groupName" not found');
+    }
+  }
+
+  // Tap team name in the list to add it
   final teamOption = find.text(teamName);
   if (teamOption.evaluate().isNotEmpty) {
     await tester.tap(teamOption.first);
     await settle(tester);
-  }
-
-  // Select group if needed
-  if (groupName != null) {
-    final groupOption = find.text(groupName);
-    if (groupOption.evaluate().isNotEmpty) {
-      await tester.tap(groupOption.first);
-      await settle(tester);
-    }
-  }
-
-  // Confirm
-  final confirmButton = find.text('Confirm');
-  if (confirmButton.evaluate().isNotEmpty) {
-    await tester.tap(confirmButton.first);
+    await visualPause(tester, 1000);
+    print('    [addTeamToTournament] Tapped team: $teamName');
+  } else {
+    print('    [addTeamToTournament] ERROR: Team "$teamName" not found in bottom sheet!');
+    dumpVisibleTexts(tester, 'addTeam-noTeam', 30);
+    // Dismiss the sheet
+    await tester.tapAt(Offset.zero);
     await settle(tester);
-    await visualPause(tester);
+    return;
   }
+
+  // Wait for sheet to dismiss (team added successfully)
+  for (var i = 0; i < 15; i++) {
+    if (find.byType(DraggableScrollableSheet).evaluate().isEmpty) break;
+    await tester.pump(const Duration(milliseconds: 200));
+  }
+  await settle(tester);
+  print('    [addTeamToTournament] ✓ Added $teamName${groupName != null ? ' to Group $groupName' : ''}');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -507,13 +634,63 @@ Future<void> addTeamToTournament(
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Tap the "Generate Fixtures" button on the tournament detail page.
+///
+/// The button is on the Overview tab (visible when status = registration).
+/// Switches to Overview tab first, then taps the button.
 Future<void> generateFixtures(WidgetTester tester) async {
+  // Switch to Overview tab
+  final overviewTab = find.text('Overview');
+  if (overviewTab.evaluate().isNotEmpty) {
+    await tester.tap(overviewTab.first);
+    await settle(tester);
+    await visualPause(tester);
+  }
+
   final generateButton = find.text('Generate Fixtures');
   if (generateButton.evaluate().isNotEmpty) {
     await tester.tap(generateButton.first);
     await settle(tester);
-    await visualPause(tester, 1000);
+    await visualPause(tester, 2000);
+    print('    [generateFixtures] ✓ Tapped Generate Fixtures');
+  } else {
+    print('    [generateFixtures] ERROR: "Generate Fixtures" button not found!');
+    dumpVisibleTexts(tester, 'generateFixtures', 30);
   }
+}
+
+/// Transition tournament status via the PopupMenuButton (three dots).
+///
+/// [menuLabel] is the text of the menu item to tap, e.g.:
+/// - 'Open Registration' (draft → registration)
+/// - 'Start Tournament' (registration → live)
+Future<void> transitionTournamentStatus(
+  WidgetTester tester,
+  String menuLabel,
+) async {
+  // Tap the PopupMenuButton (three dots icon in AppBar)
+  final popupButton = find.byType(PopupMenuButton<String>);
+  if (popupButton.evaluate().isEmpty) {
+    print('    [transitionStatus] ERROR: PopupMenuButton not found!');
+    return;
+  }
+  await tester.tap(popupButton.first);
+  await settle(tester);
+  await visualPause(tester);
+
+  // Tap the menu item
+  final menuItem = find.text(menuLabel);
+  if (menuItem.evaluate().isNotEmpty) {
+    await tester.tap(menuItem.first);
+    await settle(tester);
+    await visualPause(tester, 1000);
+    print('    [transitionStatus] ✓ Tapped "$menuLabel"');
+  } else {
+    print('    [transitionStatus] ERROR: Menu item "$menuLabel" not found!');
+    dumpVisibleTexts(tester, 'transitionStatus', 20);
+  }
+
+  // Wait for the page to refresh
+  await settle(tester);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

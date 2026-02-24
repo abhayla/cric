@@ -16,7 +16,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../helpers/app_test_wrapper.dart';
-import '../helpers/tournament_flow_helpers.dart';
 import 'prod_helpers.dart';
 
 void main() {
@@ -35,30 +34,23 @@ void main() {
     // All 16 teams, no groups
     final allTeamIndices = List.generate(16, (i) => i);
 
-    final tournamentId = await setupTournamentViaApi(
-      api: api,
+    // Setup tournament entirely via UI
+    await setupTournamentViaUI(
+      tester: tester,
       name: 'Knockout Cup',
       format: 'knockout',
       oversPerMatch: 5,
       ballTypeId: 2, // Tennis
       playersPerSide: 6,
-      numGroups: 1,
-      qualifyPerGroup: 1,
       teamIndices: allTeamIndices,
     );
 
-    await navigateToTournaments(tester);
-    await settle(tester);
-
-    final tournamentCard = find.text('Knockout Cup');
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 500));
-      if (tournamentCard.evaluate().isNotEmpty) break;
-    }
-    if (tournamentCard.evaluate().isNotEmpty) {
-      await tester.tap(tournamentCard.first);
-      await settle(tester);
-    }
+    // Get tournament ID from API
+    final tournaments = await api.listTournaments();
+    final tournament = tournaments.firstWhere(
+      (t) => t['name'] == 'Knockout Cup',
+    );
+    final tournamentId = tournament['id'] as String;
 
     await scoreAllFixtures(
       tester: tester,
