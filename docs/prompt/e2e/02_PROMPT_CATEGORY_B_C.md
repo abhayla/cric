@@ -1,12 +1,20 @@
 # E2E Test Implementation Prompt: Category B & C (Scoring Flow & Extras)
 
-Please implement an integration test file in Flutter at `apps/mobile/integration_test/scoring_category_b_c_e2e_test.dart` and its corresponding documentation prompt `docs/prompt/e2e/SCORING_CATEGORY_B_C_E2E.md`.
+Please implement integration tests for **Categories B and C: Scenarios 23-25, 27-29** from `docs/prompt/e2e/E2E_TEST_SCENARIOS.md`.
 
 ## Context
-We are implementing comprehensive E2E test scenarios as outlined in `docs/prompt/e2e/E2E_TEST_SCENARIOS.md`. This task focuses on **Categories B and C: Scenarios 23-25, 27-29**.
+
+The integration test suite uses a **layered architecture** in `apps/mobile/integration_test/`. Tests are prod-only (`--flavor prod --dart-define=FLAVOR=prod`), 100% UI-driven (zero API calls), and run against the prod server at `cricscores.in`.
+
+## Current Architecture
+
+- **Helpers:** `helpers/scoring.dart` (tap runs, extras, wickets), `helpers/modals.dart` (dismiss modals), `helpers/match_setup.dart` (toss wizard)
+- **Flows:** `flows/standalone_match_flow.dart` (full match lifecycle)
+- **Core:** `core/app_bootstrap.dart` (app launch + Firebase auth), `core/test_utils.dart` (`waitForFinder()`, `settle()`)
 
 ## Scenarios to Implement
-Create a single group "Category B & C: Flow and Extras" with sequential tests or individual sub-tests.
+
+Create a new test file in `integration_test/tests/` (e.g., `09_scoring_extras_flow_test.dart`).
 
 1. **Scenario 23:** Bye and Leg-Bye Scoring (Runs to team, not batter; Odd runs swap strike).
 2. **Scenario 24:** Wicket on a No-Ball (Run Out) (Verify free hit still triggers).
@@ -16,7 +24,9 @@ Create a single group "Category B & C: Flow and Extras" with sequential tests or
 6. **Scenario 29:** Bowl-First Toss Choice (Team A wins toss, chooses to field → verify Team B bats first).
 
 ## Instructions
-1. Review existing tests to ensure you properly use `ServerManager` to manage `resetMatchData()` between tests (or `resetDatabase()` if teams must be created).
-2. The UI interactions (like `tapRun`, `selectBowler`, `completeTossWizard(chooseBat: false)`) should directly exercise the app.
-3. Validate DB state via the API `GET /api/v1/test/deliveries/:matchId` against the expectations in the E2E docs.
-4. Also write `docs/prompt/e2e/SCORING_CATEGORY_B_C_E2E.md` which instructs testers how to run this test suite.
+
+1. Review existing helpers in `helpers/scoring.dart` and `helpers/match_setup.dart` for UI interaction patterns.
+2. Use `app_bootstrap.dart` to launch the app with Firebase auth. Reuse teams from test 01.
+3. All interactions must go through the real UI — use the scoring helpers for taps.
+4. For bowl-first scenario (29), modify toss wizard helper to choose "Field" instead of "Bat".
+5. Verify results via the UI (striker name changes, bowler eligibility indicators, innings team assignment).

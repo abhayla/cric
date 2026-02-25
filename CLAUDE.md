@@ -82,13 +82,12 @@ cd apps/server && bun run db:seed          # Seed master data (dismissal types, 
 ```
 
 ```bash
-# Integration / E2E tests (require running server + emulator/device)
-cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts   # Start test server
-cd apps/mobile && flutter test --flavor dev integration_test/tests/02_standalone_match_test.dart -d emulator-5554  # Single match E2E
-cd apps/mobile && flutter test --flavor dev integration_test/tests/08_viewer_live_test.dart -d <device>  # Multi-device WebSocket test
+# Integration / E2E tests (require prod server at cricscores.in + emulator/device)
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/02_standalone_match_test.dart -d emulator-5554  # Single match E2E
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/08_viewer_live_test.dart -d <device>  # Multi-device WebSocket test
 ```
 
-**E2E test rule:** E2E/integration tests CAN be run directly from Claude's CLI on real connected devices. Use `flutter test integration_test/<test>.dart -d <device-id>` with the appropriate device ID from `flutter devices`.
+**E2E test rule:** E2E/integration tests CAN be run directly from Claude's CLI on real connected devices. All tests run against the prod server (`cricscores.in`) with `--flavor prod --dart-define=FLAVOR=prod`. Use `flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/<test>.dart -d <device-id>` with the appropriate device ID from `flutter devices`.
 
 **E2E multi-device coordination:** Scorer and viewer tests synchronize via HTTP signal endpoints (`POST/GET /api/v1/test/signal/:name`). Flow: scorer creates match + toss, posts `scorer-ready` signal, polls for `viewer-ready` (120s). Viewer polls for `scorer-ready`, connects WebSocket, posts `viewer-ready`. Scorer then begins scoring. Orchestration script: `scripts/multi-device-e2e.sh` (supports `SWAP_DEVICES=1` to swap emulator/device roles).
 

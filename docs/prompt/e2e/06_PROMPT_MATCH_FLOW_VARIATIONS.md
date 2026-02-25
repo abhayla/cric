@@ -4,6 +4,8 @@
 
 This prompt implements three E2E test scenarios covering match flow variations not tested by existing suites: bowl-first toss choice, tied match, and bowler eligibility enforcement.
 
+The integration test suite uses a **layered architecture** in `apps/mobile/integration_test/`. Tests are prod-only (`--flavor prod --dart-define=FLAVOR=prod`), 100% UI-driven (zero API calls), and run against the prod server at `cricscores.in`.
+
 ## Scenarios
 
 ### Scenario 29: Bowl-First Toss Choice
@@ -16,33 +18,34 @@ This prompt implements three E2E test scenarios covering match flow variations n
 ### Scenario 7: Tied Match
 - **What it tests:** Both innings score identical totals, overs exhausted
 - **Key assertions:**
-  - `resultType = 'tied'`
-  - `winnerTeamId = null`
+  - Match complete modal shows "Match Tied"
+  - No winner declared
 
 ### Scenario 27: Bowler Eligibility Enforcement
 - **What it tests:** Consecutive-over rule and max overs limit
 - **Key assertions:**
   - After Over 1, the Over 1 bowler shows ineligibility indicator
-  - After max overs (ceil(5/5)=1 per bowler), bowler shows "Max overs" indicator
-  - Correct bowler rotation throughout the match
+  - After max overs, bowler shows "Max overs" indicator
+  - Correct bowler can be selected despite ineligible bowlers
 
 ## Implementation Details
 
 ### File
-`apps/mobile/integration_test/match_flow_variations_e2e_test.dart`
+Create new test: `integration_test/tests/09_match_flow_variations_test.dart`
 
-### Dependencies
-- `helpers/tournament_flow_helpers.dart` — `completeTossWizard` with `chooseBat: false` param
-- `helpers/match_flow_helpers.dart` — `selectBowler`
-- `helpers/scenario_test_data.dart` — `ScenarioTeams`
-- Server endpoints: `/api/v1/test/innings-detail/:matchId`, `/api/v1/test/match-result/:matchId`
+### Current Architecture
+- `helpers/scoring.dart` — tap scoring controls
+- `helpers/match_setup.dart` — match setup + toss wizard (modify for bowl-first)
+- `helpers/modals.dart` — dismiss modals
+- `core/app_bootstrap.dart` — app launch + Firebase auth
+- `core/test_utils.dart` — `waitForFinder()`, `settle()`
 
 ### Pattern
-Follows `scoring_edge_cases_e2e_test.dart` pattern.
+Follows current test architecture: boot app -> reuse teams -> create match -> toss -> score predetermined deliveries -> verify UI state.
 
 ### Bowl-First Flow
 When toss winner chooses to field:
-1. `completeTossWizard(..., chooseBat: false)` selects "Field" instead of "Bat"
+1. Modify toss wizard helper to tap "Field" instead of "Bat"
 2. The batting openers and opening bowler params must be swapped:
    - `battingOpener1/2` = openers from the OTHER team (batting first)
    - `openingBowler` = bowler from the toss winner's team (bowling first)

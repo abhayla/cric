@@ -1,18 +1,37 @@
 # E2E Test Scenarios — CricScores
 
-Comprehensive list of real-life test scenarios to validate CricScores on emulator + local server. These go beyond unit tests by exercising the full stack: Flutter UI → Notifier → Drift persistence → REST/WebSocket → Bun server → PostgreSQL.
+Comprehensive list of real-life test scenarios to validate CricScores against the prod server (`cricscores.in`). All tests are **100% UI-driven** — no API calls, no local test server. Tests exercise the full stack: Flutter UI → Notifier → Drift persistence → REST/WebSocket → Bun server → PostgreSQL.
+
+## Coverage Mapping — Current Tests vs Scenarios
+
+| Test File | Scenarios Covered | Notes |
+|-----------|------------------|-------|
+| `01_team_setup_test.dart` | 0 (team setup) | 16 teams × 6 players via UI |
+| `02_standalone_match_test.dart` | 8 (undo), 12 (full match), partial 6 (target chase) | Standalone match with undo + random scoring |
+| `03_verify_after_match_test.dart` | 15 (scorecard vs DB), 20 (player profile) | UI verification only (no direct DB queries) |
+| `04_tournament_gk_test.dart` | 41 (team reuse), 44 (NRR implicit), 49 (fixture nav) | Group+Knockout, ~27 matches |
+| `05_tournament_ko_test.dart` | 42 (knockout) | Single elimination, 15 matches |
+| `06_tournament_rr_test.dart` | 43 (round robin) | All-play-all format |
+| `07_verify_all_screens_test.dart` | 15 (scorecard), 20 (player profile), 49 (navigation) | Navigates all screens, verifies data |
+| `08_viewer_live_test.dart` | 18 (viewer mid-innings), 19 (viewer after match) | Multi-device WebSocket |
+
+### Uncovered Scenarios (not yet automated)
+- **1** (5 wickets in one over), **2** (wide/NB chain), **3-4** (target chased off extras), **5** (all out for 0)
+- **7** (tied match), **9** (undo after innings transition), **10** (abandon), **11** (maiden over)
+- **13** (full stat DB verification), **14** (full undo reversal), **16** (kill app persistence)
+- **21-25** (extras + dismissal combos), **26-31** (match flow variations)
+- **32-34** (magic over), **35-36** (stat accumulation), **37-40** (negative/error cases)
+- **45-48** (tournament edge cases), **50** (leaderboard accuracy)
 
 ## Test Infrastructure
 
 ### Scenario 0: Shared Team Setup (Run Once)
 
-Create two teams with full rosters (11 players each) on the first test run. All subsequent tests reuse these teams — only match data is reset between scenarios via `POST /api/v1/test/reset-match-data`.
+Create 16 teams with 6 players each on the first test run (`01_team_setup_test.dart`). All subsequent tests reuse these teams — each test creates fresh match/tournament data with random names.
 
-**Why:** Avoids redundant team creation (~90 seconds saved per test). Teams and players persist in the database across test runs. Each scenario starts fresh by resetting match/delivery/stats data only.
+**Why:** Avoids redundant team creation (~20 min saved per test). Teams and players persist on the prod server across test runs. Each test is idempotent — creates new tournaments/matches rather than resetting old ones.
 
-**Verification:**
-- `GET /api/v1/test/teams` returns 2 teams with 11+ players each
-- If teams exist, skip creation and go directly to match setup
+**Implementation:** `integration_test/flows/team_setup_flow.dart` — creates teams via UI forms, asserts player count after each team.
 
 ---
 
@@ -211,7 +230,7 @@ Score a complete match with varied deliveries. After match completion, wait for 
 - Cross-check: sum of batting runs per innings matches innings total; sum of bowling wickets per innings matches tracked wickets
 - **Sync timing:** Full T20 (254 deliveries) syncs in ~3-8 seconds via batch endpoint (was ~5 minutes with per-delivery sync). Test polls up to 60s for delivery count to stabilize.
 
-**Optional viewer mode:** Run `full_t20_viewer_e2e_test.dart` on a second emulator to verify the WebSocket broadcast pipeline delivers correct, monotonic score data in real time. Viewer prints per-over sync reports with batting/bowling snapshots.
+**Optional viewer mode:** Run `08_viewer_live_test.dart` on a second device to verify the WebSocket broadcast pipeline delivers correct, monotonic score data in real time. Viewer prints per-over sync reports with batting/bowling snapshots.
 
 ### Scenario 14: Full Undo Reversal
 

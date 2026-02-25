@@ -1,19 +1,36 @@
 # E2E Test Implementation Prompt: Category J (Tournament Advanced)
 
-Please implement an integration test file in Flutter at `apps/mobile/integration_test/tournament_advanced_e2e_test.dart` and its corresponding documentation prompt `docs/prompt/e2e/TOURNAMENT_ADVANCED_E2E.md`.
+Please implement integration tests for **Category J: Scenarios 41-43, 47, 50** from `docs/prompt/e2e/E2E_TEST_SCENARIOS.md`.
 
 ## Context
-We are implementing comprehensive E2E test scenarios as outlined in `docs/prompt/e2e/E2E_TEST_SCENARIOS.md`. This task focuses on **Category J: Scenarios 41-43, 47, 50**.
 
-## Scenarios to Implement
-Create a single group "Category J: Tournament Advanced" with specific tests.
-1. **Scenario 41:** Tournament Team Reuse Across Runs (detect existing exactly 16 teams and skip creation overhead).
-2. **Scenario 42:** Knockout-Only Tournament (Create a 8-team knockout, verify QF -> SF -> Final bracket structure).
-3. **Scenario 43:** Round Robin Tournament (Create a 4-team round-robin, verify 6 fixtures generated, check standings table).
-4. **Scenarios 47 & 50:** Tournament Career Stats & Leaderboard (Simulate partial scores and check that global career stats and the leaderboard reflect correct standings based on DB queries `GET /api/v1/players/:id/stats` or similar).
+The integration test suite uses a **layered architecture** in `apps/mobile/integration_test/`. Tests are prod-only (`--flavor prod --dart-define=FLAVOR=prod`), 100% UI-driven (zero API calls), and run against the prod server at `cricscores.in`.
+
+## Current Tournament Tests
+
+Three tournament tests already exist:
+- `04_tournament_gk_test.dart` — Group+Knockout (covers Scenario 41 team reuse, partial 44/49)
+- `05_tournament_ko_test.dart` — Knockout (covers Scenario 42)
+- `06_tournament_rr_test.dart` — Round Robin (covers Scenario 43)
+
+## Scenarios to Implement (gaps in current coverage)
+
+1. **Scenario 41:** Tournament Team Reuse Across Runs — Verify existing tests properly skip team creation on subsequent runs.
+2. **Scenario 42:** Knockout-Only Tournament — Already covered by test 05. Extend to verify bracket structure (QF → SF → Final) via UI.
+3. **Scenario 43:** Round Robin Tournament — Already covered by test 06. Extend to verify C(N,2) fixture count and standings table completeness.
+4. **Scenario 47:** Tournament Career Stats — After completing a tournament, verify player career stats accumulated correctly via player profile pages.
+5. **Scenario 50:** Tournament Leaderboard Accuracy — Verify leaderboard categories (Most Runs, Most Wickets) via tournament detail page.
+
+## Current Architecture
+
+- **Tournament helpers:** `helpers/tournament_mgmt.dart` (`createTournament()`, `addTeamToTournament()`, `generateFixtures()`, `startTournament()`)
+- **Tournament flow:** `flows/tournament_flow.dart` (`scoreAllFixtures()`)
+- **Verification:** `verification/tournament_verifier.dart` (standings, fixtures), `verification/player_profile_verifier.dart` (career stats)
+- **Config:** `config/tournament_presets.dart` (format configurations)
 
 ## Instructions
-1. This test should use `ServerManager` to setup different formats.
-2. The UI interactions should follow `completeMatchSetup()` and `completeTossWizard()` but maybe bypass full manual UI scoring for all 27 matches. If possible, structure the test to just verify the UI representations of brackets (QF/SF/F) for Knockout, and Standings for Round-Robin without strictly scoring every ball.
-3. Validate DB state via API against the expectations.
-4. Also write `docs/prompt/e2e/TOURNAMENT_ADVANCED_E2E.md` which instructs testers how to run this test suite.
+
+1. Review existing tournament tests (04-06) and `tournament_mgmt.dart` helpers.
+2. For Scenarios 47/50: add verification steps after tournament completion — navigate to player profiles and leaderboard tab.
+3. All verification through UI navigation + `expect()` assertions — no direct API calls.
+4. Use `tournament_verifier.dart` and `player_profile_verifier.dart` for structured assertions.

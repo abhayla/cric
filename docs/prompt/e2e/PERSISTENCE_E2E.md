@@ -4,73 +4,50 @@ Run this prompt when you want to test offline-first persistence and crash recove
 
 ---
 
-## What This Test Does
+## Status: NOT YET IMPLEMENTED
 
-- Scores 3 overs (18 legal deliveries) through the real Flutter UI
-- Simulates an app restart by re-pumping the widget tree
-- Verifies the app detects a resumable match from Drift/SQLite persistence
-- Resumes scoring and records one more delivery
-- Verifies no duplicate deliveries in PostgreSQL after the restart
+This scenario (Scenario 16 from `E2E_TEST_SCENARIOS.md`) does not have a dedicated automated test in the current test suite. The closest existing test is `02_standalone_match_test.dart` which covers basic match completion and persistence verification (match appears in My Cricket tab after completion).
 
-**Scenario covered:** 16 (Kill App Mid-Innings / Persistence Recovery)
-
-**Runtime: ~10-15 minutes on emulator.**
+**To implement:** Create a new test file (e.g., `integration_test/tests/09_persistence_recovery_test.dart`) following the current architecture.
 
 ---
 
-## Prerequisites Checklist
+## What This Test Should Do
+
+- Score 3 overs (18 legal deliveries) through the real Flutter UI
+- Simulate an app restart by re-pumping the widget tree
+- Verify the app detects a resumable match from Drift/SQLite persistence
+- Resume scoring and record one more delivery
+- Verify no duplicate deliveries after the restart
+
+**Scenario covered:** 16 (Kill App Mid-Innings / Persistence Recovery)
+
+**Estimated runtime: ~10-15 minutes on emulator.**
+
+---
+
+## Prerequisites
 
 1. **Android emulator is running**
-2. **Bun server running in test mode:**
-   ```bash
-   cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts
-   ```
-3. **PostgreSQL running** with test database
+2. **Prod server is live** at `cricscores.in`
+3. **Teams already created** — run test 01 first
 4. **Flutter dependencies resolved** — `flutter pub get`
 5. **Code generation up to date** — `dart run build_runner build --delete-conflicting-outputs`
 
 ---
 
-## Run Command
+## Implementation Notes
 
-```bash
-cd apps/mobile && flutter test integration_test/persistence_e2e_test.dart -d emulator-5554
-```
+### Current Architecture
 
-Timeout: 30 minutes.
+The test should use the current layered infrastructure:
+- `core/app_bootstrap.dart` — App launch + Firebase auth
+- `helpers/scoring.dart` — Tap scoring controls
+- `helpers/match_setup.dart` — Match setup + toss wizard
+- `core/test_utils.dart` — `waitForFinder()`, `settle()`
+- `models/delivery_record.dart` — Delivery tracking
 
----
-
-## Test Phases
-
-| Phase | What Happens |
-|-------|-------------|
-| 1 | Boot app, land on Home page |
-| 2 | Create teams (skipped if already exist) |
-| 3 | Match setup: 5 overs, 11 players |
-| 4 | Toss: Mumbai Warriors bats first |
-| 5 | Score 3 overs (18 deliveries): predetermined sequence |
-| 6 | Simulate restart: re-pump the app widget tree |
-| 7 | Verify recovery: check for resume prompt or restored state |
-| 8 | Continue scoring: record 1 more delivery post-recovery |
-| 9 | DB verification: no duplicate deliveries |
-
----
-
-## Predetermined Delivery Sequence
-
-### Over 1 (Deepak Chahar): 4, 1, 0, 2, 1, 6 = 14 runs
-### Over 2 (Bhuvneshwar Kumar): 0, 0, 4, 0, 1, 0 = 5 runs
-### Over 3 (Kuldeep Yadav): 2, 0, 1, 4, 0, 2 = 9 runs
-
-**Total before restart: 28/0 in 3.0 overs**
-
-### After Recovery: 1 delivery (4 runs)
-**Expected DB count: 19 deliveries (18 + 1)**
-
----
-
-## How Persistence Works
+### How Persistence Works
 
 CricScores uses `ScoringPersistenceService` to save scoring state to local Drift/SQLite after each delivery mutation. On app restart:
 
@@ -85,61 +62,33 @@ CricScores uses `ScoringPersistenceService` to save scoring state to local Drift
    - Over history and current over deliveries
    - Free hit state
 
-## How Sync Works
+### How Sync Works
 
 The `SyncService` pushes locally-queued deliveries to the server:
 
 - **Live (< 6 queued):** Individual `POST /deliveries` per ball — immediate broadcast
 - **Batch (>= 6 queued):** `POST /deliveries/batch` in chunks of 30 — single DB transaction per chunk
-- **Failed entries:** Entries exceeding `maxRetries` are marked `'failed'` (not `'synced'`), preserving them for inspection rather than silently dropping data
+- **Failed entries:** Entries exceeding `maxRetries` are marked `'failed'` (not `'synced'`), preserving them for inspection
 - **After restart:** Unsynced deliveries remain in the `sync_queue` table and are retried on next sync cycle
 
----
-
-## Simulation Limitation
+### Simulation Limitation
 
 In Flutter integration tests, we cannot truly kill the process. Instead:
-- `AppTestWrapper.pumpApp(tester)` is called again to restart the widget tree
+- `app_bootstrap` is called again to restart the widget tree
 - This triggers the app's initialization flow including persistence check
 - The Drift database persists on the emulator's filesystem between pumps
 
 This simulates a "warm restart" rather than a cold kill. For true crash recovery testing, manually:
-1. Run the test up to Phase 5 (score 3 overs)
+1. Run the test up to score 3 overs
 2. Force-kill the app: `adb shell am force-stop in.cricscores.app`
 3. Relaunch: `adb shell am start in.cricscores.app/.MainActivity`
 4. Verify the resume prompt appears
 
 ---
 
-## Key Verification
-
-The critical assertion is:
-```dart
-expect(dbDeliveries.length, equals(19),
-    reason: 'No duplicate deliveries after restart');
-```
-
-If persistence recovery re-syncs already-synced deliveries, the count would be > 19. If it loses unsynced deliveries, the count would be < 19.
-
----
-
 ## Debugging Tips
 
 - **No resume prompt after restart?** Check that `ScoringPersistenceService` is correctly saving state. Look for `[Persistence]` log messages.
-- **Duplicate deliveries?** The `synced` flag on each delivery prevents double-sync. Check if the sync queue was flushed before restart. The server also has duplicate detection via `sequenceNumber` within each innings.
+- **Duplicate deliveries?** The `synced` flag on each delivery prevents double-sync. Check if the sync queue was flushed before restart.
 - **Score mismatch after recovery?** Compare the `ScoringState` fields before and after. The persistence service should restore all fields exactly.
-- **Failed sync entries?** Check for entries with status `'failed'` in the sync queue. These are entries that exceeded `maxRetries` — they are preserved (not silently dropped) for debugging.
-
----
-
-## Key Helper Files
-
-| File | Purpose |
-|------|---------|
-| `integration_test/persistence_e2e_test.dart` | Main test file |
-| `integration_test/helpers/scenario_test_data.dart` | Shared team data |
-| `integration_test/helpers/match_flow_helpers.dart` | Tap helpers |
-| `integration_test/helpers/server_manager.dart` | Server API calls |
-| `integration_test/helpers/app_test_wrapper.dart` | App bootstrapping |
-| `lib/src/shared/data/sync/sync_service.dart` | Batch/individual sync logic (`_batchThreshold = 6`, chunks of 30) |
-| `lib/src/shared/data/database/daos/scoring_dao.dart` | `markSyncFailed()` for entries exceeding maxRetries |
+- **Failed sync entries?** Check for entries with status `'failed'` in the sync queue.

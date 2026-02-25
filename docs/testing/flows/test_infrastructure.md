@@ -1,175 +1,120 @@
 # Test Infrastructure
 
-Server manager setup, app wrapper configuration, and DB verification API for E2E integration tests.
+Layered architecture for the integration/E2E test suite. All tests are **prod-only** (run against `cricscores.in`), **100% UI-driven** (zero API calls), **idempotent** (each run creates fresh data), and **ordered** (tests 01-08 run sequentially).
 
-## Components
+## Directory Structure
 
 ```
 integration_test/
-├── tournament_e2e_test.dart          # Main test
-└── helpers/
-    ├── server_manager.dart           # Bun server lifecycle
-    ├── app_test_wrapper.dart         # Flutter app wrapper
-    ├── db_verifier.dart              # DB verification client
-    ├── data_generators.dart          # Team/player/tournament generators
-    ├── match_flow_helpers.dart       # Scoring UI tap helpers
-    ├── tournament_flow_helpers.dart  # Tournament UI navigation helpers
-    └── delivery_record.dart          # Delivery tracking data classes
+├── config/                          # Test configuration
+│   ├── constants.dart               # Timeouts, retry counts, device IDs
+│   ├── test_data.dart               # Team/player names, phone numbers
+│   └── tournament_presets.dart      # Tournament format configurations
+├── core/                            # Shared infrastructure
+│   ├── app_bootstrap.dart           # App launch + Firebase auth + flavor setup
+│   ├── error_tracker.dart           # Step-by-step error tracking + resume support
+│   ├── stat_tracker.dart            # Per-match stat accumulation
+│   └── test_utils.dart              # waitForFinder(), waitForFinderGone(), testLog(), settle()
+├── flows/                           # High-level test flows (orchestrators)
+│   ├── random_innings.dart          # playRandomInnings() — weighted random delivery generation
+│   ├── standalone_match_flow.dart   # Full standalone match lifecycle (setup → toss → score → complete)
+│   ├── team_setup_flow.dart         # Create N teams with M players each via UI
+│   └── tournament_flow.dart         # scoreAllFixtures() — scan + score all unplayed fixtures
+├── helpers/                         # Low-level UI interaction helpers
+│   ├── fixture_scanning.dart        # Find and tap FixtureCard widgets
+│   ├── forms.dart                   # Fill text fields, create teams/players via forms
+│   ├── match_setup.dart             # Match setup page + 5-step toss wizard
+│   ├── modals.dart                  # Dismiss MatchCompleteModal, InningsTransitionModal
+│   ├── navigation.dart              # Tab switching, bottom nav, back navigation, switchToTab()
+│   ├── scoring.dart                 # Tap run buttons, extras, wickets in ScoringControls
+│   └── tournament_mgmt.dart         # Create tournament, open registration, add teams, generate fixtures
+├── models/                          # Data classes for test tracking
+│   ├── delivery_record.dart         # DeliveryRecord — tracks each UI tap
+│   ├── match_outcome.dart           # MatchOutcome — result text + teams
+│   └── player_stats.dart            # PlayerStats — accumulated batting/bowling
+├── tests/                           # Test files (ordered 01-08)
+│   ├── 01_team_setup_test.dart      # Create 16 teams × 6 players
+│   ├── 02_standalone_match_test.dart # Standalone match: undo, target chase, persistence
+│   ├── 03_verify_after_match_test.dart # Verify match data on My Cricket, scorecard, player profile
+│   ├── 04_tournament_gk_test.dart   # Group+Knockout tournament (4 groups × 4 teams)
+│   ├── 05_tournament_ko_test.dart   # Knockout tournament (16 teams, single elimination)
+│   ├── 06_tournament_rr_test.dart   # Round Robin tournament (subset of teams)
+│   ├── 07_verify_all_screens_test.dart # Navigate all screens, verify data populated
+│   └── 08_viewer_live_test.dart     # Multi-device WebSocket live scoring test
+└── verification/                    # Screen-specific assertion helpers
+    ├── live_verifier.dart           # Verify live match WebSocket data on viewer
+    ├── my_cricket_verifier.dart     # Verify My Cricket tab (matches, teams, stats)
+    ├── player_profile_verifier.dart # Verify player profile page stats
+    ├── team_detail_verifier.dart    # Verify team detail page (roster, matches)
+    ├── tournament_verifier.dart     # Verify tournament detail (standings, fixtures, leaderboard)
+    └── updates_verifier.dart        # Verify Updates/activity feed
 ```
 
-## Server Manager
+**34 files across 7 directories.**
 
-`ServerManager` manages the Bun test server lifecycle.
+## Design Principles
 
-### Configuration
-- Port: 3001 (test-specific)
-- Environment: `NODE_ENV=test`
-- Database: `cricapp_test_e2e`
-- Server directory: `../../server` (relative to mobile app)
+1. **Prod-only:** All tests run with `--flavor prod --dart-define=FLAVOR=prod` against the production server at `cricscores.in`. No local test server, no `NODE_ENV=test`, no test-only API endpoints.
 
-### Methods
+2. **100% UI-driven:** Every action goes through the real Flutter UI — team creation, player addition, tournament setup, scoring, navigation. Zero API shortcuts.
 
-**`startServer()`**
-1. Spawns `bun run src/index.ts` via `Process.start()`
-2. Sets `NODE_ENV=test` and `PORT=3001`
-3. Polls `http://localhost:3001/health` every 500ms
-4. Times out after 15 seconds if server doesn't respond
+3. **Idempotent:** Each test run creates fresh data (teams with timestamp suffixes, tournaments with random names). No cleanup or reset required.
 
-**`stopServer()`**
-- Kills the spawned process
+4. **Ordered execution:** Tests are numbered 01-08 and must run sequentially. Later tests depend on data created by earlier tests (e.g., test 02 uses teams from test 01).
 
-**`resetDatabase()`**
-- Sends `POST /api/v1/test/reset-db` to truncate all tables
-- Re-seeds master data (dismissal types, ball types, etc.)
+5. **Error tracking with resume:** `ErrorTracker` logs every step. On failure, prints exactly where it stopped. Tests can be re-run — they create new data rather than conflicting with previous runs.
 
-## App Test Wrapper
+## Core Utilities
 
-`AppTestWrapper` provides `pumpApp(tester)` to boot the full Flutter app in test mode.
+### `app_bootstrap.dart`
+Launches the Flutter app in prod mode with Firebase phone OTP auth (test phone `9999999999`, OTP `123456`). Handles the full login flow through the real Firebase Auth UI.
 
-### What It Does
-1. Wraps `CricScores` in a `ProviderScope`
-2. Overrides Dio base URL to `http://localhost:3001`
-3. Sets up mock Firebase Auth (returns authenticated user)
-4. Debug mode router skips auth screens, routes to `/home`
+### `test_utils.dart`
+- `waitForFinder(finder, {timeout})` — Polls until a widget appears (replaces hand-rolled retry loops)
+- `waitForFinderGone(finder, {timeout})` — Polls until a widget disappears
+- `testLog(message)` — Conditional logging controlled by `verboseTestOutput` flag
+- `settle(tester)` — `pumpAndSettle` with timeout handling
 
-### Usage
-```dart
-await AppTestWrapper.pumpApp(tester);
-expect(find.text('Home'), findsWidgets);
+### `error_tracker.dart`
+Tracks test progress step-by-step. Each step is logged with description. On first error: stops execution, prints summary showing all completed steps and the failure point. Supports `startFromTeam`/`startFromMatch` for partial resume.
+
+## Test Ordering
+
+| # | Test | What It Does | Depends On |
+|---|------|-------------|------------|
+| 01 | `01_team_setup_test.dart` | Create 16 teams × 6 players via UI | Nothing |
+| 02 | `02_standalone_match_test.dart` | Standalone match with undo + target chase | Teams from 01 |
+| 03 | `03_verify_after_match_test.dart` | Verify My Cricket, scorecard, player profile | Match from 02 |
+| 04 | `04_tournament_gk_test.dart` | Group+Knockout tournament (all 16 teams) | Teams from 01 |
+| 05 | `05_tournament_ko_test.dart` | Knockout tournament (16 teams) | Teams from 01 |
+| 06 | `06_tournament_rr_test.dart` | Round Robin tournament | Teams from 01 |
+| 07 | `07_verify_all_screens_test.dart` | Navigate + verify all app screens | Data from 01-06 |
+| 08 | `08_viewer_live_test.dart` | Multi-device WebSocket live test | Teams from 01 |
+
+## Run Commands
+
+```bash
+# Single test
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/02_standalone_match_test.dart -d emulator-5554
+
+# All tests in order (run manually one by one — no test runner for ordered execution)
+cd apps/mobile
+flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/01_team_setup_test.dart -d emulator-5554
+flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/02_standalone_match_test.dart -d emulator-5554
+# ... and so on through 08
 ```
 
-## Test Verification API
+## Key Flows
 
-Server-side endpoints in `test-verify.routes.ts`, only enabled when `NODE_ENV=test`.
+### Team Setup (`team_setup_flow.dart`)
+Creates N teams with M players each through the UI. For each team: navigates to Teams tab → taps Create Team → fills name → for each player: taps Add Player → fills name + phone → confirms. Asserts player count text after each team.
 
-### Endpoints
+### Standalone Match (`standalone_match_flow.dart`)
+Full match lifecycle: navigate to match creation → fill setup form → complete 5-step toss wizard → score both innings via `playRandomInnings()` → dismiss match complete modal.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/test/deliveries/:matchId` | All delivery records for a match |
-| GET | `/api/v1/test/standings/:tournamentId` | Raw tournament standings |
-| GET | `/api/v1/test/match-result/:matchId` | Match result record |
-| GET | `/api/v1/test/leaderboard/:tournamentId?category=runs\|wickets` | Leaderboard data |
-| POST | `/api/v1/test/reset-db` | Truncate all tables, re-seed master data |
+### Tournament (`tournament_flow.dart` + `tournament_mgmt.dart`)
+- `tournament_mgmt.dart`: Low-level helpers — `createTournament()`, `openRegistration()`, `addTeamToTournament()`, `generateFixtures()`, `startTournament()`
+- `tournament_flow.dart`: High-level orchestrator — `scoreAllFixtures()` scans FixtureCard widgets, taps unplayed fixtures, scores each match, repeats until no unplayed fixtures remain. Asserts zero unplayed fixtures at completion.
 
-### Security
-- All endpoints are guarded: `if (process.env.NODE_ENV !== 'test') return 403`
-- Never exposed in production
-
-### Response Shapes
-
-**Deliveries** (`GET /api/v1/test/deliveries/:matchId`):
-```json
-{
-  "deliveries": [
-    {
-      "id": "uuid",
-      "innings_id": "uuid",
-      "over_number": 1,
-      "ball_number": 1,
-      "runs_from_bat": 4,
-      "is_wide": false,
-      "is_no_ball": false,
-      "is_wicket": false,
-      "is_boundary": true,
-      "total_runs": 4
-    }
-  ]
-}
-```
-
-**Standings** (`GET /api/v1/test/standings/:tournamentId`):
-```json
-{
-  "standings": [
-    {
-      "team_id": "uuid",
-      "team_name": "Team1",
-      "played": 3,
-      "won": 2,
-      "lost": 1,
-      "tied": 0,
-      "points": 4,
-      "nrr": 1.250
-    }
-  ]
-}
-```
-
-## DB Verifier (Client-Side)
-
-`DbVerifier` calls the test API endpoints via Dio and compares results.
-
-### Methods
-
-**`verifyMatchDeliveries(matchId, expectedDeliveries)`**
-- Fetches deliveries from server
-- Compares count, then each field (runs, extras, wickets, boundaries)
-- Returns `VerificationResult` with passed/failed + diff details
-
-**`verifyMatchResult(matchId)`**
-- Fetches match result record
-- Checks: result exists, winner correct, result type (win/tie/no result)
-
-**`verifyStandings(tournamentId)`**
-- Fetches all standings rows
-- Checks: all 16 teams present, played/won/lost/points correct, NRR non-null
-
-**`verifyLeaderboard(tournamentId, {category})`**
-- Fetches leaderboard for runs or wickets
-- Returns top player name and value
-
-### Usage in Tests
-```dart
-final dbVerifier = DbVerifier(baseUrl: 'http://localhost:3001');
-
-// After each match:
-final result = await dbVerifier.verifyMatchDeliveries(
-  matchId,
-  matchRecord.allDeliveries,
-);
-expect(result.passed, true);
-
-// After group stage:
-final standings = await dbVerifier.verifyStandings(tournamentId);
-expect(standings.passed, true);
-```
-
-## Adding New Verification Endpoints
-
-1. Add route in `apps/server/src/routes/v1/test-verify.routes.ts`
-2. Guard with `NODE_ENV=test` check
-3. Query relevant tables via Drizzle
-4. Add corresponding method in `apps/mobile/integration_test/helpers/db_verifier.dart`
-5. Add `VerificationResult` parsing for the new response shape
-
-## Data Generators
-
-`TournamentTestData` provides factory methods:
-
-| Method | Output |
-|--------|--------|
-| `generate16Teams()` | 16 teams, 8 players each (T{n}P{m} naming) |
-| `generateTeams(count, {playersPerTeam})` | Configurable team count |
-| `mockTour1Config()` | 6-over, 6-player, Group+Knockout, magic over on 4th |
-| `defaultGroupAssignments()` | 4 groups x 4 teams |
+### Random Innings (`random_innings.dart`)
+`playRandomInnings()` generates weighted random deliveries (30% dot, 25% single, 15% double, 10% four, 5% six, 5% wicket, 3% wide, 2% no-ball). Handles bowler rotation, new batter selection, over completion, and innings/match completion detection.

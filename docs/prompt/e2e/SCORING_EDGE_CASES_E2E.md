@@ -1,148 +1,85 @@
 # Scoring Edge Cases E2E Test — Run Prompt
 
-Run this prompt when you want to execute the scoring edge cases E2E test. This test proves that complex cricket scoring scenarios work correctly through the real Flutter UI, with DB verification.
+Run this prompt when you want to execute specific scoring edge case scenarios. These test complex cricket scoring rules through the real Flutter UI.
 
 ---
 
-## What This Test Does
+## Status: NOT YET IMPLEMENTED AS STANDALONE TEST
 
-Three independent test cases in one file:
+These scenarios (21, 22, 26 from `E2E_TEST_SCENARIOS.md`) do not have a dedicated test file in the current test suite. Some aspects are partially covered by `02_standalone_match_test.dart` (undo, target chase) and the random scoring in tournament tests (04-06).
 
-1. **Scenario 21: No-Ball Free Hit Chain** — Verifies free hit mechanics: NB → free hit → NB on free hit → another free hit → normal delivery
-2. **Scenario 22: All Dismissal Types** — Tests Bowled, Caught, LBW, Run Out, and Stumped through the WicketDialog wizard
-3. **Scenario 26: Overs Exhausted** — Scores all 30 legal deliveries (5 overs) without wickets, verifying innings ends on over exhaustion
-
-**Runtime: ~20-30 minutes on emulator.**
+**To implement:** Create a new test file (e.g., `integration_test/tests/09_scoring_edge_cases_test.dart`) following the current architecture.
 
 ---
 
-## Prerequisites Checklist
+## Scenarios to Cover
+
+### Scenario 21: No-Ball Free Hit Chain
+Verifies free hit mechanics: NB -> free hit -> NB on free hit -> another free hit -> normal delivery.
+
+### Scenario 22: All Dismissal Types
+Tests Bowled, Caught, LBW, Run Out, Stumped, Hit Wicket, C&B, Ret. Hurt, Ret. Out through the WicketDialog wizard.
+
+### Scenario 26: Overs Exhausted
+Scores all legal deliveries without wickets, verifying innings ends on over exhaustion.
+
+---
+
+## Prerequisites
 
 1. **Android emulator is running**
-2. **Bun server running in test mode:**
-   ```bash
-   cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts
-   ```
-3. **PostgreSQL running** with test database
+2. **Prod server is live** at `cricscores.in`
+3. **Teams already created** — run test 01 first
 4. **Flutter dependencies resolved** — `flutter pub get`
-5. **Code generation up to date** — `dart run build_runner build --delete-conflicting-outputs`
+5. **Code generation up to date**
 
 ---
 
-## Run Command
+## Run Command (when implemented)
 
 ```bash
-cd apps/mobile && flutter test integration_test/scoring_edge_cases_e2e_test.dart -d emulator-5554
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/09_scoring_edge_cases_test.dart -d emulator-5554
 ```
-
-Timeout: 45 minutes.
 
 ---
 
-## Test 1: Scenario 21 — No-Ball Free Hit Chain
+## Implementation Notes
 
-### Delivery Sequence
+### Current Architecture
+- `helpers/scoring.dart` — Tap scoring controls (runs, extras, wickets)
+- `helpers/match_setup.dart` — Match setup + toss wizard
+- `helpers/modals.dart` — Dismiss completion/transition modals
+- `core/app_bootstrap.dart` — App launch + Firebase auth
+- `core/test_utils.dart` — `waitForFinder()`, `settle()`
+
+### Pattern
+1. Boot app via `app_bootstrap.dart`
+2. Reuse teams from test 01
+3. Create match + toss wizard
+4. Score predetermined delivery sequences
+5. Verify results via UI (scorer display, match complete modal)
+
+### Test 1: No-Ball Free Hit Chain
 | # | Type | Details |
 |---|------|---------|
 | 1 | NB | No-ball, +1 penalty run |
 | 2 | 4 (FH) | Boundary on free hit, 4 runs |
-| 3 | NB | No-ball on free hit → chains another FH |
+| 3 | NB | No-ball on free hit -> chains another FH |
 | 4 | 1 (FH) | Single on free hit, strike swaps |
 | 5 | 0 | Normal dot ball (free hit chain broken) |
-| 6+ | dots | Complete the over normally |
 
-### Verifications
-- Two no-ball records in DB with `isNoBall: true`
-- Free hit deliveries flagged correctly (`isFreeHit: true` on post-NB delivery)
-- Runs accumulated: NB(1) + 4 + NB(1) + 1 + 0 = 7 runs in first over
-- Free hit chain: NB on a free hit = another free hit (not a double free hit)
+### Test 2: All Dismissal Types (9 types)
+Take wickets with all dismissal types across multiple overs:
+- Bowled, Caught (with fielder), LBW, Run Out (with fielder), Stumped (with fielder)
+- Hit Wicket, C&B, Ret. Hurt (not a wicket), Ret. Out
 
-### UI Tap Sequence
-```
-tapExtra('NB') → confirmExtra → tapRun(4) → tapExtra('NB') → confirmExtra → tapRun(1) → tapRun(0)
-```
-
----
-
-## Test 2: Scenario 22 — All Dismissal Types (9 types)
-
-### Delivery Sequence
-Take wickets with all 9 dismissal types across 3 overs:
-
-**Over 1 (5 wickets):**
-| Wicket | Type | UI Flow | Fielder? |
-|--------|------|---------|----------|
-| 1 | Bowled | tapWicket → selectDismissalType('Bowled') → tapWicketConfirm | No |
-| 2 | Caught | tapWicket → selectDismissalType('Caught') → [fielder] → tapWicketConfirm | Shubman Gill |
-| 3 | LBW | tapWicket → selectDismissalType('LBW') → tapWicketConfirm | No |
-| 4 | Run Out | tapWicket → selectDismissalType('Run Out') → [fielder] → tapWicketConfirm | Yashasvi Jaiswal |
-| 5 | Stumped | tapWicket → selectDismissalType('Stumped') → [fielder] → tapWicketConfirm | Ishan Kishan |
-| - | dot | Complete the over | - |
-
-**Over 2 (4 more dismissals):**
-| Wicket | Type | UI Flow | Notes |
-|--------|------|---------|-------|
-| - | dot | Gap before wicket | - |
-| 6 | Hit Wicket | tapWicket → selectDismissalType('Hit Wicket') → tapWicketConfirm | Bowler credited |
-| - | dot | Gap | - |
-| 7 | C & B | tapWicket → selectDismissalType('C & B') → tapWicketConfirm | Bowler = fielder |
-| - | dot | Gap | - |
-| 8 | Ret. Hurt | tapWicket → selectDismissalType('Ret. Hurt') → tapWicketConfirm | NOT a wicket |
-| 9 | Ret. Out | tapWicket → selectDismissalType('Ret. Out') → tapWicketConfirm | Counts as wicket |
-
-### Next Batters (in order)
-After Rohit Sharma and Virat Kohli (openers):
-1. Suryakumar Yadav → 2. KL Rahul → 3. Hardik Pandya → 4. Ravindra Jadeja → 5. Axar Patel → 6. Jasprit Bumrah → 7. Mohammed Shami → 8. Yuzvendra Chahal → 9. Rishabh Pant
-
-### Verifications
-- 8 wicket deliveries in DB (Ret. Hurt does NOT produce `isWicket=true`)
-- Bowler gets wicket credit for Bowled, Caught, LBW, Stumped, Hit Wicket, C&B
-- Fielder recorded for Caught, Run Out, Stumped
-- Run Out doesn't credit the bowler
-- **Fielding stats verification:**
-  - Shubman Gill: catches >= 1
-  - Yashasvi Jaiswal: runOuts >= 1
-  - Ishan Kishan: stumpings >= 1
-- **Fall of wickets:** All wickets fell at 0 runs (all dots)
-
----
-
-## Test 3: Scenario 26 — Overs Exhausted
-
-### Approach
-Score 30 legal deliveries (5 overs × 6 balls) of all dot balls to reach overs exhausted without any wickets.
-
-### Bowler Rotation
-- Over 1: Deepak Chahar (set by toss)
-- Over 2: Bhuvneshwar Kumar
-- Over 3: Kuldeep Yadav
-- Over 4: Ravichandran Ashwin
-- Over 5: Washington Sundar
-
-### Verifications
-- InningsTransitionModal appears (not MatchCompleteModal) after 30 legal deliveries
-- Innings completion reason = `overs_exhausted`
-- Exactly 0 wickets taken
-- Total score = 0 (all dots)
-- 5 completed overs, all maidens
+### Test 3: Overs Exhausted
+Score all dots for N overs to reach overs exhaustion without wickets.
 
 ---
 
 ## Debugging Tips
 
-- **Free hit not showing?** Verify the no-ball was recorded correctly. Free hit indicator appears after NB in the delivery processing pipeline step 9.
-- **Caught fielder selection stuck?** The WicketDialog has a multi-step wizard. After selecting "Caught", tap "Next" to get to the fielder selection step.
-- **Overs not ending?** Make sure no extras (wides/NB) were accidentally tapped. These don't count as legal deliveries.
-- **Bowler selection after over?** The SelectBowlerSheet appears automatically. Consecutive-over rule blocks the last bowler.
-
----
-
-## Key Helper Files
-
-| File | Purpose |
-|------|---------|
-| `integration_test/scoring_edge_cases_e2e_test.dart` | Main test file |
-| `integration_test/helpers/scenario_test_data.dart` | Shared team data |
-| `integration_test/helpers/match_flow_helpers.dart` | Tap helpers |
-| `integration_test/helpers/server_manager.dart` | Server API calls |
-| `integration_test/helpers/tournament_flow_helpers.dart` | Team creation, toss |
+- **Free hit not showing?** Verify the no-ball was recorded correctly. Free hit indicator appears after NB.
+- **Caught fielder selection stuck?** WicketDialog has multi-step wizard. After selecting "Caught", tap "Next" for fielder step.
+- **Overs not ending?** Make sure no extras (wides/NB) were accidentally tapped — they don't count as legal deliveries.

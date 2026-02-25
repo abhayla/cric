@@ -16,6 +16,42 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-25c: Documentation Update — Integration Test Suite Rewrite
+
+**Completed:** Updated 7 documentation files to reflect the integration test suite rewrite (34 files, 7 directories, prod-only, 100% UI-driven).
+
+**Files updated:**
+1. `CLAUDE.md` (lines 84-90) — Changed `--flavor dev` to `--flavor prod --dart-define=FLAVOR=prod` in E2E commands. Removed local test server command. Updated E2E test rule.
+2. `docs/testing/flows/test_infrastructure.md` — **Full rewrite.** Replaced old `ServerManager`/`AppTestWrapper`/`db_verifier` architecture with current layered structure (34 files, 7 dirs), design principles, core utilities, test ordering table.
+3. `docs/prompt/e2e/TOURNAMENT_E2E.md` — Updated to reference tests 04-06. Removed local server instructions. Updated file references to current helpers.
+4. `docs/prompt/e2e/RUN_PROD_E2E.md` — Updated function names (`scoreAllFixtures()` in `tournament_flow.dart`, helpers in `tournament_mgmt.dart`). Updated file paths to current test numbering.
+5. `docs/prompt/e2e/PROD_MANUAL_E2E.md` — Updated file references to current test numbering (01-08). Removed old `prod_*_test.dart` references.
+6. `docs/prompt/e2e/E2E_TEST_SCENARIOS.md` — Added coverage mapping table (8 tests → 50 scenarios). Updated Scenario 0. Updated header.
+7. `docs/testing/flows/tournament_e2e_flow.md` — Rewrote to reference tests 04-06, current helper files, prod-only approach.
+
+**Additional files updated (extended scope):**
+- `docs/prompt/e2e/01_PROMPT_CATEGORY_A.md` — Updated to reference current layered architecture
+- `docs/prompt/e2e/02_PROMPT_CATEGORY_B_C.md` — Updated to reference current helpers
+- `docs/prompt/e2e/03_PROMPT_CATEGORY_H.md` — Updated to reference current verifiers
+- `docs/prompt/e2e/04_PROMPT_CATEGORY_J.md` — Updated to reference current tournament helpers
+- `docs/prompt/e2e/05_PROMPT_SCORING_EXTRAS.md` — Updated to reference current architecture
+- `docs/prompt/e2e/06_PROMPT_MATCH_FLOW_VARIATIONS.md` — Updated to reference current architecture
+- `docs/prompt/e2e/FULL_T20_E2E.md` — Full rewrite with current test files (02 + 08), prod server, removed old helpers
+- `docs/prompt/e2e/PERSISTENCE_E2E.md` — Marked as NOT YET IMPLEMENTED, updated architecture refs
+- `docs/prompt/e2e/REMAINING_E2E.md` — Full rewrite with current 8-test suite
+- `docs/prompt/e2e/SCORING_EDGE_CASES_E2E.md` — Marked as NOT YET IMPLEMENTED, updated architecture refs
+- `docs/prompt/e2e/SCORING_EXTRAS_E2E.md` — Marked as NOT YET IMPLEMENTED, updated architecture refs
+- `docs/prompt/e2e/MATCH_FLOW_VARIATIONS_E2E.md` — Marked as NOT YET IMPLEMENTED, updated architecture refs
+- `docs/prompt/e2e/PLAYER_PROFILE_E2E.md` — Marked as PARTIALLY COVERED, updated architecture refs
+- `docs/prompt/e2e/MULTI_DEVICE_E2E.md` — Updated to reference tests 02 + 08, prod server, current helpers
+- `docs/prompt/e2e/E2E_TEST_SCENARIOS.md` — Fixed remaining `full_t20_viewer_e2e_test.dart` reference
+
+**Verification:** Zero hits for old names across all docs/ markdown files (excluding historical session logs in CONTINUE_PROMPT.md).
+
+**Next steps:**
+1. Run full test suite on device to validate assertion strengthening from session 2026-02-25b
+2. Investigate toss wizard race condition (root cause of re-selection band-aid in `match_setup.dart`)
+
 ### Session 2026-02-25b: Integration Test Suite Gaps & Modularization
 
 **Completed:** Two rounds of improvements to the integration test suite.

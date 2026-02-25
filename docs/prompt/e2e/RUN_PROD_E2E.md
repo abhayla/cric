@@ -9,7 +9,7 @@ Use this prompt to instruct Claude to execute the production E2E test suite.
 **100% UI-driven — zero API calls.** All actions (team creation, player addition, tournament creation, status transitions, team registration, fixture generation, scoring, fixture navigation) go through the app UI — the exact same process any real user would follow. No API shortcuts. No exceptions.
 
 ### Tournament UI Flow (per tournament)
-Each `setupTournamentViaUI()` call performs these steps through the real app UI:
+Each tournament test performs these steps through the real app UI via helpers in `tournament_mgmt.dart`:
 1. Create tournament (form: name, format, overs, ball type, players per side, groups)
 2. Open Registration (... menu -> "Open Registration")
 3. Add all teams (Teams tab -> "Add Team" -> group chip -> team name, repeated N times)
@@ -17,11 +17,12 @@ Each `setupTournamentViaUI()` call performs these steps through the real app UI:
 5. Start Tournament (... menu -> "Start Tournament")
 
 ### Fixture Scoring (per match)
-`scoreAllFixturesViaUI()` scans FixtureCard widgets on the Fixtures tab to find unplayed matches:
-1. Switch to Fixtures tab, scan for FixtureCard with `!fixture.hasMatch`
-2. Tap the fixture card -> match setup -> random toss -> score both innings
+`scoreAllFixtures()` in `tournament_flow.dart` scans FixtureCard widgets on the Fixtures tab to find unplayed matches:
+1. Switch to Fixtures tab, scan for unplayed FixtureCard
+2. Tap the fixture card -> match setup -> toss wizard -> score both innings
 3. Dismiss match complete modal -> navigate back to tournament detail
 4. Repeat until no unplayed fixtures remain
+5. Assert zero unplayed fixtures at completion
 
 ### Error Tracking
 - `ErrorTracker` class logs every success/error with step description
@@ -32,7 +33,7 @@ Each `setupTournamentViaUI()` call performs these steps through the real app UI:
 ## Pre-requisites
 
 Before running, verify:
-1. Android emulator is running (`flutter devices` should show emulator-5556)
+1. Android emulator is running (`flutter devices` should show emulator)
 2. Prod server is live at cricscores.in
 3. Prod debug APK is built: `cd apps/mobile && flutter build apk --flavor prod --debug --dart-define=FLAVOR=prod`
 
@@ -43,72 +44,47 @@ Before running, verify:
 Run the team setup test to create 16 teams with 6 players each via UI:
 
 ```bash
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_team_setup_test.dart -d emulator-5556
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/01_team_setup_test.dart -d emulator-5554
 ```
 
 Wait for completion. Verify output shows all 16 teams created with 6 players each.
 
-Teams: Team 1 through Team 16
-Players: T1Play1-T1Play6, T2Play1-T2Play6, ..., T16Play1-T16Play6
-Phones: 9999999101 through 9999999196
-
-### Step 2: Run Tournaments (overnight, ~15 hours)
-
-Tournament names are randomly generated per run (e.g., "Champions Trophy 48291").
-
-Option A — Run all sequentially via script:
-```bash
-bash scripts/prod-e2e-overnight.sh --skip-teams
-```
-
-Option B — Run individually (useful if one fails and needs re-run):
-```bash
-# Tournament 1: Group+KO, 5ov, 4 groups, top 2 qualify (~31 matches, ~2hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_1_test.dart -d emulator-5556
-
-# Tournament 2: Group+KO, 10ov, 4 groups, top 1 qualifies (~27 matches, ~2.5hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_2_test.dart -d emulator-5556
-
-# Tournament 3: Knockout, 5ov, 16 teams (15 matches, ~1hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_3_test.dart -d emulator-5556
-
-# Tournament 4: Round Robin, 5ov, 120 matches (~7hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_4_test.dart -d emulator-5556
-
-# Tournament 5: Group+KO, 3ov, 2 groups of 8, top 4 qualify (~63 matches, ~3hr)
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_tournament_5_test.dart -d emulator-5556
-```
-
-### Step 3: Verify Results
-
-After completion, check:
-1. Open the app on the viewer device (phone 9999999998)
-2. Navigate to Tournaments tab — all 5 tournaments should be visible
-3. Tap each tournament to verify standings and completed fixtures
-4. Tap any match scorecard to verify innings data
-5. Check player profiles for accumulated career stats
-
-### Step 2b: Standalone Match Test (~10 min)
-
-Quick standalone match covering undo, target chase, magic over, and persistence:
+### Step 2: Run Core Tests (~30 min)
 
 ```bash
-cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/prod/prod_standalone_match_test.dart -d emulator-5556
+# Standalone match: undo, target chase, persistence
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/02_standalone_match_test.dart -d emulator-5554
+
+# Verify match data on screens
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/03_verify_after_match_test.dart -d emulator-5554
 ```
 
-This test is independent of tournaments — uses Team 1 vs Team 2 from the prod roster.
+### Step 3: Run Tournaments (~5-6 hours total)
 
-### Viewer / WebSocket Tests (separate from overnight run)
+```bash
+# Tournament 1: Group+Knockout, 4 groups × 4 teams (~27 matches, ~2-3hr)
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/04_tournament_gk_test.dart -d emulator-5554
 
-Already covered by dedicated multi-device tests:
-- `integration_test/multi_device_viewer_e2e_test.dart` — Quick WebSocket sync check (~5 min)
-- `integration_test/full_t20_viewer_e2e_test.dart` — Full T20 per-over sync report (~2 hrs)
+# Tournament 2: Knockout, 16 teams single elimination (15 matches, ~1hr)
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/05_tournament_ko_test.dart -d emulator-5554
 
-Run these separately with a viewer device. See `scripts/multi-device-e2e.sh`.
+# Tournament 3: Round Robin (~1-2hr)
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/06_tournament_rr_test.dart -d emulator-5554
+```
 
-### Overnight Script
+### Step 4: Verify All Screens
 
-`scripts/prod-e2e-overnight.sh` is current and correct — supports `--skip-teams`, `--only N` flags. Logs output per-tournament to timestamped files.
+```bash
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/07_verify_all_screens_test.dart -d emulator-5554
+```
+
+### Step 5: Viewer / WebSocket Test (separate device needed)
+
+```bash
+cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integration_test/tests/08_viewer_live_test.dart -d <device-id>
+```
+
+Run on a second device while a scorer runs test 02 on the emulator. See `scripts/multi-device-e2e.sh`.
 
 ## Troubleshooting
 
@@ -118,19 +94,29 @@ Run these separately with a viewer device. See `scripts/multi-device-e2e.sh`.
 | Server 5xx errors | Check server logs: `pm2 logs cricscores` on VPS |
 | Test hangs on fixture | Emulator might be slow — increase timeouts or restart emulator |
 | Tournament test fails mid-run | Re-run just that tournament — it creates a NEW tournament with random name |
-| "No teams found" | Run team setup first: `--skip-teams` flag skips it |
+| "No teams found" | Run team setup first (test 01) |
 | ErrorTracker shows error | Read the summary — it shows exactly which step failed and what succeeded |
 
 ## File Reference
 
 | File | Purpose |
 |------|---------|
-| `apps/mobile/integration_test/prod/prod_helpers.dart` | `setupTournamentViaUI()`, `scoreAllFixturesViaUI()`, `ErrorTracker`, `randomTournamentName()` |
-| `apps/mobile/integration_test/helpers/tournament_flow_helpers.dart` | `createTournament()`, `addTeamToTournament()`, `generateFixtures()`, `transitionTournamentStatus()` |
-| `apps/mobile/integration_test/helpers/data_generators.dart` | `TeamData`, `PlayerData`, `TournamentConfig` |
-| `apps/mobile/integration_test/prod/prod_team_setup_test.dart` | Create 16 teams x 6 players via UI |
-| `apps/mobile/integration_test/prod/prod_tournament_[1-5]_test.dart` | Individual tournament tests |
-| `apps/mobile/integration_test/prod/prod_standalone_match_test.dart` | Standalone match: undo, target chase, magic over, persistence |
-| `apps/mobile/integration_test/prod/prod_cleanup_test.dart` | Delete test teams via UI (graceful fallback) |
-| `scripts/prod-e2e-overnight.sh` | Sequential runner with logging (`--skip-teams`, `--only N`) |
-| `docs/prompt/e2e/PROD_MANUAL_E2E.md` | Full test plan reference |
+| `integration_test/core/app_bootstrap.dart` | App launch + Firebase auth |
+| `integration_test/core/error_tracker.dart` | `ErrorTracker` — step tracking + resume |
+| `integration_test/core/test_utils.dart` | `waitForFinder()`, `waitForFinderGone()`, `testLog()` |
+| `integration_test/flows/tournament_flow.dart` | `scoreAllFixtures()` — orchestrates all fixture scoring |
+| `integration_test/flows/random_innings.dart` | `playRandomInnings()` — weighted random delivery generation |
+| `integration_test/flows/team_setup_flow.dart` | Create N teams × M players via UI |
+| `integration_test/flows/standalone_match_flow.dart` | Full standalone match lifecycle |
+| `integration_test/helpers/tournament_mgmt.dart` | `createTournament()`, `addTeamToTournament()`, `generateFixtures()` |
+| `integration_test/helpers/fixture_scanning.dart` | Find and tap FixtureCard widgets |
+| `integration_test/helpers/scoring.dart` | Tap scoring controls |
+| `integration_test/config/test_data.dart` | Team/player names, phone numbers |
+| `integration_test/config/tournament_presets.dart` | Tournament format configurations |
+| `integration_test/tests/01_team_setup_test.dart` | Team setup test |
+| `integration_test/tests/02_standalone_match_test.dart` | Standalone match test |
+| `integration_test/tests/04_tournament_gk_test.dart` | Group+Knockout tournament test |
+| `integration_test/tests/05_tournament_ko_test.dart` | Knockout tournament test |
+| `integration_test/tests/06_tournament_rr_test.dart` | Round Robin tournament test |
+| `integration_test/tests/07_verify_all_screens_test.dart` | Screen verification test |
+| `integration_test/tests/08_viewer_live_test.dart` | Multi-device WebSocket test |

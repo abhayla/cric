@@ -2,7 +2,9 @@
 
 ## Context
 
-This prompt implements three E2E test scenarios covering extras (bye/leg-bye), strike rotation correctness, and maiden over verification — areas not covered by existing tests.
+This prompt implements three E2E test scenarios covering extras (bye/leg-bye), strike rotation correctness, and maiden over verification — areas not fully covered by existing tests.
+
+The integration test suite uses a **layered architecture** in `apps/mobile/integration_test/`. Tests are prod-only (`--flavor prod --dart-define=FLAVOR=prod`), 100% UI-driven (zero API calls), and run against the prod server at `cricscores.in`.
 
 ## Scenarios
 
@@ -10,9 +12,8 @@ This prompt implements three E2E test scenarios covering extras (bye/leg-bye), s
 - **Category:** B (Extras)
 - **What it tests:** Bye and leg-bye deliveries with various run values (1, 2, 4)
 - **Key assertions:**
-  - `totalByes` and `totalLegByes` in innings table
   - Byes/leg-byes don't break maiden over (bowler concedes 0)
-  - Deliveries flagged correctly with `isBye`/`isLegBye` and correct run values
+  - Correct strike rotation on odd bye/LB runs
   - Batting stats: opener scores 0 runs from bat
 
 ### Scenario 28: Strike Rotation Correctness
@@ -22,8 +23,6 @@ This prompt implements three E2E test scenarios covering extras (bye/leg-bye), s
   - After 1 run: striker changes
   - After 2 runs: striker stays
   - After 3 runs: striker changes
-  - After 0 runs: no change
-  - After 4 runs: striker stays
   - End of over + odd run on last ball = cancel out
   - Bye/leg-bye odd runs also swap strike
 
@@ -31,29 +30,29 @@ This prompt implements three E2E test scenarios covering extras (bye/leg-bye), s
 - **Category:** A (Core Scoring)
 - **What it tests:** Maiden over detection (6 dot balls with 0 runs from bat)
 - **Key assertions:**
-  - Over with runs: `isMaiden=false`
-  - Over with 6 dots: `isMaiden=true`
-  - Bowler stats: `maidens>=1` for the maiden over bowler
+  - Over with runs: not maiden
+  - Over with 6 dots: maiden
+  - Bowler stats show maiden count >= 1
 
 ## Implementation Details
 
 ### File
-`apps/mobile/integration_test/scoring_extras_e2e_test.dart`
+Create new test: `integration_test/tests/09_scoring_extras_test.dart`
 
-### Dependencies
-- `helpers/match_flow_helpers.dart` — `tapExtra`, `confirmExtraWithRuns`, `tapRun`
-- `helpers/tournament_flow_helpers.dart` — `completeTossWizard`, `createTeam`, `addPlayersToRoster`
-- `helpers/scenario_test_data.dart` — `ScenarioTeams`
-- Server endpoints: `/api/v1/test/overs/:matchId`, `/api/v1/test/innings-detail/:matchId`, `/api/v1/test/match-stats/:matchId`
+### Current Architecture
+- `helpers/scoring.dart` — `tapRun()`, `tapExtra()`, tap scoring controls
+- `helpers/match_setup.dart` — match setup + toss wizard
+- `helpers/modals.dart` — dismiss modals
+- `core/app_bootstrap.dart` — app launch + Firebase auth
+- `core/test_utils.dart` — `waitForFinder()`, `settle()`
 
 ### Pattern
-Follows `scoring_edge_cases_e2e_test.dart` pattern:
-1. Boot app
-2. Create teams (or reuse existing)
-3. Match setup + toss wizard
-4. Score specific delivery sequence
-5. Innings transition + quick chase
-6. DB verification via test API endpoints
+1. Boot app via `app_bootstrap.dart`
+2. Reuse teams from test 01
+3. Create match + toss wizard via `match_setup.dart`
+4. Score specific delivery sequence via `helpers/scoring.dart`
+5. Verify results via UI (scorer display, bowler stats)
+6. Complete match (innings transition + quick chase)
 
 ### Delivery Sequences
 
@@ -68,10 +67,4 @@ Follows `scoring_edge_cases_e2e_test.dart` pattern:
 | 1.6 | Dot | 0 | 8/0 |
 
 **Scenario 11 Over 2 (Maiden):**
-6 dot balls → isMaiden=true
-
-## Server Endpoints Used
-- `GET /api/v1/test/overs/:matchId` — verify isMaiden flag
-- `GET /api/v1/test/innings-detail/:matchId` — verify totalByes, totalLegByes
-- `GET /api/v1/test/match-stats/:matchId` — verify bowler maidens
-- `GET /api/v1/test/deliveries/:matchId` — verify bye/LB flags on deliveries
+6 dot balls -> verify maiden via UI
