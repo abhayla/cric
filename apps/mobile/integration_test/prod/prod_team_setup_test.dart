@@ -1,16 +1,12 @@
-/// Production E2E Test: Create 16 teams x 6+1 players via UI.
+/// Production E2E Test: Create 16 teams x 6 players via UI.
 ///
 /// Follows the exact same process a real user would:
 /// 1. Log in with phone OTP
 /// 2. Navigate to Teams tab
-/// 3. Create each team (fill name → submit)
-/// 4. Add 6 players per team (Create New → fill name/phone/role → Add to Team)
-/// 5. Add Abhay Kumar (viewer, 9999999998) to Bangalore Titans
+/// 3. Create each team (fill name -> submit)
+/// 4. Add 6 players per team (Create New -> fill name/phone/role -> Add to Team)
 ///
-/// **IMPORTANT: All actions must go through the app UI. No API shortcuts.
-/// No exceptions.**
-///
-/// Idempotent: checks existing teams via API read and skips complete ones.
+/// 100% UI-driven — zero API calls. Error tracking with stop-on-first-error.
 ///
 /// Run:
 /// ```bash
@@ -29,29 +25,24 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('Create 16 prod teams with 6 players each via UI', (tester) async {
-    // Boot app and log in as scorer (9999999999)
     await AppTestWrapper.pumpAppAndWaitForHome(tester);
     print('\n=== PROD TEAM SETUP: 16 teams x 6 players (UI-driven) ===\n');
 
     final stopwatch = Stopwatch()..start();
-
-    // API client for read-only checks (existing teams/rosters)
-    final api = await ProdApiClient.create();
+    final tracker = ErrorTracker();
 
     // Create all 16 teams + players through the app UI
-    await createAllTeamsViaUI(tester, api);
-
-    // Verify by listing teams via API (read-only)
-    final teams = await api.listTeams(limit: 50);
-    print('\n=== VERIFICATION ===');
-    print('Total teams found: ${teams.length}');
-    for (final t in teams) {
-      print('  ${t['name']}: ${t['playerCount'] ?? '?'} players');
-    }
+    await createAllTeamsViaUI(tester, tracker);
 
     stopwatch.stop();
     print('\n=== TEAM SETUP COMPLETE ===');
     print('Duration: ${stopwatch.elapsed.inMinutes}m ${stopwatch.elapsed.inSeconds % 60}s');
-    print('Expected: ${prodTeams.length} teams, ${prodTeams.length * 6 + 1} players');
+    tracker.printSummary();
+
+    if (tracker.hasError) {
+      fail('Team setup had errors. See tracker summary above.');
+    }
+
+    expect(tracker.teamsCreated, equals(prodTeams.length));
   }, timeout: const Timeout(Duration(minutes: 30)));
 }

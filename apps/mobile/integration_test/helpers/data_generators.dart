@@ -14,10 +14,12 @@ class PlayerData {
   const PlayerData({
     required this.name,
     this.role = 'all_rounder',
+    this.phone,
   });
 
   final String name;
   final String role;
+  final String? phone;
 }
 
 /// Tournament configuration.

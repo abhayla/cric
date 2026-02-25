@@ -244,7 +244,7 @@ Future<bool> tapUndo(WidgetTester tester) async {
 /// Select a team in the match setup page team picker.
 ///
 /// Taps the team selector placeholder (e.g. 'Select Team A'), waits for the
-/// bottom sheet with team list, then taps the team name.
+/// bottom sheet with team list to load from the server, then taps the team name.
 Future<void> selectTeamInMatchSetup(
   WidgetTester tester,
   String teamName, {
@@ -252,41 +252,95 @@ Future<void> selectTeamInMatchSetup(
 }) async {
   final placeholder = isHome ? 'Select Team A' : 'Select Team B';
 
-  // Tap the team selector placeholder
+  // Tap the team selector — use the InkWell wrapping the placeholder text
+  // so the tap registers correctly on the hit target
   final selectorText = find.text(placeholder);
   if (selectorText.evaluate().isNotEmpty) {
-    await tester.tap(selectorText.first);
+    final inkWell = find.ancestor(
+      of: selectorText,
+      matching: find.byType(InkWell),
+    );
+    if (inkWell.evaluate().isNotEmpty) {
+      await tester.tap(inkWell.first, warnIfMissed: false);
+    } else {
+      await tester.tap(selectorText.first, warnIfMissed: false);
+    }
   } else {
-    // Team may already be selected — tap the team name to re-open picker
-    final currentTeam = find.text(teamName);
-    if (currentTeam.evaluate().isEmpty) {
-      print('    [teamPicker] Neither placeholder "$placeholder" nor team name found');
+    // Check if team name already shows (already selected)
+    final selectedName = find.text(teamName);
+    if (selectedName.evaluate().isNotEmpty) {
+      print('    [teamPicker] ${isHome ? "Team A" : "Team B"} already set to: $teamName');
       return;
     }
-    // Already selected — nothing to do
+    print('    [teamPicker] Neither placeholder "$placeholder" nor team name found');
     return;
   }
   await settle(tester);
   await visualPause(tester, 500);
 
-  // Wait for bottom sheet to appear with team list
-  for (var i = 0; i < 30; i++) {
+  // Wait for bottom sheet with DraggableScrollableSheet to appear
+  // and teams to load from the server (async)
+  for (var i = 0; i < 60; i++) {
     await tester.pump(const Duration(milliseconds: 100));
-    final teamInList = find.text(teamName);
-    if (teamInList.evaluate().length > 1) break; // Multiple = in list + header
-    if (teamInList.evaluate().isNotEmpty) break;
+    // Check if a ListTile appeared (teams loaded)
+    final listTiles = find.byType(ListTile);
+    if (listTiles.evaluate().isNotEmpty) break;
   }
   await settle(tester);
 
-  // Find and tap the team name in the bottom sheet ListTile
+  // Now find and tap the team name in the ListTile
   final teamInSheet = find.text(teamName);
   if (teamInSheet.evaluate().isNotEmpty) {
-    await tester.tap(teamInSheet.last); // Last = the one in the list (not header)
+    // Find the ListTile containing this team name for a reliable tap
+    final listTile = find.ancestor(
+      of: teamInSheet,
+      matching: find.byType(ListTile),
+    );
+    if (listTile.evaluate().isNotEmpty) {
+      await tester.ensureVisible(listTile.first);
+      await tester.pumpAndSettle();
+      await tester.tap(listTile.first, warnIfMissed: false);
+    } else {
+      await tester.tap(teamInSheet.last, warnIfMissed: false);
+    }
     await settle(tester);
-    await visualPause(tester);
+    await visualPause(tester, 500);
     print('    [teamPicker] Selected ${isHome ? "Team A" : "Team B"}: $teamName');
   } else {
-    print('    [teamPicker] WARNING: "$teamName" not found in team picker');
+    // Team not found — scroll through the list to find it
+    print('    [teamPicker] "$teamName" not immediately visible, scrolling...');
+    final scrollable = find.byType(Scrollable);
+    var found = false;
+    for (var scroll = 0; scroll < 10 && !found; scroll++) {
+      if (scrollable.evaluate().isNotEmpty) {
+        await tester.drag(scrollable.last, const Offset(0, -200));
+        await tester.pumpAndSettle();
+      }
+      final retry = find.text(teamName);
+      if (retry.evaluate().isNotEmpty) {
+        final listTile = find.ancestor(
+          of: retry,
+          matching: find.byType(ListTile),
+        );
+        if (listTile.evaluate().isNotEmpty) {
+          await tester.ensureVisible(listTile.first);
+          await tester.pumpAndSettle();
+          await tester.tap(listTile.first, warnIfMissed: false);
+        } else {
+          await tester.tap(retry.last, warnIfMissed: false);
+        }
+        await settle(tester);
+        await visualPause(tester, 500);
+        print('    [teamPicker] Selected ${isHome ? "Team A" : "Team B"}: $teamName (after scroll)');
+        found = true;
+      }
+    }
+    if (!found) {
+      // Dismiss the bottom sheet so it doesn't block subsequent taps
+      print('    [teamPicker] WARNING: "$teamName" not found — dismissing picker');
+      await tester.tapAt(const Offset(10, 10));
+      await settle(tester);
+    }
   }
 }
 

@@ -16,6 +16,13 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-24e: Fresh Prod APK Build + Install
+
+**Completed:** Built fresh prod release APK and installed on real device (843773fe).
+- `flutter build apk --flavor prod --release --dart-define=FLAVOR=prod` → `app-prod-release.apk` (61.3MB)
+- Installed via `adb -s 843773fe install -r`
+- No source code changes in this session.
+
 ### Uncommitted changes from prior sessions (needs review before committing)
 - `tournament_detail_page.dart` — Status transitions, generate fixtures, add team UI
 - `player_profile_page.dart` — Unknown changes, review before committing
