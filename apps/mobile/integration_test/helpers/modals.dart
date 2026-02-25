@@ -84,10 +84,8 @@ Future<void> completeInningsTransition(
 ///
 /// Returns the result string (e.g. "Team1 won by 5 runs") or null if not found.
 Future<String?> captureMatchCompleteResult(WidgetTester tester) async {
-  for (var i = 0; i < 20; i++) {
-    await tester.pump(const Duration(milliseconds: 500));
-    if (find.byType(MatchCompleteModal).evaluate().isNotEmpty) break;
-  }
+  await waitForFinder(tester, find.byType(MatchCompleteModal),
+      timeoutMs: 10000, intervalMs: 500);
 
   if (find.byType(MatchCompleteModal).evaluate().isEmpty) {
     print('    [captureResult] No MatchCompleteModal found');
@@ -125,10 +123,8 @@ Future<String?> captureMatchCompleteResult(WidgetTester tester) async {
 ///
 /// Tries "Back to Home" → "Done" → any FilledButton.
 Future<void> dismissMatchCompleteModal(WidgetTester tester) async {
-  for (var i = 0; i < 20; i++) {
-    await tester.pump(const Duration(milliseconds: 500));
-    if (find.byType(MatchCompleteModal).evaluate().isNotEmpty) break;
-  }
+  await waitForFinder(tester, find.byType(MatchCompleteModal),
+      timeoutMs: 10000, intervalMs: 500);
 
   if (find.byType(MatchCompleteModal).evaluate().isEmpty) {
     print('    [matchComplete] No MatchCompleteModal found');

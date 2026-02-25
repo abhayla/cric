@@ -52,6 +52,38 @@ Future<bool> waitForText(
   return false;
 }
 
+/// Wait for a [Finder] to match at least one widget, up to [timeoutMs].
+/// Returns true if found, false if timed out.
+Future<bool> waitForFinder(
+  WidgetTester tester,
+  Finder finder, {
+  int timeoutMs = 5000,
+  int intervalMs = 200,
+}) async {
+  final deadline = DateTime.now().add(Duration(milliseconds: timeoutMs));
+  while (DateTime.now().isBefore(deadline)) {
+    await tester.pump(Duration(milliseconds: intervalMs));
+    if (finder.evaluate().isNotEmpty) return true;
+  }
+  return false;
+}
+
+/// Wait for a [Finder] to match zero widgets (disappear), up to [timeoutMs].
+/// Returns true if gone, false if timed out.
+Future<bool> waitForFinderGone(
+  WidgetTester tester,
+  Finder finder, {
+  int timeoutMs = 5000,
+  int intervalMs = 200,
+}) async {
+  final deadline = DateTime.now().add(Duration(milliseconds: timeoutMs));
+  while (DateTime.now().isBefore(deadline)) {
+    await tester.pump(Duration(milliseconds: intervalMs));
+    if (finder.evaluate().isEmpty) return true;
+  }
+  return false;
+}
+
 /// Debug: Print first N visible text widgets on screen.
 void dumpVisibleTexts(WidgetTester tester, String label, [int count = 15]) {
   final allTexts = find.byType(Text);

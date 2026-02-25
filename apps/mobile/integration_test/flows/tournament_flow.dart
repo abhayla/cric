@@ -157,6 +157,14 @@ Future<List<MatchOutcome>> scoreAllFixtures({
     }
   }
 
+  // Guard: verify no unplayed fixtures remain
+  if (!tracker.hasError) {
+    final remaining = await findFirstUnplayedFixture(tester);
+    expect(remaining, isNull,
+        reason: 'All fixtures should be scored — found unplayed: '
+            '${remaining?.homeTeamName ?? "?"} vs ${remaining?.awayTeamName ?? "?"}');
+  }
+
   print('\n[SCORING] All fixtures complete. Total matches played: ${tracker.matchesCompleted}');
   return outcomes;
 }
