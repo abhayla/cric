@@ -1,7 +1,12 @@
-/// Production cleanup: soft-delete all test teams and their rosters.
+/// Production cleanup: delete all test teams via UI.
 ///
-/// Uses DELETE /api/v1/teams/:id (soft-delete, sets isActive=false).
-/// Teams and players remain in DB but won't appear in listings.
+/// Navigates to My Cricket > Teams tab and deletes each test team
+/// through the app's UI (team detail > More options > Delete Team).
+///
+/// 100% UI-driven — zero API calls.
+///
+/// Graceful fallback: if the Delete Team option isn't available in the UI,
+/// skips the team with a counter and prints a summary at the end.
 ///
 /// Run:
 /// ```bash
@@ -10,53 +15,134 @@
 /// ```
 library;
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../helpers/app_test_wrapper.dart';
+import '../helpers/match_flow_helpers.dart';
+import '../helpers/tournament_flow_helpers.dart';
 import 'prod_helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Clean up all prod test data', (tester) async {
+  testWidgets('Clean up all prod test data via UI', (tester) async {
     await AppTestWrapper.pumpAppAndWaitForHome(tester);
-    print('\n=== PROD CLEANUP: Deleting all test teams ===\n');
+    print('\n=== PROD CLEANUP: Deleting test teams via UI ===\n');
 
-    final api = await ProdApiClient.create();
+    final tracker = ErrorTracker();
+    var deleted = 0;
+    var skipped = 0;
+    var notFound = 0;
 
-    // Get all teams
-    final teams = await api.listTeams(limit: 50);
-    print('Found ${teams.length} teams to delete\n');
+    // Navigate to Teams tab
+    await navigateToTeams(tester);
 
     // Known test team names
     final testTeamNames = prodTeams.map((t) => t.name).toSet();
+    print('Looking for ${testTeamNames.length} test teams to delete...');
+    print('Team names: ${testTeamNames.join(", ")}\n');
 
-    var deleted = 0;
-    var skipped = 0;
-    for (final team in teams) {
-      final name = team['name'] as String;
-      final id = team['id'] as String;
+    // For each test team, find it in the list and delete via UI
+    for (final teamName in testTeamNames) {
+      if (tracker.hasError) break;
 
-      if (testTeamNames.contains(name)) {
-        try {
-          await api.deleteTeam(id);
-          print('  [DELETED] $name ($id)');
-          deleted++;
-        } catch (e) {
-          print('  [ERROR] Failed to delete $name: $e');
+      try {
+        // Scroll up first to reset position, then search
+        final scrollable = find.byType(Scrollable);
+        if (scrollable.evaluate().isNotEmpty) {
+          await tester.drag(scrollable.first, const Offset(0, 300));
+          await tester.pumpAndSettle();
         }
-      } else {
-        print('  [SKIP] $name — not a test team');
-        skipped++;
+
+        // Try to find and tap the team in the list
+        final teamFinder = find.text(teamName);
+        if (teamFinder.evaluate().isEmpty) {
+          // Scroll down to find teams that may be off-screen
+          var found = false;
+          for (var scroll = 0; scroll < 10; scroll++) {
+            if (scrollable.evaluate().isNotEmpty) {
+              await tester.drag(scrollable.first, const Offset(0, -200));
+              await tester.pumpAndSettle();
+            }
+            if (find.text(teamName).evaluate().isNotEmpty) {
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            print('  [NOT FOUND] $teamName — not in team list');
+            notFound++;
+            continue;
+          }
+        }
+
+        // Tap to open team detail
+        await tester.tap(find.text(teamName).first);
+        await settle(tester);
+
+        // Look for delete option in popup menu
+        final moreButton = find.byTooltip('More options');
+        if (moreButton.evaluate().isNotEmpty) {
+          await tester.tap(moreButton.first);
+          await settle(tester);
+
+          final deleteOption = find.text('Delete Team');
+          if (deleteOption.evaluate().isNotEmpty) {
+            await tester.tap(deleteOption.first);
+            await settle(tester);
+
+            // Confirm deletion dialog
+            final confirmDelete = find.text('Delete');
+            if (confirmDelete.evaluate().isNotEmpty) {
+              await tester.tap(confirmDelete.last);
+              await settle(tester);
+            }
+
+            print('  [DELETED] $teamName');
+            deleted++;
+            tracker.recordSuccess('Deleted team: $teamName');
+          } else {
+            print('  [SKIP] $teamName — no Delete Team option in menu');
+            skipped++;
+            // Dismiss the popup menu
+            await tester.tapAt(const Offset(10, 10));
+            await settle(tester);
+            // Navigate back
+            final back = find.byType(BackButton);
+            if (back.evaluate().isNotEmpty) {
+              await tester.tap(back.first);
+              await settle(tester);
+            }
+          }
+        } else {
+          print('  [SKIP] $teamName — no More options button');
+          skipped++;
+          final back = find.byType(BackButton);
+          if (back.evaluate().isNotEmpty) {
+            await tester.tap(back.first);
+            await settle(tester);
+          }
+        }
+      } catch (e) {
+        tracker.recordError('Deleting team $teamName', e);
       }
     }
 
-    // Verify
-    final remaining = await api.listTeams(limit: 50);
-    print('\n=== CLEANUP COMPLETE ===');
-    print('Deleted: $deleted teams');
-    print('Skipped: $skipped teams');
-    print('Remaining: ${remaining.length} teams');
-  }, timeout: const Timeout(Duration(minutes: 5)));
+    print('\n=== CLEANUP SUMMARY ===');
+    print('Deleted: $deleted');
+    print('Skipped (no delete UI): $skipped');
+    print('Not found in list: $notFound');
+    print('Total teams checked: ${testTeamNames.length}');
+
+    if (skipped > 0) {
+      print(
+          '\nNote: Team deletion may not be available in UI yet. '
+          'Clean up manually or via server admin.');
+    }
+
+    print('');
+    tracker.printSummary();
+  }, timeout: const Timeout(Duration(minutes: 10)));
 }

@@ -1,7 +1,9 @@
-/// Production E2E: Tournament 1 — Champions Trophy 2026
+/// Production E2E: Tournament 1 — Group + Knockout, 5 overs
 ///
 /// Format: Group + Knockout, 5 overs, 4 groups x 4 teams, top 2 qualify
 /// Ball: Tennis (ID 2), ~31 matches, ~2 hours
+///
+/// 100% UI-driven — zero API calls. Error tracking with stop-on-first-error.
 ///
 /// Run:
 /// ```bash
@@ -21,22 +23,24 @@ import 'prod_helpers.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Tournament 1: Champions Trophy 2026 (Group+KO, 5ov)', (tester) async {
+  testWidgets('Tournament 1: Group+KO, 5ov, 4 groups, top 2 qualify', (tester) async {
     await AppTestWrapper.pumpAppAndWaitForHome(tester);
-    print('\n=== TOURNAMENT 1: Champions Trophy 2026 ===');
+
+    final name = randomTournamentName();
+    print('\n=== TOURNAMENT 1: $name ===');
     print('Format: Group+Knockout | 5 overs | 4 groups | Top 2 qualify\n');
 
     final stopwatch = Stopwatch()..start();
     final rng = Random();
-
-    final api = await ProdApiClient.create();
+    final tracker = ErrorTracker();
 
     // Setup tournament entirely via UI
     await setupTournamentViaUI(
       tester: tester,
-      name: 'Champions Trophy 2026',
+      name: name,
       format: 'group_knockout',
       oversPerMatch: 5,
+      tracker: tracker,
       ballTypeId: 2, // Tennis
       playersPerSide: 6,
       numGroups: 4,
@@ -44,33 +48,33 @@ void main() {
       groupAssignments: fourGroupAssignments,
     );
 
-    // Get tournament ID from API (needed for fixture queries)
-    final tournaments = await api.listTournaments();
-    final tournament = tournaments.firstWhere(
-      (t) => t['name'] == 'Champions Trophy 2026',
-    );
-    final tournamentId = tournament['id'] as String;
+    if (tracker.hasError) {
+      tracker.printSummary();
+      fail('Tournament setup failed. See error tracker summary above.');
+    }
 
-    // Score all fixtures (already on tournament detail page)
-    await scoreAllFixtures(
+    // Score all fixtures via UI
+    await scoreAllFixturesViaUI(
       tester: tester,
-      api: api,
-      tournamentId: tournamentId,
       totalOvers: 5,
+      tracker: tracker,
       playersPerSide: 6,
       random: rng,
     );
 
+    // Verify standings on Overview tab (G2)
+    if (!tracker.hasError) {
+      await verifyTournamentStandings(tester);
+      tracker.recordSuccess('Standings verified on Overview tab');
+    }
+
     stopwatch.stop();
     print('\n=== TOURNAMENT 1 COMPLETE ===');
     print('Duration: ${stopwatch.elapsed.inMinutes}m ${stopwatch.elapsed.inSeconds % 60}s');
+    tracker.printSummary();
 
-    // Verify standings
-    final standings = await api.getStandings(tournamentId);
-    print('Standings entries: ${standings.length}');
-    for (final s in standings) {
-      print('  ${s['teamName']}: P=${s['played']} W=${s['won']} L=${s['lost']} '
-          'Pts=${s['points']} NRR=${s['nrr']}');
+    if (tracker.hasError) {
+      fail('Tournament had errors. See tracker summary above.');
     }
   }, timeout: const Timeout(Duration(hours: 4)));
 }

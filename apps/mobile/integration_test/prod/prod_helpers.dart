@@ -1,22 +1,20 @@
 /// Shared utilities for production E2E tests.
 ///
-/// Unlike test-environment helpers that use `/api/v1/test/*` endpoints,
-/// these helpers use **regular authenticated prod API endpoints** to create
-/// teams, tournaments, and manage fixtures. Data is never deleted.
+/// **100% UI-driven — zero API calls.** All actions (team creation, player
+/// addition, tournament creation, status transitions, team registration,
+/// fixture generation, scoring) go through the app UI.
+///
+/// Error tracking: stops on first error, logs where it stopped for resume.
 library;
 
 import 'dart:math';
 
-import 'package:cricscores/src/core/constants/app_constants.dart';
-import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cricscores/src/features/tournaments/presentation/widgets/fixture_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:cricscores/src/features/scoring/presentation/widgets/match_complete_modal.dart';
-import 'package:go_router/go_router.dart';
-
 import '../helpers/data_generators.dart';
 import '../helpers/delivery_record.dart';
 import '../helpers/match_flow_helpers.dart';
@@ -26,473 +24,320 @@ import '../helpers/tournament_flow_helpers.dart';
 // Constants — 16 Teams, 96 Players
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// All 16 team definitions with 6 players each.
-final List<TeamData> prodTeams = [
-  TeamData(name: 'Bangalore Titans', players: [
-    PlayerData(name: 'Rajesh Kumar', role: 'all_rounder'),
-    PlayerData(name: 'Amit Sharma', role: 'all_rounder'),
-    PlayerData(name: 'Vikram Singh', role: 'all_rounder'),
-    PlayerData(name: 'Sanjay Reddy', role: 'all_rounder'),
-    PlayerData(name: 'Ravi Yadav', role: 'all_rounder'),
-    PlayerData(name: 'Suresh Menon', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Hyderabad Kings', players: [
-    PlayerData(name: 'Arjun Rao', role: 'all_rounder'),
-    PlayerData(name: 'Nikhil Verma', role: 'all_rounder'),
-    PlayerData(name: 'Vinay Kulkarni', role: 'all_rounder'),
-    PlayerData(name: 'Harish Shetty', role: 'all_rounder'),
-    PlayerData(name: 'Ajay Chauhan', role: 'all_rounder'),
-    PlayerData(name: 'Tarun Bhat', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Mumbai Warriors', players: [
-    PlayerData(name: 'Rohan Patil', role: 'all_rounder'),
-    PlayerData(name: 'Aditya Joshi', role: 'all_rounder'),
-    PlayerData(name: 'Pranav Desai', role: 'all_rounder'),
-    PlayerData(name: 'Kunal Sawant', role: 'all_rounder'),
-    PlayerData(name: 'Sachin Tendulkar Jr', role: 'all_rounder'),
-    PlayerData(name: 'Yash Bhosale', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Chennai Strikers', players: [
-    PlayerData(name: 'Karthik Iyer', role: 'all_rounder'),
-    PlayerData(name: 'Ashwin Rajan', role: 'all_rounder'),
-    PlayerData(name: 'Varun Chakravarthy', role: 'all_rounder'),
-    PlayerData(name: 'Deepak Natarajan', role: 'all_rounder'),
-    PlayerData(name: 'Ganesh Subramanian', role: 'all_rounder'),
-    PlayerData(name: 'Surya Narayanan', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Delhi Dynamos', players: [
-    PlayerData(name: 'Mohit Taneja', role: 'all_rounder'),
-    PlayerData(name: 'Virat Kohli Jr', role: 'all_rounder'),
-    PlayerData(name: 'Shubham Gill Jr', role: 'all_rounder'),
-    PlayerData(name: 'Naveen Dhaliwal', role: 'all_rounder'),
-    PlayerData(name: 'Ishant Mehra', role: 'all_rounder'),
-    PlayerData(name: 'Prithvi Chahar', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Kolkata Knights', players: [
-    PlayerData(name: 'Sourav Ghosh', role: 'all_rounder'),
-    PlayerData(name: 'Anirban Das', role: 'all_rounder'),
-    PlayerData(name: 'Debashish Roy', role: 'all_rounder'),
-    PlayerData(name: 'Subhajit Mondal', role: 'all_rounder'),
-    PlayerData(name: 'Rishav Chatterjee', role: 'all_rounder'),
-    PlayerData(name: 'Arko Banerjee', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Pune Gladiators', players: [
-    PlayerData(name: 'Aniket Kulkarni', role: 'all_rounder'),
-    PlayerData(name: 'Siddharth Pawar', role: 'all_rounder'),
-    PlayerData(name: 'Rohit Kale', role: 'all_rounder'),
-    PlayerData(name: 'Tejas Deshpande', role: 'all_rounder'),
-    PlayerData(name: 'Omkar Shinde', role: 'all_rounder'),
-    PlayerData(name: 'Pratik Jadhav', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Jaipur Royals', players: [
-    PlayerData(name: 'Manish Shekhawat', role: 'all_rounder'),
-    PlayerData(name: 'Yuvraj Rathore', role: 'all_rounder'),
-    PlayerData(name: 'Lalit Yadav Jr', role: 'all_rounder'),
-    PlayerData(name: 'Hemant Sharma', role: 'all_rounder'),
-    PlayerData(name: 'Divyanshu Meena', role: 'all_rounder'),
-    PlayerData(name: 'Rahul Chahar Jr', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Lucknow Lions', players: [
-    PlayerData(name: 'Aman Mishra', role: 'all_rounder'),
-    PlayerData(name: 'Shivam Tiwari', role: 'all_rounder'),
-    PlayerData(name: 'Abhishek Pandey', role: 'all_rounder'),
-    PlayerData(name: 'Rajan Srivastava', role: 'all_rounder'),
-    PlayerData(name: 'Gaurav Awasthi', role: 'all_rounder'),
-    PlayerData(name: 'Vivek Dubey', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Ahmedabad Avengers', players: [
-    PlayerData(name: 'Parth Patel', role: 'all_rounder'),
-    PlayerData(name: 'Darshan Shah', role: 'all_rounder'),
-    PlayerData(name: 'Jignesh Mistry', role: 'all_rounder'),
-    PlayerData(name: 'Chirag Thakkar', role: 'all_rounder'),
-    PlayerData(name: 'Ketan Bhatt', role: 'all_rounder'),
-    PlayerData(name: 'Mihir Raval', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Chandigarh Chargers', players: [
-    PlayerData(name: 'Gurpreet Singh', role: 'all_rounder'),
-    PlayerData(name: 'Harmanpreet Brar', role: 'all_rounder'),
-    PlayerData(name: 'Jaspreet Bumrah Jr', role: 'all_rounder'),
-    PlayerData(name: 'Mandeep Sandhu', role: 'all_rounder'),
-    PlayerData(name: 'Ravinder Gill', role: 'all_rounder'),
-    PlayerData(name: 'Tejvir Dhillon', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Indore Infernos', players: [
-    PlayerData(name: 'Ayush Tiwari', role: 'all_rounder'),
-    PlayerData(name: 'Rishabh Jain', role: 'all_rounder'),
-    PlayerData(name: 'Nitin Agrawal', role: 'all_rounder'),
-    PlayerData(name: 'Harsh Malviya', role: 'all_rounder'),
-    PlayerData(name: 'Devendra Chouhan', role: 'all_rounder'),
-    PlayerData(name: 'Rahul Patidar Jr', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Vizag Vikings', players: [
-    PlayerData(name: 'Prashanth Reddy', role: 'all_rounder'),
-    PlayerData(name: 'Sai Krishna', role: 'all_rounder'),
-    PlayerData(name: 'Venkat Rao', role: 'all_rounder'),
-    PlayerData(name: 'Ravi Teja', role: 'all_rounder'),
-    PlayerData(name: 'Anil Kumar', role: 'all_rounder'),
-    PlayerData(name: 'Sudheer Babu', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Kochi Tuskers', players: [
-    PlayerData(name: 'Arun Lal', role: 'all_rounder'),
-    PlayerData(name: 'Vishnu Nair', role: 'all_rounder'),
-    PlayerData(name: 'Sreejith Menon', role: 'all_rounder'),
-    PlayerData(name: 'Jobin Joseph', role: 'all_rounder'),
-    PlayerData(name: 'Aswin Das', role: 'all_rounder'),
-    PlayerData(name: 'Midhun Pillai', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Guwahati Gladiators', players: [
-    PlayerData(name: 'Bikash Sarma', role: 'all_rounder'),
-    PlayerData(name: 'Rajdeep Bora', role: 'all_rounder'),
-    PlayerData(name: 'Pranjal Hazarika', role: 'all_rounder'),
-    PlayerData(name: 'Debojit Das', role: 'all_rounder'),
-    PlayerData(name: 'Manash Kalita', role: 'all_rounder'),
-    PlayerData(name: 'Rituraj Gogoi', role: 'all_rounder'),
-  ]),
-  TeamData(name: 'Ranchi Rhinos', players: [
-    PlayerData(name: 'Akash Kumar', role: 'all_rounder'),
-    PlayerData(name: 'Saurabh Singh', role: 'all_rounder'),
-    PlayerData(name: 'Vikash Mahto', role: 'all_rounder'),
-    PlayerData(name: 'Dheeraj Tiwary', role: 'all_rounder'),
-    PlayerData(name: 'Amit Oraon', role: 'all_rounder'),
-    PlayerData(name: 'Pankaj Sahu', role: 'all_rounder'),
-  ]),
-];
+/// Viewer account — added to Team 1's roster so he can view matches.
+const _viewerPlayer = PlayerData(
+  name: 'Abhay Kumar',
+  role: 'all_rounder',
+  phone: '9999999998',
+);
+
+/// All 16 team definitions with 6 players each (+1 viewer on Team 1).
+/// Team 1-16, players T1Play1-T16Play6, phones 9999999101-9999999196.
+/// Team 1 also has Abhay Kumar (9999999998) as a 7th roster member (viewer).
+final List<TeamData> prodTeams = List.generate(16, (i) {
+  final teamNum = i + 1;
+  final players = List.generate(6, (j) {
+    final playerNum = j + 1;
+    final phoneNum = i * 6 + j + 101; // 101..196
+    return PlayerData(
+      name: 'T${teamNum}Play$playerNum',
+      role: 'all_rounder',
+      phone: '9999999$phoneNum',
+    );
+  });
+  // Add viewer to Team 1's roster
+  if (i == 0) players.add(_viewerPlayer);
+  return TeamData(name: 'Team $teamNum', players: players);
+});
 
 /// Team names in order for easy index lookup.
 final List<String> prodTeamNames = prodTeams.map((t) => t.name).toList();
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Prod API Client — Authenticated, No Test Endpoints
+// Random Tournament Name Generator
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Authenticated API client for production endpoints.
-///
-/// Obtains a Firebase ID token from the currently logged-in user and
-/// attaches it to every request as `Authorization: Bearer <token>`.
-class ProdApiClient {
-  ProdApiClient._();
+/// Generate a random tournament name with timestamp suffix.
+String randomTournamentName() {
+  const adjectives = [
+    'Champions', 'Premier', 'Super', 'Masters', 'Royal',
+    'Elite', 'Thunder', 'Victory', 'Blazing', 'Golden',
+  ];
+  const nouns = [
+    'Trophy', 'League', 'Cup', 'Shield', 'Challenge',
+    'Series', 'Open', 'Classic', 'Premier', 'Championship',
+  ];
+  final rng = Random();
+  final adj = adjectives[rng.nextInt(adjectives.length)];
+  final noun = nouns[rng.nextInt(nouns.length)];
+  final suffix = DateTime.now().millisecondsSinceEpoch % 100000;
+  return '$adj $noun $suffix';
+}
 
-  late final Dio _dio;
-  String? _cachedToken;
-  DateTime? _tokenExpiry;
+// ═══════════════════════════════════════════════════════════════════════════
+// Error Tracking
+// ═══════════════════════════════════════════════════════════════════════════
 
-  /// Initialize the client. Must be called after Firebase login.
-  static Future<ProdApiClient> create() async {
-    final client = ProdApiClient._();
-    await client._init();
-    return client;
+/// Tracks errors during test execution.
+/// On first error, logs where it stopped so the test can be resumed.
+class ErrorTracker {
+  final List<String> errors = [];
+  String? lastSuccessfulStep;
+  int matchesCompleted = 0;
+  int teamsCreated = 0;
+
+  void recordSuccess(String step) {
+    lastSuccessfulStep = step;
   }
 
-  Future<void> _init() async {
-    final baseUrl = AppConstants.apiBaseUrl;
-    print('[ProdApiClient] Using API base: $baseUrl');
-
-    _dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 60),
-      receiveTimeout: const Duration(seconds: 60),
-      sendTimeout: const Duration(seconds: 60),
-    ));
-
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await _getToken();
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        handler.next(options);
-      },
-    ));
-
-    // Verify connectivity
-    await _getToken();
-    print('[ProdApiClient] Authenticated and ready');
+  void recordTeamCreated(String teamName) {
+    teamsCreated++;
+    lastSuccessfulStep = 'Team created: $teamName ($teamsCreated/${prodTeams.length})';
   }
 
-  /// Get a fresh Firebase ID token (caches for 50 minutes).
-  Future<String?> _getToken() async {
-    final now = DateTime.now();
-    if (_cachedToken != null &&
-        _tokenExpiry != null &&
-        now.isBefore(_tokenExpiry!)) {
-      return _cachedToken;
+  void recordMatchCompleted(String description) {
+    matchesCompleted++;
+    lastSuccessfulStep = 'Match $matchesCompleted: $description';
+  }
+
+  void recordError(String step, Object error) {
+    final msg = '[ERROR at $step] $error';
+    errors.add(msg);
+    print('\n${'=' * 60}');
+    print('TEST STOPPED — ERROR DETECTED');
+    print('Step: $step');
+    print('Error: $error');
+    print('Last successful step: $lastSuccessfulStep');
+    print('Teams created: $teamsCreated');
+    print('Matches completed: $matchesCompleted');
+    print('${'=' * 60}\n');
+  }
+
+  bool get hasError => errors.isNotEmpty;
+
+  void printSummary() {
+    print('\n=== ERROR TRACKER SUMMARY ===');
+    print('Teams created: $teamsCreated');
+    print('Matches completed: $matchesCompleted');
+    print('Last successful step: $lastSuccessfulStep');
+    if (errors.isNotEmpty) {
+      print('Errors (${errors.length}):');
+      for (final e in errors) {
+        print('  $e');
+      }
+    } else {
+      print('No errors.');
     }
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print('[ProdApiClient] WARNING: No Firebase user logged in!');
-      return null;
-    }
-
-    _cachedToken = await user.getIdToken(true);
-    _tokenExpiry = now.add(const Duration(minutes: 50));
-    return _cachedToken;
-  }
-
-  // ── Teams ────────────────────────────────────────────────────────────
-
-  /// List all teams for the current user.
-  Future<List<Map<String, dynamic>>> listTeams({int page = 1, int limit = 50}) async {
-    final response = await _dio.get('/teams', queryParameters: {
-      'page': page,
-      'limit': limit,
-    });
-    return (response.data['teams'] as List).cast<Map<String, dynamic>>();
-  }
-
-  /// Create a team. Returns the team object.
-  Future<Map<String, dynamic>> createTeam(String name) async {
-    final response = await _dio.post('/teams', data: {'name': name});
-    return response.data['team'] as Map<String, dynamic>;
-  }
-
-  /// Delete a team (soft-delete: sets isActive=false).
-  Future<void> deleteTeam(String teamId) async {
-    await _dio.delete('/teams/$teamId');
-  }
-
-  /// Get team detail including roster.
-  Future<Map<String, dynamic>> getTeam(String teamId) async {
-    final response = await _dio.get('/teams/$teamId');
-    return response.data as Map<String, dynamic>;
-  }
-
-  /// Add a player to a team roster. Returns the roster entry.
-  Future<Map<String, dynamic>> addPlayerToTeam(
-    String teamId,
-    String playerId, {
-    String? role,
-  }) async {
-    final response = await _dio.post('/teams/$teamId/players', data: {
-      'playerId': playerId,
-      if (role != null) 'role': role,
-    });
-    return response.data['rosterEntry'] as Map<String, dynamic>;
-  }
-
-  // ── Players ──────────────────────────────────────────────────────────
-
-  /// Create a player. Returns the player object.
-  Future<Map<String, dynamic>> createPlayer(
-    String displayName, {
-    String? playerRole,
-    String? phone,
-  }) async {
-    final response = await _dio.post('/players', data: {
-      'displayName': displayName,
-      if (playerRole != null) 'playerRole': playerRole,
-      if (phone != null) 'phone': phone,
-    });
-    return response.data['player'] as Map<String, dynamic>;
-  }
-
-  /// Search for a player by phone number.
-  Future<Map<String, dynamic>?> searchPlayerByPhone(String phone) async {
-    final response = await _dio.get('/players/search-by-phone',
-        queryParameters: {'phone': phone});
-    return response.data['player'] as Map<String, dynamic>?;
-  }
-
-  // ── Tournaments ──────────────────────────────────────────────────────
-
-  /// Create a tournament. Returns the tournament object.
-  Future<Map<String, dynamic>> createTournament({
-    required String name,
-    required String format,
-    required int oversPerMatch,
-    int ballTypeId = 2,
-    int playersPerSide = 6,
-    int numGroups = 1,
-    int qualifyPerGroup = 2,
-    int wideRuns = 1,
-    int noBallRuns = 1,
-  }) async {
-    final response = await _dio.post('/tournaments', data: {
-      'name': name,
-      'format': format,
-      'oversPerMatch': oversPerMatch,
-      'ballTypeId': ballTypeId,
-      'playersPerSide': playersPerSide,
-      'numGroups': numGroups,
-      'qualifyPerGroup': qualifyPerGroup,
-      'wideRuns': wideRuns,
-      'noBallRuns': noBallRuns,
-    });
-    return response.data['tournament'] as Map<String, dynamic>;
-  }
-
-  /// List tournaments.
-  Future<List<Map<String, dynamic>>> listTournaments({int page = 1, int limit = 50}) async {
-    final response = await _dio.get('/tournaments', queryParameters: {
-      'page': page,
-      'limit': limit,
-    });
-    return (response.data['tournaments'] as List).cast<Map<String, dynamic>>();
-  }
-
-  /// Add a team to a tournament.
-  Future<void> addTeamToTournament(
-    String tournamentId,
-    String teamId, {
-    String? groupName,
-  }) async {
-    await _dio.post('/tournaments/$tournamentId/teams', data: {
-      'teamId': teamId,
-      if (groupName != null) 'groupName': groupName,
-    });
-  }
-
-  /// Transition tournament status.
-  Future<void> updateTournamentStatus(String tournamentId, String status) async {
-    await _dio.put('/tournaments/$tournamentId/status', data: {
-      'status': status,
-    });
-  }
-
-  /// Generate fixtures.
-  Future<List<Map<String, dynamic>>> generateFixtures(String tournamentId) async {
-    final response = await _dio.post('/tournaments/$tournamentId/fixtures/generate');
-    return (response.data['fixtures'] as List).cast<Map<String, dynamic>>();
-  }
-
-  /// Get fixtures for a tournament.
-  Future<List<Map<String, dynamic>>> getFixtures(
-    String tournamentId, {
-    String? roundType,
-    String? groupName,
-  }) async {
-    final response = await _dio.get(
-      '/tournaments/$tournamentId/fixtures',
-      queryParameters: {
-        if (roundType != null) 'roundType': roundType,
-        if (groupName != null) 'groupName': groupName,
-      },
-    );
-    return (response.data['fixtures'] as List).cast<Map<String, dynamic>>();
-  }
-
-  /// Get tournament standings.
-  Future<List<Map<String, dynamic>>> getStandings(
-    String tournamentId, {
-    String? groupName,
-  }) async {
-    final response = await _dio.get(
-      '/tournaments/$tournamentId/standings',
-      queryParameters: {
-        if (groupName != null) 'groupName': groupName,
-      },
-    );
-    return (response.data['standings'] as List).cast<Map<String, dynamic>>();
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Team Setup via API (fast, reliable)
+// Match Result Capture & Verification Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Create all 16 teams via authenticated prod API.
+/// Capture the match result text from the MatchCompleteModal.
 ///
-/// For each team:
+/// Waits for the modal to appear, then reads the `resultDescription` text
+/// displayed in `headlineSmall` bold style. Returns the result string
+/// (e.g. "Team 1 won by 5 runs") or null if not found.
+Future<String?> captureMatchCompleteResult(WidgetTester tester) async {
+  // Wait for MatchCompleteModal to appear
+  for (var i = 0; i < 20; i++) {
+    await tester.pump(const Duration(milliseconds: 500));
+    if (find.byType(MatchCompleteModal).evaluate().isNotEmpty) break;
+  }
+
+  if (find.byType(MatchCompleteModal).evaluate().isEmpty) {
+    print('    [captureResult] No MatchCompleteModal found');
+    return null;
+  }
+
+  // Scan descendant Text widgets for the result description
+  final modalTexts = find.descendant(
+    of: find.byType(MatchCompleteModal),
+    matching: find.byType(Text),
+  );
+
+  String? result;
+  for (final element in modalTexts.evaluate()) {
+    final textWidget = element.widget as Text;
+    final text = textWidget.data ?? textWidget.textSpan?.toPlainText();
+    if (text != null &&
+        (text.contains('won by') ||
+            text.contains('Tied') ||
+            text.contains('No Result') ||
+            text.contains('Draw'))) {
+      result = text;
+      break;
+    }
+  }
+
+  if (result != null) {
+    print('    [captureResult] Match result: $result');
+  } else {
+    print('    [captureResult] Could not find result text in modal');
+  }
+  return result;
+}
+
+/// Verify tournament standings are populated on the Overview tab.
+///
+/// Switches to Overview tab (index 0), looks for 'Standings' heading
+/// and 'View Full' link as evidence that standings data is present.
+Future<void> verifyTournamentStandings(WidgetTester tester) async {
+  // Switch to Overview tab (index 0)
+  final tabBarFinder = find.byType(TabBar);
+  if (tabBarFinder.evaluate().isNotEmpty) {
+    final tabBarContext = tester.element(tabBarFinder.first);
+    DefaultTabController.of(tabBarContext).animateTo(0); // Overview tab
+    await tester.pumpAndSettle();
+    await visualPause(tester);
+  }
+
+  // Look for standings section
+  final standingsHeading = find.text('Standings');
+  final viewFull = find.text('View Full');
+
+  final hasStandings = standingsHeading.evaluate().isNotEmpty;
+  final hasViewFull = viewFull.evaluate().isNotEmpty;
+
+  if (hasStandings && hasViewFull) {
+    print('  [standings] Verified: Standings section present with "View Full" link');
+  } else if (hasStandings) {
+    print('  [standings] Standings heading found but no "View Full" link');
+  } else {
+    print('  [standings] WARNING: Standings section not found on Overview tab');
+  }
+}
+
+/// Tap the undo button on the scoring page.
+///
+/// Returns true if undo was successfully tapped, false if button was
+/// not found or was disabled.
+Future<bool> tapUndo(WidgetTester tester) async {
+  final undoButton = find.byIcon(Icons.undo);
+  if (undoButton.evaluate().isEmpty) {
+    print('    [undo] Undo button not found');
+    return false;
+  }
+
+  // Check if the button is enabled (IconButton.onPressed != null)
+  final iconButtonFinder = find.ancestor(
+    of: undoButton,
+    matching: find.byType(IconButton),
+  );
+  if (iconButtonFinder.evaluate().isNotEmpty) {
+    final iconButton = tester.widget<IconButton>(iconButtonFinder.first);
+    if (iconButton.onPressed == null) {
+      print('    [undo] Undo button is disabled');
+      return false;
+    }
+  }
+
+  await tester.tap(undoButton.first);
+  await settle(tester);
+  await visualPause(tester);
+  print('    [undo] Undo tapped successfully');
+  return true;
+}
+
+/// Select a team in the match setup page team picker.
+///
+/// Taps the team selector placeholder (e.g. 'Select Team A'), waits for the
+/// bottom sheet with team list, then taps the team name.
+Future<void> selectTeamInMatchSetup(
+  WidgetTester tester,
+  String teamName, {
+  required bool isHome,
+}) async {
+  final placeholder = isHome ? 'Select Team A' : 'Select Team B';
+
+  // Tap the team selector placeholder
+  final selectorText = find.text(placeholder);
+  if (selectorText.evaluate().isNotEmpty) {
+    await tester.tap(selectorText.first);
+  } else {
+    // Team may already be selected — tap the team name to re-open picker
+    final currentTeam = find.text(teamName);
+    if (currentTeam.evaluate().isEmpty) {
+      print('    [teamPicker] Neither placeholder "$placeholder" nor team name found');
+      return;
+    }
+    // Already selected — nothing to do
+    return;
+  }
+  await settle(tester);
+  await visualPause(tester, 500);
+
+  // Wait for bottom sheet to appear with team list
+  for (var i = 0; i < 30; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    final teamInList = find.text(teamName);
+    if (teamInList.evaluate().length > 1) break; // Multiple = in list + header
+    if (teamInList.evaluate().isNotEmpty) break;
+  }
+  await settle(tester);
+
+  // Find and tap the team name in the bottom sheet ListTile
+  final teamInSheet = find.text(teamName);
+  if (teamInSheet.evaluate().isNotEmpty) {
+    await tester.tap(teamInSheet.last); // Last = the one in the list (not header)
+    await settle(tester);
+    await visualPause(tester);
+    print('    [teamPicker] Selected ${isHome ? "Team A" : "Team B"}: $teamName');
+  } else {
+    print('    [teamPicker] WARNING: "$teamName" not found in team picker');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Team Setup — 100% UI
+// ═══════════════════════════════════════════════════════════════════════════
+
 /// Create all 16 teams with 6 players each through the app UI.
+/// Team 1 gets 7 players (6 + Abhay Kumar as viewer).
 ///
 /// Uses the same flow a normal user would:
 /// 1. Navigate to Teams tab
 /// 2. Create Team (fill name → submit)
-/// 3. Add 6 players (Create New → fill name/phone/role → Add to Team)
+/// 3. Add players (Create New → fill name/phone/role → Add to Team)
 /// 4. Navigate back to Teams list
 /// 5. Repeat for next team
 ///
-/// Also adds Abhay Kumar (viewer, phone 9999999998) to Bangalore Titans.
-///
-/// Idempotent: checks existing teams via API and skips those with full rosters.
+/// On error: stops immediately, logs progress for resume.
 Future<void> createAllTeamsViaUI(
   WidgetTester tester,
-  ProdApiClient api,
-) async {
-  // Get existing teams to skip already-complete ones
-  final existingTeams = await api.listTeams(limit: 50);
-  final existingByName = <String, Map<String, dynamic>>{};
-  for (final t in existingTeams) {
-    existingByName[t['name'] as String] = t;
-  }
+  ErrorTracker tracker, {
+  int startFromTeam = 0,
+}) async {
+  for (var i = startFromTeam; i < prodTeams.length; i++) {
+    if (tracker.hasError) return;
 
-  for (var i = 0; i < prodTeams.length; i++) {
     final team = prodTeams[i];
     print('\n[TEAM ${i + 1}/${prodTeams.length}] ${team.name}');
 
-    // Check if team already exists with enough players
-    final existing = existingByName[team.name];
-    if (existing != null) {
-      final teamDetail = await api.getTeam(existing['id'] as String);
-      final roster = (teamDetail['roster'] as List?) ?? [];
-      final existingNames = <String>{};
-      for (final r in roster) {
-        final name = (r as Map<String, dynamic>)['displayName'] as String?;
-        if (name != null) existingNames.add(name);
-      }
-      // Check if all expected players are present
-      final missing = team.players.where((p) => !existingNames.contains(p.name)).toList();
-      if (missing.isEmpty) {
-        print('  [SKIP] Already has ${existingNames.length} players (all present)');
-        continue;
-      }
-      print('  [FIX] Missing ${missing.length} players: ${missing.map((p) => p.name).join(', ')}');
-      // Navigate to team detail and add missing players
+    try {
+      // Create new team via UI
       await navigateToTeams(tester);
-      await _navigateToExistingTeam(tester, team.name);
-      await addPlayersToRoster(tester, missing);
+      await createTeam(tester, team);
+
+      // Add players to roster
+      await addPlayersToRoster(tester, team.players);
+
+      // Navigate back for next team
       await _navigateBackToTeamsList(tester);
-      continue;
-    }
 
-    // Create new team via UI
-    await navigateToTeams(tester);
-    await createTeam(tester, team);
-
-    // Add players to roster (including Abhay Kumar for Bangalore Titans)
-    final players = List<PlayerData>.from(team.players);
-    if (team.name == 'Bangalore Titans') {
-      players.add(PlayerData(name: 'Abhay Kumar', role: 'all_rounder'));
-    }
-    await addPlayersToRoster(tester, players);
-
-    // Navigate back for next team
-    await _navigateBackToTeamsList(tester);
-
-    print('  [DONE] ${team.name} — ${players.length} players added');
-  }
-}
-
-/// Navigate to an existing team's detail page by tapping its name in the list.
-Future<void> _navigateToExistingTeam(
-  WidgetTester tester,
-  String teamName,
-) async {
-  // Look for the team name in the list and tap it
-  final teamFinder = find.text(teamName);
-  for (var attempt = 0; attempt < 10; attempt++) {
-    if (teamFinder.evaluate().isNotEmpty) {
-      await tester.tap(teamFinder.first);
-      await settle(tester);
-      await visualPause(tester);
-      print('  [NAV] Tapped team: $teamName');
+      tracker.recordTeamCreated(team.name);
+      print('  [DONE] ${team.name} — ${team.players.length} players added');
+    } catch (e) {
+      tracker.recordError('Creating team ${team.name} (${i + 1}/${prodTeams.length})', e);
       return;
     }
-    // Scroll down to find it
-    final listView = find.byType(ListView);
-    if (listView.evaluate().isNotEmpty) {
-      await tester.drag(listView.first, const Offset(0, -300));
-      await settle(tester);
-    } else {
-      await tester.pump(const Duration(milliseconds: 300));
-    }
   }
-  print('  [NAV] WARNING: Could not find team "$teamName" in list');
 }
 
 /// Navigate back from team detail to the teams list.
 Future<void> _navigateBackToTeamsList(WidgetTester tester) async {
-  // Try the back button in AppBar
   final backButton = find.byType(BackButton);
   if (backButton.evaluate().isNotEmpty) {
     await tester.tap(backButton.first);
@@ -500,20 +345,19 @@ Future<void> _navigateBackToTeamsList(WidgetTester tester) async {
     await visualPause(tester);
     return;
   }
-  // Fallback: use GoRouter to navigate to teams
   await navigateToTeams(tester);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Tournament Fixture Scoring via UI
+// Tournament Setup — 100% UI
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Group assignments for 4 groups x 4 teams (T1, T2).
 const Map<String, List<int>> fourGroupAssignments = {
-  'A': [0, 1, 2, 3],     // Bangalore, Hyderabad, Mumbai, Chennai
-  'B': [4, 5, 6, 7],     // Delhi, Kolkata, Pune, Jaipur
-  'C': [8, 9, 10, 11],   // Lucknow, Ahmedabad, Chandigarh, Indore
-  'D': [12, 13, 14, 15], // Vizag, Kochi, Guwahati, Ranchi
+  'A': [0, 1, 2, 3],     // Team 1-4
+  'B': [4, 5, 6, 7],     // Team 5-8
+  'C': [8, 9, 10, 11],   // Team 9-12
+  'D': [12, 13, 14, 15], // Team 13-16
 };
 
 /// Group assignments for 2 groups x 8 teams (T5).
@@ -539,6 +383,7 @@ Future<void> setupTournamentViaUI({
   required String name,
   required String format,
   required int oversPerMatch,
+  required ErrorTracker tracker,
   int ballTypeId = 2,
   int playersPerSide = 6,
   int numGroups = 1,
@@ -546,288 +391,218 @@ Future<void> setupTournamentViaUI({
   Map<String, List<int>>? groupAssignments,
   List<int>? teamIndices,
 }) async {
+  if (tracker.hasError) return;
+
   print('\n[TOURNAMENT SETUP VIA UI] $name ($format, ${oversPerMatch}ov)');
 
-  // 1. Create tournament via UI
-  await createTournament(
-    tester,
-    TournamentConfig(
-      name: name,
-      format: format,
-      overs: oversPerMatch,
-      playersPerSide: playersPerSide,
-      numGroups: numGroups,
-      qualifyPerGroup: qualifyPerGroup,
-      ballTypeId: ballTypeId,
-    ),
-  );
-  print('  [UI] Tournament created');
+  try {
+    // 1. Create tournament via UI
+    await createTournament(
+      tester,
+      TournamentConfig(
+        name: name,
+        format: format,
+        overs: oversPerMatch,
+        playersPerSide: playersPerSide,
+        numGroups: numGroups,
+        qualifyPerGroup: qualifyPerGroup,
+        ballTypeId: ballTypeId,
+      ),
+    );
+    print('  [UI] Tournament created');
+    tracker.recordSuccess('Tournament "$name" created');
 
-  // 2. Transition: draft → registration
-  await transitionTournamentStatus(tester, 'Open Registration');
-  print('  [UI] Status: draft → registration');
+    // 2. Transition: draft → registration
+    await transitionTournamentStatus(tester, 'Open Registration');
+    print('  [UI] Status: draft → registration');
 
-  // 3. Add teams via bottom sheet
-  if (groupAssignments != null) {
-    for (final entry in groupAssignments.entries) {
-      final groupName = entry.key;
-      for (final teamIdx in entry.value) {
-        final teamName = prodTeamNames[teamIdx];
-        await addTeamToTournament(tester, teamName, groupName: groupName);
-      }
-    }
-  } else if (teamIndices != null) {
-    for (final teamIdx in teamIndices) {
-      final teamName = prodTeamNames[teamIdx];
-      await addTeamToTournament(tester, teamName);
-    }
-  } else {
-    // Add all 16 teams (no groups)
-    for (final teamName in prodTeamNames) {
-      await addTeamToTournament(tester, teamName);
-    }
-  }
-  print('  [UI] All teams added');
-
-  // 4. Generate fixtures
-  await generateFixtures(tester);
-  print('  [UI] Fixtures generated');
-
-  // 5. Transition: registration → live
-  await transitionTournamentStatus(tester, 'Start Tournament');
-  print('  [UI] Status: registration → live');
-
-  print('  [TOURNAMENT SETUP VIA UI COMPLETE] $name is now live');
-}
-
-/// @Deprecated('Use setupTournamentViaUI instead — goes through real UI')
-/// Create a tournament via API, add teams with groups, generate fixtures.
-/// Returns the tournament ID.
-Future<String> setupTournamentViaApi({
-  required ProdApiClient api,
-  required String name,
-  required String format,
-  required int oversPerMatch,
-  int ballTypeId = 2,
-  int playersPerSide = 6,
-  int numGroups = 1,
-  int qualifyPerGroup = 2,
-  Map<String, List<int>>? groupAssignments,
-  List<int>? teamIndices,
-}) async {
-  print('\n[TOURNAMENT SETUP] $name ($format, ${oversPerMatch}ov)');
-
-  // 1. Create tournament
-  final tournament = await api.createTournament(
-    name: name,
-    format: format,
-    oversPerMatch: oversPerMatch,
-    ballTypeId: ballTypeId,
-    playersPerSide: playersPerSide,
-    numGroups: numGroups,
-    qualifyPerGroup: qualifyPerGroup,
-  );
-  final tournamentId = tournament['id'] as String;
-  print('  Created tournament: $tournamentId');
-
-  // 2. Get team IDs by listing user's teams and matching names
-  final allTeams = await api.listTeams(limit: 50);
-  final teamNameToId = <String, String>{};
-  for (final team in allTeams) {
-    teamNameToId[team['name'] as String] = team['id'] as String;
-  }
-
-  // 3. Add teams with group assignments
-  if (groupAssignments != null) {
-    for (final entry in groupAssignments.entries) {
-      final groupName = entry.key;
-      for (final teamIdx in entry.value) {
-        final teamName = prodTeamNames[teamIdx];
-        final teamId = teamNameToId[teamName];
-        if (teamId == null) {
-          print('  WARNING: Team "$teamName" not found! Skipping.');
-          continue;
+    // 3. Add teams via bottom sheet
+    if (groupAssignments != null) {
+      for (final entry in groupAssignments.entries) {
+        final groupName = entry.key;
+        for (final teamIdx in entry.value) {
+          final teamName = prodTeamNames[teamIdx];
+          await addTeamToTournament(tester, teamName, groupName: groupName);
         }
-        await api.addTeamToTournament(tournamentId, teamId, groupName: groupName);
-        print('  Added $teamName to Group $groupName');
+      }
+    } else if (teamIndices != null) {
+      for (final teamIdx in teamIndices) {
+        final teamName = prodTeamNames[teamIdx];
+        await addTeamToTournament(tester, teamName);
+      }
+    } else {
+      // Add all 16 teams (no groups)
+      for (final teamName in prodTeamNames) {
+        await addTeamToTournament(tester, teamName);
       }
     }
-  } else if (teamIndices != null) {
-    for (final teamIdx in teamIndices) {
-      final teamName = prodTeamNames[teamIdx];
-      final teamId = teamNameToId[teamName];
-      if (teamId == null) {
-        print('  WARNING: Team "$teamName" not found! Skipping.');
-        continue;
-      }
-      await api.addTeamToTournament(tournamentId, teamId);
-      print('  Added $teamName');
-    }
-  } else {
-    // Add all 16 teams (no groups)
-    for (var i = 0; i < prodTeamNames.length; i++) {
-      final teamName = prodTeamNames[i];
-      final teamId = teamNameToId[teamName];
-      if (teamId != null) {
-        await api.addTeamToTournament(tournamentId, teamId);
-        print('  Added $teamName');
-      }
-    }
+    print('  [UI] All teams added');
+    tracker.recordSuccess('Tournament "$name" teams added');
+
+    // 4. Generate fixtures
+    await generateFixtures(tester);
+    print('  [UI] Fixtures generated');
+
+    // 5. Transition: registration → live
+    await transitionTournamentStatus(tester, 'Start Tournament');
+    print('  [UI] Status: registration → live');
+
+    tracker.recordSuccess('Tournament "$name" is now live');
+    print('  [TOURNAMENT SETUP VIA UI COMPLETE] $name is now live');
+  } catch (e) {
+    tracker.recordError('Tournament setup "$name"', e);
   }
-
-  // 4. Transition to registration then live
-  await api.updateTournamentStatus(tournamentId, 'registration');
-  print('  Status: draft -> registration');
-
-  // 5. Generate fixtures
-  final fixtures = await api.generateFixtures(tournamentId);
-  print('  Generated ${fixtures.length} fixtures');
-
-  // 6. Transition to live
-  await api.updateTournamentStatus(tournamentId, 'live');
-  print('  Status: registration -> live');
-
-  return tournamentId;
 }
 
-/// Score all fixtures in a tournament via UI.
+// ═══════════════════════════════════════════════════════════════════════════
+// Fixture Scoring — 100% UI (no API calls)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Score all fixtures in a tournament by navigating the Fixtures tab in the UI.
 ///
-/// For each fixture:
-/// 1. Navigate to tournament > Fixtures tab > tap fixture
-/// 2. Match Setup > Proceed to Toss
-/// 3. Random toss winner/decision
-/// 4. Auto-select playing XI (6 = roster size)
-/// 5. Select openers + bowler
-/// 6. Score both innings with random deliveries
-/// 7. Match complete > back to tournament
-Future<void> scoreAllFixtures({
+/// Repeatedly scans FixtureCard widgets on the Fixtures tab for unplayed
+/// matches (fixture.matchId == null with both teams assigned). Taps each one,
+/// scores it, returns to the tournament detail page, and repeats until no
+/// more unplayed fixtures remain.
+///
+/// On error: stops immediately, logs match number and teams for resume.
+Future<void> scoreAllFixturesViaUI({
   required WidgetTester tester,
-  required ProdApiClient api,
-  required String tournamentId,
   required int totalOvers,
+  required ErrorTracker tracker,
   int playersPerSide = 6,
   Random? random,
+  int startFromMatch = 0,
 }) async {
   final rng = random ?? Random();
+  var matchCount = 0;
+  var consecutiveEmptyScans = 0;
+  const maxEmptyScans = 5; // Stop after 5 scans with no unplayed fixtures (increased for knockout bracket propagation)
 
-  // Get all fixtures
-  final fixtures = await api.getFixtures(tournamentId);
-  final pendingFixtures = fixtures
-      .where((f) => f['matchId'] == null) // Only unplayed fixtures
-      .toList();
+  while (!tracker.hasError && consecutiveEmptyScans < maxEmptyScans) {
+    // Navigate to Fixtures tab and find the first unplayed fixture
+    final unplayed = await _findFirstUnplayedFixture(tester);
 
-  print('\n[SCORING] ${pendingFixtures.length} fixtures to play '
-      '(${fixtures.length} total)');
-
-  for (var i = 0; i < pendingFixtures.length; i++) {
-    final fixture = pendingFixtures[i];
-    final homeTeam = fixture['homeTeamName'] as String? ?? 'TBD';
-    final awayTeam = fixture['awayTeamName'] as String? ?? 'TBD';
-    final roundType = fixture['roundType'] as String? ?? 'group';
-
-    // Skip fixtures with TBD teams (knockout rounds where winner not yet decided)
-    if (homeTeam == 'TBD' || awayTeam == 'TBD') {
-      print('\n[MATCH ${i + 1}/${pendingFixtures.length}] SKIP: $homeTeam vs $awayTeam '
-          '($roundType) — waiting for results');
+    if (unplayed == null) {
+      consecutiveEmptyScans++;
+      if (consecutiveEmptyScans < maxEmptyScans) {
+        print('[SCORING] No unplayed fixtures found (scan $consecutiveEmptyScans/$maxEmptyScans). '
+            'Refreshing via tab switch...');
+        // Switch to Overview tab then back to Fixtures to force data reload
+        // (helps with knockout bracket propagation delays)
+        final tabBarFinder = find.byType(TabBar);
+        if (tabBarFinder.evaluate().isNotEmpty) {
+          final tabBarContext = tester.element(tabBarFinder.first);
+          DefaultTabController.of(tabBarContext).animateTo(0); // Overview tab
+          await tester.pumpAndSettle();
+          await tester.pump(const Duration(seconds: 1));
+          DefaultTabController.of(tabBarContext).animateTo(1); // Fixtures tab
+          await tester.pumpAndSettle();
+        }
+        await settle(tester);
+        await tester.pump(const Duration(seconds: 3));
+      }
       continue;
     }
 
-    print('\n[MATCH ${i + 1}/${pendingFixtures.length}] $homeTeam vs $awayTeam '
-        '($roundType)');
+    consecutiveEmptyScans = 0;
+    matchCount++;
 
-    // Play this fixture via UI
-    await _playFixtureViaUI(
-      tester: tester,
-      homeTeam: homeTeam,
-      awayTeam: awayTeam,
-      totalOvers: totalOvers,
-      playersPerSide: playersPerSide,
-      random: rng,
-      tournamentId: tournamentId,
-    );
-
-    print('  [COMPLETE] Match ${i + 1} done');
-
-    // After playing group matches, re-fetch fixtures to get updated
-    // knockout fixtures with resolved team names
-    if (i < pendingFixtures.length - 1) {
-      final updated = await api.getFixtures(tournamentId);
-      final remaining = updated.where((f) => f['matchId'] == null).toList();
-      // Update pendingFixtures with resolved team names
-      for (var j = i + 1; j < pendingFixtures.length; j++) {
-        final fixId = pendingFixtures[j]['id'];
-        final resolved = remaining.firstWhere(
-          (f) => f['id'] == fixId,
-          orElse: () => pendingFixtures[j],
-        );
-        pendingFixtures[j] = resolved;
-      }
+    // Skip matches below resume point
+    if (matchCount <= startFromMatch) {
+      print('[MATCH $matchCount] SKIP (resuming from match ${startFromMatch + 1})');
+      continue;
     }
-  }
 
-  // Re-check: there may be new knockout fixtures now
-  final allFixtures = await api.getFixtures(tournamentId);
-  final stillPending = allFixtures.where((f) => f['matchId'] == null).toList();
-  if (stillPending.isNotEmpty) {
-    print('\n[SCORING] ${stillPending.length} more fixtures resolved after group stage');
-    for (var i = 0; i < stillPending.length; i++) {
-      final fixture = stillPending[i];
-      final homeTeam = fixture['homeTeamName'] as String? ?? 'TBD';
-      final awayTeam = fixture['awayTeamName'] as String? ?? 'TBD';
-      final roundType = fixture['roundType'] as String? ?? 'knockout';
+    final homeTeam = unplayed.homeTeamName;
+    final awayTeam = unplayed.awayTeamName;
+    print('\n[MATCH $matchCount] $homeTeam vs $awayTeam');
 
-      if (homeTeam == 'TBD' || awayTeam == 'TBD') {
-        print('\n[KNOCKOUT ${i + 1}] SKIP: $homeTeam vs $awayTeam — TBD');
-        continue;
-      }
-
-      print('\n[KNOCKOUT ${i + 1}/${stillPending.length}] $homeTeam vs $awayTeam '
-          '($roundType)');
-
-      await _playFixtureViaUI(
+    try {
+      final matchResult = await _playFixtureViaUI(
         tester: tester,
         homeTeam: homeTeam,
         awayTeam: awayTeam,
         totalOvers: totalOvers,
         playersPerSide: playersPerSide,
         random: rng,
-        tournamentId: tournamentId,
       );
 
-      print('  [COMPLETE] Knockout match ${i + 1} done');
-    }
-
-    // Final check for any remaining (e.g., final after semis)
-    final finalCheck = await api.getFixtures(tournamentId);
-    final remaining = finalCheck.where((f) => f['matchId'] == null).toList();
-    for (final f in remaining) {
-      final home = f['homeTeamName'] as String? ?? 'TBD';
-      final away = f['awayTeamName'] as String? ?? 'TBD';
-      if (home == 'TBD' || away == 'TBD') continue;
-
-      print('\n[FINAL] $home vs $away');
-      await _playFixtureViaUI(
-        tester: tester,
-        homeTeam: home,
-        awayTeam: away,
-        totalOvers: totalOvers,
-        playersPerSide: playersPerSide,
-        random: rng,
-        tournamentId: tournamentId,
+      final resultSuffix = matchResult != null ? ' — $matchResult' : '';
+      tracker.recordMatchCompleted('$homeTeam vs $awayTeam$resultSuffix');
+      print('  [COMPLETE] Match $matchCount done');
+    } catch (e) {
+      tracker.recordError(
+        'Match $matchCount: $homeTeam vs $awayTeam',
+        e,
       );
+      return;
     }
   }
+
+  print('\n[SCORING] All fixtures complete. Total matches played: ${tracker.matchesCompleted}');
+}
+
+/// Find the first unplayed fixture on the Fixtures tab.
+/// Returns a record with homeTeamName and awayTeamName, or null if none found.
+Future<_FixtureInfo?> _findFirstUnplayedFixture(WidgetTester tester) async {
+  // Switch to Fixtures tab
+  final tabBarFinder = find.byType(TabBar);
+  if (tabBarFinder.evaluate().isNotEmpty) {
+    final tabBarContext = tester.element(tabBarFinder.first);
+    DefaultTabController.of(tabBarContext).animateTo(1); // Fixtures tab
+    await tester.pumpAndSettle();
+    await visualPause(tester);
+  }
+
+  // Scan FixtureCard widgets, scrolling through the list
+  for (var scroll = 0; scroll < 20; scroll++) {
+    final allCards = find.byType(FixtureCard).evaluate().toList();
+
+    for (final cardElement in allCards) {
+      final fixtureCard = cardElement.widget as FixtureCard;
+      final fixture = fixtureCard.fixture;
+
+      // Unplayed = no matchId, both teams assigned (not TBD/null)
+      if (!fixture.hasMatch &&
+          fixture.homeTeamName != null &&
+          fixture.awayTeamName != null) {
+        return _FixtureInfo(
+          homeTeamName: fixture.homeTeamName!,
+          awayTeamName: fixture.awayTeamName!,
+        );
+      }
+    }
+
+    // Scroll down to find more
+    final scrollable = find.byType(Scrollable);
+    if (scrollable.evaluate().isNotEmpty) {
+      await tester.drag(scrollable.last, const Offset(0, -300));
+      await tester.pumpAndSettle();
+    } else {
+      break;
+    }
+  }
+
+  return null;
+}
+
+/// Simple data class for fixture info extracted from UI.
+class _FixtureInfo {
+  _FixtureInfo({required this.homeTeamName, required this.awayTeamName});
+  final String homeTeamName;
+  final String awayTeamName;
 }
 
 /// Play a single fixture through the UI.
-Future<void> _playFixtureViaUI({
+/// Returns the match result description if captured, or null.
+Future<String?> _playFixtureViaUI({
   required WidgetTester tester,
   required String homeTeam,
   required String awayTeam,
   required int totalOvers,
   required int playersPerSide,
   required Random random,
-  String? tournamentId,
 }) async {
   // 1. Navigate to fixture and tap it
   await tapFixtureCard(tester, homeTeamName: homeTeam, awayTeamName: awayTeam);
@@ -887,7 +662,6 @@ Future<void> _playFixtureViaUI({
   await settle(tester);
   final transitionModal = find.byType(InningsTransitionModal);
   if (transitionModal.evaluate().isNotEmpty) {
-    // Second innings: bowling team now bats
     final inn2Opener1 = bowlingTeamData.players[0].name;
     final inn2Opener2 = bowlingTeamData.players[1].name;
     final inn2Bowler = battingTeamData.players[0].name;
@@ -917,47 +691,44 @@ Future<void> _playFixtureViaUI({
     print('  [Innings 2] ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}');
   }
 
-  // 8. Handle match complete modal
+  // 8. Capture match result before dismissing modal (G2)
   await settle(tester);
+  final matchResult = await captureMatchCompleteResult(tester);
+
+  // 9. Dismiss match complete modal
   await _dismissMatchCompleteModal(tester);
 
-  // 9. Navigate back to tournament detail page
-  //    Use GoRouter to go directly to the tournament page (avoids multi-step nav)
-  if (tournamentId != null) {
-    try {
-      final ctx = tester.element(find.byType(Navigator).last);
-      GoRouter.of(ctx).go('/tournaments/$tournamentId');
-      await settle(tester);
-      await visualPause(tester, 1000);
-      print('  [NAV] Returned to tournament detail via GoRouter');
-    } catch (e) {
-      print('  [NAV] GoRouter failed, falling back to home: $e');
-      await navigateToHome(tester);
-      await settle(tester);
-      await navigateToTournaments(tester);
-      await settle(tester);
-    }
+  // 10. Navigate back to tournament detail page via browser back
+  //     The match was opened from tournament detail, so popping should return there.
+  final backButton = find.byType(BackButton);
+  if (backButton.evaluate().isNotEmpty) {
+    await tester.tap(backButton.first);
+    await settle(tester);
+    await visualPause(tester, 1000);
+    print('  [NAV] Returned to tournament detail via back button');
   } else {
+    // Fallback: navigate home then back to tournaments
     await navigateToHome(tester);
     await settle(tester);
     await navigateToTournaments(tester);
     await settle(tester);
+    print('  [NAV] Returned via home → tournaments fallback');
   }
 
+  final resultSuffix = matchResult != null ? ' — $matchResult' : '';
   print('  Result: ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets} '
-      'vs ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}');
+      'vs ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}$resultSuffix');
+  return matchResult;
 }
 
-/// Dismiss the match complete modal (may have "View Scorecard" or "Back to Home").
+/// Dismiss the match complete modal.
 Future<void> _dismissMatchCompleteModal(WidgetTester tester) async {
-  // Wait for MatchCompleteModal to appear
   for (var i = 0; i < 20; i++) {
     await tester.pump(const Duration(milliseconds: 500));
     if (find.byType(MatchCompleteModal).evaluate().isNotEmpty) break;
   }
 
   if (find.byType(MatchCompleteModal).evaluate().isEmpty) {
-    // Modal didn't appear — match may have ended differently
     print('    [matchComplete] No MatchCompleteModal found');
     return;
   }
@@ -985,4 +756,3 @@ Future<void> _dismissMatchCompleteModal(WidgetTester tester) async {
     await settle(tester);
   }
 }
-

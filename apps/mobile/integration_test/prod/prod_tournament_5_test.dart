@@ -1,7 +1,9 @@
-/// Production E2E: Tournament 5 — Masters Trophy
+/// Production E2E: Tournament 5 — Group + Knockout, 3 overs
 ///
 /// Format: Group + Knockout, 3 overs, 2 groups x 8 teams, top 4 qualify
 /// Ball: Tape (ID 3), ~63 matches, ~3 hours
+///
+/// 100% UI-driven — zero API calls. Error tracking with stop-on-first-error.
 ///
 /// Run:
 /// ```bash
@@ -21,22 +23,23 @@ import 'prod_helpers.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Tournament 5: Masters Trophy (Group+KO, 3ov, 2 groups)', (tester) async {
+  testWidgets('Tournament 5: Group+KO, 3ov, 2 groups, top 4 qualify', (tester) async {
     await AppTestWrapper.pumpAppAndWaitForHome(tester);
-    print('\n=== TOURNAMENT 5: Masters Trophy ===');
+
+    final name = randomTournamentName();
+    print('\n=== TOURNAMENT 5: $name ===');
     print('Format: Group+Knockout | 3 overs | 2 groups of 8 | Top 4 qualify\n');
 
     final stopwatch = Stopwatch()..start();
     final rng = Random();
+    final tracker = ErrorTracker();
 
-    final api = await ProdApiClient.create();
-
-    // Setup tournament entirely via UI
     await setupTournamentViaUI(
       tester: tester,
-      name: 'Masters Trophy',
+      name: name,
       format: 'group_knockout',
       oversPerMatch: 3,
+      tracker: tracker,
       ballTypeId: 3, // Tape
       playersPerSide: 6,
       numGroups: 2,
@@ -44,31 +47,32 @@ void main() {
       groupAssignments: twoGroupAssignments,
     );
 
-    // Get tournament ID from API
-    final tournaments = await api.listTournaments();
-    final tournament = tournaments.firstWhere(
-      (t) => t['name'] == 'Masters Trophy',
-    );
-    final tournamentId = tournament['id'] as String;
+    if (tracker.hasError) {
+      tracker.printSummary();
+      fail('Tournament setup failed. See error tracker summary above.');
+    }
 
-    await scoreAllFixtures(
+    await scoreAllFixturesViaUI(
       tester: tester,
-      api: api,
-      tournamentId: tournamentId,
       totalOvers: 3,
+      tracker: tracker,
       playersPerSide: 6,
       random: rng,
     );
 
+    // Verify standings on Overview tab (G2)
+    if (!tracker.hasError) {
+      await verifyTournamentStandings(tester);
+      tracker.recordSuccess('Standings verified on Overview tab');
+    }
+
     stopwatch.stop();
     print('\n=== TOURNAMENT 5 COMPLETE ===');
     print('Duration: ${stopwatch.elapsed.inHours}h ${stopwatch.elapsed.inMinutes % 60}m');
+    tracker.printSummary();
 
-    final standings = await api.getStandings(tournamentId);
-    print('Standings entries: ${standings.length}');
-    for (final s in standings) {
-      print('  ${s['teamName']}: P=${s['played']} W=${s['won']} L=${s['lost']} '
-          'Pts=${s['points']} NRR=${s['nrr']}');
+    if (tracker.hasError) {
+      fail('Tournament had errors. See tracker summary above.');
     }
   }, timeout: const Timeout(Duration(hours: 5)));
 }
