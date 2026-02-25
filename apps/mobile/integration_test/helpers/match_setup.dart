@@ -43,11 +43,8 @@ Future<void> selectTeamInMatchSetup(
   await visualPause(tester, 500);
 
   // Wait for bottom sheet and teams to load
-  for (var i = 0; i < 60; i++) {
-    await tester.pump(const Duration(milliseconds: 100));
-    final listTiles = find.byType(ListTile);
-    if (listTiles.evaluate().isNotEmpty) break;
-  }
+  await waitForFinder(tester, find.byType(ListTile),
+      timeoutMs: 6000, intervalMs: 100);
   await settle(tester);
 
   // Find and tap the team

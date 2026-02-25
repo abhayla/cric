@@ -180,12 +180,10 @@ Future<void> addTeamToTournament(
   await visualPause(tester, 500);
 
   // Wait for bottom sheet
-  for (var i = 0; i < 15; i++) {
-    if (find.byType(BottomSheet).evaluate().isNotEmpty) break;
-    await tester.pump(const Duration(milliseconds: 200));
-  }
+  final sheetFound = await waitForFinder(tester, find.byType(BottomSheet),
+      timeoutMs: 3000, intervalMs: 200);
 
-  if (find.byType(BottomSheet).evaluate().isEmpty) {
+  if (!sheetFound) {
     print('    [addTeamToTournament] ERROR: Bottom sheet did not open!');
     dumpVisibleTexts(tester, 'addTeam-noSheet', 30);
     return;
@@ -234,10 +232,8 @@ Future<void> addTeamToTournament(
   }
 
   // Wait for sheet to dismiss
-  for (var i = 0; i < 15; i++) {
-    if (find.byType(BottomSheet).evaluate().isEmpty) break;
-    await tester.pump(const Duration(milliseconds: 200));
-  }
+  await waitForFinderGone(tester, find.byType(BottomSheet),
+      timeoutMs: 3000, intervalMs: 200);
   await settle(tester);
   print('    [addTeamToTournament] Added $teamName${groupName != null ? ' to Group $groupName' : ''}');
 }
