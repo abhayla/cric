@@ -16,6 +16,22 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-25d: Add Missing Assertions to Integration Test Helpers
+
+**Completed:** 12 targeted edits across 4 integration test files — replaced fire-and-forget `print()`/`if`-guards with hard `expect()`/`fail()` assertions so tests fail loudly instead of passing silently.
+
+**Files changed:**
+1. `integration_test/helpers/forms.dart` — 3 edits: `createTeam()` submit button assert, post-submit `fail()`, `fillAndSubmitPlayer()` submit+pop asserts
+2. `integration_test/helpers/tournament_mgmt.dart` — 7 edits: `createTournament()` submit+stuck, `transitionTournamentStatus()` popup+menu, `addTeamToTournament()` button+sheet+team-not-found
+3. `integration_test/tests/02_standalone_match_test.dart` — 1 edit: persistence check `recordSuccess('inconclusive')` → `recordError()`
+4. `integration_test/verification/team_detail_verifier.dart` — 1 edit: hard assert Players tab exists + player count when `expectedPlayerCount` provided
+
+**Analyze result:** 0 errors, 0 warnings.
+
+**Next steps:**
+1. Run full test suite on device to validate assertion strengthening
+2. Investigate toss wizard race condition (root cause of re-selection band-aid in `match_setup.dart`)
+
 ### Session 2026-02-25c: Documentation Update — Integration Test Suite Rewrite
 
 **Completed:** Updated 7 documentation files to reflect the integration test suite rewrite (34 files, 7 directories, prod-only, 100% UI-driven).

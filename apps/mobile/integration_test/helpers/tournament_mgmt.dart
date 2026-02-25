@@ -93,25 +93,20 @@ Future<void> createTournament(
   // Submit
   await settle(tester);
   final submitButton = find.widgetWithText(FilledButton, 'Create Tournament');
-  print('    [createTournament] FilledButtons found: ${submitButton.evaluate().length}');
-  if (submitButton.evaluate().isNotEmpty) {
-    await tester.tap(submitButton.first);
-    print('    [createTournament] Tapped FilledButton');
-  } else {
-    print('    [createTournament] ERROR: Submit button not found!');
-    dumpVisibleTexts(tester, 'createTournament-noSubmit', 30);
-  }
+  expect(submitButton, findsOneWidget,
+      reason: 'Create tournament page should have a "Create Tournament" FilledButton');
+  await tester.tap(submitButton.first);
+  print('    [createTournament] Tapped FilledButton');
 
   await settle(tester);
   await visualPause(tester, 3000);
 
   final stillOnForm = find.text('Tournament Name');
   if (stillOnForm.evaluate().isNotEmpty) {
-    print('    [createTournament] WARNING: Still on create form after submit!');
     dumpVisibleTexts(tester, 'createTournament STUCK', 30);
-  } else {
-    print('    [createTournament] Tournament created: $name');
+    fail('Still on create tournament form after submit — creation may have failed');
   }
+  print('    [createTournament] Tournament created: $name');
 }
 
 /// Transition tournament status via the PopupMenuButton.
@@ -128,10 +123,8 @@ Future<void> transitionTournamentStatus(
   await tester.pumpAndSettle();
 
   final popupButton = find.byType(PopupMenuButton<String>);
-  if (popupButton.evaluate().isEmpty) {
-    print('    [transitionStatus] ERROR: PopupMenuButton not found!');
-    return;
-  }
+  expect(popupButton, findsAtLeast(1),
+      reason: 'Tournament detail should have a PopupMenuButton for status transitions');
 
   final popupState = tester.state<PopupMenuButtonState<String>>(popupButton.first);
   popupState.showButtonMenu();
@@ -139,17 +132,14 @@ Future<void> transitionTournamentStatus(
   await visualPause(tester);
 
   final menuItem = find.text(menuLabel);
-  if (menuItem.evaluate().isNotEmpty) {
-    await tester.tap(menuItem.first);
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 500));
-    }
-    await tester.pumpAndSettle();
-    print('    [transitionStatus] Tapped "$menuLabel"');
-  } else {
-    print('    [transitionStatus] ERROR: Menu item "$menuLabel" not found!');
-    dumpVisibleTexts(tester, 'transitionStatus', 20);
+  expect(menuItem, findsAtLeast(1),
+      reason: 'Popup menu should contain "$menuLabel" item');
+  await tester.tap(menuItem.first);
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 500));
   }
+  await tester.pumpAndSettle();
+  print('    [transitionStatus] Tapped "$menuLabel"');
 }
 
 /// Add a team to a tournament from the tournament detail page.
@@ -166,11 +156,8 @@ Future<void> addTeamToTournament(
 
   // Tap "Add Team" button
   final addTeamButton = find.widgetWithText(FilledButton, 'Add Team');
-  if (addTeamButton.evaluate().isEmpty) {
-    print('    [addTeamToTournament] ERROR: "Add Team" button not found!');
-    dumpVisibleTexts(tester, 'addTeam-noButton', 30);
-    return;
-  }
+  expect(addTeamButton, findsAtLeast(1),
+      reason: 'Tournament Teams tab should have an "Add Team" FilledButton');
   final button = tester.widget<FilledButton>(addTeamButton.first);
   button.onPressed?.call();
   await settle(tester);
@@ -180,11 +167,8 @@ Future<void> addTeamToTournament(
   final sheetFound = await waitForFinder(tester, find.byType(BottomSheet),
       timeoutMs: 3000, intervalMs: 200);
 
-  if (!sheetFound) {
-    print('    [addTeamToTournament] ERROR: Bottom sheet did not open!');
-    dumpVisibleTexts(tester, 'addTeam-noSheet', 30);
-    return;
-  }
+  expect(sheetFound, isTrue,
+      reason: 'Bottom sheet should open after tapping "Add Team"');
 
   // Select group chip if provided
   if (groupName != null) {
@@ -221,11 +205,8 @@ Future<void> addTeamToTournament(
     await visualPause(tester, 1000);
     print('    [addTeamToTournament] Tapped team: $teamName');
   } else {
-    print('    [addTeamToTournament] ERROR: Team "$teamName" not found in bottom sheet!');
     dumpVisibleTexts(tester, 'addTeam-noTeam', 40);
-    await tester.tapAt(Offset.zero);
-    await settle(tester);
-    return;
+    fail('Team "$teamName" not found in bottom sheet after scrolling');
   }
 
   // Wait for sheet to dismiss

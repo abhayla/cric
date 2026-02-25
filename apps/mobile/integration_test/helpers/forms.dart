@@ -40,12 +40,12 @@ Future<void> createTeam(WidgetTester tester, TestTeam team) async {
 
   // Submit
   final submitBtn = find.byType(FilledButton);
-  if (submitBtn.evaluate().isNotEmpty) {
-    await tester.ensureVisible(submitBtn.first);
-    await tester.pumpAndSettle();
-    await tester.tap(submitBtn.first);
-    print('    [createTeam] Tapped submit FilledButton');
-  }
+  expect(submitBtn, findsAtLeast(1),
+      reason: 'Create team page should have a submit FilledButton');
+  await tester.ensureVisible(submitBtn.first);
+  await tester.pumpAndSettle();
+  await tester.tap(submitBtn.first);
+  print('    [createTeam] Tapped submit FilledButton');
   await settle(tester);
   await visualPause(tester, 2000);
 
@@ -55,7 +55,7 @@ Future<void> createTeam(WidgetTester tester, TestTeam team) async {
     print('    [createTeam] Navigated to team detail for: ${team.name}');
   } else {
     dumpVisibleTexts(tester, 'createTeam-afterSubmit', 25);
-    print('    [createTeam] WARNING: Team name not found after submit.');
+    fail('Team name "${team.name}" not found after submit — team creation may have failed');
   }
 }
 
@@ -200,23 +200,18 @@ Future<void> fillAndSubmitPlayer(
 
   // Submit
   final submitButton = find.text('Add to Team');
-  if (submitButton.evaluate().isNotEmpty) {
-    await tester.ensureVisible(submitButton.first);
-    await tester.pumpAndSettle();
-    await tester.tap(submitButton.first, warnIfMissed: false);
+  expect(submitButton, findsOneWidget,
+      reason: '"Add to Team" button should be visible for ${player.name}');
+  await tester.ensureVisible(submitButton.first);
+  await tester.pumpAndSettle();
+  await tester.tap(submitButton.first, warnIfMissed: false);
 
-    // Wait for page pop (API calls complete)
-    final popped = await waitForFinderGone(
-        tester, find.byKey(const Key('playerNameField')),
-        timeoutMs: 6000, intervalMs: 200);
-    await settle(tester);
-
-    if (popped) {
-      print('    [fillPlayer] Added player: ${player.name}');
-    } else {
-      print('    [fillPlayer] WARNING: Page did not pop after adding ${player.name}');
-    }
-  } else {
-    print('    [fillPlayer] WARNING: "Add to Team" not found for ${player.name}');
-  }
+  // Wait for page pop (API calls complete)
+  final popped = await waitForFinderGone(
+      tester, find.byKey(const Key('playerNameField')),
+      timeoutMs: 6000, intervalMs: 200);
+  await settle(tester);
+  expect(popped, isTrue,
+      reason: 'AddPlayerPage should pop after adding ${player.name}');
+  print('    [fillPlayer] Added player: ${player.name}');
 }

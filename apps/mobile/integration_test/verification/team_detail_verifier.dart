@@ -19,14 +19,22 @@ Future<void> verifyTeamDetail(
 
   // Check Players tab
   final playersTab = find.text('Players');
-  if (playersTab.evaluate().isNotEmpty) {
-    await tester.tap(playersTab.last);
-    await settle(tester);
-    await visualPause(tester, 500);
-    print('  [verify-team] Players tab loaded');
+  expect(playersTab, findsAtLeast(1),
+      reason: 'Team detail page should have a "Players" tab');
+  await tester.tap(playersTab.last);
+  await settle(tester);
+  await visualPause(tester, 500);
+  print('  [verify-team] Players tab loaded');
+
+  // Verify player count if expected
+  if (expectedPlayerCount != null) {
+    final playerCountText = find.text('$expectedPlayerCount players');
+    expect(playerCountText, findsAtLeast(1),
+        reason: 'Players tab should show "$expectedPlayerCount players" for team "$teamName"');
+    print('  [verify-team] Player count verified: $expectedPlayerCount players');
   }
 
-  // Check Matches tab (if team has played any)
+  // Check Matches tab (if team has played any — soft check)
   final matchesTab = find.text('Matches');
   if (matchesTab.evaluate().isNotEmpty) {
     await tester.tap(matchesTab.last);

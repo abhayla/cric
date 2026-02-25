@@ -261,8 +261,8 @@ void main() {
         print('  [Persistence] Match card found (Team1: $hasTeam1, Team2: $hasTeam2)');
         tracker.recordSuccess('Persistence verified');
       } else {
-        print('  [Persistence] WARNING: No match card found');
-        tracker.recordSuccess('Persistence check inconclusive');
+        print('  [Persistence] ERROR: No match card found');
+        tracker.recordError('Persistence check', 'Neither Team1 nor Team2 found on Matches tab');
       }
     } catch (e) {
       tracker.recordError('Standalone match test', e);
