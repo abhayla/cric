@@ -26,8 +26,11 @@ Future<void> verifyTeamsTab(
   }
 
   if (expectedMinAllTeams != null) {
-    // Scroll through list and count team cards
-    print('  [verify-teams] Checking "All" filter for at least $expectedMinAllTeams teams');
+    final teamCards = find.byType(Card);
+    final cardCount = teamCards.evaluate().length;
+    print('  [verify-teams] "All" filter: found $cardCount cards (expected >= $expectedMinAllTeams)');
+    expect(cardCount, greaterThanOrEqualTo(expectedMinAllTeams),
+        reason: 'Teams "All" filter should show at least $expectedMinAllTeams team cards');
   }
 
   // Check each expected owner team is visible
@@ -42,11 +45,9 @@ Future<void> verifyTeamsTab(
 
     for (final teamName in expectedOwnerTeams) {
       final teamText = find.textContaining(teamName);
-      if (teamText.evaluate().isNotEmpty) {
-        print('  [verify-teams] Owner chip: found $teamName');
-      } else {
-        print('  [verify-teams] WARNING: Owner chip: $teamName NOT found');
-      }
+      expect(teamText, findsAtLeast(1),
+          reason: 'Owner chip should show team "$teamName"');
+      print('  [verify-teams] Owner chip: found $teamName');
     }
   }
 
@@ -95,13 +96,10 @@ Future<void> verifyMatchesTab(
       await tester.tap(wonChip.first);
       await settle(tester);
       await visualPause(tester, 500);
-      // Check for at least one match card
       final matchCards = find.byType(Card);
-      if (matchCards.evaluate().isNotEmpty) {
-        print('  [verify-matches] Won chip: found match cards');
-      } else {
-        print('  [verify-matches] Won chip: no match cards visible');
-      }
+      expect(matchCards, findsAtLeast(1),
+          reason: 'Won filter should show at least one match card');
+      print('  [verify-matches] Won chip: found ${matchCards.evaluate().length} match cards');
     }
   }
 
@@ -137,7 +135,7 @@ Future<void> verifyTournamentsTab(
   await navigateToTournaments(tester);
   await settle(tester);
 
-  // Check filter chips
+  // Check filter chips — assert content on specific filters
   for (final chipLabel in ['Live', 'Completed', 'All']) {
     final chip = find.text(chipLabel);
     if (chip.evaluate().isNotEmpty) {
@@ -146,6 +144,14 @@ Future<void> verifyTournamentsTab(
       await visualPause(tester, 500);
       print('  [verify-tournaments] $chipLabel chip tapped');
     }
+  }
+
+  // After "All" is selected, verify at least one tournament card is visible
+  if (expectCompleted || expectLive) {
+    final cards = find.byType(Card);
+    expect(cards, findsAtLeast(1),
+        reason: 'Tournaments "All" filter should show at least one tournament card');
+    print('  [verify-tournaments] Found ${cards.evaluate().length} tournament cards');
   }
 
   print('  [verify-tournaments] Tournaments tab verification complete');

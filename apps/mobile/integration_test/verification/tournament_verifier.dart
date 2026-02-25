@@ -23,17 +23,13 @@ Future<void> verifyTournamentDetail(
 
   if (expectStandings) {
     final standingsHeading = find.text('Standings');
+    expect(standingsHeading, findsAtLeast(1),
+        reason: 'Tournament overview should show Standings section');
+    print('  [verify-tournament] Standings section present');
+
     final viewFull = find.text('View Full');
-
-    final hasStandings = standingsHeading.evaluate().isNotEmpty;
-    final hasViewFull = viewFull.evaluate().isNotEmpty;
-
-    if (hasStandings && hasViewFull) {
-      print('  [verify-tournament] Standings section present with "View Full" link');
-    } else if (hasStandings) {
-      print('  [verify-tournament] Standings heading found but no "View Full" link');
-    } else {
-      print('  [verify-tournament] WARNING: Standings section not found');
+    if (viewFull.evaluate().isNotEmpty) {
+      print('  [verify-tournament] "View Full" link present');
     }
   }
 
@@ -52,7 +48,16 @@ Future<void> verifyTournamentDetail(
     DefaultTabController.of(tabBarContext).animateTo(2);
     await tester.pumpAndSettle();
     await visualPause(tester, 500);
-    print('  [verify-tournament] Teams tab loaded');
+
+    if (expectedTeamCount != null) {
+      final teamCards = find.byType(Card);
+      final cardCount = teamCards.evaluate().length;
+      expect(cardCount, greaterThanOrEqualTo(expectedTeamCount),
+          reason: 'Tournament Teams tab should show at least $expectedTeamCount teams');
+      print('  [verify-tournament] Teams tab: $cardCount cards (expected >= $expectedTeamCount)');
+    } else {
+      print('  [verify-tournament] Teams tab loaded');
+    }
   }
 
   print('  [verify-tournament] Tournament detail verification complete');

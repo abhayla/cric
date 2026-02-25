@@ -8,7 +8,13 @@ import '../core/test_utils.dart';
 import '../helpers/navigation.dart';
 
 /// Verify the Live page with its sub-tabs and filter chips.
-Future<void> verifyLivePage(WidgetTester tester) async {
+///
+/// Set [expectCompletedMatches] to true if completed matches should exist
+/// (e.g., after running match/tournament tests).
+Future<void> verifyLivePage(
+  WidgetTester tester, {
+  bool expectCompletedMatches = false,
+}) async {
   await navigateToLive(tester);
   await settle(tester);
 
@@ -29,6 +35,14 @@ Future<void> verifyLivePage(WidgetTester tester) async {
       await settle(tester);
       await visualPause(tester, 500);
       print('  [verify-live] Matches > $chipLabel chip tapped');
+
+      // After "Completed", verify at least one card if expected
+      if (chipLabel == 'Completed' && expectCompletedMatches) {
+        final cards = find.byType(Card);
+        expect(cards, findsAtLeast(1),
+            reason: 'Live > Matches > Completed should show at least one match card');
+        print('  [verify-live] Completed matches: ${cards.evaluate().length} cards');
+      }
     }
   }
 

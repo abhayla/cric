@@ -30,7 +30,9 @@ cric/
 │   └── server/        # Bun backend
 ├── docs/
 │   ├── planning/      # Product & architecture specs
-│   └── process/       # Workflow & standards
+│   ├── process/       # Workflow & standards
+│   └── pre-prod/      # VPS deployment & production readiness
+├── scripts/           # E2E orchestration, structure validators
 ├── .claude/           # Claude Code config + rules
 └── CLAUDE.md
 ```
@@ -82,8 +84,8 @@ cd apps/server && bun run db:seed          # Seed master data (dismissal types, 
 ```bash
 # Integration / E2E tests (require running server + emulator/device)
 cd apps/server && PORT=3001 NODE_ENV=test bun run src/index.ts   # Start test server
-cd apps/mobile && flutter test --flavor dev integration_test/single_match_e2e_test.dart -d emulator-5554  # Single match E2E
-cd apps/mobile && flutter test --flavor dev integration_test/multi_device_viewer_e2e_test.dart -d <device>  # Multi-device WebSocket test
+cd apps/mobile && flutter test --flavor dev integration_test/tests/02_standalone_match_test.dart -d emulator-5554  # Single match E2E
+cd apps/mobile && flutter test --flavor dev integration_test/tests/08_viewer_live_test.dart -d <device>  # Multi-device WebSocket test
 ```
 
 **E2E test rule:** E2E/integration tests CAN be run directly from Claude's CLI on real connected devices. Use `flutter test integration_test/<test>.dart -d <device-id>` with the appropriate device ID from `flutter devices`.
@@ -131,7 +133,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on a self-hosted Windows runner
 4. **server-lint** — `bunx tsc --noEmit`
 5. **server-test** — (depends on lint) `bun test` with a test PostgreSQL database
 
-Jobs only run when their respective `apps/` directory has files (conditional on `hashFiles`).
+Flutter and server jobs only run when their respective `apps/` directory has files (conditional on `hashFiles`). Structure validation always runs.
 
 ## Architecture Decisions
 
@@ -139,7 +141,7 @@ Jobs only run when their respective `apps/` directory has files (conditional on 
 - **Atomic delivery model:** Every ball bowled is stored as a `deliveries` record — the core unit for all stats and analytics.
 - **Pre-computed stats:** `batting_stats`, `bowling_stats`, `fielding_stats` per innings + `player_career_stats` aggregates for fast reads.
 - **Dual-path real-time broadcast:** Live scoring uses two parallel paths: (1) **Fast path (~ms):** `ScoringPersistenceService` sends `publish_score` WS message immediately after each delivery — server relays to room subscribers with zero DB access (sender excluded via Bun's `ws.publish`). (2) **Durable path (~2s):** `SyncService` timer fires every 2s (threshold: 1 pending delivery) — REST sync to server — server persists to PostgreSQL — broadcasts `match_state` reconciliation snapshot. Viewers detect missed messages via `deliveryCount` gap detection and auto-recover by re-sending `join_match`.
-- **Scoring engine layering:** `ScoringNotifier` (pure state machine, ~1300 lines) is wrapped by `ScoringPersistenceService` (fire-and-forget JSON snapshots to Drift after each mutation) which coordinates with `SyncService` (FIFO queue processor for server sync). This layering keeps the core notifier testable with no I/O dependencies — all 333+ scoring tests run against the notifier directly.
+- **Scoring engine layering:** `ScoringNotifier` (pure state machine, ~1400 lines) is wrapped by `ScoringPersistenceService` (fire-and-forget JSON snapshots to Drift after each mutation) which coordinates with `SyncService` (FIFO queue processor for server sync). This layering keeps the core notifier testable with no I/O dependencies — all 333+ scoring tests run against the notifier directly.
 - **WebSocket rooms:** Each match = one pub/sub room. Scorer = publisher, viewers = subscribers. Uses Bun's native `server.publish(topic, message)`. 7 server message types: `match_state`, `score_update`, `wicket`, `innings_complete`, `match_complete`, `delivery_undone`, `error`.
 - **UUIDs everywhere:** All primary keys are UUIDs for cross-device sync compatibility.
 
@@ -155,7 +157,7 @@ The scoring engine is the most complex subsystem. Key files and their roles:
 
 **Flutter (`apps/mobile/lib/src/features/scoring/`):**
 - `domain/entities/delivery.dart` — `DismissalType` enum (11 values), `Delivery` entity (26 fields), `InningsCompletionReason` enum.
-- `presentation/notifiers/scoring_notifier.dart` — Pure state machine (~1300 lines). `ScoringState` with ~30 fields + 15 computed getters. 10-step `_processDelivery` pipeline mirroring server. All cricket rules (strike rotation, free hit, extras, over completion, innings completion) encoded here.
+- `presentation/notifiers/scoring_notifier.dart` — Pure state machine (~1400 lines). `ScoringState` with ~30 fields + 15 computed getters. 10-step `_processDelivery` pipeline mirroring server. All cricket rules (strike rotation, free hit, extras, over completion, innings completion) encoded here.
 - `presentation/notifiers/scoring_persistence_service.dart` — Wraps `ScoringNotifier`. Fire-and-forget JSON snapshots to Drift after each mutation. Static factories: `createNew()`, `resume()`.
 - `core/utils/scoring_utils.dart` — Pure functions: `isLegalDelivery`, `calculateTotalRuns`, `shouldSwapStrike`, `isOverComplete`, `checkInningsCompletion`, `isMaidenOver`, `isNextFreeHit`.
 

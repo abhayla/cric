@@ -13,12 +13,9 @@ Future<void> verifyTeamDetail(
 }) async {
   // Verify team name in title
   final nameText = find.text(teamName);
-  if (nameText.evaluate().isNotEmpty) {
-    print('  [verify-team] Team name found: $teamName');
-  } else {
-    print('  [verify-team] WARNING: Team name "$teamName" not found');
-    dumpVisibleTexts(tester, 'team-detail', 20);
-  }
+  expect(nameText, findsAtLeast(1),
+      reason: 'Team detail page should show team name "$teamName"');
+  print('  [verify-team] Team name found: $teamName');
 
   // Check Players tab
   final playersTab = find.text('Players');

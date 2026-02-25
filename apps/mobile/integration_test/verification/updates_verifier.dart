@@ -7,16 +7,24 @@ import '../core/test_utils.dart';
 import '../helpers/navigation.dart';
 
 /// Verify the Updates page has activity feed events.
-Future<void> verifyUpdatesPage(WidgetTester tester) async {
+///
+/// Set [expectContent] to true if activity feed should have entries
+/// (e.g., after completing matches).
+Future<void> verifyUpdatesPage(
+  WidgetTester tester, {
+  bool expectContent = false,
+}) async {
   await navigateToUpdates(tester);
   await settle(tester);
   await visualPause(tester, 1000);
 
   // Check for date group headers
   final dateHeaders = ['Today', 'Yesterday', 'This Week', 'Earlier'];
+  var foundHeaders = 0;
   for (final header in dateHeaders) {
     final headerText = find.text(header);
     if (headerText.evaluate().isNotEmpty) {
+      foundHeaders++;
       print('  [verify-updates] Found date group: $header');
     }
   }
@@ -27,7 +35,11 @@ Future<void> verifyUpdatesPage(WidgetTester tester) async {
       find.textContaining('completed').evaluate().isNotEmpty ||
       find.textContaining('Team').evaluate().isNotEmpty;
 
-  if (hasContent) {
+  if (expectContent) {
+    expect(hasContent, isTrue,
+        reason: 'Updates page should have activity feed content after matches are played');
+    print('  [verify-updates] Activity feed has content (verified)');
+  } else if (hasContent) {
     print('  [verify-updates] Activity feed has content');
   } else {
     print('  [verify-updates] Activity feed appears empty or no recognizable events');
