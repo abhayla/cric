@@ -94,7 +94,9 @@ cd apps/mobile && flutter test --flavor dev integration_test/multi_device_viewer
 
 **Code generation:** Files matching `*.g.dart`, `*.freezed.dart`, `*.gr.dart` are auto-generated. Never edit them manually — re-run `build_runner` instead.
 
-**Server tests:** Use `bun run test` (not `bun test`) to run all tests — the npm script passes `--max-concurrency=1` to avoid DB contention from parallel execution. Individual files work with `bun test path/to.test.ts`.
+**Server tests:** Use `bun run test` (not `bun test`) to run all tests — the npm script passes `--max-concurrency=1` and `ENABLE_TEST_AUTH=true` to avoid DB contention and enable test auth bypass. Individual files work with `NODE_ENV=test ENABLE_TEST_AUTH=true bun test path/to.test.ts`.
+
+**Android build flavors:** Two flavors — `dev` (default, Firebase app `com.cricapp.cricapp`) and `prod` (Firebase app `in.cricscores.app`). Dev builds: `flutter run --flavor dev`. Prod builds: `flutter build apk --flavor prod --release --dart-define=FLAVOR=prod`. Each flavor has its own `google-services.json` in `android/app/src/<flavor>/`.
 
 ## First-Time Setup
 
@@ -107,8 +109,9 @@ cd apps/server && bun install && cd ../..
 cp apps/server/.env.example apps/server/.env
 # Edit .env with PostgreSQL connection string + Firebase credentials
 
-# 3. Firebase config files
-# Place google-services.json in apps/mobile/android/app/
+# 3. Firebase config files (flavor-specific directories)
+# Place google-services.json in apps/mobile/android/app/src/dev/  (dev flavor: com.cricapp.cricapp)
+# Place google-services.json in apps/mobile/android/app/src/prod/ (prod flavor: in.cricscores.app)
 # Place firebase-service-account.json in apps/server/
 
 # 4. Database
@@ -177,7 +180,8 @@ The scoring engine is the most complex subsystem. Key files and their roles:
 - Server tests: always use `bun run test` (not `bun test` directly) to get `--max-concurrency=1` and avoid DB contention.
 
 ### Bun on Windows
-- Bun is installed at `C:\Users\Administrator\.bun\bin\bun.exe`. In bash, set PATH: `export PATH="$PATH:/c/Users/Administrator/.bun/bin"`.
+- **Local dev:** Bun should be in PATH already. If not, install via `powershell -c "irm bun.sh/install.ps1 | iex"`.
+- **VPS (`103.118.16.189`):** Bun is at `C:\Users\Administrator\.bun\bin\bun.exe`. In bash: `export PATH="$PATH:/c/Users/Administrator/.bun/bin"`.
 
 ## VPS Deployment
 
