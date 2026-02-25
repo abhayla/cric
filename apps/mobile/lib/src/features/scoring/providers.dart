@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/network/auth_interceptors.dart';
 
 import '../../shared/data/sync/sync_service.dart';
 import '../../shared/providers/database_provider.dart';
@@ -29,22 +30,8 @@ final _dioProvider = Provider<Dio>((ref) {
     receiveTimeout: const Duration(seconds: 10),
   ));
 
-  // Add Firebase auth token for production (test mode bypasses on server)
   try {
-    final authDatasource = ref.read(firebaseAuthDatasourceProvider);
-    dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        try {
-          final token = await authDatasource.getIdToken();
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-        } catch (_) {
-          // Silently continue without auth (test mode, no user logged in)
-        }
-        handler.next(options);
-      },
-    ));
+    addAuthInterceptors(dio, ref.read(firebaseAuthDatasourceProvider));
   } catch (_) {
     // Provider not available (e.g., in test environment)
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -164,6 +166,68 @@ void main() {
       );
       expect(liveChip.selected, isFalse);
     });
+
+    testWidgets('Matches tab shows error message when provider fails',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            matchesByStatusProvider.overrideWith(
+              (ref, status) async => throw Exception('network error'),
+            ),
+            tournamentsListProvider
+                .overrideWith(() => _FakeTournamentsNotifier()),
+          ],
+          child: const MaterialApp(home: LivePage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Failed to load matches'), findsOneWidget);
+    });
+
+    testWidgets('Matches tab shows loading spinner while fetching',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            matchesByStatusProvider.overrideWith(
+              (ref, status) => Completer<MatchListResult>().future,
+            ),
+            tournamentsListProvider
+                .overrideWith(() => _FakeTournamentsNotifier()),
+          ],
+          child: const MaterialApp(home: LivePage()),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('Tournaments tab shows error message when provider fails',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            matchesByStatusProvider.overrideWith(
+              (ref, status) async =>
+                  const MatchListResult(matches: [], total: 0, page: 1),
+            ),
+            tournamentsListProvider
+                .overrideWith(() => _ErrorTournamentsNotifier()),
+          ],
+          child: const MaterialApp(home: LivePage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Tournaments tab
+      await tester.tap(find.text('Tournaments'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Failed to load tournaments'), findsOneWidget);
+    });
   });
 }
 
@@ -171,5 +235,12 @@ class _FakeTournamentsNotifier extends TournamentsListNotifier {
   @override
   Future<TournamentListResult> build() async {
     return const TournamentListResult(tournaments: [], total: 0, page: 1);
+  }
+}
+
+class _ErrorTournamentsNotifier extends TournamentsListNotifier {
+  @override
+  Future<TournamentListResult> build() async {
+    throw Exception('tournaments error');
   }
 }

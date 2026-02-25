@@ -16,6 +16,30 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-25e: 401 Auto-Redirect + Auth/Screen Error State Tests
+
+**Completed:** Fixed 401 → auto-sign-out → redirect to login flow, and added comprehensive tests for error states, auth guard, and missing screen coverage.
+
+**Part 1 — 401 Auto-Redirect (Feature Fix):**
+- Created shared `addAuthInterceptors()` helper at `lib/src/core/network/auth_interceptors.dart`
+- Adds both `onRequest` (Bearer token injection) and `onError` (401 → `FirebaseAuth.signOut()`) interceptors
+- Updated all 6 feature `_dioProvider`s to use the shared helper: home, teams, tournaments, updates, player_profile, scoring
+- On 401, sign-out triggers `authStateChanges` → GoRouter redirect → login page
+
+**Part 2 — Tests (4 new files, 2 modified):**
+1. `test/src/shared/widgets/error_display_test.dart` (NEW) — 9 tests: error-to-message mapping for all exception types
+2. `test/src/features/updates/presentation/pages/updates_page_test.dart` (NEW) — 6 tests: first-ever Updates page coverage
+3. `test/src/core/network/auth_interceptors_test.dart` (NEW) — 5 tests: interceptor installation, token injection, null/error token handling
+4. `test/src/app/router_redirect_test.dart` (NEW) — 7 tests: auth guard redirect logic for all auth states
+5. `test/src/features/home/presentation/pages/home_page_test.dart` (MODIFIED) — +5 error state tests: Teams/Matches/Tournaments error, loading, 401 session expired
+6. `test/src/features/live/presentation/pages/live_page_test.dart` (MODIFIED) — +3 error state tests: Matches/Tournaments error, loading
+
+**Results:** `flutter analyze` 0 issues. All new tests pass. Full suite: 2158 pass, 5 fail (pre-existing player_profile_integration_test failures).
+
+**Next steps:**
+1. Investigate pre-existing player_profile_integration_test failures (5 tests)
+2. Run E2E on device to validate 401 redirect works end-to-end
+
 ### Session 2026-02-25d: Add Missing Assertions to Integration Test Helpers
 
 **Completed:** 12 targeted edits across 4 integration test files — replaced fire-and-forget `print()`/`if`-guards with hard `expect()`/`fail()` assertions so tests fail loudly instead of passing silently.

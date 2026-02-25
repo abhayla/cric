@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cricscores/src/shared/providers/database_provider.dart';
 
 import '../../app/providers.dart';
+import '../../core/network/auth_interceptors.dart';
 import 'data/datasources/team_local_datasource.dart';
 import 'data/datasources/team_remote_datasource.dart';
 import 'data/repositories/team_repository_impl.dart';
@@ -18,20 +19,7 @@ final _dioProvider = Provider<Dio>((ref) {
   ));
 
   try {
-    final authDatasource = ref.read(firebaseAuthDatasourceProvider);
-    dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        try {
-          final token = await authDatasource.getIdToken();
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-        } catch (_) {
-          // Silently continue without auth
-        }
-        handler.next(options);
-      },
-    ));
+    addAuthInterceptors(dio, ref.read(firebaseAuthDatasourceProvider));
   } catch (_) {
     // Provider not available (e.g., in test environment)
   }

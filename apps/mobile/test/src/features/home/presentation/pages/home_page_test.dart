@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/app/providers.dart';
+import 'package:cricscores/src/core/errors/exceptions.dart';
 import 'package:cricscores/src/features/home/domain/repositories/home_repository.dart';
 import 'package:cricscores/src/features/home/presentation/pages/home_page.dart';
 import 'package:cricscores/src/features/home/presentation/widgets/expandable_fab.dart';
@@ -138,6 +141,124 @@ void main() {
       expect(find.byType(TabBar), findsOneWidget);
       expect(find.byType(Tab), findsNWidgets(3));
     });
+
+    testWidgets('Teams tab shows error display when provider fails',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authStateProvider.overrideWith((ref) => Stream.value(null)),
+            teamsListProvider.overrideWith(() => _ErrorTeamsNotifier()),
+            tournamentsListProvider
+                .overrideWith(() => _FakeTournamentsNotifier()),
+            allMatchesProvider.overrideWith(
+              (ref, page) async =>
+                  const MatchListResult(matches: [], total: 0, page: 1),
+            ),
+          ],
+          child: const MaterialApp(home: HomePage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Teams tab is default — should show error display
+      expect(find.text('Retry'), findsOneWidget);
+    });
+
+    testWidgets('Teams tab shows loading spinner while fetching',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authStateProvider.overrideWith((ref) => Stream.value(null)),
+            teamsListProvider.overrideWith(() => _LoadingTeamsNotifier()),
+            tournamentsListProvider
+                .overrideWith(() => _FakeTournamentsNotifier()),
+            allMatchesProvider.overrideWith(
+              (ref, page) async =>
+                  const MatchListResult(matches: [], total: 0, page: 1),
+            ),
+          ],
+          child: const MaterialApp(home: HomePage()),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('Teams tab shows session expired for 401 error',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authStateProvider.overrideWith((ref) => Stream.value(null)),
+            teamsListProvider.overrideWith(() => _Error401TeamsNotifier()),
+            tournamentsListProvider
+                .overrideWith(() => _FakeTournamentsNotifier()),
+            allMatchesProvider.overrideWith(
+              (ref, page) async =>
+                  const MatchListResult(matches: [], total: 0, page: 1),
+            ),
+          ],
+          child: const MaterialApp(home: HomePage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Session expired. Please log in again.'), findsOneWidget);
+    });
+
+    testWidgets('Matches tab shows error display when provider fails',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authStateProvider.overrideWith((ref) => Stream.value(null)),
+            teamsListProvider.overrideWith(() => _FakeTeamsNotifier()),
+            tournamentsListProvider
+                .overrideWith(() => _FakeTournamentsNotifier()),
+            allMatchesProvider.overrideWith(
+              (ref, page) async => throw Exception('match error'),
+            ),
+          ],
+          child: const MaterialApp(home: HomePage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Navigate to Matches tab
+      await tester.tap(find.text('Matches'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Retry'), findsOneWidget);
+    });
+
+    testWidgets('Tournaments tab shows error display when provider fails',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authStateProvider.overrideWith((ref) => Stream.value(null)),
+            teamsListProvider.overrideWith(() => _FakeTeamsNotifier()),
+            tournamentsListProvider
+                .overrideWith(() => _ErrorTournamentsNotifier()),
+            allMatchesProvider.overrideWith(
+              (ref, page) async =>
+                  const MatchListResult(matches: [], total: 0, page: 1),
+            ),
+          ],
+          child: const MaterialApp(home: HomePage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Navigate to Tournaments tab
+      await tester.tap(find.text('Tournaments'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Retry'), findsOneWidget);
+    });
   });
 }
 
@@ -152,5 +273,33 @@ class _FakeTournamentsNotifier extends TournamentsListNotifier {
   @override
   Future<TournamentListResult> build() async {
     return const TournamentListResult(tournaments: [], total: 0, page: 1);
+  }
+}
+
+class _ErrorTeamsNotifier extends TeamsListNotifier {
+  @override
+  Future<TeamListResult> build() async {
+    throw Exception('teams error');
+  }
+}
+
+class _Error401TeamsNotifier extends TeamsListNotifier {
+  @override
+  Future<TeamListResult> build() async {
+    throw const ServerException('Unauthorized', null, 401);
+  }
+}
+
+class _LoadingTeamsNotifier extends TeamsListNotifier {
+  @override
+  Future<TeamListResult> build() {
+    return Completer<TeamListResult>().future;
+  }
+}
+
+class _ErrorTournamentsNotifier extends TournamentsListNotifier {
+  @override
+  Future<TournamentListResult> build() async {
+    throw Exception('tournaments error');
   }
 }
