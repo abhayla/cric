@@ -16,6 +16,37 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-25b: Integration Test Suite Gaps & Modularization
+
+**Completed:** Two rounds of improvements to the integration test suite.
+
+**Round 1 — Modularization & initial assertions (12 files):**
+- **Verifier assertions (6 files):** Added `expect()` calls to all verifiers (my_cricket, live, updates, tournament, team_detail).
+- **Fixture completion guard:** `tournament_flow.dart:scoreAllFixtures()` asserts no unplayed fixtures remain.
+- **Unified polling helpers:** `waitForFinder()`/`waitForFinderGone()` in `test_utils.dart`, replacing 7 hand-rolled loops.
+- **`switchToTab()` helper:** Extracted to `navigation.dart`, replacing 7 inline `DefaultTabController.of()` calls.
+- **Cleanup:** Removed empty `prod/` dir, added `verboseTestOutput` flag + `testLog()`.
+- **Documentation:** Test ordering table, SliverAppBar/toss-wizard TECH DEBT comments.
+- **Bug fix:** Pre-existing `Scrollable` undefined in `team_setup_flow.dart`.
+
+**Round 2 — Assertion strengthening (13 files):**
+- **Specific card types:** Replaced `find.byType(Card)` with `TeamCard`, `MatchCard`, `TournamentCard`, `FixtureCard`, `ListTile` in all verifiers.
+- **Activated dead assertions:** Updated test 03 and test 07 callers to pass params that trigger assertions (`expectedMinAllTeams`, `expectWon`, `minAllCount`, `expectCompletedMatches`, `expectTournaments`, `expectContent`).
+- **Wired orphaned verifiers:** Test 07 now navigates to tournament detail and team detail pages, calling `verifyTournamentDetail` and `verifyTeamDetail`.
+- **Player count verification:** `team_setup_flow.dart` asserts `"N players"` text on Players tab after adding all players to each team.
+- **Fixture generation assertion:** `tournament_mgmt.dart:generateFixtures()` switches to Fixtures tab and asserts at least 1 `FixtureCard` exists.
+- **Print→expect conversions:** 10+ critical print-only warnings converted to hard `expect()` assertions:
+  - `match_setup.dart`: "Proceed to Toss" present, toss wizard loads, ScoringControls after toss, team found in picker
+  - `modals.dart`: MatchCompleteModal appears, result text not null
+  - `forms.dart`: teamNameField present, teamId extracted, AddPlayerPage visible, playerNameField present
+
+**Analyze result:** 0 errors, 0 warnings.
+
+**Next steps:**
+1. Run full test suite on device to validate assertions don't false-fail
+2. Gradually migrate remaining `print()` calls to `testLog()` for cleaner CI output
+3. Investigate toss wizard race condition (root cause of re-selection band-aid in `match_setup.dart`)
+
 ### Session 2026-02-25a: Integration Test Suite Big-Bang Rewrite
 
 **Completed:** Full rewrite of 30+ integration test files into unified, consistent, prod-only, UI-only test suite with idempotent data reuse.

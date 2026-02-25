@@ -87,10 +87,8 @@ Future<String?> captureMatchCompleteResult(WidgetTester tester) async {
   await waitForFinder(tester, find.byType(MatchCompleteModal),
       timeoutMs: 10000, intervalMs: 500);
 
-  if (find.byType(MatchCompleteModal).evaluate().isEmpty) {
-    print('    [captureResult] No MatchCompleteModal found');
-    return null;
-  }
+  expect(find.byType(MatchCompleteModal), findsOneWidget,
+      reason: 'MatchCompleteModal should appear after match ends');
 
   final modalTexts = find.descendant(
     of: find.byType(MatchCompleteModal),
@@ -111,11 +109,9 @@ Future<String?> captureMatchCompleteResult(WidgetTester tester) async {
     }
   }
 
-  if (result != null) {
-    print('    [captureResult] Match result: $result');
-  } else {
-    print('    [captureResult] Could not find result text in modal');
-  }
+  expect(result, isNotNull,
+      reason: 'MatchCompleteModal should contain a result text (won by/Tied/No Result/Draw)');
+  print('    [captureResult] Match result: $result');
   return result;
 }
 

@@ -3,6 +3,19 @@
 /// Idempotent: safe to re-run. Teams that already exist are skipped.
 /// Team1 includes Abhay (9999999998) as an extra roster member.
 ///
+/// ## Test Ordering Dependencies
+///
+/// Tests are numbered and must run in order on a shared server/DB state:
+///
+/// - **01** Team Setup — Creates teams + rosters. Required by all subsequent tests.
+/// - **02** Standalone Match — Creates & scores a match. Independent of 03+.
+/// - **03** Verify After Match — Verifies My Cricket state after 02. Requires 02.
+/// - **04** Tournament GK — Group+Knockout tournament. Requires 01 (teams).
+/// - **05** Tournament KO — Knockout tournament. Requires 01 (teams).
+/// - **06** Tournament RR — Round Robin tournament. Requires 01 (teams).
+/// - **07** Verify All Screens — Full screen sweep. Requires 01-06 for data.
+/// - **08** Viewer Live — Multi-device WebSocket test. Requires 01 (teams).
+///
 /// Run:
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \

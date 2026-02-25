@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:cricscores/src/features/tournaments/presentation/widgets/fixture_card.dart';
+
 import '../config/tournament_presets.dart';
 import '../core/test_utils.dart';
+import 'navigation.dart';
 
 /// Create a tournament through the UI.
 ///
@@ -159,13 +162,7 @@ Future<void> addTeamToTournament(
   await tester.pump(const Duration(milliseconds: 300));
 
   // Switch to Teams tab
-  final tabBarFinder = find.byType(TabBar);
-  if (tabBarFinder.evaluate().isNotEmpty) {
-    final tabBarContext = tester.element(tabBarFinder.first);
-    DefaultTabController.of(tabBarContext).animateTo(2);
-    await tester.pumpAndSettle();
-    await visualPause(tester);
-  }
+  await switchToTab(tester, 2);
 
   // Tap "Add Team" button
   final addTeamButton = find.widgetWithText(FilledButton, 'Add Team');
@@ -245,15 +242,11 @@ Future<void> generateFixtures(WidgetTester tester) async {
   await tester.pumpAndSettle();
 
   // Switch to Overview tab
-  final tabBarFinder = find.byType(TabBar);
-  if (tabBarFinder.evaluate().isNotEmpty) {
-    final tabBarContext = tester.element(tabBarFinder.first);
-    DefaultTabController.of(tabBarContext).animateTo(0);
-    await tester.pumpAndSettle();
-    await visualPause(tester);
-  }
+  await switchToTab(tester, 0);
 
-  // Invoke Generate Fixtures directly (SliverAppBar blocks tap)
+  // TECH DEBT: SliverAppBar blocks hit testing in integration tests.
+  // Invoke onPressed directly instead of tapping. See Flutter issue:
+  // https://github.com/flutter/flutter/issues/83838
   final generateButton = find.widgetWithText(FilledButton, 'Generate Fixtures');
   if (generateButton.evaluate().isNotEmpty) {
     final button = tester.widget<FilledButton>(generateButton.first);
@@ -272,6 +265,14 @@ Future<void> generateFixtures(WidgetTester tester) async {
     print('    [generateFixtures] ERROR: "Generate Fixtures" button not found!');
     dumpVisibleTexts(tester, 'generateFixtures', 30);
   }
+
+  // Verify fixtures were actually created by checking Fixtures tab
+  await switchToTab(tester, 1);
+  await settle(tester);
+  final fixtureCards = find.byType(FixtureCard);
+  expect(fixtureCards, findsAtLeast(1),
+      reason: 'Fixtures tab should show at least one FixtureCard after generation');
+  print('    [generateFixtures] Verified: ${fixtureCards.evaluate().length} FixtureCards on Fixtures tab');
 }
 
 /// Adjust a stepper widget to a target value.

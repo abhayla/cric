@@ -4,6 +4,9 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:cricscores/src/features/home/presentation/widgets/match_card.dart';
+import 'package:cricscores/src/features/tournaments/presentation/widgets/tournament_card.dart';
+
 import '../core/test_utils.dart';
 import '../helpers/navigation.dart';
 
@@ -11,9 +14,11 @@ import '../helpers/navigation.dart';
 ///
 /// Set [expectCompletedMatches] to true if completed matches should exist
 /// (e.g., after running match/tournament tests).
+/// Set [expectTournaments] to true if tournaments should exist on "All" filter.
 Future<void> verifyLivePage(
   WidgetTester tester, {
   bool expectCompletedMatches = false,
+  bool expectTournaments = false,
 }) async {
   await navigateToLive(tester);
   await settle(tester);
@@ -38,10 +43,10 @@ Future<void> verifyLivePage(
 
       // After "Completed", verify at least one card if expected
       if (chipLabel == 'Completed' && expectCompletedMatches) {
-        final cards = find.byType(Card);
+        final cards = find.byType(MatchCard);
         expect(cards, findsAtLeast(1),
-            reason: 'Live > Matches > Completed should show at least one match card');
-        print('  [verify-live] Completed matches: ${cards.evaluate().length} cards');
+            reason: 'Live > Matches > Completed should show at least one MatchCard');
+        print('  [verify-live] Completed matches: ${cards.evaluate().length} MatchCards');
       }
     }
   }
@@ -63,6 +68,14 @@ Future<void> verifyLivePage(
       await settle(tester);
       await visualPause(tester, 500);
       print('  [verify-live] Tournaments > $chipLabel chip tapped');
+
+      // After "All", verify at least one tournament card if expected
+      if (chipLabel == 'All' && expectTournaments) {
+        final cards = find.byType(TournamentCard);
+        expect(cards, findsAtLeast(1),
+            reason: 'Live > Tournaments > All should show at least one TournamentCard');
+        print('  [verify-live] Tournaments All: ${cards.evaluate().length} TournamentCards');
+      }
     }
   }
 

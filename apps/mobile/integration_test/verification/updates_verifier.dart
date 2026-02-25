@@ -20,11 +20,9 @@ Future<void> verifyUpdatesPage(
 
   // Check for date group headers
   final dateHeaders = ['Today', 'Yesterday', 'This Week', 'Earlier'];
-  var foundHeaders = 0;
   for (final header in dateHeaders) {
     final headerText = find.text(header);
     if (headerText.evaluate().isNotEmpty) {
-      foundHeaders++;
       print('  [verify-updates] Found date group: $header');
     }
   }

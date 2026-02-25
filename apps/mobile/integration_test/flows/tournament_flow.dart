@@ -3,7 +3,6 @@ library;
 
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../config/test_data.dart';
@@ -109,15 +108,9 @@ Future<List<MatchOutcome>> scoreAllFixtures({
         print('[SCORING] No unplayed fixtures found (scan $consecutiveEmptyScans/$maxEmptyScans). '
             'Refreshing via tab switch...');
         // Switch to Overview tab then back to Fixtures
-        final tabBarFinder = find.byType(TabBar);
-        if (tabBarFinder.evaluate().isNotEmpty) {
-          final tabBarContext = tester.element(tabBarFinder.first);
-          DefaultTabController.of(tabBarContext).animateTo(0);
-          await tester.pumpAndSettle();
-          await tester.pump(const Duration(seconds: 1));
-          DefaultTabController.of(tabBarContext).animateTo(1);
-          await tester.pumpAndSettle();
-        }
+        await switchToTab(tester, 0);
+        await tester.pump(const Duration(seconds: 1));
+        await switchToTab(tester, 1);
         await settle(tester);
         await tester.pump(const Duration(seconds: 3));
       }

@@ -4,7 +4,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../core/test_utils.dart';
+import 'package:cricscores/src/features/tournaments/presentation/widgets/fixture_card.dart';
+
+import '../helpers/navigation.dart';
 
 /// Verify tournament detail page — standings, fixtures, and teams tabs.
 Future<void> verifyTournamentDetail(
@@ -13,13 +15,7 @@ Future<void> verifyTournamentDetail(
   bool expectStandings = true,
 }) async {
   // Switch to Overview tab (tab 0) — check standings
-  final tabBarFinder = find.byType(TabBar);
-  if (tabBarFinder.evaluate().isNotEmpty) {
-    final tabBarContext = tester.element(tabBarFinder.first);
-    DefaultTabController.of(tabBarContext).animateTo(0);
-    await tester.pumpAndSettle();
-    await visualPause(tester);
-  }
+  await switchToTab(tester, 0);
 
   if (expectStandings) {
     final standingsHeading = find.text('Standings');
@@ -33,31 +29,26 @@ Future<void> verifyTournamentDetail(
     }
   }
 
-  // Switch to Fixtures tab (tab 1)
-  if (tabBarFinder.evaluate().isNotEmpty) {
-    final tabBarContext = tester.element(tabBarFinder.first);
-    DefaultTabController.of(tabBarContext).animateTo(1);
-    await tester.pumpAndSettle();
-    await visualPause(tester, 500);
-    print('  [verify-tournament] Fixtures tab loaded');
-  }
+  // Switch to Fixtures tab (tab 1) — verify fixture cards exist
+  await switchToTab(tester, 1);
+  final fixtureCards = find.byType(FixtureCard);
+  final fixtureCount = fixtureCards.evaluate().length;
+  expect(fixtureCount, greaterThan(0),
+      reason: 'Tournament Fixtures tab should show at least one FixtureCard');
+  print('  [verify-tournament] Fixtures tab: $fixtureCount FixtureCards');
 
   // Switch to Teams tab (tab 2)
-  if (tabBarFinder.evaluate().isNotEmpty) {
-    final tabBarContext = tester.element(tabBarFinder.first);
-    DefaultTabController.of(tabBarContext).animateTo(2);
-    await tester.pumpAndSettle();
-    await visualPause(tester, 500);
+  await switchToTab(tester, 2);
 
-    if (expectedTeamCount != null) {
-      final teamCards = find.byType(Card);
-      final cardCount = teamCards.evaluate().length;
-      expect(cardCount, greaterThanOrEqualTo(expectedTeamCount),
-          reason: 'Tournament Teams tab should show at least $expectedTeamCount teams');
-      print('  [verify-tournament] Teams tab: $cardCount cards (expected >= $expectedTeamCount)');
-    } else {
-      print('  [verify-tournament] Teams tab loaded');
-    }
+  if (expectedTeamCount != null) {
+    // Tournament teams tab uses ListTile, not TeamCard
+    final teamTiles = find.byType(ListTile);
+    final tileCount = teamTiles.evaluate().length;
+    expect(tileCount, greaterThanOrEqualTo(expectedTeamCount),
+        reason: 'Tournament Teams tab should show at least $expectedTeamCount team ListTiles');
+    print('  [verify-tournament] Teams tab: $tileCount ListTiles (expected >= $expectedTeamCount)');
+  } else {
+    print('  [verify-tournament] Teams tab loaded');
   }
 
   print('  [verify-tournament] Tournament detail verification complete');

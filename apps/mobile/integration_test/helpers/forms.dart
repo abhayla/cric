@@ -30,17 +30,13 @@ Future<void> createTeam(WidgetTester tester, TestTeam team) async {
 
   // Fill team name using Key
   final nameField = find.byKey(const Key('teamNameField'));
-  if (nameField.evaluate().isNotEmpty) {
-    await tester.tap(nameField.first);
-    await tester.pumpAndSettle();
-    await tester.enterText(nameField.first, team.name);
-    await settle(tester);
-    print('    [createTeam] Entered team name: ${team.name}');
-  } else {
-    dumpVisibleTexts(tester, 'createTeam-noNameField', 30);
-    print('    [createTeam] ERROR: teamNameField key not found! Aborting.');
-    return;
-  }
+  expect(nameField, findsOneWidget,
+      reason: 'Create team page should have a teamNameField');
+  await tester.tap(nameField.first);
+  await tester.pumpAndSettle();
+  await tester.enterText(nameField.first, team.name);
+  await settle(tester);
+  print('    [createTeam] Entered team name: ${team.name}');
 
   // Submit
   final submitBtn = find.byType(FilledButton);
@@ -119,14 +115,8 @@ Future<void> addPlayersToRoster(
       // GoRouter may not be ready yet — retry
     }
   }
-  if (teamId == null) {
-    print('    [addPlayers] ERROR: Route has no UUID after 6s');
-  }
-
-  if (teamId == null) {
-    print('    [addPlayers] ERROR: Could not extract teamId — aborting player addition');
-    return;
-  }
+  expect(teamId, isNotNull,
+      reason: 'Should extract teamId UUID from GoRouter location within 6s');
 
   // Use GoRouter navigation for remaining players
   final startIndex = firstPlayerAdded ? 1 : 0;
@@ -158,11 +148,10 @@ Future<void> fillAndSubmitPlayer(
   // Guard: verify we're on AddPlayerPage
   final addPlayerTitle = find.text('Add Player');
   final createNewTabCheck = find.text('Create New');
-  if (addPlayerTitle.evaluate().isEmpty && createNewTabCheck.evaluate().isEmpty) {
-    dumpVisibleTexts(tester, 'fillPlayer-notOnAddPage', 20);
-    print('    [fillPlayer] WARNING: Not on AddPlayerPage! Skipping ${player.name}.');
-    return;
-  }
+  final onAddPlayerPage =
+      addPlayerTitle.evaluate().isNotEmpty || createNewTabCheck.evaluate().isNotEmpty;
+  expect(onAddPlayerPage, isTrue,
+      reason: 'Should be on AddPlayerPage to add ${player.name}');
 
   // Switch to "Create New" tab
   final createNewTab = find.text('Create New');
@@ -173,17 +162,13 @@ Future<void> fillAndSubmitPlayer(
 
   // Fill player name
   final nameField = find.byKey(const Key('playerNameField'));
-  if (nameField.evaluate().isNotEmpty) {
-    await tester.tap(nameField.first);
-    await tester.pumpAndSettle();
-    await tester.enterText(nameField.first, player.name);
-    await settle(tester);
-    print('    [fillPlayer] Entered player name: ${player.name}');
-  } else {
-    dumpVisibleTexts(tester, 'fillPlayer-noNameField', 25);
-    print('    [fillPlayer] ERROR: playerNameField key not found! Cannot add ${player.name}.');
-    return;
-  }
+  expect(nameField, findsOneWidget,
+      reason: 'Add player page should have playerNameField for ${player.name}');
+  await tester.tap(nameField.first);
+  await tester.pumpAndSettle();
+  await tester.enterText(nameField.first, player.name);
+  await settle(tester);
+  print('    [fillPlayer] Entered player name: ${player.name}');
 
   // Fill phone number
   final phoneField = find.byKey(const Key('playerPhoneField'));

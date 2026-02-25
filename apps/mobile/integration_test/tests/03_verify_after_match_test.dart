@@ -26,18 +26,19 @@ void main() {
 
     final stopwatch = Stopwatch()..start();
 
-    // Verify Teams tab
+    // Verify Teams tab — scorer owns Team1 and Team2
     print('[1/3] Verifying Teams tab...');
     await verifyTeamsTab(
       tester,
+      expectedMinAllTeams: 2,
       expectedOwnerTeams: ['Team1', 'Team2'],
     );
 
-    // Verify Matches tab
+    // Verify Matches tab — at least 1 match played (standalone from test 02)
     print('\n[2/3] Verifying Matches tab...');
-    await verifyMatchesTab(tester);
+    await verifyMatchesTab(tester, minAllCount: 1, expectWon: true);
 
-    // Verify Tournaments tab
+    // Verify Tournaments tab — no tournaments yet at this point
     print('\n[3/3] Verifying Tournaments tab...');
     await verifyTournamentsTab(tester);
 

@@ -1,6 +1,7 @@
 /// Team setup flow — ensures teams exist with check-then-skip idempotency.
 library;
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../config/test_data.dart';
@@ -48,6 +49,20 @@ Future<void> ensureTeamsExist(
       // Team doesn't exist — create it
       await createTeam(tester, team);
       await addPlayersToRoster(tester, team.players);
+
+      // Verify player count on team detail Players tab before leaving
+      final playersTab = find.text('Players');
+      if (playersTab.evaluate().isNotEmpty) {
+        await tester.tap(playersTab.last);
+        await settle(tester);
+        await visualPause(tester, 500);
+      }
+      final expectedCount = team.players.length;
+      final playerCountText = find.text('$expectedCount players');
+      expect(playerCountText, findsAtLeast(1),
+          reason: '${team.name} should show "$expectedCount players" on Players tab');
+      print('  [VERIFY] ${team.name}: $expectedCount players confirmed');
+
       await navigateBackToTeamsList(tester);
 
       tracker.recordTeamCreated(team.name);

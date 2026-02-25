@@ -93,11 +93,8 @@ Future<void> selectTeamInMatchSetup(
         found = true;
       }
     }
-    if (!found) {
-      print('    [teamPicker] WARNING: "$teamName" not found — dismissing picker');
-      await tester.tapAt(const Offset(10, 10));
-      await settle(tester);
-    }
+    expect(found, isTrue,
+        reason: 'Team "$teamName" must be found in the team picker list');
   }
 }
 
@@ -109,15 +106,12 @@ Future<void> completeMatchSetup(WidgetTester tester) async {
   await visualPause(tester, 300);
 
   final proceedButton = find.text('Proceed to Toss');
-  print('    [matchSetup] "Proceed to Toss" found: ${proceedButton.evaluate().isNotEmpty}');
+  expect(proceedButton, findsAtLeast(1),
+      reason: 'Match setup page should show "Proceed to Toss" button');
 
-  if (proceedButton.evaluate().isEmpty) {
-    dumpVisibleTexts(tester, 'matchSetup', 30);
-    print('    [matchSetup] WARNING: Not on match setup page!');
-    return;
-  }
-
-  // Invoke directly to avoid SliverAppBar hit test issues
+  // TECH DEBT: SliverAppBar blocks hit testing in integration tests.
+  // Invoke onPressed directly instead of tapping. See Flutter issue:
+  // https://github.com/flutter/flutter/issues/83838
   final filledButtonFinder = find.widgetWithText(FilledButton, 'Proceed to Toss');
   if (filledButtonFinder.evaluate().isNotEmpty) {
     final button = tester.widget<FilledButton>(filledButtonFinder.first);
@@ -134,10 +128,9 @@ Future<void> completeMatchSetup(WidgetTester tester) async {
   await visualPause(tester, 2000);
 
   final tossText = find.text('Who won the toss?');
-  print('    [matchSetup] After proceed, toss page found: ${tossText.evaluate().isNotEmpty}');
-  if (tossText.evaluate().isEmpty) {
-    dumpVisibleTexts(tester, 'matchSetup-afterProceed', 30);
-  }
+  expect(tossText, findsOneWidget,
+      reason: 'Toss wizard Step 1 ("Who won the toss?") should appear after proceeding');
+  print('    [matchSetup] Toss wizard loaded');
 }
 
 /// Complete the full Toss Wizard (5 steps) through the UI.
@@ -238,7 +231,9 @@ Future<void> completeTossWizard(
     print('    [toss] WARNING: Striker prompt not found!');
   }
 
-  // Verify openers are still selected
+  // TECH DEBT: Defensive re-selection to handle a race condition in the toss
+  // wizard UI where selecting a striker can deselect the openers. Root cause
+  // suspected in TossWizardNotifier state transitions — investigate separately.
   await tester.pump();
   final strikerPromptStillVisible = find.text('Who will face the first ball?');
   print('    [toss] Striker prompt still visible: ${strikerPromptStillVisible.evaluate().isNotEmpty}');
@@ -312,12 +307,9 @@ Future<void> completeTossWizard(
     await settle(tester);
     scoringControls = find.byType(ScoringControls);
   }
-  if (scoringControls.evaluate().isEmpty) {
-    print('    [toss] ERROR: ScoringControls not found after toss!');
-    dumpVisibleTexts(tester, 'toss-afterStart', 50);
-  } else {
-    print('    [toss] Scoring page loaded successfully');
-  }
+  expect(scoringControls, findsOneWidget,
+      reason: 'Scoring page (ScoringControls) must load after completing toss');
+  print('    [toss] Scoring page loaded successfully');
 }
 
 /// Select playing XI players if Next button is disabled (roster > playersPerSide).

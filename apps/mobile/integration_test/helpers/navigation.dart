@@ -147,6 +147,19 @@ Future<void> goBack(WidgetTester tester) async {
   }
 }
 
+/// Switch to a specific tab in the nearest [TabBar] via [DefaultTabController].
+///
+/// Used for tournament detail tabs (0=Overview, 1=Fixtures, 2=Teams).
+Future<void> switchToTab(WidgetTester tester, int index) async {
+  final tabBarFinder = find.byType(TabBar);
+  if (tabBarFinder.evaluate().isNotEmpty) {
+    final tabBarContext = tester.element(tabBarFinder.first);
+    DefaultTabController.of(tabBarContext).animateTo(index);
+    await tester.pumpAndSettle();
+    await visualPause(tester);
+  }
+}
+
 /// Navigate back from team detail to the teams list.
 Future<void> navigateBackToTeamsList(WidgetTester tester) async {
   final backButton = find.byType(BackButton);

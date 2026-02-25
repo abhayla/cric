@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cricscores/src/features/tournaments/presentation/widgets/fixture_card.dart';
 
 import '../core/test_utils.dart';
+import 'navigation.dart';
 
 /// Info about an unplayed fixture.
 class FixtureInfo {
@@ -20,13 +21,7 @@ class FixtureInfo {
 /// Returns a [FixtureInfo] with team names, or null if none found.
 Future<FixtureInfo?> findFirstUnplayedFixture(WidgetTester tester) async {
   // Switch to Fixtures tab
-  final tabBarFinder = find.byType(TabBar);
-  if (tabBarFinder.evaluate().isNotEmpty) {
-    final tabBarContext = tester.element(tabBarFinder.first);
-    DefaultTabController.of(tabBarContext).animateTo(1);
-    await tester.pumpAndSettle();
-    await visualPause(tester);
-  }
+  await switchToTab(tester, 1);
 
   // Scan FixtureCard widgets, scrolling through the list
   for (var scroll = 0; scroll < 20; scroll++) {
@@ -70,14 +65,8 @@ Future<void> tapFixtureCard(
   await tester.pump(const Duration(milliseconds: 300));
 
   // Switch to Fixtures tab
-  final tabBarFinder = find.byType(TabBar);
-  if (tabBarFinder.evaluate().isNotEmpty) {
-    final tabBarContext = tester.element(tabBarFinder.first);
-    DefaultTabController.of(tabBarContext).animateTo(1);
-    await tester.pumpAndSettle();
-    await visualPause(tester);
-    print('    [tapFixtureCard] Switched to Fixtures tab');
-  }
+  await switchToTab(tester, 1);
+  print('    [tapFixtureCard] Switched to Fixtures tab');
 
   bool tapped = false;
 

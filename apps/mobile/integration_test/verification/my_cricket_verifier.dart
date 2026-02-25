@@ -2,8 +2,11 @@
 /// with all filter chips.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:cricscores/src/features/home/presentation/widgets/match_card.dart';
+import 'package:cricscores/src/features/teams/presentation/widgets/team_card.dart';
+import 'package:cricscores/src/features/tournaments/presentation/widgets/tournament_card.dart';
 
 import '../core/test_utils.dart';
 import '../helpers/navigation.dart';
@@ -26,11 +29,11 @@ Future<void> verifyTeamsTab(
   }
 
   if (expectedMinAllTeams != null) {
-    final teamCards = find.byType(Card);
+    final teamCards = find.byType(TeamCard);
     final cardCount = teamCards.evaluate().length;
-    print('  [verify-teams] "All" filter: found $cardCount cards (expected >= $expectedMinAllTeams)');
+    print('  [verify-teams] "All" filter: found $cardCount TeamCards (expected >= $expectedMinAllTeams)');
     expect(cardCount, greaterThanOrEqualTo(expectedMinAllTeams),
-        reason: 'Teams "All" filter should show at least $expectedMinAllTeams team cards');
+        reason: 'Teams "All" filter should show at least $expectedMinAllTeams TeamCards');
   }
 
   // Check each expected owner team is visible
@@ -57,7 +60,7 @@ Future<void> verifyTeamsTab(
     await tester.tap(memberChip.first);
     await settle(tester);
     await visualPause(tester, 500);
-    print('  [verify-teams] Member chip tapped — checking for member teams');
+    print('  [verify-teams] Member chip tapped');
   }
 
   // Back to All
@@ -96,10 +99,10 @@ Future<void> verifyMatchesTab(
       await tester.tap(wonChip.first);
       await settle(tester);
       await visualPause(tester, 500);
-      final matchCards = find.byType(Card);
+      final matchCards = find.byType(MatchCard);
       expect(matchCards, findsAtLeast(1),
-          reason: 'Won filter should show at least one match card');
-      print('  [verify-matches] Won chip: found ${matchCards.evaluate().length} match cards');
+          reason: 'Won filter should show at least one MatchCard');
+      print('  [verify-matches] Won chip: found ${matchCards.evaluate().length} MatchCards');
     }
   }
 
@@ -114,13 +117,22 @@ Future<void> verifyMatchesTab(
     }
   }
 
-  // Check "All" chip
+  // Check "All" chip — always assert at least some matches if minAllCount provided
   final allChip = find.text('All');
   if (allChip.evaluate().isNotEmpty) {
     await tester.tap(allChip.first);
     await settle(tester);
     await visualPause(tester, 500);
-    print('  [verify-matches] All chip tapped');
+
+    if (minAllCount != null) {
+      final matchCards = find.byType(MatchCard);
+      final cardCount = matchCards.evaluate().length;
+      expect(cardCount, greaterThanOrEqualTo(minAllCount),
+          reason: 'Matches "All" filter should show at least $minAllCount MatchCards');
+      print('  [verify-matches] All chip: found $cardCount MatchCards (expected >= $minAllCount)');
+    } else {
+      print('  [verify-matches] All chip tapped');
+    }
   }
 
   print('  [verify-matches] Matches tab verification complete');
@@ -148,10 +160,10 @@ Future<void> verifyTournamentsTab(
 
   // After "All" is selected, verify at least one tournament card is visible
   if (expectCompleted || expectLive) {
-    final cards = find.byType(Card);
+    final cards = find.byType(TournamentCard);
     expect(cards, findsAtLeast(1),
-        reason: 'Tournaments "All" filter should show at least one tournament card');
-    print('  [verify-tournaments] Found ${cards.evaluate().length} tournament cards');
+        reason: 'Tournaments "All" filter should show at least one TournamentCard');
+    print('  [verify-tournaments] Found ${cards.evaluate().length} TournamentCards');
   }
 
   print('  [verify-tournaments] Tournaments tab verification complete');

@@ -84,6 +84,19 @@ Future<bool> waitForFinderGone(
   return false;
 }
 
+/// Conditional print that respects [verboseTestOutput].
+///
+/// Always prints if the message contains WARNING or ERROR.
+/// Otherwise only prints when [verboseTestOutput] is true.
+void testLog(String message) {
+  if (verboseTestOutput ||
+      message.contains('WARNING') ||
+      message.contains('ERROR')) {
+    // ignore: avoid_print
+    print(message);
+  }
+}
+
 /// Debug: Print first N visible text widgets on screen.
 void dumpVisibleTexts(WidgetTester tester, String label, [int count = 15]) {
   final allTexts = find.byType(Text);

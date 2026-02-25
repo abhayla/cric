@@ -27,3 +27,9 @@ const apiWaitMs = 2000;
 
 /// Pause between deliveries in multi-device scorer test.
 const multiDeviceDeliveryPauseMs = 2000;
+
+/// Debug verbosity flag — set to false for cleaner CI output.
+///
+/// When true, all `testLog()` calls print output. When false, only
+/// warnings and errors (starting with WARNING/ERROR) are printed.
+const verboseTestOutput = true;
