@@ -16,17 +16,37 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Session 2026-02-24e: Fresh Prod APK Build + Install
+### Session 2026-02-25a: Integration Test Suite Big-Bang Rewrite
 
-**Completed:** Built fresh prod release APK and installed on real device (843773fe).
-- `flutter build apk --flavor prod --release --dart-define=FLAVOR=prod` → `app-prod-release.apk` (61.3MB)
-- Installed via `adb -s 843773fe install -r`
-- No source code changes in this session.
+**Completed:** Full rewrite of 30+ integration test files into unified, consistent, prod-only, UI-only test suite with idempotent data reuse.
+
+**New structure (35 files in 7 directories):**
+- `config/` (3 files) — test_data, constants, tournament_presets (single source of truth)
+- `core/` (4 files) — app_bootstrap, error_tracker, test_utils, stat_tracker
+- `models/` (3 files) — delivery_record, match_outcome, player_stats
+- `helpers/` (7 files) — navigation, scoring, modals, forms, match_setup, tournament_mgmt, fixture_scanning
+- `flows/` (4 files) — random_innings, team_setup_flow, standalone_match_flow, tournament_flow
+- `verification/` (6 files) — my_cricket, live, updates, player_profile (stub), tournament, team_detail verifiers
+- `tests/` (8 numbered files) — 01_team_setup through 08_viewer_live
+
+**Key changes from old suite:**
+- Naming: `Team1`-`Team12`, `Player301`+, phones `9999999301`+
+- Abhay (9999999998) as viewer account, always on Team1
+- Check-then-skip idempotency for teams
+- Zero API calls except multi-device signal coordination
+- All tests prod-only (`--flavor prod --dart-define=FLAVOR=prod`)
+
+**Deleted:** 32 old files (12 root tests, 10 old helpers, 10 prod files)
+
+**Next steps:**
+1. Run `01_team_setup_test.dart` on emulator to validate foundation
+2. Run `02_standalone_match_test.dart` to verify match scoring flow
+3. Fix any runtime issues discovered during first test runs
+4. Run remaining tests (03-08) in order
 
 ### Uncommitted changes from prior sessions (needs review before committing)
 - `tournament_detail_page.dart` — Status transitions, generate fixtures, add team UI
 - `player_profile_page.dart` — Unknown changes, review before committing
-- `integration_test/` — Prod E2E rewrite (5 tournament tests + helpers)
 
 ### Session 2026-02-24d: Live Page Tabs (Matches + Tournaments)
 
