@@ -221,14 +221,9 @@ Future<void> fillAndSubmitPlayer(
     await tester.tap(submitButton.first, warnIfMissed: false);
 
     // Wait for page pop (API calls complete)
-    var popped = false;
-    for (var i = 0; i < 30; i++) {
-      await tester.pump(const Duration(milliseconds: 200));
-      if (find.byKey(const Key('playerNameField')).evaluate().isEmpty) {
-        popped = true;
-        break;
-      }
-    }
+    final popped = await waitForFinderGone(
+        tester, find.byKey(const Key('playerNameField')),
+        timeoutMs: 6000, intervalMs: 200);
     await settle(tester);
 
     if (popped) {
