@@ -95,13 +95,14 @@ Future<void> addPlayersToRoster(
     print('    [addPlayers] "Add Player" button not found — will use GoRouter for all players');
   }
 
-  // Extract teamId from current GoRouter location
+  // Extract teamId from current GoRouter location (poll up to 6s)
   String? teamId;
   final uuidRegex = RegExp(
     r'/teams/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
     caseSensitive: false,
   );
-  for (var attempt = 0; attempt < 30; attempt++) {
+  final deadline = DateTime.now().add(const Duration(seconds: 6));
+  while (DateTime.now().isBefore(deadline)) {
     await tester.pump(const Duration(milliseconds: 200));
     try {
       final routerState = GoRouterState.of(
@@ -114,14 +115,12 @@ Future<void> addPlayersToRoster(
         print('    [addPlayers] Extracted teamId=$teamId from $currentPath');
         break;
       }
-      if (attempt == 29) {
-        print('    [addPlayers] ERROR: Route still has no UUID after 6s: $currentPath');
-      }
-    } catch (e) {
-      if (attempt == 29) {
-        print('    [addPlayers] ERROR: Could not read GoRouter state: $e');
-      }
+    } catch (_) {
+      // GoRouter may not be ready yet — retry
     }
+  }
+  if (teamId == null) {
+    print('    [addPlayers] ERROR: Route has no UUID after 6s');
   }
 
   if (teamId == null) {
@@ -143,13 +142,7 @@ Future<void> addPlayersToRoster(
       await visualPause(tester, 300);
 
       // Wait for AddPlayerPage to appear
-      for (var wait = 0; wait < 10; wait++) {
-        if (find.text('Create New').evaluate().isNotEmpty ||
-            find.byKey(const Key('playerNameField')).evaluate().isNotEmpty) {
-          break;
-        }
-        await tester.pump(const Duration(milliseconds: 200));
-      }
+      await waitForText(tester, 'Create New', timeoutMs: 2000);
 
       await fillAndSubmitPlayer(tester, players[i]);
       await settle(tester);
