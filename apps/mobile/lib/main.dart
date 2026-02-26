@@ -8,26 +8,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/app/app.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Global error handlers
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    if (kDebugMode) {
-      debugPrint('[CricScores] FlutterError: ${details.exceptionAsString()}');
-    }
-  };
-
-  PlatformDispatcher.instance.onError = (error, stack) {
-    if (kDebugMode) {
-      debugPrint('[CricScores] Uncaught error: $error');
-      debugPrint('[CricScores] Stack: $stack');
-    }
-    return true;
-  };
-
+void main() {
   runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // Global error handlers
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      if (kDebugMode) {
+        debugPrint('[CricScores] FlutterError: ${details.exceptionAsString()}');
+      }
+    };
+
+    PlatformDispatcher.instance.onError = (error, stack) {
+      if (kDebugMode) {
+        debugPrint('[CricScores] Uncaught error: $error');
+        debugPrint('[CricScores] Stack: $stack');
+      }
+      return true;
+    };
+
     if (kDebugMode) {
       debugPrint('[CricScores] Initializing Firebase...');
     }

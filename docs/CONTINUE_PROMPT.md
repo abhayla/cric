@@ -62,6 +62,13 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 **Files created/modified:** 23 files (see plan for full list)
 
+**Bugfix — Zone mismatch warning:**
+- Moved `WidgetsFlutterBinding.ensureInitialized()` inside `runZonedGuarded()` in `main.dart`
+- Previously it was called outside the zone while `runApp()` was inside, causing a Flutter framework warning on every launch
+
+**Bugfix — Migration journal:**
+- Added migration `0007_activity_feed_delivery_id` entry to `src/db/migrations/meta/_journal.json` (was missing, preventing `bun run db:migrate` from auto-applying)
+
 ### Session 2026-02-25e: 401 Auto-Redirect + Auth/Screen Error State Tests
 
 **Completed:** Fixed 401 → auto-sign-out → redirect to login flow, and added comprehensive tests for error states, auth guard, and missing screen coverage.
