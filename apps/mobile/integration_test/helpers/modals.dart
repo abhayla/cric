@@ -16,7 +16,7 @@ Future<void> completeInningsTransition(
   required String nonStriker,
   required String bowler,
 }) async {
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester, 600);
 
   // Step 1: Summary -> Next
@@ -26,7 +26,7 @@ Future<void> completeInningsTransition(
     matching: find.text('Next'),
   );
   await tester.tap(nextButton);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 
   // Step 2: Select 2 openers
@@ -35,7 +35,7 @@ Future<void> completeInningsTransition(
     matching: find.text(striker),
   );
   await tester.tap(strikerRow);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 
   final nonStrikerRow = find.descendant(
@@ -43,7 +43,7 @@ Future<void> completeInningsTransition(
     matching: find.text(nonStriker),
   );
   await tester.tap(nonStrikerRow);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 
   // Next -> Step 3
@@ -52,7 +52,7 @@ Future<void> completeInningsTransition(
     matching: find.text('Next'),
   );
   await tester.tap(nextButton2);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 
   // Step 3: Select bowler
@@ -62,9 +62,9 @@ Future<void> completeInningsTransition(
   );
   expect(bowlerRow, findsOneWidget, reason: 'Bowler "$bowler" must exist');
   await tester.ensureVisible(bowlerRow);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await tester.tap(bowlerRow);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 
   // Start Innings
@@ -84,8 +84,14 @@ Future<void> completeInningsTransition(
 ///
 /// Returns the result string (e.g. "Team1 won by 5 runs") or null if not found.
 Future<String?> captureMatchCompleteResult(WidgetTester tester) async {
+  // Clear any snackbars (sync errors, etc.) that might block the modal
+  clearSnackBars(tester);
+  await settle(tester);
+
+  // Allow extra time for match completion — server sync errors or slow
+  // completion callbacks can delay the modal appearance.
   await waitForFinder(tester, find.byType(MatchCompleteModal),
-      timeoutMs: 10000, intervalMs: 500);
+      timeoutMs: 20000, intervalMs: 500);
 
   expect(find.byType(MatchCompleteModal), findsOneWidget,
       reason: 'MatchCompleteModal should appear after match ends');

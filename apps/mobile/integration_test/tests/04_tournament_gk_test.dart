@@ -55,6 +55,7 @@ void main() {
         totalOvers: gkPreset.overs,
         playersPerSide: gkPreset.playersPerSide,
         tracker: tracker,
+        tournamentName: name,
         random: rng,
       );
     }

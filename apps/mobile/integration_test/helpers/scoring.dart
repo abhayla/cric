@@ -53,7 +53,7 @@ Future<void> tapRun(WidgetTester tester, int runs) async {
   expect(runButton, findsOneWidget, reason: 'Run button $runs should exist');
   await tester.ensureVisible(runButton);
   await tester.tap(runButton, warnIfMissed: false);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 }
 
@@ -67,7 +67,7 @@ Future<void> tapExtra(WidgetTester tester, String label) async {
   expect(button, findsOneWidget, reason: 'Extras button $label should exist');
   await tester.ensureVisible(button);
   await tester.tap(button, warnIfMissed: false);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 }
 
@@ -96,7 +96,7 @@ Future<void> confirmExtra(WidgetTester tester) async {
   } else {
     await tester.tap(confirmButton);
   }
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 }
 
@@ -109,7 +109,7 @@ Future<void> confirmExtraWithRuns(WidgetTester tester, int runs) async {
   );
   if (runChip.evaluate().isNotEmpty) {
     await tester.tap(runChip.first);
-    await tester.pumpAndSettle();
+    await settle(tester);
   }
   await confirmExtra(tester);
 }
@@ -124,7 +124,7 @@ Future<void> tapWicket(WidgetTester tester) async {
   expect(button, findsOneWidget);
   await tester.ensureVisible(button);
   await tester.tap(button, warnIfMissed: false);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 }
 
@@ -136,7 +136,7 @@ Future<void> selectDismissalType(WidgetTester tester, String label) async {
   );
   expect(chip, findsOneWidget, reason: 'Dismissal type $label should exist');
   await tester.tap(chip);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 }
 
@@ -148,7 +148,7 @@ Future<void> tapWicketConfirm(WidgetTester tester) async {
   );
   expect(buttons, findsOneWidget);
   await tester.tap(buttons);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 }
 

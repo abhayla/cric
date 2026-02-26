@@ -69,7 +69,7 @@ Future<void> createTournament(
   final ballChip = find.text(ballTypeLabel);
   if (ballChip.evaluate().isNotEmpty) {
     await tester.ensureVisible(ballChip.first);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(ballChip.first);
     await settle(tester);
   }
@@ -88,7 +88,7 @@ Future<void> createTournament(
 
   // Dismiss keyboard
   await tester.testTextInput.receiveAction(TextInputAction.done);
-  await tester.pumpAndSettle();
+  await settle(tester);
 
   // Submit
   await settle(tester);
@@ -120,7 +120,7 @@ Future<void> transitionTournamentStatus(
 ) async {
   clearSnackBars(tester);
   await tester.pump(const Duration(seconds: 1));
-  await tester.pumpAndSettle();
+  await settle(tester);
 
   final popupButton = find.byType(PopupMenuButton<String>);
   expect(popupButton, findsAtLeast(1),
@@ -128,7 +128,7 @@ Future<void> transitionTournamentStatus(
 
   final popupState = tester.state<PopupMenuButtonState<String>>(popupButton.first);
   popupState.showButtonMenu();
-  await tester.pumpAndSettle();
+  await settle(tester);
   await visualPause(tester);
 
   final menuItem = find.text(menuLabel);
@@ -138,7 +138,7 @@ Future<void> transitionTournamentStatus(
   for (var i = 0; i < 10; i++) {
     await tester.pump(const Duration(milliseconds: 500));
   }
-  await tester.pumpAndSettle();
+  await settle(tester);
   print('    [transitionStatus] Tapped "$menuLabel"');
 }
 
@@ -199,7 +199,7 @@ Future<void> addTeamToTournament(
 
   if (teamOption.evaluate().isNotEmpty) {
     await tester.ensureVisible(teamOption.first);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(teamOption.first);
     await settle(tester);
     await visualPause(tester, 1000);
@@ -220,7 +220,7 @@ Future<void> addTeamToTournament(
 Future<void> generateFixtures(WidgetTester tester) async {
   clearSnackBars(tester);
   await tester.pump(const Duration(milliseconds: 500));
-  await tester.pumpAndSettle();
+  await settle(tester);
 
   // Switch to Overview tab
   await switchToTab(tester, 0);
@@ -237,7 +237,7 @@ Future<void> generateFixtures(WidgetTester tester) async {
       for (var i = 0; i < 30; i++) {
         await tester.pump(const Duration(milliseconds: 500));
       }
-      await tester.pumpAndSettle();
+      await settle(tester);
       print('    [generateFixtures] Generate Fixtures triggered');
     } else {
       print('    [generateFixtures] ERROR: Button found but onPressed is null');
@@ -270,7 +270,7 @@ Future<void> _adjustStepper(
   }
 
   await tester.ensureVisible(stepper.first);
-  await tester.pumpAndSettle();
+  await settle(tester);
 
   final diff = targetValue - defaultValue;
   if (diff == 0) return;

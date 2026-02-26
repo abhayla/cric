@@ -16,6 +16,41 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-27: E2E Test Suite Execution + pumpAndSettle Fix + Tournament Navigation Fix
+
+**Status:** Tests 01-03 PASSED. Test 04 blocked by server downtime. Tests 05-08 pending.
+
+**Part 1 — Global pumpAndSettle Fix:**
+- Root cause: Bare `tester.pumpAndSettle()` hangs forever when SyncStatusIndicator animation runs
+- Replaced ALL `tester.pumpAndSettle()` → `settle(tester)` (5s timeout fallback) across 11 files:
+  - `scoring.dart`, `modals.dart`, `random_innings.dart` (done in prior session)
+  - `tournament_mgmt.dart` (9), `match_setup.dart` (12), `forms.dart` (6), `team_setup_flow.dart` (2), `fixture_scanning.dart` (3), `02_standalone_match_test.dart` (4)
+- Zero bare `pumpAndSettle()` calls remain in integration_test/ (only the safe `settle()` wrapper in test_utils.dart)
+
+**Part 2 — switchToTab Safety Fix (navigation.dart):**
+- `switchToTab()` now wraps `DefaultTabController.of()` in try-catch
+- Returns `bool` success indicator instead of void
+- Falls back to direct Tab widget tap if DefaultTabController not found
+- Prevents crash when TabBar exists but no DefaultTabController ancestor (e.g. on home page)
+
+**Part 3 — Tournament Fixture Navigation Fix (standalone_match_flow.dart):**
+- `scoreFixtureMatch()` now uses `GoRouter.pop()` to return to tournament detail after match completion
+- Previously used `dismissMatchCompleteModal()` which taps "Back to Home" → navigates to `/home`, losing tournament context
+- Added GoRouter/ScoringControls imports
+- Falls back to dismissModal + home→tournaments if GoRouter.pop() fails
+- Added verification: checks for TabBar presence after navigation, re-enters tournament if needed
+
+**Part 4 — Test 02 Fixes (from prior session, documented here):**
+- Added "All" filter chip tap on Matches tab (default is "Live", completed matches not visible)
+- Added extra settle/pump loop before MatchCompleteModal check
+
+**Blocker:** Production server at `cricscores.in` (VPS 103.118.16.189:3005) is DOWN. All E2E tests require prod server. Need to restart via PM2 (`pm2 restart cricscores`) through RDP.
+
+**Next steps after server restart:**
+1. Re-run Test 04 (Tournament Group+Knockout) — fixes applied but not validated yet
+2. Run Tests 05-08 sequentially
+3. If Test 04 navigation fix works, apply same pattern to Tests 05-06
+
 ### Session 2026-02-26: Expand Activity Feed Event Types + Settings Tab
 
 **Completed:** Added 14 new activity feed event types, milestone detection in scoring pipeline, Settings tab in Updates screen, and full test coverage.

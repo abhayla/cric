@@ -52,6 +52,7 @@ void main() {
         totalOvers: koPreset.overs,
         playersPerSide: koPreset.playersPerSide,
         tracker: tracker,
+        tournamentName: name,
         random: rng,
       );
     }

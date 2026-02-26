@@ -3,6 +3,8 @@
 /// Creates 2 teams (6 players each), scores a 5-over match, and navigates
 /// all screens. Prints a formatted performance report at the end.
 ///
+/// Uses unique team names (Team20, Team21) to avoid conflicts with other test data.
+///
 /// Run:
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
@@ -20,14 +22,38 @@ import 'package:integration_test/integration_test.dart';
 
 import '../config/test_data.dart';
 import '../core/app_bootstrap.dart';
+import '../core/error_tracker.dart';
 import '../core/test_utils.dart';
-import '../helpers/forms.dart';
 import '../helpers/match_setup.dart';
 import '../helpers/modals.dart';
 import '../helpers/navigation.dart';
 import '../helpers/scoring.dart';
 import '../flows/random_innings.dart';
+import '../flows/team_setup_flow.dart';
 import '../models/delivery_record.dart';
+
+/// Perf-specific teams using the standard naming convention from test_data.dart.
+///
+/// Uses Team20/Team21 and Player501+ range to avoid collision with standard
+/// test set (Team1-12, Player301-432).
+const _perfTeams = [
+  TestTeam(name: 'Team20', players: [
+    TestPlayer(name: 'Player501', phone: '9999999501'),
+    TestPlayer(name: 'Player502', phone: '9999999502'),
+    TestPlayer(name: 'Player503', phone: '9999999503'),
+    TestPlayer(name: 'Player504', phone: '9999999504'),
+    TestPlayer(name: 'Player505', phone: '9999999505'),
+    TestPlayer(name: 'Player506', phone: '9999999506'),
+  ]),
+  TestTeam(name: 'Team21', players: [
+    TestPlayer(name: 'Player507', phone: '9999999507'),
+    TestPlayer(name: 'Player508', phone: '9999999508'),
+    TestPlayer(name: 'Player509', phone: '9999999509'),
+    TestPlayer(name: 'Player510', phone: '9999999510'),
+    TestPlayer(name: 'Player511', phone: '9999999511'),
+    TestPlayer(name: 'Player512', phone: '9999999512'),
+  ]),
+];
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -36,10 +62,8 @@ void main() {
     final totalStopwatch = Stopwatch()..start();
     final rng = Random(42); // Deterministic for reproducible results
 
-    // Generate 2 small teams (6 players each) for the perf test
-    final perfTeams = generateTeams(2, playersPerTeam: 6);
-    final team1 = perfTeams[0];
-    final team2 = perfTeams[1];
+    final team1 = _perfTeams[0];
+    final team2 = _perfTeams[1];
 
     const totalOvers = 5;
     const playersPerSide = 6;
@@ -52,22 +76,12 @@ void main() {
 
     // ── Phase 2: Team Creation ──────────────────────────────────────
     final swTeamCreation = Stopwatch()..start();
+    final teamTracker = ErrorTracker();
 
-    for (final team in [team1, team2]) {
-      await navigateToTeams(tester);
-      await settle(tester);
+    await ensureTeamsExist(tester, [team1, team2], teamTracker);
 
-      // Check if team already exists
-      final teamExists = find.text(team.name);
-      if (teamExists.evaluate().isNotEmpty) {
-        print('  [perf] ${team.name} already exists — skipping creation');
-        continue;
-      }
-
-      await createTeam(tester, team);
-      await addPlayersToRoster(tester, team.players);
-      await navigateBackToTeamsList(tester);
-      print('  [perf] Created ${team.name} with ${team.players.length} players');
+    if (teamTracker.hasError) {
+      fail('Team creation failed. See error tracker output above.');
     }
 
     swTeamCreation.stop();

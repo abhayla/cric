@@ -56,7 +56,7 @@ Future<void> selectTeamInMatchSetup(
     );
     if (listTile.evaluate().isNotEmpty) {
       await tester.ensureVisible(listTile.first);
-      await tester.pumpAndSettle();
+      await settle(tester);
       await tester.tap(listTile.first, warnIfMissed: false);
     } else {
       await tester.tap(teamInSheet.last, warnIfMissed: false);
@@ -72,7 +72,7 @@ Future<void> selectTeamInMatchSetup(
     for (var scroll = 0; scroll < 10 && !found; scroll++) {
       if (scrollable.evaluate().isNotEmpty) {
         await tester.drag(scrollable.last, const Offset(0, -200));
-        await tester.pumpAndSettle();
+        await settle(tester);
       }
       final retry = find.text(teamName);
       if (retry.evaluate().isNotEmpty) {
@@ -82,7 +82,7 @@ Future<void> selectTeamInMatchSetup(
         );
         if (listTile.evaluate().isNotEmpty) {
           await tester.ensureVisible(listTile.first);
-          await tester.pumpAndSettle();
+          await settle(tester);
           await tester.tap(listTile.first, warnIfMissed: false);
         } else {
           await tester.tap(retry.last, warnIfMissed: false);
@@ -121,11 +121,15 @@ Future<void> completeMatchSetup(WidgetTester tester) async {
     }
   } else {
     await tester.ensureVisible(proceedButton);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(proceedButton, warnIfMissed: false);
   }
   await settle(tester);
   await visualPause(tester, 2000);
+
+  // Wait for toss wizard to load — navigation from match setup may be async
+  await waitForFinder(tester, find.text('Who won the toss?'),
+      timeoutMs: 15000, intervalMs: 500);
 
   final tossText = find.text('Who won the toss?');
   expect(tossText, findsOneWidget,
@@ -185,7 +189,7 @@ Future<void> completeTossWizard(
   print('    [toss] Opener1 "$battingOpener1" found: ${opener1.evaluate().length}');
   if (opener1.evaluate().isNotEmpty) {
     await tester.ensureVisible(opener1.first);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(opener1.first);
     await tester.pump();
     await visualPause(tester);
@@ -197,7 +201,7 @@ Future<void> completeTossWizard(
   print('    [toss] Opener2 "$battingOpener2" found: ${opener2.evaluate().length}');
   if (opener2.evaluate().isNotEmpty) {
     await tester.ensureVisible(opener2.first);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(opener2.first);
     await tester.pump();
     await visualPause(tester);
@@ -214,14 +218,14 @@ Future<void> completeTossWizard(
     print('    [toss] Striker option "$battingOpener1" found: ${strikerOption.evaluate().length}');
     if (strikerOption.evaluate().length >= 2) {
       await tester.ensureVisible(strikerOption.last);
-      await tester.pumpAndSettle();
+      await settle(tester);
       await tester.tap(strikerOption.last);
       await tester.pump();
       await visualPause(tester);
       print('    [toss] Selected striker (tapped last of ${strikerOption.evaluate().length})');
     } else if (strikerOption.evaluate().isNotEmpty) {
       await tester.ensureVisible(strikerOption.first);
-      await tester.pumpAndSettle();
+      await settle(tester);
       await tester.tap(strikerOption.first);
       await tester.pump();
       await visualPause(tester);
@@ -264,7 +268,7 @@ Future<void> completeTossWizard(
   print('    [toss] Bowler "$openingBowler" found: ${bowlerOption.evaluate().length}');
   if (bowlerOption.evaluate().isNotEmpty) {
     await tester.ensureVisible(bowlerOption.first);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(bowlerOption.first);
     await tester.pump();
     await visualPause(tester);
@@ -283,7 +287,7 @@ Future<void> completeTossWizard(
     print('    [toss] Start Match button enabled: $isEnabled');
     if (isEnabled) {
       await tester.ensureVisible(filledButtons.last);
-      await tester.pumpAndSettle();
+      await settle(tester);
       await tester.tap(filledButtons.last);
       await visualPause(tester, 5000);
       await settle(tester);
@@ -342,7 +346,7 @@ Future<void> _tapNextButton(WidgetTester tester) async {
   final filledButton = find.byType(FilledButton);
   if (filledButton.evaluate().isNotEmpty) {
     await tester.ensureVisible(filledButton.last);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(filledButton.last);
     await settle(tester);
     await visualPause(tester);

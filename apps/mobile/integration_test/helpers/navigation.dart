@@ -150,13 +150,35 @@ Future<void> goBack(WidgetTester tester) async {
 /// Switch to a specific tab in the nearest [TabBar] via [DefaultTabController].
 ///
 /// Used for tournament detail tabs (0=Overview, 1=Fixtures, 2=Teams).
-Future<void> switchToTab(WidgetTester tester, int index) async {
+/// Safe: catches errors if no DefaultTabController is in the ancestor chain.
+Future<bool> switchToTab(WidgetTester tester, int index) async {
   final tabBarFinder = find.byType(TabBar);
-  if (tabBarFinder.evaluate().isNotEmpty) {
+  if (tabBarFinder.evaluate().isEmpty) {
+    print('    [switchToTab] No TabBar found');
+    return false;
+  }
+
+  try {
     final tabBarContext = tester.element(tabBarFinder.first);
     DefaultTabController.of(tabBarContext).animateTo(index);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await visualPause(tester);
+    return true;
+  } catch (e) {
+    print('    [switchToTab] DefaultTabController.of failed: $e');
+    // Fallback: try tapping the tab directly
+    final tabBar = find.descendant(
+      of: tabBarFinder.first,
+      matching: find.byType(Tab),
+    );
+    if (tabBar.evaluate().length > index) {
+      await tester.tap(tabBar.at(index));
+      await settle(tester);
+      await visualPause(tester);
+      print('    [switchToTab] Used direct tab tap fallback');
+      return true;
+    }
+    return false;
   }
 }
 

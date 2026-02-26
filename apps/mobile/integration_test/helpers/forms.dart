@@ -33,7 +33,7 @@ Future<void> createTeam(WidgetTester tester, TestTeam team) async {
   expect(nameField, findsOneWidget,
       reason: 'Create team page should have a teamNameField');
   await tester.tap(nameField.first);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await tester.enterText(nameField.first, team.name);
   await settle(tester);
   print('    [createTeam] Entered team name: ${team.name}');
@@ -43,7 +43,7 @@ Future<void> createTeam(WidgetTester tester, TestTeam team) async {
   expect(submitBtn, findsAtLeast(1),
       reason: 'Create team page should have a submit FilledButton');
   await tester.ensureVisible(submitBtn.first);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await tester.tap(submitBtn.first);
   print('    [createTeam] Tapped submit FilledButton');
   await settle(tester);
@@ -165,7 +165,7 @@ Future<void> fillAndSubmitPlayer(
   expect(nameField, findsOneWidget,
       reason: 'Add player page should have playerNameField for ${player.name}');
   await tester.tap(nameField.first);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await tester.enterText(nameField.first, player.name);
   await settle(tester);
   print('    [fillPlayer] Entered player name: ${player.name}');
@@ -180,7 +180,7 @@ Future<void> fillAndSubmitPlayer(
 
   // Dismiss keyboard before scrolling to chips
   await tester.testTextInput.receiveAction(TextInputAction.done);
-  await tester.pumpAndSettle();
+  await settle(tester);
 
   // Select role chip
   final roleLabel = switch (player.role) {
@@ -193,7 +193,7 @@ Future<void> fillAndSubmitPlayer(
   final roleChip = find.text(roleLabel);
   if (roleChip.evaluate().isNotEmpty) {
     await tester.ensureVisible(roleChip.first);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(roleChip.first, warnIfMissed: false);
     await settle(tester);
   }
@@ -203,13 +203,13 @@ Future<void> fillAndSubmitPlayer(
   expect(submitButton, findsOneWidget,
       reason: '"Add to Team" button should be visible for ${player.name}');
   await tester.ensureVisible(submitButton.first);
-  await tester.pumpAndSettle();
+  await settle(tester);
   await tester.tap(submitButton.first, warnIfMissed: false);
 
   // Wait for page pop (API calls complete)
   final popped = await waitForFinderGone(
       tester, find.byKey(const Key('playerNameField')),
-      timeoutMs: 6000, intervalMs: 200);
+      timeoutMs: 30000, intervalMs: 300);
   await settle(tester);
   expect(popped, isTrue,
       reason: 'AddPlayerPage should pop after adding ${player.name}');

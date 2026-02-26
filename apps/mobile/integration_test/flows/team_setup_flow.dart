@@ -89,14 +89,14 @@ Future<bool> _teamExistsInList(WidgetTester tester, String teamName) async {
 
   for (var scroll = 0; scroll < 10; scroll++) {
     await tester.drag(scrollable.last, const Offset(0, -300));
-    await tester.pumpAndSettle();
+    await settle(tester);
     if (find.text(teamName).evaluate().isNotEmpty) return true;
   }
 
   // Scroll back to top for next team check
   for (var scroll = 0; scroll < 10; scroll++) {
     await tester.drag(scrollable.last, const Offset(0, 300));
-    await tester.pumpAndSettle();
+    await settle(tester);
   }
 
   return false;

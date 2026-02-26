@@ -3,7 +3,6 @@ library;
 
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
@@ -77,8 +76,10 @@ Future<MatchOutcome> scoreStandaloneMatch({
   );
   print('  [Innings 1] ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets}');
 
-  // Handle innings transition
-  await settle(tester);
+  // Wait for innings transition modal (may take a moment after server sync)
+  await waitForFinder(tester, find.byType(InningsTransitionModal),
+      timeoutMs: 15000, intervalMs: 500);
+
   final transitionModal = find.byType(InningsTransitionModal);
   if (transitionModal.evaluate().isNotEmpty) {
     final inn2Opener1 = bowlingTeam.players[0].name;
@@ -190,8 +191,10 @@ Future<MatchOutcome> scoreFixtureMatch({
   );
   print('  [Innings 1] ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets}');
 
-  // Innings transition
-  await settle(tester);
+  // Wait for innings transition modal (may take a moment after server sync)
+  await waitForFinder(tester, find.byType(InningsTransitionModal),
+      timeoutMs: 15000, intervalMs: 500);
+
   final transitionModal = find.byType(InningsTransitionModal);
   if (transitionModal.evaluate().isNotEmpty) {
     final inn2Opener1 = bowlingTeamData.players[0].name;
@@ -226,23 +229,12 @@ Future<MatchOutcome> scoreFixtureMatch({
   await settle(tester);
   final matchResult = await captureMatchCompleteResult(tester);
 
-  // Dismiss modal
+  // Dismiss modal and navigate home. The toss→scoring flow uses GoRouter.go()
+  // (replace), so there's nothing to pop back to. scoreAllFixtures handles
+  // re-entering the tournament detail page before the next fixture.
   await dismissMatchCompleteModal(tester);
-
-  // Navigate back
-  final backButton = find.byType(BackButton);
-  if (backButton.evaluate().isNotEmpty) {
-    await tester.tap(backButton.first);
-    await settle(tester);
-    await visualPause(tester, 1000);
-    print('  [NAV] Returned to tournament detail via back button');
-  } else {
-    await navigateToHome(tester);
-    await settle(tester);
-    await navigateToTournaments(tester);
-    await settle(tester);
-    print('  [NAV] Returned via home → tournaments fallback');
-  }
+  await settle(tester);
+  await visualPause(tester, 500);
 
   return MatchOutcome(
     homeTeam: homeTeam,

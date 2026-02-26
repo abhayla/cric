@@ -3,7 +3,12 @@ library;
 
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:cricscores/src/features/tournaments/providers.dart';
 
 import '../config/test_data.dart';
 import '../config/tournament_presets.dart';
@@ -84,30 +89,57 @@ Future<void> setupTournament({
 /// Score all fixtures in a tournament.
 ///
 /// Repeatedly scans for unplayed fixtures, scores them, and returns
-/// the list of match outcomes.
+/// the list of match outcomes. After each match, navigates back to
+/// the tournament detail page via GoRouter before scanning for the next.
 Future<List<MatchOutcome>> scoreAllFixtures({
   required WidgetTester tester,
   required List<TestTeam> teams,
   required int totalOvers,
   required int playersPerSide,
   required ErrorTracker tracker,
+  required String tournamentName,
   Random? random,
 }) async {
   final rng = random ?? Random();
   final outcomes = <MatchOutcome>[];
   var matchCount = 0;
   var consecutiveEmptyScans = 0;
-  const maxEmptyScans = 5;
+  const maxEmptyScans = 3;
+
+  // Extract tournament ID from current GoRouter location while on tournament detail.
+  // URL pattern: /tournaments/:tournamentId
+  final tournamentId = _extractTournamentId(tester);
+  if (tournamentId != null) {
+    print('[SCORING] Extracted tournament ID: $tournamentId');
+  } else {
+    print('[SCORING] WARNING: Could not extract tournament ID from route');
+  }
+
+  // Track scored team pairs so we skip stale fixture data (provider may cache).
+  final scoredPairs = <String>{};
 
   while (!tracker.hasError && consecutiveEmptyScans < maxEmptyScans) {
-    final unplayed = await findFirstUnplayedFixture(tester);
+    // Ensure we're on the tournament detail page before scanning
+    await _ensureOnTournamentDetail(tester, tournamentId);
+
+    // Invalidate the fixtures provider to force a fresh API call.
+    // Without this, the Riverpod FutureProvider.family caches stale data.
+    if (tournamentId != null) {
+      _invalidateFixturesProvider(tester, tournamentId);
+      await settle(tester);
+      await tester.pump(const Duration(seconds: 2));
+    }
+
+    final unplayed = await findFirstUnplayedFixture(
+      tester,
+      scoredPairs: scoredPairs,
+    );
 
     if (unplayed == null) {
       consecutiveEmptyScans++;
       if (consecutiveEmptyScans < maxEmptyScans) {
         print('[SCORING] No unplayed fixtures found (scan $consecutiveEmptyScans/$maxEmptyScans). '
             'Refreshing via tab switch...');
-        // Switch to Overview tab then back to Fixtures
         await switchToTab(tester, 0);
         await tester.pump(const Duration(seconds: 1));
         await switchToTab(tester, 1);
@@ -141,6 +173,7 @@ Future<List<MatchOutcome>> scoreAllFixtures({
       );
 
       outcomes.add(outcome);
+      scoredPairs.add('$homeTeam|$awayTeam');
       tracker.recordMatchCompleted(
           '$homeTeam vs $awayTeam${outcome.resultText != null ? " — ${outcome.resultText}" : ""}');
       print('  [COMPLETE] Match $matchCount done');
@@ -152,6 +185,12 @@ Future<List<MatchOutcome>> scoreAllFixtures({
 
   // Guard: verify no unplayed fixtures remain
   if (!tracker.hasError) {
+    await _ensureOnTournamentDetail(tester, tournamentId);
+    if (tournamentId != null) {
+      _invalidateFixturesProvider(tester, tournamentId);
+      await settle(tester);
+      await tester.pump(const Duration(seconds: 2));
+    }
     final remaining = await findFirstUnplayedFixture(tester);
     expect(remaining, isNull,
         reason: 'All fixtures should be scored — found unplayed: '
@@ -160,4 +199,75 @@ Future<List<MatchOutcome>> scoreAllFixtures({
 
   print('\n[SCORING] All fixtures complete. Total matches played: ${tracker.matchesCompleted}');
   return outcomes;
+}
+
+/// Extract tournament UUID from current GoRouter location.
+String? _extractTournamentId(WidgetTester tester) {
+  try {
+    final routerState = GoRouterState.of(
+      tester.element(find.byType(Scaffold).first),
+    );
+    final uri = routerState.uri.toString();
+    final match = RegExp(
+      r'/tournaments/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
+      caseSensitive: false,
+    ).firstMatch(uri);
+    return match?.group(1);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Invalidate the Riverpod fixtures provider to force a fresh API refetch.
+void _invalidateFixturesProvider(WidgetTester tester, String tournamentId) {
+  try {
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(Scaffold).first),
+    );
+    container.invalidate(tournamentFixturesProvider(tournamentId));
+    print('  [PROVIDER] Invalidated tournamentFixturesProvider($tournamentId)');
+  } catch (e) {
+    print('  [PROVIDER] Could not invalidate fixtures provider: $e');
+  }
+}
+
+/// Ensure the tester is on the tournament detail page.
+///
+/// Checks for DefaultTabController (tournament detail has one). If not found,
+/// navigates directly via GoRouter using the tournament ID.
+Future<void> _ensureOnTournamentDetail(
+  WidgetTester tester,
+  String? tournamentId,
+) async {
+  await settle(tester);
+
+  // Check if we're already on tournament detail (TabBar + DefaultTabController)
+  final tabBar = find.byType(TabBar);
+  if (tabBar.evaluate().isNotEmpty) {
+    try {
+      final ctx = tester.element(tabBar.first);
+      DefaultTabController.of(ctx);
+      return; // Already on tournament detail
+    } catch (_) {
+      // Wrong page
+    }
+  }
+
+  if (tournamentId == null) {
+    print('  [NAV-RECOVERY] No tournament ID — cannot navigate back');
+    return;
+  }
+
+  print('  [NAV-RECOVERY] Navigating to /tournaments/$tournamentId');
+  try {
+    final ctx = tester.element(find.byType(Navigator).last);
+    GoRouter.of(ctx).go('/tournaments/$tournamentId');
+    await settle(tester);
+    // Wait for tournament detail to load
+    await visualPause(tester, 2000);
+    await settle(tester);
+    print('  [NAV-RECOVERY] GoRouter.go() to tournament detail complete');
+  } catch (e) {
+    print('  [NAV-RECOVERY] GoRouter navigation failed: $e');
+  }
 }

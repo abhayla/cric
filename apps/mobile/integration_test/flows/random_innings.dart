@@ -229,6 +229,11 @@ Future<void> playRandomInnings({
       break;
     }
   }
+
+  // Final settle to let any pending state changes (over/innings/match completion) process
+  await settle(tester);
+  await visualPause(tester, 1000);
+  await settle(tester);
 }
 
 /// Dismiss any auto-opened bowler or batter selection sheets.
@@ -251,7 +256,7 @@ Future<void> _dismissAnyOpenSheet(
     if (bowler.evaluate().isNotEmpty) {
       await tester.ensureVisible(bowler.first);
       await tester.tap(bowler.first, warnIfMissed: false);
-      await tester.pumpAndSettle();
+      await settle(tester);
       await visualPause(tester, 500);
       print('    [auto-dismiss] Selected bowler: $bowlerName');
     } else {
@@ -263,7 +268,7 @@ Future<void> _dismissAnyOpenSheet(
         if (alt.evaluate().isNotEmpty) {
           await tester.ensureVisible(alt.first);
           await tester.tap(alt.first, warnIfMissed: false);
-          await tester.pumpAndSettle();
+          await settle(tester);
           await visualPause(tester, 500);
           print('    [auto-dismiss] Selected fallback bowler: $name');
           break;
@@ -283,7 +288,7 @@ Future<void> _dismissAnyOpenSheet(
       if (batter.evaluate().isNotEmpty) {
         await tester.ensureVisible(batter.first);
         await tester.tap(batter.first, warnIfMissed: false);
-        await tester.pumpAndSettle();
+        await settle(tester);
         await visualPause(tester, 500);
         print('    [auto-dismiss] Selected batter: $batterName');
       }

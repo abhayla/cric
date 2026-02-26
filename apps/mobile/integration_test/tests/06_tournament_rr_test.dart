@@ -52,6 +52,7 @@ void main() {
         totalOvers: rrPreset.overs,
         playersPerSide: rrPreset.playersPerSide,
         tracker: tracker,
+        tournamentName: name,
         random: rng,
       );
     }

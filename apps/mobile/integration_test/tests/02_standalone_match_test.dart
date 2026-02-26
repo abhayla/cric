@@ -68,7 +68,7 @@ void main() {
       final playersChip = find.widgetWithText(ChoiceChip, '6');
       if (playersChip.evaluate().isNotEmpty) {
         await tester.ensureVisible(playersChip.first);
-        await tester.pumpAndSettle();
+        await settle(tester);
         await tester.tap(playersChip.first);
         await settle(tester);
       }
@@ -78,7 +78,7 @@ void main() {
       final scrollable = find.byType(Scrollable);
       if (scrollable.evaluate().isNotEmpty) {
         await tester.drag(scrollable.first, const Offset(0, -300));
-        await tester.pumpAndSettle();
+        await settle(tester);
       }
 
       final magicOverSwitch = find.text('Enable Magic Over');
@@ -98,7 +98,7 @@ void main() {
           final filterChip2 = find.widgetWithText(FilterChip, '2');
           if (filterChip2.evaluate().isNotEmpty) {
             await tester.ensureVisible(filterChip2.first);
-            await tester.pumpAndSettle();
+            await settle(tester);
             await tester.tap(filterChip2.first);
             await settle(tester);
             print('  [setup] Magic Over enabled, over 2 selected');
@@ -110,7 +110,7 @@ void main() {
       // 6. Proceed to Toss
       if (scrollable.evaluate().isNotEmpty) {
         await tester.drag(scrollable.first, const Offset(0, -500));
-        await tester.pumpAndSettle();
+        await settle(tester);
       }
       await completeMatchSetup(tester);
       tracker.recordSuccess('Proceeded to toss');
@@ -233,7 +233,22 @@ void main() {
         print('  [Innings 2] ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}');
       }
 
-      // 14. Capture result
+      // 14. Capture result — wait for match complete modal
+      // After overs exhausted, scoring notifier processes over→innings→match completion asynchronously
+      await settle(tester);
+      await visualPause(tester, 3000);
+      await settle(tester);
+
+      // Check if the match complete modal appeared, or if we're still on scoring page
+      if (find.byType(MatchCompleteModal).evaluate().isEmpty) {
+        // The innings may have ended but the match complete modal hasn't shown yet.
+        // Try pumping more to let the completion chain finish.
+        for (var attempt = 0; attempt < 10; attempt++) {
+          await tester.pump(const Duration(milliseconds: 500));
+          if (find.byType(MatchCompleteModal).evaluate().isNotEmpty) break;
+        }
+      }
+
       final matchResult = await captureMatchCompleteResult(tester);
       tracker.recordSuccess('Match result captured: ${matchResult ?? "unknown"}');
 
@@ -250,7 +265,18 @@ void main() {
       await settle(tester);
       await navigateToMatches(tester);
       await settle(tester);
-      await visualPause(tester, 1000);
+
+      // Default filter is "Live" — switch to "All" to see completed matches
+      final allChip = find.widgetWithText(InkWell, 'All');
+      final allChipAlt = find.text('All');
+      if (allChip.evaluate().isNotEmpty) {
+        await tester.tap(allChip.first);
+        await settle(tester);
+      } else if (allChipAlt.evaluate().isNotEmpty) {
+        await tester.tap(allChipAlt.first);
+        await settle(tester);
+      }
+      await visualPause(tester, 2000);
 
       final team1OnCard = find.textContaining('Team1');
       final team2OnCard = find.textContaining('Team2');

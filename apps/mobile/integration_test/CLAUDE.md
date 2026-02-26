@@ -1,0 +1,55 @@
+# Integration Test CLAUDE.md
+
+## Test Data Naming Convention (MANDATORY)
+
+All test teams and players MUST follow the naming pattern from `config/test_data.dart`:
+
+| Entity | Pattern | Example |
+|--------|---------|---------|
+| Team name | `Team{N}` | `Team1`, `Team20` |
+| Player name | `Player{suffix}` | `Player301`, `Player507` |
+| Player phone | `9999999{suffix}` | `9999999301`, `9999999507` |
+
+### Reserved Ranges
+
+| Range | Used By | Teams | Players |
+|-------|---------|-------|---------|
+| Team1–12 | Standard test set (`test_data.dart`) | `generateTeams(12)` | Player301–432 |
+| Team20–21 | Performance test (`perf_basic_test.dart`) | 2 teams × 6 players | Player501–512 |
+
+### Adding New Test Data
+
+1. Pick a `Team{N}` number NOT in the reserved ranges above.
+2. Pick a `Player{suffix}` range that doesn't overlap (use 3-digit suffixes >= 500).
+3. Define as `const` `TestTeam`/`TestPlayer` lists in the test file (not in `test_data.dart` unless shared).
+4. Update the reserved ranges table above.
+
+### Anti-Patterns (DO NOT)
+
+```dart
+// BAD - custom names cause confusion and break conventions
+TestTeam(name: 'PerfA', players: [TestPlayer(name: 'PA1', phone: '1234567890')])
+TestTeam(name: 'SpeedAlpha', players: [TestPlayer(name: 'Alpha1', phone: '5555555555')])
+
+// GOOD - follows the convention
+TestTeam(name: 'Team20', players: [TestPlayer(name: 'Player501', phone: '9999999501')])
+```
+
+## Known Gotchas
+
+- **`ensureTeamsExist` skips existing teams** regardless of player count. If a team exists with 2/6 players, it won't add the remaining 4. Delete incomplete teams from the server before re-running.
+- **`_selectPlayingXIIfNeeded`** taps generic `InkWell` widgets by index. When `roster.length < playersPerSide`, the toss wizard gets stuck. Ensure teams have the correct number of players before match setup.
+- **Prod server latency**: `fillAndSubmitPlayer` uses a 30s timeout for the page pop after API call. If the server is slow, player creation may time out.
+- **`fillAndSubmitPlayer` timeout** is in `helpers/forms.dart` line ~211 (`waitForFinderGone timeoutMs: 30000`).
+
+## Test Execution
+
+All integration tests run against the prod server (`cricscores.in`):
+
+```bash
+cd apps/mobile
+flutter test --flavor prod --dart-define=FLAVOR=prod \
+  integration_test/tests/<test>.dart -d emulator-5554
+```
+
+Tests that create teams (01, perf) should run before tests that assume teams exist (02-08).
