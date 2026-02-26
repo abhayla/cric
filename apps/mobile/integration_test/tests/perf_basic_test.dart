@@ -1,9 +1,10 @@
 /// Performance baseline test — measures timings across the full app flow.
 ///
-/// Creates 2 teams (6 players each), scores a 5-over match, and navigates
-/// all screens. Prints a formatted performance report at the end.
+/// Prerequisite: Teams must already exist on the server. Run
+/// `01_team_setup_test.dart` first to create Team1 and Team2.
 ///
-/// Uses unique team names (Team20, Team21) to avoid conflicts with other test data.
+/// Scores a 5-over match (6 players per side) and navigates all screens.
+/// Prints a formatted performance report at the end.
 ///
 /// Run:
 /// ```bash
@@ -22,38 +23,13 @@ import 'package:integration_test/integration_test.dart';
 
 import '../config/test_data.dart';
 import '../core/app_bootstrap.dart';
-import '../core/error_tracker.dart';
 import '../core/test_utils.dart';
 import '../helpers/match_setup.dart';
 import '../helpers/modals.dart';
 import '../helpers/navigation.dart';
 import '../helpers/scoring.dart';
 import '../flows/random_innings.dart';
-import '../flows/team_setup_flow.dart';
 import '../models/delivery_record.dart';
-
-/// Perf-specific teams using the standard naming convention from test_data.dart.
-///
-/// Uses Team20/Team21 and Player501+ range to avoid collision with standard
-/// test set (Team1-12, Player301-432).
-const _perfTeams = [
-  TestTeam(name: 'Team20', players: [
-    TestPlayer(name: 'Player501', phone: '9999999501'),
-    TestPlayer(name: 'Player502', phone: '9999999502'),
-    TestPlayer(name: 'Player503', phone: '9999999503'),
-    TestPlayer(name: 'Player504', phone: '9999999504'),
-    TestPlayer(name: 'Player505', phone: '9999999505'),
-    TestPlayer(name: 'Player506', phone: '9999999506'),
-  ]),
-  TestTeam(name: 'Team21', players: [
-    TestPlayer(name: 'Player507', phone: '9999999507'),
-    TestPlayer(name: 'Player508', phone: '9999999508'),
-    TestPlayer(name: 'Player509', phone: '9999999509'),
-    TestPlayer(name: 'Player510', phone: '9999999510'),
-    TestPlayer(name: 'Player511', phone: '9999999511'),
-    TestPlayer(name: 'Player512', phone: '9999999512'),
-  ]),
-];
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -62,8 +38,9 @@ void main() {
     final totalStopwatch = Stopwatch()..start();
     final rng = Random(42); // Deterministic for reproducible results
 
-    final team1 = _perfTeams[0];
-    final team2 = _perfTeams[1];
+    // Use standard test teams (created by 01_team_setup_test)
+    final team1 = allTeams[0]; // Team1 (12 players including Abhay)
+    final team2 = allTeams[1]; // Team2 (11 players)
 
     const totalOvers = 5;
     const playersPerSide = 6;
@@ -74,18 +51,30 @@ void main() {
     swColdStart.stop();
     print('  [perf] Cold Start: ${_fmt(swColdStart)}');
 
-    // ── Phase 2: Team Creation ──────────────────────────────────────
-    final swTeamCreation = Stopwatch()..start();
-    final teamTracker = ErrorTracker();
+    // ── Phase 2: Verify Teams Exist ─────────────────────────────────
+    final swTeamCheck = Stopwatch()..start();
+    await navigateToTeams(tester);
+    await settle(tester);
 
-    await ensureTeamsExist(tester, [team1, team2], teamTracker);
-
-    if (teamTracker.hasError) {
-      fail('Team creation failed. See error tracker output above.');
+    // Tap "All" filter to see all teams
+    final allChip = find.text('All');
+    if (allChip.evaluate().isNotEmpty) {
+      await tester.tap(allChip.first);
+      await settle(tester);
+      await visualPause(tester, 500);
     }
 
-    swTeamCreation.stop();
-    print('  [perf] Team Creation: ${_fmt(swTeamCreation)}');
+    // Verify Team1 and Team2 exist
+    final team1Exists = find.text(team1.name);
+    final team2Exists = find.text(team2.name);
+    expect(team1Exists, findsAtLeast(1),
+        reason: '${team1.name} must exist — run 01_team_setup_test first');
+    expect(team2Exists, findsAtLeast(1),
+        reason: '${team2.name} must exist — run 01_team_setup_test first');
+    print('  [perf] Teams verified: ${team1.name}, ${team2.name}');
+
+    swTeamCheck.stop();
+    print('  [perf] Team Verification: ${_fmt(swTeamCheck)}');
 
     // ── Phase 3: Match Setup ────────────────────────────────────────
     final swMatchSetup = Stopwatch()..start();
@@ -311,8 +300,7 @@ void main() {
     print(' PERFORMANCE REPORT');
     print('═' * 50);
     print('Cold Start:           ${_fmtPad(swColdStart)}');
-    print('Team Creation:        ${_fmtPad(swTeamCreation)}  '
-        '(2 teams × $playersPerSide players)');
+    print('Team Verification:    ${_fmtPad(swTeamCheck)}');
     print('Match Setup:          ${_fmtPad(swMatchSetup)}');
     print('Toss Wizard:          ${_fmtPad(swToss)}');
     print('First Over (6 del):   ${_fmtPad(swFirstOver)}  '

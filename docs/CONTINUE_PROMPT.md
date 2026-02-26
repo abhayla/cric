@@ -16,6 +16,27 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-27b: Performance Test Rewrite
+
+**Status:** Perf test rewritten to use pre-existing teams. Not yet validated.
+
+**Strategy change:** Rewrote `perf_basic_test.dart` to assume Team1/Team2 already exist (created by `01_team_setup_test`). Previous approach tried to create teams inline, which repeatedly failed due to prod server latency (Dio 10s receive timeout causing player-add failures). New approach: verify teams exist → fail fast with clear message if missing → measure only scoring performance.
+
+**Changes made:**
+- `perf_basic_test.dart` — uses `allTeams[0]`/`allTeams[1]` (Team1/Team2), removed `ensureTeamsExist` and custom team data, Phase 2 is now "Verify Teams Exist" (quick check, not creation)
+- `helpers/match_setup.dart` — `_selectPlayingXIIfNeeded` now has 8s retry loop for roster auto-select + falls back to tapping player-specific InkWells (borderRadius 12) instead of generic InkWells
+- `helpers/forms.dart` — `fillAndSubmitPlayer` timeout increased to 45s (was 30s, originally 6s) for slow prod server
+- `integration_test/CLAUDE.md` — created with naming conventions, reserved ranges, known gotchas
+- Reverted Dio timeout change in `teams/providers.dart` (was changed to 30s, back to 10s)
+
+**Stale server data:** Multiple orphaned teams exist from failed runs: Team20 (2 players), Team21 (3 players), Team22 (two entries — 6 and 2 players), Team23 (1 player). These can be cleaned up from the DB.
+
+**Next steps:**
+1. Run `01_team_setup_test` if Team1/Team2 don't exist on server yet
+2. Run `perf_basic_test` — should now skip team creation entirely
+3. If toss wizard Playing XI step fails, investigate `_selectPlayingXIIfNeeded` retry logic
+4. Continue with Tests 04-08 from prior session
+
 ### Session 2026-02-27: E2E Test Suite Execution + pumpAndSettle Fix + Tournament Navigation Fix
 
 **Status:** Tests 01-03 PASSED. Test 04 blocked by server downtime (now fixed). Tests 05-08 pending.

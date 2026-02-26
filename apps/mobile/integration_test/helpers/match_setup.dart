@@ -317,27 +317,51 @@ Future<void> completeTossWizard(
 }
 
 /// Select playing XI players if Next button is disabled (roster > playersPerSide).
+///
+/// Waits up to 8s for roster to load and auto-select (when roster.length ==
+/// playersPerSide). If auto-select doesn't kick in, falls back to tapping
+/// player rows found by the "Select N from" label context.
 Future<void> _selectPlayingXIIfNeeded(WidgetTester tester, int? playersPerSide) async {
   if (playersPerSide == null) return;
   await settle(tester);
 
-  final filledButtons = find.byType(FilledButton);
-  if (filledButtons.evaluate().isNotEmpty) {
-    final button = filledButtons.last.evaluate().first.widget as FilledButton;
-    if (button.onPressed != null) {
-      print('    [toss] XI already pre-selected, Next is enabled');
-      return;
+  // Wait up to 8s for roster to load and auto-select all players
+  for (var attempt = 0; attempt < 16; attempt++) {
+    final filledButtons = find.byType(FilledButton);
+    if (filledButtons.evaluate().isNotEmpty) {
+      final button = filledButtons.last.evaluate().first.widget as FilledButton;
+      if (button.onPressed != null) {
+        print('    [toss] XI auto-selected (Next enabled after ${attempt * 500}ms)');
+        return;
+      }
     }
+    await tester.pump(const Duration(milliseconds: 500));
   }
 
-  print('    [toss] Next disabled — selecting $playersPerSide players');
-  final inkWells = find.byType(InkWell);
-  final count = playersPerSide.clamp(0, inkWells.evaluate().length);
-  for (var i = 0; i < count; i++) {
-    await tester.ensureVisible(inkWells.at(i));
-    await tester.tap(inkWells.at(i), warnIfMissed: false);
-    await tester.pump();
+  // Auto-select didn't work — manually tap player rows.
+  // Player rows are InkWells that contain a player name text (not stepper tabs).
+  // Find them by looking for InkWells that are descendants of the scrollable
+  // content area and contain the circular avatar pattern.
+  print('    [toss] Next still disabled after 8s — selecting players manually');
+
+  // Find player name texts that appear in the XI selection list.
+  // Player rows contain text like "Player501" inside an InkWell with
+  // BorderRadius.circular(12) decoration.
+  final allInkWells = find.byType(InkWell);
+  var selected = 0;
+  for (var i = 0; i < allInkWells.evaluate().length && selected < playersPerSide; i++) {
+    final inkWellElement = allInkWells.at(i).evaluate().first;
+    final inkWellWidget = inkWellElement.widget as InkWell;
+
+    // Player row InkWells have borderRadius(12) — stepper/nav InkWells don't
+    if (inkWellWidget.borderRadius == BorderRadius.circular(12)) {
+      await tester.ensureVisible(allInkWells.at(i));
+      await tester.tap(allInkWells.at(i), warnIfMissed: false);
+      await tester.pump();
+      selected++;
+    }
   }
+  print('    [toss] Manually selected $selected players');
   await settle(tester);
 }
 
