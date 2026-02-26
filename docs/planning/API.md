@@ -1886,3 +1886,69 @@ All validation enforced via Elysia TypeBox schemas on request bodies and query p
 | UUID fields | valid UUID v4 format |
 | Page number | integer ≥ 1 |
 | Limit | integer 1-100 (default varies by endpoint) |
+
+---
+
+## Activity Feed
+
+### `GET /api/v1/activity-feed`
+
+Returns paginated activity feed events for the authenticated user.
+
+**Query:** `?page=1&limit=20`
+
+**Response:**
+```json
+{
+  "events": [
+    {
+      "id": "uuid",
+      "userId": "uuid",
+      "eventType": "century",
+      "title": "Century! Virat scored 100 runs",
+      "description": null,
+      "referenceType": "match",
+      "referenceId": "uuid",
+      "deliveryId": "uuid | null",
+      "isRead": false,
+      "createdAt": "2026-02-26T12:00:00.000Z"
+    }
+  ],
+  "total": 42,
+  "page": 1
+}
+```
+
+**Note:** `deliveryId` is only present (non-null) on milestone events (`century`, `half_century`, `five_wicket_haul`, `three_wicket_haul`, `hat_trick`). It links the event to the triggering delivery for undo support.
+
+**Event types (17):**
+
+| Category | Type | Title Format |
+|----------|------|-------------|
+| Player | `century` | "Century! {name} scored 100 runs" |
+| Player | `half_century` | "Half-Century! {name} scored 50 runs" |
+| Player | `five_wicket_haul` | "5 Wickets! {name} took 5 wickets" |
+| Player | `three_wicket_haul` | "3 Wickets! {name} took 3 wickets" |
+| Player | `hat_trick` | "Hat-Trick! {name} took 3 in 3 balls" |
+| Match | `match_completed` | "Match Result: {summary}" |
+| Match | `match_started` | "Match Started: {home} vs {away}" |
+| Match | `match_abandoned` | "Match Abandoned: {home} vs {away}" |
+| Match | `innings_completed` | "Innings {N} Complete: {reason}" |
+| Team | `player_added` | "Added to {teamName}" |
+| Team | `player_removed` | "Removed from {teamName}" |
+| Team | `team_joined` | "Joined {teamName}" |
+| Tournament | `tournament_update` | "{name} is now {status}" |
+| Tournament | `tournament_match_result` | "Tournament Match: {summary}" |
+| Tournament | `team_added_tournament` | "Team added to {name}" |
+| Tournament | `registration_resolved` | "Registration {Approved/Rejected}: {name}" |
+| Tournament | `fixtures_generated` | "Fixtures Generated: {name}" |
+
+### `POST /api/v1/activity-feed/read`
+
+Marks events as read.
+
+**Body:** `{ "eventIds": ["uuid1", "uuid2"] }`
+
+### `GET /api/v1/activity-feed/unread-count`
+
+Returns unread count: `{ "count": 5 }`

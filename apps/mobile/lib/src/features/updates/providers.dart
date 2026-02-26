@@ -6,6 +6,7 @@ import '../../core/network/auth_interceptors.dart';
 import 'data/datasources/updates_remote_datasource.dart';
 import 'data/repositories/updates_repository_impl.dart';
 import 'domain/repositories/updates_repository.dart';
+import 'presentation/notifiers/updates_preferences_notifier.dart';
 
 /// Dio instance for updates feature.
 final _dioProvider = Provider<Dio>((ref) {
@@ -48,3 +49,9 @@ final unreadCountProvider = FutureProvider<int>((ref) {
   final repository = ref.read(updatesRepositoryProvider);
   return repository.getUnreadCount();
 });
+
+/// Updates preferences notifier — controls which event types are visible.
+final updatesPreferencesProvider =
+    NotifierProvider<UpdatesPreferencesNotifier, UpdatesPreferencesState>(
+  UpdatesPreferencesNotifier.new,
+);

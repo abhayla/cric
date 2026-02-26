@@ -6,80 +6,129 @@ import 'package:cricscores/src/app/router.dart';
 import '../../domain/entities/activity_event.dart';
 import '../../providers.dart';
 import '../widgets/activity_event_card.dart';
+import '../widgets/updates_settings_tab.dart';
 
-/// Activity feed page showing grouped events.
-class UpdatesPage extends ConsumerWidget {
+/// Activity feed page with Feed and Settings tabs.
+class UpdatesPage extends ConsumerStatefulWidget {
   const UpdatesPage({super.key});
+
+  @override
+  ConsumerState<UpdatesPage> createState() => _UpdatesPageState();
+}
+
+class _UpdatesPageState extends ConsumerState<UpdatesPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Updates'),
+        centerTitle: false,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Feed'),
+            Tab(text: 'Settings'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          _FeedSubTab(),
+          UpdatesSettingsTab(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Feed sub-tab — shows the activity feed with client-side filtering.
+class _FeedSubTab extends ConsumerWidget {
+  const _FeedSubTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final feedAsync = ref.watch(activityFeedProvider);
+    final hiddenTypes = ref.watch(updatesPreferencesProvider).hiddenEventTypes;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Updates'),
-        centerTitle: false,
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(activityFeedProvider);
-          ref.invalidate(unreadCountProvider);
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(activityFeedProvider);
+        ref.invalidate(unreadCountProvider);
+      },
+      child: feedAsync.when(
+        data: (result) {
+          final visibleEvents = result.events
+              .where((e) => !hiddenTypes.contains(e.eventType))
+              .toList();
+
+          if (visibleEvents.isEmpty) {
+            return _EmptyState(theme: theme);
+          }
+
+          final grouped = _groupByDate(visibleEvents);
+
+          return ListView.builder(
+            itemCount: grouped.length,
+            itemBuilder: (context, index) {
+              final group = grouped[index];
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                    child: Text(
+                      group.label,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  ...group.events.map(
+                    (event) => ActivityEventCard(
+                      event: event,
+                      onTap: () => _onEventTap(context, ref, event),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                ],
+              );
+            },
+          );
         },
-        child: feedAsync.when(
-          data: (result) {
-            if (result.events.isEmpty) {
-              return _EmptyState(theme: theme);
-            }
-
-            final grouped = _groupByDate(result.events);
-
-            return ListView.builder(
-              itemCount: grouped.length,
-              itemBuilder: (context, index) {
-                final group = grouped[index];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                      child: Text(
-                        group.label,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    ...group.events.map(
-                      (event) => ActivityEventCard(
-                        event: event,
-                        onTap: () => _onEventTap(context, ref, event),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                  ],
-                );
-              },
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.error_outline,
-                    size: 48, color: theme.colorScheme.error),
-                const SizedBox(height: 8),
-                Text('Failed to load updates',
-                    style: theme.textTheme.bodyLarge),
-                const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: () => ref.invalidate(activityFeedProvider),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline,
+                  size: 48, color: theme.colorScheme.error),
+              const SizedBox(height: 8),
+              Text('Failed to load updates',
+                  style: theme.textTheme.bodyLarge),
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: () => ref.invalidate(activityFeedProvider),
+                child: const Text('Retry'),
+              ),
+            ],
           ),
         ),
       ),

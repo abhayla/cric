@@ -5,6 +5,7 @@ import { innings } from '../db/schema/innings.ts';
 import { teams } from '../db/schema/teams.ts';
 import { teamRosters } from '../db/schema/teams.ts';
 import { AppError } from '../middleware/error-handler.ts';
+import { emitMatchStartedEvents } from './activity-feed.service.ts';
 
 interface CreateMatchInput {
   homeTeamId: string;
@@ -497,6 +498,11 @@ export async function recordToss(matchId: string, input: RecordTossInput) {
       bowlingTeamId,
     })
     .returning();
+
+  // Fire-and-forget activity feed events
+  emitMatchStartedEvents(matchId).catch((err) =>
+    console.error(`[ActivityFeed] Match started emit failed for match=${matchId}:`, err),
+  );
 
   return {
     match: updatedMatch!,

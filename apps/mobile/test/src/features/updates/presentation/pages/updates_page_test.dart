@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/updates/domain/entities/activity_event.dart';
 import 'package:cricscores/src/features/updates/domain/repositories/updates_repository.dart';
+import 'package:cricscores/src/features/updates/presentation/notifiers/updates_preferences_notifier.dart';
 import 'package:cricscores/src/features/updates/presentation/pages/updates_page.dart';
 import 'package:cricscores/src/features/updates/providers.dart';
 
@@ -27,12 +28,110 @@ void main() {
           );
         }),
         unreadCountProvider.overrideWith((ref) async => 0),
+        updatesPreferencesProvider
+            .overrideWith(() => UpdatesPreferencesNotifier()),
       ],
       child: const MaterialApp(home: UpdatesPage()),
     );
   }
 
-  group('UpdatesPage', () {
+  group('UpdatesPage - Tabs', () {
+    testWidgets('renders Feed and Settings tabs', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Feed'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+    });
+
+    testWidgets('default tab is Feed showing feed content', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Feed tab shows empty state by default (no events)
+      expect(find.text('No Updates Yet'), findsOneWidget);
+    });
+
+    testWidgets('can switch to Settings tab and see group headers',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Tap Settings tab
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+
+      // First two groups visible without scrolling
+      expect(find.text('Player'), findsOneWidget);
+      expect(find.text('Match'), findsOneWidget);
+
+      // Scroll down to reveal remaining groups (ListView lazy-builds)
+      await tester.scrollUntilVisible(
+        find.text('Tournament'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Team'), findsOneWidget);
+      expect(find.text('Tournament'), findsOneWidget);
+    });
+
+    testWidgets('Settings tab has None button that hides all events',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Switch to Settings tab
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+
+      // Tap None button
+      await tester.tap(find.text('None'));
+      await tester.pumpAndSettle();
+
+      // All switches should be off (not checked)
+      // Find SwitchListTile widgets - all should have value: false
+      final switches = tester.widgetList<SwitchListTile>(
+        find.byType(SwitchListTile),
+      );
+      expect(switches, isNotEmpty);
+      for (final switchTile in switches) {
+        expect(switchTile.value, isFalse,
+            reason: 'All event type switches should be off after tapping None');
+      }
+    });
+
+    testWidgets('Settings tab has All button that shows all events',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Switch to Settings tab
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+
+      // First hide all
+      await tester.tap(find.text('None'));
+      await tester.pumpAndSettle();
+
+      // Then show all
+      await tester.tap(find.text('All'));
+      await tester.pumpAndSettle();
+
+      // All switches should be on
+      final switches = tester.widgetList<SwitchListTile>(
+        find.byType(SwitchListTile),
+      );
+      expect(switches, isNotEmpty);
+      for (final switchTile in switches) {
+        expect(switchTile.value, isTrue,
+            reason: 'All event type switches should be on after tapping All');
+      }
+    });
+  });
+
+  group('UpdatesPage - Feed tab', () {
     testWidgets('renders Updates title in AppBar', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -107,7 +206,7 @@ void main() {
       expect(find.text('Player Added'), findsOneWidget);
     });
 
-    testWidgets('has pull-to-refresh', (tester) async {
+    testWidgets('has pull-to-refresh on Feed tab', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 

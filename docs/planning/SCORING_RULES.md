@@ -887,6 +887,36 @@ The super over uses the **same delivery processing pipeline** (Section 2, Steps 
 
 ---
 
+## 9.5 Milestone Detection
+
+The scoring pipeline detects personal milestones after each delivery and emits activity feed events. Milestones are linked to the delivery that triggered them via `deliveryId` for undo support.
+
+### Batting Milestones
+
+| Milestone | Threshold | Detection Logic |
+|-----------|-----------|----------------|
+| **Half-Century** | 50 runs | `prevRuns < 50 && currentRuns >= 50` (after batting stats upsert) |
+| **Century** | 100 runs | `prevRuns < 100 && currentRuns >= 100` |
+
+- Only detected on non-wide deliveries where the batter scored runs from bat.
+- Century takes priority over half-century (if a batter goes from 49 to 100 in one delivery, only century fires).
+
+### Bowling Milestones
+
+| Milestone | Threshold | Detection Logic |
+|-----------|-----------|----------------|
+| **3-Wicket Haul** | Exactly 3 wickets | `bowlerWickets === 3` (exact, not >=, to avoid re-firing) |
+| **5-Wicket Haul** | Exactly 5 wickets | `bowlerWickets === 5` |
+| **Hat-Trick** | 3 consecutive wickets | Last 3 deliveries by bowler in innings all have `isWicket: true` |
+
+- Bowling milestones only fire when the bowler is credited with the wicket (`bowlerCredited: true`).
+- Hat-trick can span over boundaries (the 3 wickets don't need to be in the same over).
+- 5-wicket haul takes priority over 3-wicket haul.
+
+### Undo Behavior
+
+When a delivery is undone via `undoDelivery()`, all activity feed events linked to that delivery (via `deliveryId`) are deleted. This prevents stale milestone notifications from persisting after the triggering delivery is reversed.
+
 ## 10. Deferred to Post-MVP
 
 The following scoring features are intentionally deferred. They remain in the DB enum/schema but are not implemented in the MVP scoring pipeline or UI:

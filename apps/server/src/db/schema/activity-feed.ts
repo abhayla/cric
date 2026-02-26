@@ -1,5 +1,6 @@
 import { pgTable, uuid, varchar, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
 import { users } from './users.ts';
+import { deliveries } from './deliveries.ts';
 
 export const activityFeed = pgTable('activity_feed', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -9,8 +10,10 @@ export const activityFeed = pgTable('activity_feed', {
   description: text('description'),
   referenceType: varchar('reference_type', { length: 20 }),
   referenceId: uuid('reference_id'),
+  deliveryId: uuid('delivery_id').references(() => deliveries.id, { onDelete: 'set null' }),
   isRead: boolean('is_read').default(false).notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
   index('idx_activity_feed_user_created').on(table.userId, table.createdAt),
+  index('idx_activity_feed_delivery').on(table.deliveryId),
 ]);

@@ -756,6 +756,32 @@ App settings and cached auth state.
 | key | text PK | |
 | value | text NOT NULL | |
 
+### `activity_feed` (server-only)
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | uuid PK | DEFAULT gen_random_uuid() |
+| user_id | uuid NOT NULL | FK → users.id ON DELETE CASCADE |
+| event_type | varchar(30) NOT NULL | One of 17 types (see below) |
+| title | varchar(100) NOT NULL | |
+| description | text | |
+| reference_type | varchar(20) | 'match', 'team', 'tournament', 'player' |
+| reference_id | uuid | |
+| delivery_id | uuid | FK → deliveries.id ON DELETE SET NULL. Only set on milestone events for undo support. |
+| is_read | boolean NOT NULL | DEFAULT false |
+| created_at | timestamp NOT NULL | DEFAULT now() |
+
+**Indexes:** `idx_activity_feed_user_created` (user_id, created_at), `idx_activity_feed_delivery` (delivery_id)
+
+**Event types (17):**
+
+| Category | Event Types |
+|----------|------------|
+| Player Milestones | `century`, `half_century`, `five_wicket_haul`, `three_wicket_haul`, `hat_trick` |
+| Match Lifecycle | `match_completed`, `match_started`, `match_abandoned`, `innings_completed` |
+| Team | `player_added`, `player_removed`, `team_joined` |
+| Tournament | `tournament_update`, `tournament_match_result`, `team_added_tournament`, `registration_resolved`, `fixtures_generated` |
+
 **Sync strategy:**
 1. All writes go to local SQLite first
 2. `synced` flag marks what has been pushed to server

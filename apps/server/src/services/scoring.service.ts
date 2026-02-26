@@ -8,7 +8,8 @@ import { dismissalTypes } from '../db/schema/master-data.ts';
 import { tournamentStandings } from '../db/schema/tournaments.ts';
 import { AppError } from '../middleware/error-handler.ts';
 import { refreshMatchPlayerCareerStats } from './career-stats.service.ts';
-import { emitMatchCompletedEvents } from './activity-feed.service.ts';
+import { emitMatchCompletedEvents, emitMilestoneEvents, emitInningsCompletedEvents, emitMatchAbandonedEvents, emitTournamentMatchResultEvents, deleteActivityEventsByDeliveryId, type MilestoneInfo } from './activity-feed.service.ts';
+import { users } from '../db/schema/users.ts';
 
 // ============================================================
 // Cricket Overs Arithmetic Helpers
@@ -68,6 +69,7 @@ export interface DeliveryResult {
   inningsComplete: boolean;
   matchComplete: boolean;
   updatedInnings?: typeof innings.$inferSelect;
+  milestones: MilestoneInfo[];
 }
 
 // ============================================================
@@ -235,6 +237,7 @@ export async function recordDeliveryInTx(
         inningsComplete: false,
         matchComplete: false,
         updatedInnings: existingInnings!,
+        milestones: [],
       };
     }
   }
@@ -313,6 +316,9 @@ export async function recordDeliveryInTx(
 
   // ── Step 6: UPDATE BOWLING STATS ──
   await upsertBowlingStats(tx, resolvedInningsId!, effectiveInput, delivery!);
+
+  // ── Step 6.5: DETECT MILESTONES ──
+  const milestones = await detectMilestones(tx, resolvedInningsId!, input);
 
   // ── Step 7: UPDATE INNINGS TOTALS ──
   const inningsUpdate: Record<string, unknown> = {
@@ -433,6 +439,7 @@ export async function recordDeliveryInTx(
     inningsComplete,
     matchComplete,
     updatedInnings: updatedInnings!,
+    milestones,
   };
 }
 
@@ -523,6 +530,20 @@ export async function recordDelivery(
     return recordDeliveryInTx(tx, matchId, txMatch, inningsCache, input);
   });
 
+  // Fire-and-forget milestone events
+  if (result.milestones.length > 0) {
+    emitMilestoneEvents(matchId, result.delivery.id, result.milestones).catch((err) =>
+      console.error(`[ActivityFeed] Milestone emit failed for match=${matchId}:`, err),
+    );
+  }
+
+  // Fire-and-forget innings completion events
+  if (result.inningsComplete && result.updatedInnings) {
+    emitInningsCompletedEvents(matchId, result.updatedInnings.inningsNumber, result.updatedInnings.completedReason ?? 'unknown').catch((err) =>
+      console.error(`[ActivityFeed] Innings complete emit failed for match=${matchId}:`, err),
+    );
+  }
+
   if (result.matchComplete) {
     try {
       await db.transaction(async (tx) => {
@@ -536,6 +557,13 @@ export async function recordDelivery(
     emitMatchCompletedEvents(matchId).catch((err) =>
       console.error(`[ActivityFeed] Failed for match=${matchId}:`, err),
     );
+
+    // Fire-and-forget tournament match result events
+    if (match.tournamentId) {
+      emitTournamentMatchResultEvents(matchId).catch((err) =>
+        console.error(`[ActivityFeed] Tournament match result failed for match=${matchId}:`, err),
+      );
+    }
   }
 
   return result;
@@ -781,6 +809,13 @@ export async function recordDeliveryBatch(
     emitMatchCompletedEvents(matchId).catch((err) =>
       console.error(`[ActivityFeed] Failed for match=${matchId}:`, err),
     );
+
+    // Fire-and-forget tournament match result events
+    if (match.tournamentId) {
+      emitTournamentMatchResultEvents(matchId).catch((err) =>
+        console.error(`[ActivityFeed] Tournament match result failed for match=${matchId}:`, err),
+      );
+    }
   }
 
   return result;
@@ -1035,6 +1070,11 @@ export async function undoDelivery(
     // Delete the delivery
     await tx.delete(deliveries).where(eq(deliveries.id, deliveryId));
   });
+
+  // Fire-and-forget: delete milestone events linked to this delivery
+  deleteActivityEventsByDeliveryId(deliveryId).catch((err) =>
+    console.error(`[ActivityFeed] Milestone delete failed for delivery=${deliveryId}:`, err),
+  );
 }
 
 // ============================================================
@@ -1101,6 +1141,11 @@ export async function abandonMatch(matchId: string, userId: string): Promise<voi
       summary: 'Match abandoned — No Result',
     });
   });
+
+  // Fire-and-forget activity feed events
+  emitMatchAbandonedEvents(matchId).catch((err) =>
+    console.error(`[ActivityFeed] Match abandoned emit failed for match=${matchId}:`, err),
+  );
 }
 
 // ============================================================
@@ -1242,6 +1287,107 @@ export async function reopenMatch(matchId: string, userId: string): Promise<void
       .set({ status: 'live' })
       .where(eq(matches.id, matchId));
   });
+}
+
+// ============================================================
+// Helper: Detect Milestones
+// ============================================================
+
+async function detectMilestones(
+  tx: TxHandle,
+  inningsId: string,
+  input: DeliveryInput,
+): Promise<MilestoneInfo[]> {
+  const milestones: MilestoneInfo[] = [];
+
+  // --- Batting milestones (only on non-wide deliveries where batter scored) ---
+  if (!input.isWide && input.runsFromBat > 0) {
+    const [batterStat] = await tx
+      .select({ runsScored: battingStats.runsScored, playerId: battingStats.playerId })
+      .from(battingStats)
+      .where(
+        and(
+          eq(battingStats.inningsId, inningsId),
+          eq(battingStats.playerId, input.strikerId),
+        ),
+      )
+      .limit(1);
+
+    if (batterStat) {
+      const currentRuns = batterStat.runsScored;
+      const prevRuns = currentRuns - input.runsFromBat;
+
+      // Get player name for milestone message
+      let playerName = 'Player';
+      const [user] = await tx
+        .select({ displayName: users.displayName })
+        .from(users)
+        .where(eq(users.id, input.strikerId))
+        .limit(1);
+      if (user) playerName = user.displayName;
+
+      // Century: crossed 100 (check prevRuns < 100 to avoid re-firing)
+      if (prevRuns < 100 && currentRuns >= 100) {
+        milestones.push({ type: 'century', playerName, playerId: input.strikerId });
+      }
+      // Half-century: crossed 50 but not 100 (century already covers it)
+      else if (prevRuns < 50 && currentRuns >= 50) {
+        milestones.push({ type: 'half_century', playerName, playerId: input.strikerId });
+      }
+    }
+  }
+
+  // --- Bowling milestones ---
+  if (input.isWicket && input.wicket?.bowlerCredited && input.bowlerId) {
+    const [bowlerStat] = await tx
+      .select({ wicketsTaken: bowlingStats.wicketsTaken, playerId: bowlingStats.playerId })
+      .from(bowlingStats)
+      .where(
+        and(
+          eq(bowlingStats.inningsId, inningsId),
+          eq(bowlingStats.playerId, input.bowlerId),
+        ),
+      )
+      .limit(1);
+
+    if (bowlerStat) {
+      let bowlerName = 'Bowler';
+      const [user] = await tx
+        .select({ displayName: users.displayName })
+        .from(users)
+        .where(eq(users.id, input.bowlerId))
+        .limit(1);
+      if (user) bowlerName = user.displayName;
+
+      // 5-wicket haul: exactly 5 (not >=, to avoid re-firing)
+      if (bowlerStat.wicketsTaken === 5) {
+        milestones.push({ type: 'five_wicket_haul', playerName: bowlerName, playerId: input.bowlerId });
+      }
+      // 3-wicket haul: exactly 3
+      else if (bowlerStat.wicketsTaken === 3) {
+        milestones.push({ type: 'three_wicket_haul', playerName: bowlerName, playerId: input.bowlerId });
+      }
+
+      // Hat-trick: last 3 deliveries by this bowler all wickets
+      const last3 = await tx
+        .select({ isWicket: deliveries.isWicket })
+        .from(deliveries)
+        .where(
+          and(
+            eq(deliveries.inningsId, inningsId),
+            eq(deliveries.bowlerId, input.bowlerId),
+          ),
+        )
+        .orderBy(desc(deliveries.sequenceNumber))
+        .limit(3);
+
+      if (last3.length === 3 && last3.every((d) => d.isWicket)) {
+        milestones.push({ type: 'hat_trick', playerName: bowlerName, playerId: input.bowlerId });
+      }
+    }
+  }
+
+  return milestones;
 }
 
 // ============================================================

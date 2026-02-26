@@ -16,6 +16,52 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-26: Expand Activity Feed Event Types + Settings Tab
+
+**Completed:** Added 14 new activity feed event types, milestone detection in scoring pipeline, Settings tab in Updates screen, and full test coverage.
+
+**Part 1 — Server Schema + Migration:**
+- Added nullable `delivery_id` column to `activity_feed` table (FK → deliveries, ON DELETE SET NULL)
+- New migration: `0007_activity_feed_delivery_id.sql`
+- New index: `idx_activity_feed_delivery` on delivery_id
+
+**Part 2 — Activity Feed Service (14 new emitters + 1 enriched + 1 delete):**
+- Enriched `emitMatchCompletedEvents` — now shows "Match Result: {summary}" instead of "Match Completed"
+- New `deleteActivityEventsByDeliveryId()` — for milestone undo support
+- 5 milestone emitters: `emitMilestoneEvents()` handles century, half_century, five_wicket_haul, three_wicket_haul, hat_trick
+- 3 match lifecycle: `emitMatchStartedEvents()`, `emitMatchAbandonedEvents()`, `emitInningsCompletedEvents()`
+- 4 tournament: `emitTournamentMatchResultEvents()`, `emitTeamAddedToTournamentEvents()`, `emitRegistrationResolvedEvents()`, `emitFixturesGeneratedEvents()`
+- 2 team: `emitPlayerRemovedEvents()`, `emitTeamJoinedEvents()`
+
+**Part 3 — Milestone Detection in Scoring Pipeline:**
+- Added `detectMilestones()` helper in scoring.service.ts (step 6.5 in delivery pipeline)
+- Batting: half-century (50+), century (100+) — detects by comparing pre/post runs
+- Bowling: 3-wicket haul (exactly 3), 5-wicket haul (exactly 5), hat-trick (last 3 deliveries all wickets)
+- Milestones emitted fire-and-forget after transaction in `recordDelivery()`
+- `undoDelivery()` deletes milestone events via `deleteActivityEventsByDeliveryId()`
+- Wired emitters into `match.service.ts` (recordToss), `tournament.service.ts` (addTeam, resolveRequest, generateFixtures), `team.service.ts` (removePlayer, addPlayer)
+
+**Part 4 — Flutter Entity + Settings Tab:**
+- Updated `activity_event.dart` — iconType mapping for all 17 event types, added `allEventTypes`, `eventTypeLabel()`, `eventTypeGroups`
+- New `UpdatesPreferencesNotifier` — in-memory state for hidden event types with toggle/showAll/hideAll
+- New `UpdatesSettingsTab` widget — grouped SwitchListTile toggles with All/None buttons
+- Converted `UpdatesPage` to `ConsumerStatefulWidget` with TabBar (Feed + Settings tabs)
+- Client-side filtering in Feed tab via `hiddenEventTypes`
+
+**Part 5 — Tests:**
+- `test/services/activity-feed-emitters.test.ts` — ~25 tests for all emitter functions
+- `test/services/scoring-milestones.test.ts` — ~9 tests for milestone detection + undo
+- `test/src/features/updates/domain/entities/activity_event_test.dart` — icon type mapping for all 17 types
+- `test/src/features/updates/presentation/notifiers/updates_preferences_notifier_test.dart` — 7 tests
+- Updated `test/src/features/updates/presentation/pages/updates_page_test.dart` — added tab + settings tests
+
+**Part 6 — Documentation:**
+- API.md: Added activity feed endpoints with all 17 event types documented
+- DATABASE.md: Added activity_feed table definition with delivery_id column
+- SCORING_RULES.md: Added section 9.5 on milestone detection thresholds and undo behavior
+
+**Files created/modified:** 23 files (see plan for full list)
+
 ### Session 2026-02-25e: 401 Auto-Redirect + Auth/Screen Error State Tests
 
 **Completed:** Fixed 401 → auto-sign-out → redirect to login flow, and added comprehensive tests for error states, auth guard, and missing screen coverage.

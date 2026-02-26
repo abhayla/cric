@@ -7,7 +7,7 @@ import { matches } from '../db/schema/matches.ts';
 import { innings } from '../db/schema/innings.ts';
 import { battingStats, bowlingStats } from '../db/schema/stats.ts';
 import { AppError } from '../middleware/error-handler.ts';
-import { emitTournamentUpdateEvents } from './activity-feed.service.ts';
+import { emitTournamentUpdateEvents, emitTeamAddedToTournamentEvents, emitRegistrationResolvedEvents, emitFixturesGeneratedEvents } from './activity-feed.service.ts';
 
 // -- Types --
 
@@ -405,6 +405,11 @@ export async function addTeam(
       groupName: groupName ?? null,
     });
 
+  // Fire-and-forget activity feed events
+  emitTeamAddedToTournamentEvents(tournamentId, teamId).catch((err) =>
+    console.error(`[ActivityFeed] Team added to tournament emit failed:`, err),
+  );
+
   return {
     ...entry!,
     teamName: team.name,
@@ -596,6 +601,11 @@ export async function resolveRequest(
     .where(eq(teams.id, request.teamId))
     .limit(1);
 
+  // Fire-and-forget activity feed events
+  emitRegistrationResolvedEvents(tournamentId, request.teamId, action, rejectionReason).catch((err) =>
+    console.error(`[ActivityFeed] Registration resolved emit failed:`, err),
+  );
+
   return {
     ...updated!,
     teamName: team?.name ?? null,
@@ -717,6 +727,11 @@ export async function generateFixtures(tournamentId: string, userId: string) {
     homeTeamName: teamNameMap.get(f.homeTeamId) ?? null,
     awayTeamName: teamNameMap.get(f.awayTeamId) ?? null,
   }));
+
+  // Fire-and-forget activity feed events
+  emitFixturesGeneratedEvents(tournamentId).catch((err) =>
+    console.error(`[ActivityFeed] Fixtures generated emit failed:`, err),
+  );
 
   return {
     fixtures: fixturesWithNames,
