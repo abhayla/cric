@@ -18,6 +18,21 @@ import { initBroadcaster } from './websocket/broadcaster.ts';
 
 initFirebase();
 
+// Catch unhandled promise rejections from postgres.js connection errors
+// to prevent the process from silently dying or the pool from becoming unusable
+process.on('unhandledRejection', (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  if (
+    msg.includes('CONNECT_TIMEOUT') ||
+    msg.includes('CONNECTION_CLOSED') ||
+    msg.includes('CONNECTION_ENDED')
+  ) {
+    console.error(`[postgres] Connection error (handled): ${msg}`);
+  } else {
+    console.error('[unhandledRejection]', reason);
+  }
+});
+
 // Production safety: ENABLE_TEST_AUTH must never be set in production
 if (env.NODE_ENV === 'production' && process.env.ENABLE_TEST_AUTH === 'true') {
   console.error('FATAL: ENABLE_TEST_AUTH is forbidden in production');
@@ -41,7 +56,8 @@ const app = new Elysia()
 
 // Only register test verification routes in test environment
 if (process.env.NODE_ENV === 'test') {
-  const { testVerifyRoutes } = await import('./routes/v1/test-verify.routes.ts');
+  const { testVerifyRoutes } =
+    await import('./routes/v1/test-verify.routes.ts');
   app.use(testVerifyRoutes);
 }
 

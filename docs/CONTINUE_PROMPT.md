@@ -18,7 +18,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ### Session 2026-02-27: E2E Test Suite Execution + pumpAndSettle Fix + Tournament Navigation Fix
 
-**Status:** Tests 01-03 PASSED. Test 04 blocked by server downtime. Tests 05-08 pending.
+**Status:** Tests 01-03 PASSED. Test 04 blocked by server downtime (now fixed). Tests 05-08 pending.
 
 **Part 1 — Global pumpAndSettle Fix:**
 - Root cause: Bare `tester.pumpAndSettle()` hangs forever when SyncStatusIndicator animation runs
@@ -44,12 +44,34 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - Added "All" filter chip tap on Matches tab (default is "Live", completed matches not visible)
 - Added extra settle/pump loop before MatchCompleteModal check
 
-**Blocker:** Production server at `cricscores.in` (VPS 103.118.16.189:3005) is DOWN. All E2E tests require prod server. Need to restart via PM2 (`pm2 restart cricscores`) through RDP.
-
-**Next steps after server restart:**
+**Next steps:**
 1. Re-run Test 04 (Tournament Group+Knockout) — fixes applied but not validated yet
 2. Run Tests 05-08 sequentially
 3. If Test 04 navigation fix works, apply same pattern to Tests 05-06
+
+### Session 2026-02-26b: Fix PostgreSQL Connection Pool Death on VPS
+
+**Completed:** Diagnosed and fixed PostgreSQL performance issue on VPS — API requests taking 17-93 seconds due to dead postgres.js connection pool.
+
+**Root Cause:**
+- postgres.js connection pool inside PM2-managed Bun process had 0 active connections
+- Triggered by `CONNECT_TIMEOUT` errors starting 2026-02-24 18:39 (transient PG unavailability)
+- Unhandled errors from postgres.js poisoned the pool permanently with no recovery mechanism
+- PostgreSQL itself was healthy (direct psql queries instant, only 17/100 connections used)
+
+**Fix — 3 files changed:**
+1. `apps/server/src/config/database.ts` — Resilient pool: `connect_timeout` 30→10s, `max_lifetime: 1800` (30min forced refresh), `onnotice` handler, exported `recreatePool()` function
+2. `apps/server/src/routes/v1/health.ts` — Self-healing: 5s timeout on DB check, consecutive failure counter (3 failures → auto `recreatePool()`), returns `dbLatencyMs`
+3. `apps/server/src/index.ts` — `process.on('unhandledRejection')` handler catches postgres.js `CONNECT_TIMEOUT`/`CONNECTION_CLOSED`/`CONNECTION_ENDED` errors
+
+**Performance — Before vs After:**
+| Metric | Before | After |
+|--------|--------|-------|
+| Health TTFB | 82-93s | 11-21ms |
+| DB SELECT 1 | Timeout (disconnected) | 1-3ms |
+| External (Cloudflare) | Timeout | 473ms |
+
+**Deployment:** Files copied to `C:\Apps\cricscores\current\apps\server\`, PM2 process restarted. All other VPS apps restored.
 
 ### Session 2026-02-26: Expand Activity Feed Event Types + Settings Tab
 
