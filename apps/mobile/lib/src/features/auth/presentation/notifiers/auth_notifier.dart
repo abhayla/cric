@@ -103,7 +103,7 @@ class AuthNotifier extends Notifier<AuthUiState> {
 
   /// Register the Firebase user with the backend server.
   /// This ensures a user record exists in the DB for authenticated API calls.
-  /// Caches the returned user ID to avoid a redundant GET /auth/me call.
+  /// Runs fire-and-forget (unawaited) so it doesn't block the home redirect.
   Future<void> _registerWithServer() async {
     final sw = Stopwatch()..start();
     try {
@@ -117,19 +117,13 @@ class AuthNotifier extends Notifier<AuthUiState> {
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
       ));
-      final response = await dio.post(
+      await dio.post(
         '${AppConstants.apiBaseUrl}/auth/verify',
         data: {'idToken': idToken},
       );
       sw.stop();
       if (kDebugMode) {
         debugPrint('[AuthNotifier] POST /auth/verify: ${sw.elapsedMilliseconds}ms');
-      }
-
-      // Cache the user ID from the response to avoid a separate GET /auth/me
-      final userId = response.data?['user']?['id'] as String?;
-      if (userId != null) {
-        ref.read(cachedServerUserIdProvider.notifier).set(userId);
       }
     } catch (e) {
       sw.stop();
