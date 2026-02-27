@@ -41,6 +41,7 @@ class Team {
     required this.updatedAt,
     this.location,
     this.logoUrl,
+    this.liveMatchCount = 0,
   });
 
   final String id;
@@ -53,6 +54,10 @@ class Team {
   final String? logoUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int liveMatchCount;
+
+  /// Whether this team has at least one live match.
+  bool get hasLiveMatch => liveMatchCount > 0;
 
   /// First letter of team name for avatar fallback.
   String get initial => name.isNotEmpty ? name[0].toUpperCase() : '?';

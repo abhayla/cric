@@ -24,6 +24,7 @@ abstract class FixtureModel with _$FixtureModel {
     @JsonKey(name: 'estimatedDurationMinutes') int? estimatedDurationMinutes,
     String? venue,
     FixtureResultModel? result,
+    @JsonKey(name: 'matchStatus') String? matchStatus,
   }) = _FixtureModel;
 
   factory FixtureModel.fromJson(Map<String, dynamic> json) =>
@@ -48,6 +49,7 @@ extension FixtureModelX on FixtureModel {
         estimatedDurationMinutes: estimatedDurationMinutes,
         venue: venue,
         result: result?.toEntity(),
+        matchStatus: matchStatus,
       );
 }
 

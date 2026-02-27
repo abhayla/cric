@@ -102,7 +102,8 @@ List teams the authenticated user belongs to or created.
       "location": "Mumbai",
       "logoUrl": "...",
       "playerCount": 15,
-      "role": "owner"
+      "role": "owner",
+      "liveMatchCount": 0
     }
   ],
   "total": 3,
@@ -1464,6 +1465,7 @@ List all fixtures for a tournament.
       "homeTeam": { "id": "uuid", "name": "Mumbai Warriors" },
       "awayTeam": { "id": "uuid", "name": "Delhi Strikers" },
       "matchId": "uuid",
+      "matchStatus": "live",
       "scheduledDate": "2026-03-01",
       "scheduledTime": "09:00",
       "estimatedDurationMinutes": 180,

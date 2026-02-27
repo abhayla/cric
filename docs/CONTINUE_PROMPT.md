@@ -16,6 +16,51 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-27h: LIVE Indicators Across All Card Types
+
+**Status:** Implemented and tested. All Flutter tests pass (28 new/updated tests).
+
+**What was done:**
+- **Bug fix:** `MatchListItem.isLive` now includes `innings_break` status (was only `live`)
+- **New shared widget:** `PulsingLiveDot` — animated pulsing green dot with configurable size/color
+- **MatchCard:** `innings_break` shows as "LIVE", pulsing dot added before label
+- **TournamentCard:** Pulsing white dot added to existing red LIVE badge
+- **FixtureCard:** New LIVE badge with pulsing dot (shows when `fixture.matchStatus` is `live` or `innings_break`)
+- **TeamCard:** New LIVE badge with pulsing dot positioned top-right (shows when `team.liveMatchCount > 0`)
+- **Server:** `getFixtures()` LEFT JOINs matches to include `matchStatus` in response
+- **Server:** `getTeams()` batch queries live match count per team via `liveMatchCount` field
+- **Docs:** API.md updated with new response fields
+
+**Files changed (server):** `tournament.service.ts`, `team.service.ts`
+**Files changed (Flutter):** `match_list_item.dart`, `fixture.dart`, `team.dart`, `fixture_model.dart`, `team_model.dart`, `match_card.dart`, `tournament_card.dart`, `fixture_card.dart`, `team_card.dart`
+**New files:** `pulsing_live_dot.dart`, `pulsing_live_dot_test.dart`, `fixture_card_test.dart`, `team_card_test.dart`
+
+**Note:** Server tests for tournament.service and team.service were NOT added (would require DB test fixtures). Server typecheck passes. 7 pre-existing failures in player_profile tests are unrelated.
+
+### Session 2026-02-27g: Fix E2E Test 02 — Team Roster Verification
+
+**Status:** Fix implemented. `ensureTeamsExist` now verifies roster completeness via API.
+
+**Root cause:** `ensureTeamsExist` only checked if a team name existed in the UI list. If a prior test run created Team1 but crashed before adding all players, subsequent runs skipped it thinking it was complete. Test 02 then failed at toss wizard because Team1 had 0 players.
+
+**Changes (1 file):**
+- `integration_test/flows/team_setup_flow.dart` — When a team exists in the list, now calls `_verifyRosterViaApi()` to check `team.playerCount` against expected count via the `TeamRepository`. If wrong, calls `_deleteTeamViaApi()` (soft-delete via API using Riverpod container access), refreshes the UI, then recreates the team from scratch.
+
+**New helper functions:**
+- `_verifyRosterViaApi(tester, teamName, expectedCount)` — Reads `teamRepositoryProvider` from Riverpod container, fetches teams list, compares `playerCount`. Gracefully returns `true` on API failure.
+- `_deleteTeamViaApi(tester, teamName)` — Looks up team ID by name, calls `deleteTeam()`, invalidates `teamsListProvider`.
+
+**Verification:**
+- `flutter analyze integration_test/flows/team_setup_flow.dart`: No issues
+
+**Next steps:**
+1. **Run test 01** on device to verify auto-fix of incomplete Team1/Team2 (will detect wrong count → delete → recreate)
+2. **Run test 02** after test 01 passes to confirm the toss wizard no longer fails
+3. **Investigate tournament creation failure** — form submission doesn't navigate away, API likely failing silently
+4. Fix `Infinity` JSON serialization bug in WS publish
+5. Run remaining E2E tests (03, 05-07) after server issues resolved
+6. Continue Phase 7 Polish & Testing
+
 ### Session 2026-02-27f: Cold Start Performance Optimizations + E2E Testing
 
 **Status:** Performance optimizations implemented and committed. E2E tests reveal pre-existing server-side data issues.
@@ -43,7 +88,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - `lib/src/features/{home,teams,tournaments,player_profile,updates}/providers.dart` — Use shared Dio
 
 **Next steps:**
-1. **Investigate Team1 roster issue** — `getTeam(Team1)` returns empty roster from prod server. May need DB inspection on VPS.
+1. ~~**Investigate Team1 roster issue**~~ — Fixed in session 2026-02-27g
 2. **Investigate tournament creation failure** — form submission doesn't navigate away, API likely failing silently
 3. Fix `Infinity` JSON serialization bug in WS publish
 4. Run remaining E2E tests (05, 06, 07) after server issues resolved

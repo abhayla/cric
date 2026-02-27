@@ -40,6 +40,7 @@ class Fixture {
     this.estimatedDurationMinutes,
     this.venue,
     this.result,
+    this.matchStatus,
   });
 
   final String id;
@@ -60,6 +61,10 @@ class Fixture {
   final int? estimatedDurationMinutes;
   final String? venue;
   final FixtureResult? result;
+  final String? matchStatus;
+
+  /// Whether this fixture's match is currently live (including innings break).
+  bool get isLive => matchStatus == 'live' || matchStatus == 'innings_break';
 
   /// Whether this fixture has an associated match (started).
   bool get hasMatch => matchId != null;

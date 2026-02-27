@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/pulsing_live_dot.dart';
 import '../../domain/entities/fixture.dart';
 
 class FixtureCard extends StatelessWidget {
@@ -36,7 +37,32 @@ class FixtureCard extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  if (fixture.scheduleDescription != null)
+                  if (fixture.isLive)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const PulsingLiveDot(size: 6),
+                          const SizedBox(width: 4),
+                          Text(
+                            'LIVE',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: Colors.green,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (fixture.scheduleDescription != null)
                     Text(
                       fixture.scheduleDescription!,
                       style: theme.textTheme.bodySmall?.copyWith(

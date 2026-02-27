@@ -19,6 +19,7 @@ abstract class TeamModel with _$TeamModel {
     @Default('member') String role,
     @JsonKey(name: 'createdAt') String? createdAt,
     @JsonKey(name: 'updatedAt') String? updatedAt,
+    @JsonKey(name: 'liveMatchCount') @Default(0) int liveMatchCount,
   }) = _TeamModel;
 
   factory TeamModel.fromJson(Map<String, dynamic> json) =>
@@ -39,6 +40,7 @@ extension TeamModelX on TeamModel {
             createdAt != null ? DateTime.parse(createdAt!) : DateTime.now(),
         updatedAt:
             updatedAt != null ? DateTime.parse(updatedAt!) : DateTime.now(),
+        liveMatchCount: liveMatchCount,
       );
 }
 

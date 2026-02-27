@@ -34,7 +34,7 @@ class MatchListItem {
 
   String get title => '$homeTeamName vs $awayTeamName';
 
-  bool get isLive => status == 'live';
+  bool get isLive => status == 'live' || status == 'innings_break';
 
   bool get isCompleted => status == 'completed';
 }

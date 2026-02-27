@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/pulsing_live_dot.dart';
 import '../../domain/entities/match_list_item.dart';
 
 class MatchCard extends StatelessWidget {
@@ -119,8 +120,9 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isLive = status == 'live' || status == 'innings_break';
     final (label, color) = switch (status) {
-      'live' => ('LIVE', Colors.green),
+      'live' || 'innings_break' => ('LIVE', Colors.green),
       'completed' => ('Completed', theme.colorScheme.outline),
       'setup' => ('Setup', theme.colorScheme.primary),
       'toss' => ('Toss', Colors.orange),
@@ -134,12 +136,21 @@ class _StatusBadge extends StatelessWidget {
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLive) ...[
+            PulsingLiveDot(size: 6, color: color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

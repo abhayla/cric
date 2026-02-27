@@ -2,6 +2,7 @@ import { eq, and, ilike, count, sql } from 'drizzle-orm';
 import { db } from '../db/index.ts';
 import { teams } from '../db/schema/teams.ts';
 import { teamRosters } from '../db/schema/teams.ts';
+import { matches } from '../db/schema/matches.ts';
 import { users } from '../db/schema/users.ts';
 import { AppError } from '../middleware/error-handler.ts';
 import { emitPlayerAddedEvents, emitPlayerRemovedEvents, emitTeamJoinedEvents } from './activity-feed.service.ts';
@@ -125,8 +126,37 @@ export async function getTeams(userId: string, page: number = 1, limit: number =
     }),
   );
 
+  // Batch query: count live matches per team
+  const teamIds = result.map((t) => t.id);
+  const liveMatchCounts = new Map<string, number>();
+  if (teamIds.length > 0) {
+    const liveCounts = await db
+      .select({
+        teamId: sql<string>`team_id`,
+        count: count(),
+      })
+      .from(
+        sql`(
+          SELECT ${matches.homeTeamId} AS team_id, ${matches.id} FROM ${matches}
+          WHERE ${matches.status} IN ('live', 'innings_break')
+            AND ${matches.homeTeamId} IN ${sql`(${sql.join(teamIds.map(id => sql`${id}`), sql`, `)})`}
+          UNION ALL
+          SELECT ${matches.awayTeamId} AS team_id, ${matches.id} FROM ${matches}
+          WHERE ${matches.status} IN ('live', 'innings_break')
+            AND ${matches.awayTeamId} IN ${sql`(${sql.join(teamIds.map(id => sql`${id}`), sql`, `)})`}
+        ) AS live_matches`,
+      )
+      .groupBy(sql`team_id`);
+    for (const row of liveCounts) {
+      liveMatchCounts.set(row.teamId, row.count);
+    }
+  }
+
   return {
-    teams: teamsWithMeta,
+    teams: teamsWithMeta.map((t) => ({
+      ...t,
+      liveMatchCount: liveMatchCounts.get(t.id) ?? 0,
+    })),
     total: countResult!.total,
     page,
   };

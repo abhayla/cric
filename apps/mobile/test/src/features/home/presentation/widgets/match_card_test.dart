@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/home/domain/entities/match_list_item.dart';
 import 'package:cricscores/src/features/home/presentation/widgets/match_card.dart';
+import 'package:cricscores/src/shared/widgets/pulsing_live_dot.dart';
 
 void main() {
   Widget buildTestWidget(MatchListItem match, {VoidCallback? onTap}) {
@@ -146,6 +147,36 @@ void main() {
       await tester.pumpWidget(buildTestWidget(liveMatch));
 
       expect(find.textContaining('Wankhede'), findsOneWidget);
+    });
+
+    testWidgets('displays LIVE badge for innings_break status', (tester) async {
+      final inningsBreakMatch = MatchListItem(
+        id: 'match-ib',
+        homeTeamId: 'team-1',
+        awayTeamId: 'team-2',
+        homeTeamName: 'Mumbai Warriors',
+        awayTeamName: 'Chennai Kings',
+        format: 'T20',
+        totalOvers: 20,
+        status: 'innings_break',
+        matchDate: '2026-03-15',
+      );
+      await tester.pumpWidget(buildTestWidget(inningsBreakMatch));
+
+      expect(find.text('LIVE'), findsOneWidget);
+    });
+
+    testWidgets('renders PulsingLiveDot for live match', (tester) async {
+      await tester.pumpWidget(buildTestWidget(liveMatch));
+
+      expect(find.byType(PulsingLiveDot), findsOneWidget);
+    });
+
+    testWidgets('does not render PulsingLiveDot for completed match',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget(completedMatch));
+
+      expect(find.byType(PulsingLiveDot), findsNothing);
     });
   });
 }

@@ -765,8 +765,10 @@ export async function getFixtures(tournamentId: string, roundType?: string, grou
       estimatedDurationMinutes: tournamentFixtures.estimatedDurationMinutes,
       venue: tournamentFixtures.venue,
       createdAt: tournamentFixtures.createdAt,
+      matchStatus: matches.status,
     })
     .from(tournamentFixtures)
+    .leftJoin(matches, eq(tournamentFixtures.matchId, matches.id))
     .where(and(...conditions))
     .orderBy(asc(tournamentFixtures.roundNumber), asc(tournamentFixtures.fixtureOrder));
 
@@ -788,6 +790,7 @@ export async function getFixtures(tournamentId: string, roundType?: string, grou
 
   return result.map((f) => ({
     ...f,
+    matchStatus: f.matchStatus ?? null,
     homeTeamName: nameMap.get(f.homeTeamId) ?? null,
     awayTeamName: nameMap.get(f.awayTeamId) ?? null,
   }));

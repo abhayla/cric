@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/pulsing_live_dot.dart';
 import '../../domain/entities/tournament.dart';
 
 class TournamentCard extends StatelessWidget {
@@ -118,13 +119,22 @@ class _StatusBadge extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        status.label.toUpperCase(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (status == TournamentStatus.live) ...[
+            PulsingLiveDot(size: 6, color: textColor),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            status.label.toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
