@@ -49,14 +49,37 @@ final authStateProvider = StreamProvider<User?>((ref) {
   return controller.stream;
 });
 
+/// Cached server user ID — populated by _registerWithServer() during login.
+/// Eliminates the need for a separate GET /auth/me call after fresh login.
+final cachedServerUserIdProvider =
+    NotifierProvider<CachedServerUserId, String?>(CachedServerUserId.new);
+
+class CachedServerUserId extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String value) => state = value;
+}
+
 /// The current authenticated user's server-assigned UUID.
-/// Fetches from GET /auth/me using the Firebase ID token.
-/// Returns null if not authenticated or if the server call fails.
+/// On fresh login, uses the cached value from POST /auth/verify response.
+/// On app restart (already logged in), falls back to GET /auth/me.
 final currentUserIdProvider = FutureProvider<String?>((ref) async {
   final authState = ref.watch(authStateProvider);
   final user = authState.value;
   if (user == null) return null;
 
+  // Check cache first (populated during login by _registerWithServer)
+  final cached = ref.read(cachedServerUserIdProvider);
+  if (cached != null) {
+    if (kDebugMode) {
+      debugPrint('[API-timing] GET /auth/me: SKIPPED (cached from /auth/verify)');
+    }
+    return cached;
+  }
+
+  // Fallback: fetch from server (app restart scenario)
+  final sw = Stopwatch()..start();
   try {
     final idToken = await user.getIdToken();
     if (idToken == null) return null;
@@ -70,10 +93,15 @@ final currentUserIdProvider = FutureProvider<String?>((ref) async {
 
     final response = await dio.get('/auth/me');
     final userId = response.data['user']?['id'] as String?;
+    sw.stop();
+    if (kDebugMode) {
+      debugPrint('[API-timing] GET /auth/me: ${sw.elapsedMilliseconds}ms');
+    }
     return userId;
   } catch (e) {
+    sw.stop();
     if (kDebugMode) {
-      debugPrint('[currentUserIdProvider] Failed to fetch user ID: $e');
+      debugPrint('[API-timing] GET /auth/me FAILED (${sw.elapsedMilliseconds}ms): $e');
     }
     return null;
   }

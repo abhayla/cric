@@ -1,8 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/providers.dart';
-import '../../core/network/auth_interceptors.dart';
+import '../../core/network/dio_provider.dart';
 import 'data/datasources/player_profile_remote_datasource.dart';
 import 'data/repositories/player_profile_repository_impl.dart';
 import 'domain/entities/career_stats.dart';
@@ -10,27 +8,10 @@ import 'domain/entities/match_performance.dart';
 import 'domain/entities/player_profile.dart';
 import 'domain/repositories/player_profile_repository.dart';
 
-/// Dio instance for player profile feature.
-final _dioProvider = Provider<Dio>((ref) {
-  final dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    sendTimeout: const Duration(seconds: 10),
-  ));
-
-  try {
-    addAuthInterceptors(dio, ref.read(firebaseAuthDatasourceProvider));
-  } catch (_) {
-    // Provider not available (e.g., in test environment)
-  }
-
-  return dio;
-});
-
 /// Player profile remote datasource.
 final playerProfileRemoteDatasourceProvider =
     Provider<PlayerProfileRemoteDatasource>((ref) {
-  return PlayerProfileRemoteDatasource(dio: ref.watch(_dioProvider));
+  return PlayerProfileRemoteDatasource(dio: ref.watch(authenticatedDioProvider));
 });
 
 /// Player profile repository.

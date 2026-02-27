@@ -1,35 +1,17 @@
-import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/providers.dart';
-import '../../core/network/auth_interceptors.dart';
+import '../../core/network/dio_provider.dart';
 import 'data/datasources/tournament_remote_datasource.dart';
 import 'data/repositories/tournament_repository_impl.dart';
 import 'domain/entities/fixture.dart';
 import 'domain/entities/tournament.dart';
 import 'domain/repositories/tournament_repository.dart';
 
-/// Dio instance for tournaments feature.
-final _dioProvider = Provider<Dio>((ref) {
-  final dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    sendTimeout: const Duration(seconds: 10),
-  ));
-
-  try {
-    addAuthInterceptors(dio, ref.read(firebaseAuthDatasourceProvider));
-  } catch (_) {
-    // Provider not available (e.g., in test environment)
-  }
-
-  return dio;
-});
-
 /// Tournaments remote datasource.
 final tournamentRemoteDatasourceProvider =
     Provider<TournamentRemoteDatasource>((ref) {
-  return TournamentRemoteDatasource(dio: ref.watch(_dioProvider));
+  return TournamentRemoteDatasource(dio: ref.watch(authenticatedDioProvider));
 });
 
 /// Tournaments repository.
@@ -59,8 +41,16 @@ class TournamentsListNotifier extends AsyncNotifier<TournamentListResult> {
   }
 
   Future<TournamentListResult> _fetchTournaments({int page = 1}) async {
+    final sw = Stopwatch()..start();
     final repository = ref.read(tournamentRepositoryProvider);
-    return repository.getTournaments(page: page);
+    final result = repository.getTournaments(page: page);
+    result.then((_) {
+      sw.stop();
+      if (kDebugMode) {
+        debugPrint('[API-timing] GET /tournaments: ${sw.elapsedMilliseconds}ms');
+      }
+    });
+    return result;
   }
 
   Future<void> refresh() async {

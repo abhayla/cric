@@ -1,35 +1,17 @@
-import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cricscores/src/shared/providers/database_provider.dart';
 
-import '../../app/providers.dart';
-import '../../core/network/auth_interceptors.dart';
+import '../../core/network/dio_provider.dart';
 import 'data/datasources/team_local_datasource.dart';
 import 'data/datasources/team_remote_datasource.dart';
 import 'data/repositories/team_repository_impl.dart';
 import 'domain/repositories/team_repository.dart';
 
-/// Dio instance for teams feature.
-final _dioProvider = Provider<Dio>((ref) {
-  final dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    sendTimeout: const Duration(seconds: 10),
-  ));
-
-  try {
-    addAuthInterceptors(dio, ref.read(firebaseAuthDatasourceProvider));
-  } catch (_) {
-    // Provider not available (e.g., in test environment)
-  }
-
-  return dio;
-});
-
 /// Teams remote datasource.
 final teamRemoteDatasourceProvider = Provider<TeamRemoteDatasource>((ref) {
-  return TeamRemoteDatasource(dio: ref.watch(_dioProvider));
+  return TeamRemoteDatasource(dio: ref.watch(authenticatedDioProvider));
 });
 
 /// Teams local datasource (optional — null if DB not initialized).
@@ -71,8 +53,16 @@ class TeamsListNotifier extends AsyncNotifier<TeamListResult> {
   }
 
   Future<TeamListResult> _fetchTeams({int page = 1}) async {
+    final sw = Stopwatch()..start();
     final repository = ref.read(teamRepositoryProvider);
-    return repository.getTeams(page: page);
+    final result = repository.getTeams(page: page);
+    result.then((_) {
+      sw.stop();
+      if (kDebugMode) {
+        debugPrint('[API-timing] GET /teams: ${sw.elapsedMilliseconds}ms');
+      }
+    });
+    return result;
   }
 
   Future<void> refresh() async {

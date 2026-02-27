@@ -70,7 +70,7 @@ class AuthNotifier extends Notifier<AuthUiState> {
           state = state.copyWith(status: AuthStatus.verifyingOtp);
           try {
             await FirebaseAuth.instance.signInWithCredential(credential);
-            await _registerWithServer();
+            unawaited(_registerWithServer());
             state = state.copyWith(status: AuthStatus.verified);
           } catch (e) {
             state = AuthUiState(
@@ -103,26 +103,39 @@ class AuthNotifier extends Notifier<AuthUiState> {
 
   /// Register the Firebase user with the backend server.
   /// This ensures a user record exists in the DB for authenticated API calls.
+  /// Caches the returned user ID to avoid a redundant GET /auth/me call.
   Future<void> _registerWithServer() async {
+    final sw = Stopwatch()..start();
     try {
       final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
       if (idToken == null) return;
 
+      if (kDebugMode) {
+        debugPrint('[AuthNotifier] POST /auth/verify starting...');
+      }
       final dio = Dio(BaseOptions(
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
       ));
-      await dio.post(
+      final response = await dio.post(
         '${AppConstants.apiBaseUrl}/auth/verify',
         data: {'idToken': idToken},
       );
+      sw.stop();
       if (kDebugMode) {
-        debugPrint('[AuthNotifier] Server registration successful');
+        debugPrint('[AuthNotifier] POST /auth/verify: ${sw.elapsedMilliseconds}ms');
+      }
+
+      // Cache the user ID from the response to avoid a separate GET /auth/me
+      final userId = response.data?['user']?['id'] as String?;
+      if (userId != null) {
+        ref.read(cachedServerUserIdProvider.notifier).set(userId);
       }
     } catch (e) {
+      sw.stop();
       // Non-fatal: user can still use the app, server calls will just fail
       if (kDebugMode) {
-        debugPrint('[AuthNotifier] Server registration failed: $e');
+        debugPrint('[AuthNotifier] POST /auth/verify FAILED (${sw.elapsedMilliseconds}ms): $e');
       }
     }
   }
@@ -135,7 +148,7 @@ class AuthNotifier extends Notifier<AuthUiState> {
     try {
       final datasource = ref.read(firebaseAuthDatasourceProvider);
       await datasource.verifyOtp(smsCode);
-      await _registerWithServer();
+      unawaited(_registerWithServer());
       state = state.copyWith(status: AuthStatus.verified);
       return true;
     } on AuthException catch (e) {
