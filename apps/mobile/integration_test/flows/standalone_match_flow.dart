@@ -11,7 +11,6 @@ import '../config/test_data.dart';
 import '../core/test_utils.dart';
 import '../helpers/match_setup.dart';
 import '../helpers/modals.dart';
-import '../helpers/navigation.dart';
 import '../models/delivery_record.dart';
 import '../models/match_outcome.dart';
 import 'random_innings.dart';
@@ -37,7 +36,9 @@ Future<MatchOutcome> scoreStandaloneMatch({
   final battingTeam = chooseBat
       ? (tossWinner == homeTeamData.name ? homeTeamData : awayTeamData)
       : (tossWinner == homeTeamData.name ? awayTeamData : homeTeamData);
-  final bowlingTeam = battingTeam.name == homeTeamData.name ? awayTeamData : homeTeamData;
+  final bowlingTeam = battingTeam.name == homeTeamData.name
+      ? awayTeamData
+      : homeTeamData;
 
   final opener1 = battingTeam.players[0].name;
   final opener2 = battingTeam.players[1].name;
@@ -74,11 +75,17 @@ Future<MatchOutcome> scoreStandaloneMatch({
     magicOverNumber: magicOverNumber,
     random: rng,
   );
-  print('  [Innings 1] ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets}');
+  print(
+    '  [Innings 1] ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets}',
+  );
 
   // Wait for innings transition modal (may take a moment after server sync)
-  await waitForFinder(tester, find.byType(InningsTransitionModal),
-      timeoutMs: 15000, intervalMs: 500);
+  await waitForFinder(
+    tester,
+    find.byType(InningsTransitionModal),
+    timeoutMs: 15000,
+    intervalMs: 500,
+  );
 
   final transitionModal = find.byType(InningsTransitionModal);
   if (transitionModal.evaluate().isNotEmpty) {
@@ -97,7 +104,9 @@ Future<MatchOutcome> scoreStandaloneMatch({
     final battingPlayerNames2 = bowlingTeam.players.map((p) => p.name).toList();
     final bowlingPlayerNames2 = battingTeam.players.map((p) => p.name).toList();
 
-    print('  [Innings 2] ${bowlingTeam.name} batting (target: ${matchRecord.firstInningsRuns + 1})...');
+    print(
+      '  [Innings 2] ${bowlingTeam.name} batting (target: ${matchRecord.firstInningsRuns + 1})...',
+    );
     await playRandomInnings(
       tester: tester,
       matchRecord: matchRecord,
@@ -109,16 +118,20 @@ Future<MatchOutcome> scoreStandaloneMatch({
       magicOverNumber: magicOverNumber,
       random: rng,
     );
-    print('  [Innings 2] ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}');
+    print(
+      '  [Innings 2] ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}',
+    );
   }
 
   // Capture result
   await settle(tester);
   final matchResult = await captureMatchCompleteResult(tester);
 
-  print('  Result: ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets} '
-      'vs ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}'
-      '${matchResult != null ? " — $matchResult" : ""}');
+  print(
+    '  Result: ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets} '
+    'vs ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}'
+    '${matchResult != null ? " — $matchResult" : ""}',
+  );
 
   return MatchOutcome(
     homeTeam: homeTeamData.name,
@@ -152,7 +165,9 @@ Future<MatchOutcome> scoreFixtureMatch({
   // Random toss
   final tossWinner = rng.nextBool() ? homeTeam : awayTeam;
   final chooseBat = rng.nextBool();
-  final battingTeamName = chooseBat ? tossWinner : (tossWinner == homeTeam ? awayTeam : homeTeam);
+  final battingTeamName = chooseBat
+      ? tossWinner
+      : (tossWinner == homeTeam ? awayTeam : homeTeam);
   final bowlingTeamName = battingTeamName == homeTeam ? awayTeam : homeTeam;
 
   final battingTeamData = allTeams.firstWhere((t) => t.name == battingTeamName);
@@ -175,8 +190,12 @@ Future<MatchOutcome> scoreFixtureMatch({
   );
 
   final matchRecord = MatchRecord(matchId: 'fixture');
-  final bowlingPlayerNames = bowlingTeamData.players.map((p) => p.name).toList();
-  final battingPlayerNames = battingTeamData.players.map((p) => p.name).toList();
+  final bowlingPlayerNames = bowlingTeamData.players
+      .map((p) => p.name)
+      .toList();
+  final battingPlayerNames = battingTeamData.players
+      .map((p) => p.name)
+      .toList();
 
   print('  [Innings 1] $battingTeamName batting...');
   await playRandomInnings(
@@ -189,11 +208,17 @@ Future<MatchOutcome> scoreFixtureMatch({
     batterNames: battingPlayerNames,
     random: rng,
   );
-  print('  [Innings 1] ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets}');
+  print(
+    '  [Innings 1] ${matchRecord.firstInningsRuns}/${matchRecord.firstInningsWickets}',
+  );
 
   // Wait for innings transition modal (may take a moment after server sync)
-  await waitForFinder(tester, find.byType(InningsTransitionModal),
-      timeoutMs: 15000, intervalMs: 500);
+  await waitForFinder(
+    tester,
+    find.byType(InningsTransitionModal),
+    timeoutMs: 15000,
+    intervalMs: 500,
+  );
 
   final transitionModal = find.byType(InningsTransitionModal);
   if (transitionModal.evaluate().isNotEmpty) {
@@ -208,10 +233,16 @@ Future<MatchOutcome> scoreFixtureMatch({
       bowler: inn2Bowler,
     );
 
-    final battingPlayerNames2 = bowlingTeamData.players.map((p) => p.name).toList();
-    final bowlingPlayerNames2 = battingTeamData.players.map((p) => p.name).toList();
+    final battingPlayerNames2 = bowlingTeamData.players
+        .map((p) => p.name)
+        .toList();
+    final bowlingPlayerNames2 = battingTeamData.players
+        .map((p) => p.name)
+        .toList();
 
-    print('  [Innings 2] $bowlingTeamName batting (target: ${matchRecord.firstInningsRuns + 1})...');
+    print(
+      '  [Innings 2] $bowlingTeamName batting (target: ${matchRecord.firstInningsRuns + 1})...',
+    );
     await playRandomInnings(
       tester: tester,
       matchRecord: matchRecord,
@@ -222,7 +253,9 @@ Future<MatchOutcome> scoreFixtureMatch({
       batterNames: battingPlayerNames2,
       random: rng,
     );
-    print('  [Innings 2] ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}');
+    print(
+      '  [Innings 2] ${matchRecord.secondInningsRuns}/${matchRecord.secondInningsWickets}',
+    );
   }
 
   // Capture result before dismissing modal

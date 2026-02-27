@@ -273,3 +273,25 @@ room.
   - Table create/drop permissions verified (migrations will work)
 
   Note: Save the password KCwMJ2LmWY00KROR62+bB5V5kBVlXdrA securely -- it'll be used in the .env file in Phase 3.
+
+
+  ══════════════════════════════════════════════════
+   PERFORMANCE REPORT
+  ══════════════════════════════════════════════════
+  Cold Start:           15.9s
+  Team Verification:    2.3s
+  Match Setup:          15.5s
+  Toss Wizard:          17.4s
+  First Over (6 del):   6.3s      (avg 1050ms/del)
+  Undo + Redo:          2.0s
+  Over Transition:      3.6s
+  1st Innings Total:    52.4s     (29 del, avg 1806ms/del)
+  Innings Transition:   8.0s
+  2nd Innings Total:    48.5s     (32 del, avg 1517ms/del)
+  Match Complete:       5.1s
+  Navigation Sweep:     5.6s      (6 screens, avg 930ms/screen)
+  ──────────────────────────────────────────────────
+  TOTAL:                176.3s
+  Match Result:         Team3 won by 5 runs
+  Score: 43/1 vs 38/0
+  ══════════════════════════════════════════════════

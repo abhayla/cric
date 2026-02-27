@@ -538,20 +538,19 @@ final routerProvider = Provider<GoRouter>((ref) {
                     debugPrint('[onStartMatch] Starting match $matchId...');
                   }
 
-                  // 1. Set Playing XI for both teams
-                  await matchRepo.setPlayingXI(
-                    matchId,
-                    tossState.toHomePlayingXIInput(),
-                  );
+                  // 1. Set Playing XI for both teams (parallel — independent calls)
+                  await Future.wait([
+                    matchRepo.setPlayingXI(
+                      matchId,
+                      tossState.toHomePlayingXIInput(),
+                    ),
+                    matchRepo.setPlayingXI(
+                      matchId,
+                      tossState.toAwayPlayingXIInput(),
+                    ),
+                  ]);
                   if (kDebugMode) {
-                    debugPrint('[onStartMatch] Home XI set, calling setPlayingXI for away...');
-                  }
-                  await matchRepo.setPlayingXI(
-                    matchId,
-                    tossState.toAwayPlayingXIInput(),
-                  );
-                  if (kDebugMode) {
-                    debugPrint('[onStartMatch] Away XI set, recording toss...');
+                    debugPrint('[onStartMatch] Both XIs set, recording toss...');
                   }
 
                   // 2. Record toss (returns updated match with innings)

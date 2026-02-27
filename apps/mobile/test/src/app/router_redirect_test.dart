@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:cricscores/src/app/providers.dart';
 import 'package:cricscores/src/app/router.dart';
 
 class MockUser extends Mock implements User {}
@@ -31,7 +28,8 @@ void main() {
           }
 
           final isOnSplash = currentPath == AppRoutes.splash;
-          final isAuthRoute = currentPath == AppRoutes.login ||
+          final isAuthRoute =
+              currentPath == AppRoutes.login ||
               currentPath == AppRoutes.otp ||
               isOnSplash;
 
@@ -51,35 +49,31 @@ void main() {
         routes: [
           GoRoute(
             path: AppRoutes.splash,
-            builder: (_, __) =>
-                const Scaffold(body: Text('Splash')),
+            builder: (_, _) => const Scaffold(body: Text('Splash')),
           ),
           GoRoute(
             path: AppRoutes.login,
-            builder: (_, __) =>
-                const Scaffold(body: Text('Login')),
+            builder: (_, _) => const Scaffold(body: Text('Login')),
           ),
           GoRoute(
             path: AppRoutes.otp,
-            builder: (_, __) =>
-                const Scaffold(body: Text('OTP')),
+            builder: (_, _) => const Scaffold(body: Text('OTP')),
           ),
           GoRoute(
             path: AppRoutes.home,
-            builder: (_, __) =>
-                const Scaffold(body: Text('Home')),
+            builder: (_, _) => const Scaffold(body: Text('Home')),
           ),
           GoRoute(
             path: '/teams/:teamId',
-            builder: (_, __) =>
-                const Scaffold(body: Text('Team Detail')),
+            builder: (_, _) => const Scaffold(body: Text('Team Detail')),
           ),
         ],
       );
     }
 
-    testWidgets('redirects to login when not authenticated and on splash',
-        (tester) async {
+    testWidgets('redirects to login when not authenticated and on splash', (
+      tester,
+    ) async {
       router = buildRouter(const AsyncValue.data(null));
 
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
@@ -89,23 +83,24 @@ void main() {
     });
 
     testWidgets(
-        'redirects to login when not authenticated and on protected route',
-        (tester) async {
-      router = buildRouter(const AsyncValue.data(null));
+      'redirects to login when not authenticated and on protected route',
+      (tester) async {
+        router = buildRouter(const AsyncValue.data(null));
 
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.pumpAndSettle();
 
-      // Try to navigate to a protected route
-      router.go('/teams/abc');
-      await tester.pumpAndSettle();
+        // Try to navigate to a protected route
+        router.go('/teams/abc');
+        await tester.pumpAndSettle();
 
-      expect(find.text('Login'), findsOneWidget);
-    });
+        expect(find.text('Login'), findsOneWidget);
+      },
+    );
 
-    testWidgets(
-        'stays on login when not authenticated and already on login',
-        (tester) async {
+    testWidgets('stays on login when not authenticated and already on login', (
+      tester,
+    ) async {
       router = buildRouter(const AsyncValue.data(null));
 
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
@@ -121,8 +116,9 @@ void main() {
       expect(find.text('Login'), findsOneWidget);
     });
 
-    testWidgets('redirects to home when authenticated and on splash',
-        (tester) async {
+    testWidgets('redirects to home when authenticated and on splash', (
+      tester,
+    ) async {
       final mockUser = MockUser();
       router = buildRouter(AsyncValue.data(mockUser));
 
@@ -132,8 +128,9 @@ void main() {
       expect(find.text('Home'), findsOneWidget);
     });
 
-    testWidgets('redirects to home when authenticated and on login',
-        (tester) async {
+    testWidgets('redirects to home when authenticated and on login', (
+      tester,
+    ) async {
       final mockUser = MockUser();
       router = buildRouter(AsyncValue.data(mockUser));
 
@@ -147,8 +144,7 @@ void main() {
       expect(find.text('Home'), findsOneWidget);
     });
 
-    testWidgets('stays on protected route when authenticated',
-        (tester) async {
+    testWidgets('stays on protected route when authenticated', (tester) async {
       final mockUser = MockUser();
       router = buildRouter(AsyncValue.data(mockUser));
 

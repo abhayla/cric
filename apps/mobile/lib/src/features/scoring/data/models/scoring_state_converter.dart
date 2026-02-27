@@ -72,7 +72,7 @@ Map<String, dynamic> _scoringStateToMap(ScoringState state) {
     'completionReason': state.completionReason?.apiValue,
     'isProcessing': state.isProcessing,
     'error': state.error,
-    'deliveryHistory': state.deliveryHistory.map(_deliveryToMap).toList(),
+    // deliveryHistory omitted — reconstructed from completedOvers + currentOverDeliveries
     'undoBlockedByTransition': state.undoBlockedByTransition,
     'firstInningsSummary': state.firstInningsSummary != null
         ? _firstInningsSummaryToMap(state.firstInningsSummary!)
@@ -89,6 +89,30 @@ Map<String, dynamic> _scoringStateToMap(ScoringState state) {
 }
 
 ScoringState _scoringStateFromMap(Map<String, dynamic> m) {
+  // Parse collections first so we can reconstruct deliveryHistory
+  final currentOverDeliveries = (m['currentOverDeliveries'] as List<dynamic>?)
+          ?.map((e) => _deliveryFromMap(e as Map<String, dynamic>))
+          .toList() ??
+      [];
+  final completedOvers = (m['completedOvers'] as List<dynamic>?)
+          ?.map((e) => _overFromMap(e as Map<String, dynamic>))
+          .toList() ??
+      [];
+
+  // Reconstruct deliveryHistory from completedOvers + currentOverDeliveries.
+  // Backward compat: if legacy 'deliveryHistory' key exists, use it.
+  final List<Delivery> deliveryHistory;
+  if (m.containsKey('deliveryHistory') && m['deliveryHistory'] != null) {
+    deliveryHistory = (m['deliveryHistory'] as List<dynamic>)
+        .map((e) => _deliveryFromMap(e as Map<String, dynamic>))
+        .toList();
+  } else {
+    deliveryHistory = [
+      ...completedOvers.expand((o) => o.deliveries),
+      ...currentOverDeliveries,
+    ];
+  }
+
   return ScoringState(
     matchId: m['matchId'] as String,
     inningsId: m['inningsId'] as String,
@@ -129,14 +153,8 @@ ScoringState _scoringStateFromMap(Map<String, dynamic> m) {
     target: m['target'] as int?,
     isFreeHitPending: m['isFreeHitPending'] as bool? ?? false,
     currentOverBalls: m['currentOverBalls'] as int? ?? 0,
-    currentOverDeliveries: (m['currentOverDeliveries'] as List<dynamic>?)
-            ?.map((e) => _deliveryFromMap(e as Map<String, dynamic>))
-            .toList() ??
-        [],
-    completedOvers: (m['completedOvers'] as List<dynamic>?)
-            ?.map((e) => _overFromMap(e as Map<String, dynamic>))
-            .toList() ??
-        [],
+    currentOverDeliveries: currentOverDeliveries,
+    completedOvers: completedOvers,
     batterStats: (m['batterStats'] as Map<String, dynamic>?)?.map(
           (k, v) =>
               MapEntry(k, _batterInningsFromMap(v as Map<String, dynamic>)),
@@ -155,10 +173,7 @@ ScoringState _scoringStateFromMap(Map<String, dynamic> m) {
         : null,
     isProcessing: m['isProcessing'] as bool? ?? false,
     error: m['error'] as String?,
-    deliveryHistory: (m['deliveryHistory'] as List<dynamic>?)
-            ?.map((e) => _deliveryFromMap(e as Map<String, dynamic>))
-            .toList() ??
-        [],
+    deliveryHistory: deliveryHistory,
     undoBlockedByTransition: m['undoBlockedByTransition'] as bool? ?? false,
     firstInningsSummary: m['firstInningsSummary'] != null
         ? _firstInningsSummaryFromMap(

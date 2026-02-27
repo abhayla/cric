@@ -589,12 +589,43 @@ class ScoringState {
 /// Will be wired to a Riverpod provider in a later issue. Tests initialize
 /// state directly.
 class ScoringNotifier {
-  ScoringNotifier(this._state);
+  ScoringNotifier(this._state) {
+    // Initialize mutable backing collections from initial state
+    _deliveries = List<Delivery>.of(_state.deliveryHistory);
+    _batterStats = Map<String, BatterInnings>.of(_state.batterStats);
+    _bowlerStats = Map<String, BowlerSpell>.of(_state.bowlerStats);
+    _completedOvers = List<Over>.of(_state.completedOvers);
+    _currentOverDeliveries = List<Delivery>.of(_state.currentOverDeliveries);
+    // Initialize fall-of-wickets cache from existing state
+    _cachedFallOfWickets.addAll(_state.fallOfWickets);
+  }
 
   static const _uuid = Uuid();
 
   ScoringState _state;
   ScoringState get state => _state;
+
+  // ── Mutable backing collections (O(1) mutations instead of O(n) copies) ──
+  late List<Delivery> _deliveries;
+  late Map<String, BatterInnings> _batterStats;
+  late Map<String, BowlerSpell> _bowlerStats;
+  late List<Over> _completedOvers;
+  late List<Delivery> _currentOverDeliveries;
+  final List<FallOfWicket> _cachedFallOfWickets = [];
+
+  /// Cached fall of wickets — maintained incrementally by _processDelivery/undo.
+  List<FallOfWicket> get fallOfWickets => List.unmodifiable(_cachedFallOfWickets);
+
+  /// Reinitialize mutable backing fields from current _state.
+  /// Called after wholesale state replacement (startSecondInnings, startSuperOver).
+  void _reinitMutableFields() {
+    _deliveries = List<Delivery>.of(_state.deliveryHistory);
+    _batterStats = Map<String, BatterInnings>.of(_state.batterStats);
+    _bowlerStats = Map<String, BowlerSpell>.of(_state.bowlerStats);
+    _completedOvers = List<Over>.of(_state.completedOvers);
+    _currentOverDeliveries = List<Delivery>.of(_state.currentOverDeliveries);
+    _cachedFallOfWickets.clear();
+  }
 
   // ── Public operations ──
 
@@ -691,8 +722,13 @@ class ScoringNotifier {
   void undoLastDelivery() {
     if (!_state.canUndo) return;
 
-    final lastDel = _state.deliveryHistory.last;
-    final history = List<Delivery>.from(_state.deliveryHistory)..removeLast();
+    final lastDel = _deliveries.last;
+    _deliveries.removeLast();
+
+    // Reverse fall-of-wickets cache
+    if (lastDel.isWicket && _cachedFallOfWickets.isNotEmpty) {
+      _cachedFallOfWickets.removeLast();
+    }
 
     // Reverse innings totals (also reverse magic over wicket penalty)
     final newTotalRuns = _state.totalRuns - lastDel.totalRuns - lastDel.magicOverPenaltyApplied;
@@ -727,8 +763,7 @@ class ScoringNotifier {
     }
 
     // Reverse batter stats
-    final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
-    final strikerStats = newBatterStats[lastDel.strikerId];
+    final strikerStats = _batterStats[lastDel.strikerId];
     if (strikerStats != null && !lastDel.isWide) {
       var updatedBatter = strikerStats.copyWith(
         ballsFaced: strikerStats.ballsFaced - (lastDel.isLegal ? 1 : 0),
@@ -748,14 +783,13 @@ class ScoringNotifier {
           updatedBatter = updatedBatter.copyWith(isNotOut: true);
         }
       }
-      newBatterStats[lastDel.strikerId] = updatedBatter;
+      _batterStats[lastDel.strikerId] = updatedBatter;
     }
 
     // Reverse bowler stats
-    final newBowlerStats = Map<String, BowlerSpell>.from(_state.bowlerStats);
-    final bowlerStat = newBowlerStats[lastDel.bowlerId];
+    final bowlerStat = _bowlerStats[lastDel.bowlerId];
     if (bowlerStat != null) {
-      newBowlerStats[lastDel.bowlerId] = bowlerStat.copyWith(
+      _bowlerStats[lastDel.bowlerId] = bowlerStat.copyWith(
         ballsBowled: bowlerStat.ballsBowled - (lastDel.isLegal ? 1 : 0),
         runsConceded: bowlerStat.runsConceded - lastDel.bowlerRunsConceded,
         wicketsTaken: bowlerStat.wicketsTaken -
@@ -807,21 +841,18 @@ class ScoringNotifier {
     }
 
     // Update on-strike markers in batter stats
-    for (final key in newBatterStats.keys) {
-      newBatterStats[key] = newBatterStats[key]!.copyWith(
+    for (final key in _batterStats.keys) {
+      _batterStats[key] = _batterStats[key]!.copyWith(
         isOnStrike: key == newStrikerId,
       );
     }
 
     // Reverse over state
     var newCurrentOverBalls = _state.currentOverBalls;
-    var newCurrentOverDeliveries =
-        List<Delivery>.from(_state.currentOverDeliveries);
-    final newCompletedOvers = List<Over>.from(_state.completedOvers);
 
-    if (newCurrentOverDeliveries.isNotEmpty &&
-        newCurrentOverDeliveries.last.id == lastDel.id) {
-      newCurrentOverDeliveries.removeLast();
+    if (_currentOverDeliveries.isNotEmpty &&
+        _currentOverDeliveries.last.id == lastDel.id) {
+      _currentOverDeliveries.removeLast();
     }
     if (lastDel.isLegal) newCurrentOverBalls--;
 
@@ -831,13 +862,12 @@ class ScoringNotifier {
     String? restoredLastBowlerId;
     bool overReopened = false;
 
-    if (newCurrentOverBalls < 0 && newCompletedOvers.isNotEmpty) {
-      final previousOver = newCompletedOvers.removeLast();
-      newCurrentOverDeliveries =
-          List<Delivery>.from(previousOver.deliveries);
+    if (newCurrentOverBalls < 0 && _completedOvers.isNotEmpty) {
+      final previousOver = _completedOvers.removeLast();
+      _currentOverDeliveries = List<Delivery>.of(previousOver.deliveries);
       newCurrentOverBalls = previousOver.legalBalls - 1;
-      if (newCurrentOverDeliveries.isNotEmpty) {
-        newCurrentOverDeliveries.removeLast();
+      if (_currentOverDeliveries.isNotEmpty) {
+        _currentOverDeliveries.removeLast();
       }
 
       overReopened = true;
@@ -846,15 +876,15 @@ class ScoringNotifier {
       restoredBowlerId = previousOver.bowlerId;
 
       // FIX 2: Restore lastBowlerId from the over before this one
-      restoredLastBowlerId = newCompletedOvers.isNotEmpty
-          ? newCompletedOvers.last.bowlerId
+      restoredLastBowlerId = _completedOvers.isNotEmpty
+          ? _completedOvers.last.bowlerId
           : null;
 
       // FIX 3: Reverse maiden count if the reopened over was maiden
       if (previousOver.isMaiden) {
-        final bowler = newBowlerStats[previousOver.bowlerId];
+        final bowler = _bowlerStats[previousOver.bowlerId];
         if (bowler != null) {
-          newBowlerStats[previousOver.bowlerId] = bowler.copyWith(
+          _bowlerStats[previousOver.bowlerId] = bowler.copyWith(
             maidens: bowler.maidens - 1,
           );
         }
@@ -863,8 +893,8 @@ class ScoringNotifier {
 
     // Determine free hit state from previous delivery in history
     bool newFreeHitPending = false;
-    if (history.isNotEmpty) {
-      final prevDel = history.last;
+    if (_deliveries.isNotEmpty) {
+      final prevDel = _deliveries.last;
       newFreeHitPending = ScoringUtils.isNextFreeHit(
         previousWasNoBall: prevDel.isNoBall,
         previousWasFreeHit: prevDel.isFreeHit,
@@ -885,13 +915,13 @@ class ScoringNotifier {
       nonStrikerId: newNonStrikerId,
       bowlerId: overReopened ? restoredBowlerId : _state.bowlerId,
       lastBowlerId: overReopened ? restoredLastBowlerId : _state.lastBowlerId,
-      batterStats: newBatterStats,
-      bowlerStats: newBowlerStats,
+      batterStats: _batterStats,
+      bowlerStats: _bowlerStats,
       currentOverBalls: newCurrentOverBalls,
-      currentOverDeliveries: newCurrentOverDeliveries,
-      completedOvers: newCompletedOvers,
+      currentOverDeliveries: _currentOverDeliveries,
+      completedOvers: _completedOvers,
       isFreeHitPending: newFreeHitPending,
-      deliveryHistory: history,
+      deliveryHistory: _deliveries,
       undoBlockedByTransition: false,
     );
   }
@@ -959,6 +989,7 @@ class ScoringNotifier {
       firstInningsSummary: firstSummary,
       firstInnings: firstInningsData,
     );
+    _reinitMutableFields();
 
     // Set up opening players
     selectNewBatter(playerId: strikerId, displayName: strikerName);
@@ -970,23 +1001,22 @@ class ScoringNotifier {
   void swapStrike() {
     if (_state.strikerId == null || _state.nonStrikerId == null) return;
 
-    final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
     final oldStrikerId = _state.strikerId!;
     final oldNonStrikerId = _state.nonStrikerId!;
 
-    if (newBatterStats.containsKey(oldStrikerId)) {
-      newBatterStats[oldStrikerId] =
-          newBatterStats[oldStrikerId]!.copyWith(isOnStrike: false);
+    if (_batterStats.containsKey(oldStrikerId)) {
+      _batterStats[oldStrikerId] =
+          _batterStats[oldStrikerId]!.copyWith(isOnStrike: false);
     }
-    if (newBatterStats.containsKey(oldNonStrikerId)) {
-      newBatterStats[oldNonStrikerId] =
-          newBatterStats[oldNonStrikerId]!.copyWith(isOnStrike: true);
+    if (_batterStats.containsKey(oldNonStrikerId)) {
+      _batterStats[oldNonStrikerId] =
+          _batterStats[oldNonStrikerId]!.copyWith(isOnStrike: true);
     }
 
     _state = _state.copyWith(
       strikerId: oldNonStrikerId,
       nonStrikerId: oldStrikerId,
-      batterStats: newBatterStats,
+      batterStats: _batterStats,
     );
   }
 
@@ -996,17 +1026,16 @@ class ScoringNotifier {
     required String playerId,
     required String displayName,
   }) {
-    final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
-    final existing = newBatterStats[playerId];
+    final existing = _batterStats[playerId];
 
     if (existing != null && existing.canReturn) {
       // Returning retired-hurt batter: preserve stats, clear retired flag
-      newBatterStats[playerId] = existing.copyWith(
+      _batterStats[playerId] = existing.copyWith(
         isRetiredHurt: false,
         isOnStrike: _state.strikerId == null,
       );
     } else {
-      newBatterStats[playerId] = BatterInnings(
+      _batterStats[playerId] = BatterInnings(
         playerId: playerId,
         displayName: displayName,
         isOnStrike: _state.strikerId == null,
@@ -1016,12 +1045,12 @@ class ScoringNotifier {
     if (_state.strikerId == null) {
       _state = _state.copyWith(
         strikerId: playerId,
-        batterStats: newBatterStats,
+        batterStats: _batterStats,
       );
     } else {
       _state = _state.copyWith(
         nonStrikerId: playerId,
-        batterStats: newBatterStats,
+        batterStats: _batterStats,
       );
     }
 
@@ -1035,9 +1064,8 @@ class ScoringNotifier {
     required String playerId,
     required String displayName,
   }) {
-    final newBowlerStats = Map<String, BowlerSpell>.from(_state.bowlerStats);
-    if (!newBowlerStats.containsKey(playerId)) {
-      newBowlerStats[playerId] = BowlerSpell(
+    if (!_bowlerStats.containsKey(playerId)) {
+      _bowlerStats[playerId] = BowlerSpell(
         playerId: playerId,
         displayName: displayName,
       );
@@ -1045,7 +1073,7 @@ class ScoringNotifier {
 
     _state = _state.copyWith(
       bowlerId: playerId,
-      bowlerStats: newBowlerStats,
+      bowlerStats: _bowlerStats,
     );
 
     if (_state.deliveryHistory.isNotEmpty) {
@@ -1103,6 +1131,7 @@ class ScoringNotifier {
       previousSuperOverBowlerIds: prevBowlerIds,
       firstInningsSummary: firstSummary,
     );
+    _reinitMutableFields();
 
     // Set up opening players
     selectNewBatter(playerId: strikerId, displayName: strikerName);
@@ -1231,10 +1260,22 @@ class ScoringNotifier {
       newTotalWickets++;
     }
 
-    // Step 5: Update batter stats
-    final newBatterStats = Map<String, BatterInnings>.from(_state.batterStats);
+    // Step 4.5: Update fall-of-wickets cache
+    if (isWicket) {
+      final dismissedId = wicketInfo?.dismissedPlayerId ?? _state.strikerId ?? '';
+      final dismissedName =
+          _batterStats[dismissedId]?.displayName ?? dismissedId;
+      _cachedFallOfWickets.add(FallOfWicket(
+        wicketNumber: _cachedFallOfWickets.length + 1,
+        scoreAtFall: newTotalRuns,
+        oversAtFall: CricketUtils.formatOvers(newTotalBalls),
+        dismissedPlayerName: dismissedName,
+      ));
+    }
+
+    // Step 5: Update batter stats (mutate in place)
     if (_state.strikerId != null && !isWide) {
-      final currentBatter = newBatterStats[_state.strikerId!];
+      final currentBatter = _batterStats[_state.strikerId!];
       if (currentBatter != null) {
         var updatedBatter = currentBatter;
         if (isLegal) {
@@ -1252,7 +1293,6 @@ class ScoringNotifier {
         if (isWicket &&
             wicketInfo?.dismissedPlayerId == _state.strikerId) {
           if (wicketInfo?.dismissalType == DismissalType.retiredHurt) {
-            // Retired hurt: batter is still not-out but marked as retired
             updatedBatter = updatedBatter.copyWith(
               isRetiredHurt: true,
               dismissalType: wicketInfo?.dismissalType,
@@ -1264,17 +1304,16 @@ class ScoringNotifier {
             );
           }
         }
-        newBatterStats[_state.strikerId!] = updatedBatter;
+        _batterStats[_state.strikerId!] = updatedBatter;
       }
     }
 
-    // Step 6: Update bowler stats
-    final newBowlerStats = Map<String, BowlerSpell>.from(_state.bowlerStats);
+    // Step 6: Update bowler stats (mutate in place)
     if (_state.bowlerId != null) {
-      final currentBowler = newBowlerStats[_state.bowlerId!];
+      final currentBowler = _bowlerStats[_state.bowlerId!];
       if (currentBowler != null) {
         final bowlerRunsConceded = effectiveRunsFromBat + effectiveWideRuns + effectiveNoBallRuns;
-        newBowlerStats[_state.bowlerId!] = currentBowler.copyWith(
+        _bowlerStats[_state.bowlerId!] = currentBowler.copyWith(
           ballsBowled: currentBowler.ballsBowled + (isLegal ? 1 : 0),
           runsConceded: currentBowler.runsConceded + bowlerRunsConceded,
           wicketsTaken: currentBowler.wicketsTaken +
@@ -1312,40 +1351,38 @@ class ScoringNotifier {
     }
 
     // Update on-strike markers
-    for (final key in newBatterStats.keys) {
-      newBatterStats[key] = newBatterStats[key]!.copyWith(
+    for (final key in _batterStats.keys) {
+      _batterStats[key] = _batterStats[key]!.copyWith(
         isOnStrike: key == newStrikerId,
       );
     }
 
-    // Step 8: Check over completion
+    // Step 8: Check over completion (mutate in place)
     var newCurrentOverBalls = _state.currentOverBalls + (isLegal ? 1 : 0);
-    var newCurrentOverDeliveries =
-        List<Delivery>.from(_state.currentOverDeliveries)..add(delivery);
-    final newCompletedOvers = List<Over>.from(_state.completedOvers);
+    _currentOverDeliveries.add(delivery);
     String? newLastBowlerId = _state.lastBowlerId;
 
     final overComplete = ScoringUtils.isOverComplete(newCurrentOverBalls);
     if (overComplete) {
-      final isMaiden = ScoringUtils.isMaidenOver(newCurrentOverDeliveries);
-      newCompletedOvers.add(Over(
+      final isMaiden = ScoringUtils.isMaidenOver(_currentOverDeliveries);
+      _completedOvers.add(Over(
         overNumber: _state.currentOverNumber,
         bowlerId: _state.bowlerId ?? '',
-        bowlerName: newBowlerStats[_state.bowlerId]?.displayName ?? '',
-        runsConceded: newCurrentOverDeliveries.fold(
+        bowlerName: _bowlerStats[_state.bowlerId]?.displayName ?? '',
+        runsConceded: _currentOverDeliveries.fold(
           0,
           (sum, d) => sum + d.bowlerRunsConceded,
         ),
-        wicketsTaken: newCurrentOverDeliveries.where((d) => d.isWicket).length,
+        wicketsTaken: _currentOverDeliveries.where((d) => d.isWicket).length,
         isMaiden: isMaiden,
-        deliveries: List.unmodifiable(newCurrentOverDeliveries),
+        deliveries: List.unmodifiable(_currentOverDeliveries),
       ));
 
       // Update bowler maiden count
       if (isMaiden && _state.bowlerId != null) {
-        final bowler = newBowlerStats[_state.bowlerId!];
+        final bowler = _bowlerStats[_state.bowlerId!];
         if (bowler != null) {
-          newBowlerStats[_state.bowlerId!] = bowler.copyWith(
+          _bowlerStats[_state.bowlerId!] = bowler.copyWith(
             maidens: bowler.maidens + 1,
           );
         }
@@ -1353,7 +1390,7 @@ class ScoringNotifier {
 
       newLastBowlerId = _state.bowlerId;
       newCurrentOverBalls = 0;
-      newCurrentOverDeliveries = [];
+      _currentOverDeliveries = [];
 
       // End of over: swap strike (unless wicket already caused null striker)
       if (newStrikerId != null && newNonStrikerId != null) {
@@ -1361,8 +1398,8 @@ class ScoringNotifier {
         newStrikerId = newNonStrikerId;
         newNonStrikerId = temp;
 
-        for (final key in newBatterStats.keys) {
-          newBatterStats[key] = newBatterStats[key]!.copyWith(
+        for (final key in _batterStats.keys) {
+          _batterStats[key] = _batterStats[key]!.copyWith(
             isOnStrike: key == newStrikerId,
           );
         }
@@ -1403,6 +1440,9 @@ class ScoringNotifier {
       }
     }
 
+    // Append to delivery history (O(1) amortized)
+    _deliveries.add(delivery);
+
     // Commit state
     _state = _state.copyWith(
       totalRuns: newTotalRuns,
@@ -1416,17 +1456,17 @@ class ScoringNotifier {
       strikerId: newStrikerId,
       nonStrikerId: newNonStrikerId,
       bowlerId: overComplete ? null : _state.bowlerId,
-      batterStats: newBatterStats,
-      bowlerStats: newBowlerStats,
+      batterStats: _batterStats,
+      bowlerStats: _bowlerStats,
       currentOverBalls: newCurrentOverBalls,
-      currentOverDeliveries: newCurrentOverDeliveries,
-      completedOvers: newCompletedOvers,
+      currentOverDeliveries: _currentOverDeliveries,
+      completedOvers: _completedOvers,
       lastBowlerId: newLastBowlerId,
       isFreeHitPending: newFreeHitPending,
       isInningsComplete: isInningsComplete,
       isMatchComplete: isMatchComplete,
       completionReason: completionReason,
-      deliveryHistory: [..._state.deliveryHistory, delivery],
+      deliveryHistory: _deliveries,
       undoBlockedByTransition: false,
       needsSuperOver: triggerSuperOver,
     );

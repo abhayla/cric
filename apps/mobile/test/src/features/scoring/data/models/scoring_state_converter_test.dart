@@ -403,6 +403,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [delivery],
+        currentOverDeliveries: [delivery],
       );
       final json = scoringStateToJsonString(state);
       final restored = scoringStateFromJsonString(json);
@@ -430,6 +431,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [delivery],
+        currentOverDeliveries: [delivery],
       );
       final json = scoringStateToJsonString(state);
       final restored = scoringStateFromJsonString(json);
@@ -450,6 +452,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [delivery],
+        currentOverDeliveries: [delivery],
       );
       final json = scoringStateToJsonString(state);
       final restored = scoringStateFromJsonString(json);
@@ -469,6 +472,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [del],
+        currentOverDeliveries: [del],
       );
       final json = scoringStateToJsonString(state);
       final restored = scoringStateFromJsonString(json);
@@ -489,6 +493,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [del],
+        currentOverDeliveries: [del],
       );
       final restored = scoringStateFromJsonString(scoringStateToJsonString(state));
       expect(restored.deliveryHistory.first.isBoundaryFour, true);
@@ -506,6 +511,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [del],
+        currentOverDeliveries: [del],
       );
       final restored = scoringStateFromJsonString(scoringStateToJsonString(state));
       final d = restored.deliveryHistory.first;
@@ -525,6 +531,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [del],
+        currentOverDeliveries: [del],
       );
       final restored = scoringStateFromJsonString(scoringStateToJsonString(state));
       final d = restored.deliveryHistory.first;
@@ -544,6 +551,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [del],
+        currentOverDeliveries: [del],
       );
       final restored = scoringStateFromJsonString(scoringStateToJsonString(state));
       expect(restored.deliveryHistory.first.isBye, true);
@@ -561,6 +569,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [del],
+        currentOverDeliveries: [del],
       );
       final restored = scoringStateFromJsonString(scoringStateToJsonString(state));
       expect(restored.deliveryHistory.first.isLegBye, true);
@@ -578,6 +587,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [del],
+        currentOverDeliveries: [del],
       );
       final restored = scoringStateFromJsonString(scoringStateToJsonString(state));
       final d = restored.deliveryHistory.first;
@@ -596,6 +606,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [del],
+        currentOverDeliveries: [del],
       );
       final restored = scoringStateFromJsonString(scoringStateToJsonString(state));
       expect(
@@ -1164,6 +1175,7 @@ void main() {
         totalOvers: 20,
         playersPerSide: 11,
         deliveryHistory: [delivery],
+        currentOverDeliveries: [delivery],
       );
       final json = scoringStateToJsonString(state);
       final restored = scoringStateFromJsonString(json);
@@ -1173,6 +1185,10 @@ void main() {
 
     test('backward compatibility: missing isDirectHit defaults to false', () {
       // Build JSON manually without isDirectHit field in wicketInfo
+      final del = makeDelivery(
+        isWicket: true,
+        wicketInfo: makeWicketInfo(),
+      );
       final state = ScoringState(
         matchId: 'x',
         inningsId: 'x',
@@ -1181,12 +1197,8 @@ void main() {
         inningsNumber: 1,
         totalOvers: 20,
         playersPerSide: 11,
-        deliveryHistory: [
-          makeDelivery(
-            isWicket: true,
-            wicketInfo: makeWicketInfo(),
-          ),
-        ],
+        deliveryHistory: [del],
+        currentOverDeliveries: [del],
       );
       final jsonStr = scoringStateToJsonString(state);
       // Remove isDirectHit from the JSON to simulate old data
