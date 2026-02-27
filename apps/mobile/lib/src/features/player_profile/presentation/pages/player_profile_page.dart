@@ -140,22 +140,25 @@ class _PlayerProfilePageState extends ConsumerState<PlayerProfilePage>
   }
 
   Widget _buildFormatSelector(PlayerProfileState state) {
-    const formats = ['all', 'T20', 'ODI'];
-    const labels = ['All', 'T20', 'ODI'];
+    const formats = ['all', 'T20', 'ODI', 'custom'];
+    const labels = ['All', 'T20', 'ODI', 'Custom'];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          for (int i = 0; i < formats.length; i++) ...[
-            if (i > 0) const SizedBox(width: 8),
-            ChoiceChip(
-              label: Text(labels[i]),
-              selected: state.selectedFormat == formats[i],
-              onSelected: (_) => _notifier.switchFormat(formats[i]),
-            ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (int i = 0; i < formats.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              ChoiceChip(
+                label: Text(labels[i]),
+                selected: state.selectedFormat == formats[i],
+                onSelected: (_) => _notifier.switchFormat(formats[i]),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

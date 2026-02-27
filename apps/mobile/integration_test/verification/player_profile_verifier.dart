@@ -52,12 +52,13 @@ Future<void> verifyQuickStats(WidgetTester tester) async {
 /// Verify the format selector chips are present.
 ///
 /// Does not tap chips to avoid triggering API reloads that can slow down
-/// the test. Just verifies the three format options render.
+/// the test. Just verifies the four format options render.
 Future<void> verifyFormatSelector(WidgetTester tester) async {
   expect(find.text('All'), findsAtLeastNWidgets(1));
   expect(find.text('T20'), findsAtLeastNWidgets(1));
   expect(find.text('ODI'), findsAtLeastNWidgets(1));
-  print('  [verify-profile] Format selector: All/T20/ODI chips present');
+  expect(find.text('Custom'), findsAtLeastNWidgets(1));
+  print('  [verify-profile] Format selector: All/T20/ODI/Custom chips present');
 }
 
 /// Verify the tab bar has Batting, Bowling, Fielding tabs.
