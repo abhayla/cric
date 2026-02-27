@@ -477,7 +477,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                             ))
                         .toList();
                   }
-                } catch (_) {
+                } catch (e) {
+                  debugPrint('[Router] Failed to fetch team rosters: $e');
                   // Proceed with empty rosters — toss page can still work
                 }
 

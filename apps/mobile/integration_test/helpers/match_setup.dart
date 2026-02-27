@@ -318,15 +318,19 @@ Future<void> completeTossWizard(
 
 /// Select playing XI players if Next button is disabled (roster > playersPerSide).
 ///
-/// Waits up to 8s for roster to load and auto-select (when roster.length ==
-/// playersPerSide). If auto-select doesn't kick in, falls back to tapping
-/// player rows found by the "Select N from" label context.
+/// Waits up to 15s for roster player rows to appear and auto-select (when
+/// roster.length == playersPerSide). If auto-select doesn't kick in, falls
+/// back to tapping player row InkWells with circular checkbox indicators.
 Future<void> _selectPlayingXIIfNeeded(WidgetTester tester, int? playersPerSide) async {
   if (playersPerSide == null) return;
   await settle(tester);
 
-  // Wait up to 8s for roster to load and auto-select all players
-  for (var attempt = 0; attempt < 16; attempt++) {
+  // Wait up to 15s for roster to load and auto-select all players.
+  // Check both: (a) Next button enabled (auto-select worked), and
+  // (b) player rows appeared (roster loaded, manual select possible).
+  var playerRowsFound = false;
+  for (var attempt = 0; attempt < 30; attempt++) {
+    // Check if Next is already enabled (auto-select when roster == playersPerSide)
     final filledButtons = find.byType(FilledButton);
     if (filledButtons.evaluate().isNotEmpty) {
       final button = filledButtons.last.evaluate().first.widget as FilledButton;
@@ -335,18 +339,39 @@ Future<void> _selectPlayingXIIfNeeded(WidgetTester tester, int? playersPerSide) 
         return;
       }
     }
+
+    // Check if player rows have appeared (CircleAvatar inside the XI step)
+    final avatars = find.byType(CircleAvatar);
+    if (avatars.evaluate().length >= 2) {
+      playerRowsFound = true;
+      break;
+    }
+
     await tester.pump(const Duration(milliseconds: 500));
   }
 
-  // Auto-select didn't work — manually tap player rows.
-  // Player rows are InkWells that contain a player name text (not stepper tabs).
-  // Find them by looking for InkWells that are descendants of the scrollable
-  // content area and contain the circular avatar pattern.
-  print('    [toss] Next still disabled after 8s — selecting players manually');
+  if (!playerRowsFound) {
+    // Check again if Next became enabled during final pump
+    final filledButtons = find.byType(FilledButton);
+    if (filledButtons.evaluate().isNotEmpty) {
+      final button = filledButtons.last.evaluate().first.widget as FilledButton;
+      if (button.onPressed != null) {
+        print('    [toss] XI auto-selected (Next enabled at end of wait)');
+        return;
+      }
+    }
+    print('    [toss] ERROR: No player rows appeared after 15s — roster is empty!');
+    print('    [toss] This usually means the team roster API call failed silently.');
+    dumpVisibleTexts(tester, 'toss-emptyRoster', 50);
+    fail('Playing XI roster is empty — team roster fetch likely failed. '
+        'Check [Router] debug logs for "Failed to fetch team rosters" error.');
+  }
 
-  // Find player name texts that appear in the XI selection list.
-  // Player rows contain text like "Player501" inside an InkWell with
-  // BorderRadius.circular(12) decoration.
+  // Roster loaded but auto-select didn't work — manually tap player rows.
+  print('    [toss] Next still disabled — selecting players manually');
+
+  // Player row InkWells have borderRadius(12) and contain a circular checkbox.
+  // Count all matching InkWells and tap up to playersPerSide.
   final allInkWells = find.byType(InkWell);
   var selected = 0;
   for (var i = 0; i < allInkWells.evaluate().length && selected < playersPerSide; i++) {
@@ -362,6 +387,10 @@ Future<void> _selectPlayingXIIfNeeded(WidgetTester tester, int? playersPerSide) 
     }
   }
   print('    [toss] Manually selected $selected players');
+  if (selected == 0) {
+    print('    [toss] WARNING: 0 players selected via InkWell(borderRadius:12) fallback');
+    dumpVisibleTexts(tester, 'toss-noSelection', 60);
+  }
   await settle(tester);
 }
 

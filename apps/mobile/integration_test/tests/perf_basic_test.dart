@@ -38,9 +38,10 @@ void main() {
     final totalStopwatch = Stopwatch()..start();
     final rng = Random(42); // Deterministic for reproducible results
 
-    // Use standard test teams (created by 01_team_setup_test)
-    final team1 = allTeams[0]; // Team1 (12 players including Abhay)
-    final team2 = allTeams[1]; // Team2 (11 players)
+    // Use Team3 and Team4 (created by 01_team_setup_test with 11 players each).
+    // Team1/Team2 may have incomplete rosters from prior failed runs.
+    final team1 = allTeams[2]; // Team3 (11 players)
+    final team2 = allTeams[3]; // Team4 (11 players)
 
     const totalOvers = 5;
     const playersPerSide = 6;

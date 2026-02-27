@@ -16,26 +16,43 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Session 2026-02-27b: Performance Test Rewrite
+### Session 2026-02-27c: Performance Test Validated GREEN
 
-**Status:** Perf test rewritten to use pre-existing teams. Not yet validated.
+**Status:** Perf test PASSING. Full match scored in 176s (Team3 won by 5 runs, 43/1 vs 38/0).
 
-**Strategy change:** Rewrote `perf_basic_test.dart` to assume Team1/Team2 already exist (created by `01_team_setup_test`). Previous approach tried to create teams inline, which repeatedly failed due to prod server latency (Dio 10s receive timeout causing player-add failures). New approach: verify teams exist → fail fast with clear message if missing → measure only scoring performance.
+**Root cause of prior failure:** Team1 had 0 players, Team2 had 2 players on prod server (incomplete from prior failed runs). The `ensureTeamsExist` gotcha — skips teams that exist by name regardless of player count. Router's `getTeam()` returned empty roster, silently caught by `catch (_)`.
 
-**Changes made:**
-- `perf_basic_test.dart` — uses `allTeams[0]`/`allTeams[1]` (Team1/Team2), removed `ensureTeamsExist` and custom team data, Phase 2 is now "Verify Teams Exist" (quick check, not creation)
-- `helpers/match_setup.dart` — `_selectPlayingXIIfNeeded` now has 8s retry loop for roster auto-select + falls back to tapping player-specific InkWells (borderRadius 12) instead of generic InkWells
-- `helpers/forms.dart` — `fillAndSubmitPlayer` timeout increased to 45s (was 30s, originally 6s) for slow prod server
-- `integration_test/CLAUDE.md` — created with naming conventions, reserved ranges, known gotchas
-- Reverted Dio timeout change in `teams/providers.dart` (was changed to 30s, back to 10s)
+**Changes this session (3 files):**
+- `perf_basic_test.dart` — switched from `allTeams[0]`/`allTeams[1]` (Team1/Team2) to `allTeams[2]`/`allTeams[3]` (Team3/Team4) which have full 11-player rosters
+- `helpers/match_setup.dart` — `_selectPlayingXIIfNeeded` improved: waits 15s for player rows to appear (was only checking Next button), fails with clear diagnostic if roster is empty, logs warning on 0 manual selections
+- `router.dart` — added `debugPrint` in catch block when roster fetch fails (was `catch (_)` with no logging)
 
-**Stale server data:** Multiple orphaned teams exist from failed runs: Team20 (2 players), Team21 (3 players), Team22 (two entries — 6 and 2 players), Team23 (1 player). These can be cleaned up from the DB.
+**Performance baseline (emulator-5554):**
+| Phase | Time |
+|-------|------|
+| Cold Start | 15.9s |
+| Team Verification | 2.3s |
+| Match Setup | 15.5s |
+| Toss Wizard | 17.4s |
+| 1st Innings (29 del) | 52.4s (avg 1806ms/del) |
+| Innings Transition | 8.0s |
+| 2nd Innings (32 del) | 48.5s (avg 1517ms/del) |
+| Match Complete | 5.1s |
+| Navigation Sweep (6 screens) | 5.6s (avg 930ms/screen) |
+| **TOTAL** | **176.3s** |
+
+**Minor issue noted:** `[ScoringPersistenceService] WS publish error: Converting object to an encodable object failed: Infinity` — division by zero producing `Infinity` in JSON serialization during WS broadcast.
+
+**Stale server data:** Team1 (0 players), Team2 (2 players), Team20-23 (orphaned from failed runs). Can be cleaned up from the DB.
 
 **Next steps:**
-1. Run `01_team_setup_test` if Team1/Team2 don't exist on server yet
-2. Run `perf_basic_test` — should now skip team creation entirely
-3. If toss wizard Playing XI step fails, investigate `_selectPlayingXIIfNeeded` retry logic
-4. Continue with Tests 04-08 from prior session
+1. Fix the `Infinity` JSON serialization bug in WS publish
+2. Continue with Tests 04-08 from prior session
+3. Clean up orphaned teams from prod DB
+
+### Session 2026-02-27b: Performance Test Rewrite
+
+**Status:** Perf test rewritten to use pre-existing teams. Validated GREEN in session 2026-02-27c.
 
 ### Session 2026-02-27: E2E Test Suite Execution + pumpAndSettle Fix + Tournament Navigation Fix
 
