@@ -39,6 +39,12 @@ cric/
 
 Every new file **must** be placed according to the placement rules in [.claude/rules.md](.claude/rules.md). No exceptions.
 
+**Sub-directory CLAUDE.md files** provide focused context when working in specific areas:
+- `apps/mobile/CLAUDE.md` — Flutter app conventions and patterns
+- `apps/mobile/integration_test/CLAUDE.md` — E2E test conventions, data naming, prod-only rules
+- `apps/mobile/lib/src/features/scoring/CLAUDE.md` — Scoring engine architecture and layering
+- `apps/server/CLAUDE.md` — Bun server structure, naming conventions, DB patterns
+
 ## Current Status
 
 **Phases 1–6 COMPLETE.** Phase 7 (Polish & Testing) in progress. Heaviest test areas: `test/src/features/scoring/` (Flutter), `test/services/` (server). Full phase breakdown in [IMPLEMENTATION_PLAN.md](docs/planning/IMPLEMENTATION_PLAN.md). Session context and next steps in [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md).

@@ -16,6 +16,37 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-27e: Cold Start Performance Profiling
+
+**Status:** Performance profiled and documented. Ready for optimization work in next session.
+
+**What was done:**
+- Added timing instrumentation to 6 files (all `kDebugMode` guarded, no-ops in release)
+- Ran perf test twice: baseline (178.2s) and instrumented (176.5s) — both GREEN
+- Created detailed performance doc: **[docs/performance-test/OTP-verification-to-home-screen-rendering.md](performance-test/OTP-verification-to-home-screen-rendering.md)**
+
+**Instrumented files (uncommitted):**
+- `integration_test/core/app_bootstrap.dart` — 8-step cold start timing
+- `lib/src/app/providers.dart` — `GET /auth/me` timing
+- `lib/src/features/auth/presentation/notifiers/auth_notifier.dart` — `POST /auth/verify` timing
+- `lib/src/features/home/providers.dart` — `GET /matches` timing
+- `lib/src/features/teams/providers.dart` — `GET /teams` timing
+- `lib/src/features/tournaments/providers.dart` — `GET /tournaments` timing
+
+**Key findings (see doc for full details):**
+- Cold start 17.2s: splash polling wastes 5.6s (32%), Firebase OTP round-trip 4.4s (26%), pumpWidget 1.9s (11%)
+- API calls after home: `GET /teams` 1.4s, `POST /auth/verify` 1.2s, `GET /auth/me` 1.1s, `GET /matches` 0.6s
+- Per-delivery avg: 1787ms (1st inn), 1498ms (2nd inn)
+- Known bugs: undo button hit-test warning, `Infinity` JSON in WS publish, stale SelectBowlerSheet
+
+**Next steps (performance improvement session):**
+1. Optimize splash redirect polling (replace 10×500ms fixed sleep with event-driven wait)
+2. Optimize OTP digit entry (batch instead of one-by-one)
+3. Decide: keep or revert timing instrumentation
+4. Fix `Infinity` JSON serialization bug in WS publish
+5. Continue with E2E Tests 04-08
+6. Clean up orphaned teams from prod DB
+
 ### Session 2026-02-27d: Scoring Engine Performance Optimization
 
 **Status:** All 4 performance fixes implemented and verified. 1152 scoring tests pass, zero new analyzer warnings.

@@ -295,3 +295,21 @@ room.
   Match Result:         Team3 won by 5 runs
   Score: 43/1 vs 38/0
   ══════════════════════════════════════════════════
+
+  ══════════════════════════════════════════════════                                                                              PERFORMANCE REPORT                                                                                                          
+  ══════════════════════════════════════════════════                                                                             Cold Start:           19.6s                                                                                                    Team Verification:    2.5s                                                                                                   
+  Match Setup:          15.5s
+  Toss Wizard:          17.6s
+  First Over (6 del):   6.3s      (avg 1047ms/del)
+  Undo + Redo:          2.0s
+  Over Transition:      3.6s
+  1st Innings Total:    51.7s     (29 del, avg 1782ms/del)
+  Innings Transition:   8.0s
+  2nd Innings Total:    47.7s     (32 del, avg 1491ms/del)
+  Match Complete:       5.0s
+  Navigation Sweep:     5.0s      (6 screens, avg 831ms/screen)
+  ──────────────────────────────────────────────────
+  TOTAL:                178.2s
+  Match Result:         Team3 won by 5 runs
+  Score: 43/1 vs 38/0
+  ══════════════════════════════════════════════════
