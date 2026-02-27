@@ -1,8 +1,14 @@
 /// Team setup flow — ensures teams exist with check-then-skip idempotency.
+///
+/// Verifies roster completeness for existing teams. If a team has the wrong
+/// player count (e.g., from a prior crashed run), deletes and recreates it.
 library;
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:cricscores/src/features/teams/providers.dart';
 
 import '../config/test_data.dart';
 import '../core/error_tracker.dart';
@@ -42,8 +48,30 @@ Future<void> ensureTeamsExist(
       final teamExists = await _teamExistsInList(tester, team.name);
 
       if (teamExists) {
-        print('  [SKIP] ${team.name} already exists');
-        continue;
+        // Verify roster completeness via API before skipping
+        final rosterOk = await _verifyRosterViaApi(
+          tester,
+          team.name,
+          team.players.length,
+        );
+        if (rosterOk) {
+          print('  [SKIP] ${team.name} already exists'
+              ' (${team.players.length} players verified)');
+          continue;
+        }
+        // Roster incomplete — delete via API and recreate
+        print('  [INCOMPLETE] ${team.name} has wrong player count — deleting');
+        await _deleteTeamViaApi(tester, team.name);
+        // Refresh the teams list UI after API deletion
+        await navigateToTeams(tester);
+        await settle(tester);
+        final allChipRefresh = find.text('All');
+        if (allChipRefresh.evaluate().isNotEmpty) {
+          await tester.tap(allChipRefresh.first);
+          await settle(tester);
+          await visualPause(tester, 500);
+        }
+        // Fall through to create team below
       }
 
       // Team doesn't exist — create it
@@ -100,4 +128,54 @@ Future<bool> _teamExistsInList(WidgetTester tester, String teamName) async {
   }
 
   return false;
+}
+
+/// Verify a team's roster count via the API (not UI).
+///
+/// Returns true if the team has exactly [expectedCount] players.
+/// Returns false if the team can't be found or has the wrong count.
+Future<bool> _verifyRosterViaApi(
+  WidgetTester tester,
+  String teamName,
+  int expectedCount,
+) async {
+  try {
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(Scaffold).first),
+    );
+    final repo = container.read(teamRepositoryProvider);
+    final result = await repo.getTeams(page: 1, limit: 50);
+    final team = result.teams.where((t) => t.name == teamName).firstOrNull;
+    if (team == null) return false;
+    print('  [ROSTER-CHECK] ${team.name}: '
+        '${team.playerCount} players (expected $expectedCount)');
+    return team.playerCount == expectedCount;
+  } catch (e) {
+    print('  [ROSTER-CHECK] API check failed for $teamName: $e');
+    // If API fails, assume roster is OK to avoid breaking the flow
+    return true;
+  }
+}
+
+/// Delete a team by name via the API.
+///
+/// Looks up the team ID from the teams list, then calls deleteTeam().
+Future<void> _deleteTeamViaApi(
+  WidgetTester tester,
+  String teamName,
+) async {
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(Scaffold).first),
+  );
+  final repo = container.read(teamRepositoryProvider);
+  final result = await repo.getTeams(page: 1, limit: 50);
+  final team = result.teams.where((t) => t.name == teamName).firstOrNull;
+  if (team == null) {
+    print('  [DELETE] $teamName not found in API — skipping delete');
+    return;
+  }
+  await repo.deleteTeam(team.id);
+  // Invalidate the teams list provider so UI refreshes
+  container.invalidate(teamsListProvider);
+  print('  [DELETE] $teamName (${team.id}) deleted via API');
 }
