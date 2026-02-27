@@ -34,6 +34,8 @@ abstract class CareerStatsModel with _$CareerStatsModel {
     @Default(0) int catches,
     @Default(0) int runOuts,
     @Default(0) int stumpings,
+    @Default(0) int ducks,
+    @Default(0) int directHits,
   }) = _CareerStatsModel;
 
   factory CareerStatsModel.fromJson(Map<String, dynamic> json) =>
@@ -53,6 +55,7 @@ extension CareerStatsModelX on CareerStatsModel {
           hundreds: hundreds,
           fours: fours,
           sixes: sixes,
+          ducks: ducks,
           battingAverage: _parseDouble(battingAverage),
           battingStrikeRate: _parseDouble(battingStrikeRate),
         ),
@@ -73,6 +76,7 @@ extension CareerStatsModelX on CareerStatsModel {
           catches: catches,
           runOuts: runOuts,
           stumpings: stumpings,
+          directHits: directHits,
         ),
       );
 }

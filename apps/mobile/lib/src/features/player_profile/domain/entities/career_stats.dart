@@ -10,6 +10,7 @@ class BattingCareerStats {
     required this.hundreds,
     required this.fours,
     required this.sixes,
+    this.ducks = 0,
     this.battingAverage,
     this.battingStrikeRate,
   });
@@ -23,6 +24,7 @@ class BattingCareerStats {
   final int hundreds;
   final int fours;
   final int sixes;
+  final int ducks;
   final double? battingAverage;
   final double? battingStrikeRate;
 
@@ -94,11 +96,13 @@ class FieldingCareerStats {
     required this.catches,
     required this.runOuts,
     required this.stumpings,
+    this.directHits = 0,
   });
 
   final int catches;
   final int runOuts;
   final int stumpings;
+  final int directHits;
 
   /// Total dismissals contributed to.
   int get totalDismissals => catches + runOuts + stumpings;

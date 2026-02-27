@@ -684,7 +684,8 @@ Career stats (batting, bowling, fielding).
       "hundreds": 0,
       "fours": 120,
       "sixes": 45,
-      "notOuts": 3
+      "notOuts": 3,
+      "ducks": 2
     },
     "bowling": {
       "innings": 30,
@@ -701,7 +702,8 @@ Career stats (batting, bowling, fielding).
     "fielding": {
       "catches": 22,
       "runOuts": 5,
-      "stumpings": 0
+      "stumpings": 0,
+      "directHits": 1
     }
   }
 }

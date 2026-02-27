@@ -369,6 +369,8 @@ Playing XI for each team in a specific match.
 | catches | integer | default 0 |
 | run_outs | integer | default 0 |
 | stumpings | integer | default 0 |
+| ducks | integer | default 0, innings dismissed for 0 |
+| direct_hits | integer | default 0 |
 | updated_at | timestamp | |
 
 ### 6.2 `match_result`

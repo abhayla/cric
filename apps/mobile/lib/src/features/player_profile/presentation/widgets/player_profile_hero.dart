@@ -62,49 +62,6 @@ class PlayerProfileHero extends StatelessWidget {
               ),
             ),
           ],
-          // Primary team chip
-          if (profile.teams.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircleAvatar(
-                      radius: 10,
-                      backgroundColor: colorScheme.primaryContainer,
-                      foregroundImage:
-                          profile.teams.first.teamLogoUrl != null
-                              ? NetworkImage(
-                                  profile.teams.first.teamLogoUrl!)
-                              : null,
-                      onForegroundImageError:
-                          profile.teams.first.teamLogoUrl != null
-                              ? (_, e) {}
-                              : null,
-                      child: Text(
-                        profile.teams.first.initial,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      profile.teams.first.teamName,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
           const SizedBox(height: 24),
         ],
       ),

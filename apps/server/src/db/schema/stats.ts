@@ -94,6 +94,8 @@ export const playerCareerStats = pgTable('player_career_stats', {
   catches: integer('catches').default(0).notNull(),
   runOuts: integer('run_outs').default(0).notNull(),
   stumpings: integer('stumpings').default(0).notNull(),
+  ducks: integer('ducks').default(0).notNull(),
+  directHits: integer('direct_hits').default(0).notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => [
   index('idx_career_stats_player').on(table.playerId, table.format),

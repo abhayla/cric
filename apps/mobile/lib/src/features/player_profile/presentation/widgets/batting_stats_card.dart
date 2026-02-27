@@ -26,6 +26,7 @@ class BattingStatsCard extends StatelessWidget {
         _StatRow('Fours', '${s.fours}'),
         _StatRow('Sixes', '${s.sixes}'),
         _StatRow('Not Outs', '${s.notOuts}'),
+        _StatRow('Ducks', '${s.ducks}'),
       ],
     );
   }

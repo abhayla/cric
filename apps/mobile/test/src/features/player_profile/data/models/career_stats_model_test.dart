@@ -31,6 +31,8 @@ void main() {
         'catches': 5,
         'runOuts': 2,
         'stumpings': 0,
+        'ducks': 1,
+        'directHits': 2,
       };
 
       final model = CareerStatsModel.fromJson(json);
@@ -40,6 +42,8 @@ void main() {
       expect(model.battingAverage, '42.86');
       expect(model.wicketsTaken, 8);
       expect(model.catches, 5);
+      expect(model.ducks, 1);
+      expect(model.directHits, 2);
     });
 
     test('fromJson uses defaults for missing fields', () {
@@ -52,6 +56,8 @@ void main() {
       expect(model.totalRuns, 0);
       expect(model.battingAverage, isNull);
       expect(model.catches, 0);
+      expect(model.ducks, 0);
+      expect(model.directHits, 0);
     });
 
     test('toEntity converts batting stats correctly', () {

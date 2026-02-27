@@ -18,6 +18,7 @@ void main() {
     catches: 14,
     stumpings: 0,
     runOuts: 3,
+    directHits: 1,
   );
 
   group('FieldingStatsCard', () {
@@ -26,6 +27,7 @@ void main() {
       expect(find.text('Catches'), findsOneWidget);
       expect(find.text('Stumpings'), findsOneWidget);
       expect(find.text('Run Outs'), findsOneWidget);
+      expect(find.text('Direct Hits'), findsOneWidget);
     });
 
     testWidgets('displays correct values', (tester) async {

@@ -24,6 +24,7 @@ void main() {
     hundreds: 0,
     fours: 96,
     sixes: 32,
+    ducks: 2,
     battingAverage: 36.16,
     battingStrikeRate: 134.53,
   );
@@ -41,6 +42,7 @@ void main() {
       expect(find.text('Fours'), findsOneWidget);
       expect(find.text('Sixes'), findsOneWidget);
       expect(find.text('Not Outs'), findsOneWidget);
+      expect(find.text('Ducks'), findsOneWidget);
     });
 
     testWidgets('displays correct values', (tester) async {

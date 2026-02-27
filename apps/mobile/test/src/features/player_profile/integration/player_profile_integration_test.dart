@@ -173,7 +173,6 @@ void main() {
 
       // Hero section
       expect(find.text('Virat Kohli'), findsOneWidget);
-      expect(find.text('Royal Challengers'), findsOneWidget);
 
       // Quick stats
       expect(find.text('Matches'), findsAtLeastNWidgets(1));
@@ -229,7 +228,7 @@ void main() {
       expect(find.text('No batting stats available'), findsOneWidget);
     });
 
-    testWidgets('profile with multiple teams shows first team chip', (
+    testWidgets('format selector shows All, T20, ODI chips', (
       tester,
     ) async {
       when(
@@ -242,8 +241,9 @@ void main() {
       await tester.pumpWidget(buildProfilePage());
       await tester.pumpAndSettle();
 
-      // First team shown in hero
-      expect(find.text('Royal Challengers'), findsOneWidget);
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('T20'), findsOneWidget);
+      expect(find.text('ODI'), findsOneWidget);
     });
   });
 

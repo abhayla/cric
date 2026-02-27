@@ -20,6 +20,7 @@ class FieldingStatsCard extends StatelessWidget {
       _StatRow('Catches', '${s.catches}', highlight: true),
       _StatRow('Stumpings', '${s.stumpings}'),
       _StatRow('Run Outs', '${s.runOuts}'),
+      _StatRow('Direct Hits', '${s.directHits}'),
     ];
 
     return Padding(

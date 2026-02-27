@@ -83,6 +83,7 @@ export async function refreshPlayerCareerStats(
       notOuts: sql<number>`COALESCE(SUM(CASE WHEN ${battingStats.isNotOut} = true THEN 1 ELSE 0 END), 0)::int`,
       fifties: sql<number>`COALESCE(SUM(CASE WHEN ${battingStats.runsScored} >= 50 AND ${battingStats.runsScored} < 100 THEN 1 ELSE 0 END), 0)::int`,
       hundreds: sql<number>`COALESCE(SUM(CASE WHEN ${battingStats.runsScored} >= 100 THEN 1 ELSE 0 END), 0)::int`,
+      ducks: sql<number>`COALESCE(SUM(CASE WHEN ${battingStats.runsScored} = 0 AND ${battingStats.isNotOut} = false THEN 1 ELSE 0 END), 0)::int`,
     })
     .from(battingStats)
     .innerJoin(innings, eq(battingStats.inningsId, innings.id))
@@ -199,6 +200,7 @@ export async function refreshPlayerCareerStats(
       totalCatches: sql<number>`COALESCE(SUM(${fieldingStats.catches}), 0)::int`,
       totalRunOuts: sql<number>`COALESCE(SUM(${fieldingStats.runOuts}), 0)::int`,
       totalStumpings: sql<number>`COALESCE(SUM(${fieldingStats.stumpings}), 0)::int`,
+      totalDirectHits: sql<number>`COALESCE(SUM(${fieldingStats.directHits}), 0)::int`,
     })
     .from(fieldingStats)
     .innerJoin(innings, eq(fieldingStats.inningsId, innings.id))
@@ -250,6 +252,8 @@ export async function refreshPlayerCareerStats(
     catches: fielding?.totalCatches ?? 0,
     runOuts: fielding?.totalRunOuts ?? 0,
     stumpings: fielding?.totalStumpings ?? 0,
+    ducks: batting?.ducks ?? 0,
+    directHits: fielding?.totalDirectHits ?? 0,
   });
 }
 
@@ -343,6 +347,7 @@ export async function refreshMatchPlayerCareerStats(
     not_outs: number;
     fifties: number;
     hundreds: number;
+    ducks: number;
   }>(sql`
     SELECT
       bs.player_id,
@@ -355,7 +360,8 @@ export async function refreshMatchPlayerCareerStats(
       COALESCE(SUM(bs.sixes), 0)::int AS total_sixes,
       COALESCE(SUM(CASE WHEN bs.is_not_out = true THEN 1 ELSE 0 END), 0)::int AS not_outs,
       COALESCE(SUM(CASE WHEN bs.runs_scored >= 50 AND bs.runs_scored < 100 THEN 1 ELSE 0 END), 0)::int AS fifties,
-      COALESCE(SUM(CASE WHEN bs.runs_scored >= 100 THEN 1 ELSE 0 END), 0)::int AS hundreds
+      COALESCE(SUM(CASE WHEN bs.runs_scored >= 100 THEN 1 ELSE 0 END), 0)::int AS hundreds,
+      COALESCE(SUM(CASE WHEN bs.runs_scored = 0 AND bs.is_not_out = false THEN 1 ELSE 0 END), 0)::int AS ducks
     FROM batting_stats bs
     JOIN innings i ON bs.innings_id = i.id
     JOIN matches m ON i.match_id = m.id
@@ -458,13 +464,15 @@ export async function refreshMatchPlayerCareerStats(
     total_catches: number;
     total_run_outs: number;
     total_stumpings: number;
+    total_direct_hits: number;
   }>(sql`
     SELECT
       fs.player_id,
       CASE WHEN GROUPING(m.format) = 1 THEN 'all' ELSE m.format END AS format,
       COALESCE(SUM(fs.catches), 0)::int AS total_catches,
       COALESCE(SUM(fs.run_outs), 0)::int AS total_run_outs,
-      COALESCE(SUM(fs.stumpings), 0)::int AS total_stumpings
+      COALESCE(SUM(fs.stumpings), 0)::int AS total_stumpings,
+      COALESCE(SUM(fs.direct_hits), 0)::int AS total_direct_hits
     FROM fielding_stats fs
     JOIN innings i ON fs.innings_id = i.id
     JOIN matches m ON i.match_id = m.id
@@ -502,6 +510,8 @@ export async function refreshMatchPlayerCareerStats(
     totalCatches: number;
     totalRunOuts: number;
     totalStumpings: number;
+    ducks: number;
+    totalDirectHits: number;
   };
 
   const statsMap = new Map<string, StatsRow>();
@@ -519,6 +529,7 @@ export async function refreshMatchPlayerCareerStats(
         threeWicketHauls: 0, fiveWicketHauls: 0,
         bestBowlingWickets: 0, bestBowlingRuns: 0,
         totalCatches: 0, totalRunOuts: 0, totalStumpings: 0,
+        ducks: 0, totalDirectHits: 0,
       };
       statsMap.set(key, row);
     }
@@ -541,6 +552,7 @@ export async function refreshMatchPlayerCareerStats(
     row.notOuts = Number(r.not_outs);
     row.fifties = Number(r.fifties);
     row.hundreds = Number(r.hundreds);
+    row.ducks = Number(r.ducks);
   }
 
   for (const r of bowlingRows) {
@@ -564,6 +576,7 @@ export async function refreshMatchPlayerCareerStats(
     row.totalCatches = Number(r.total_catches);
     row.totalRunOuts = Number(r.total_run_outs);
     row.totalStumpings = Number(r.total_stumpings);
+    row.totalDirectHits = Number(r.total_direct_hits);
   }
 
   // ── Query 7: Bulk delete old career stats ──
@@ -616,6 +629,8 @@ export async function refreshMatchPlayerCareerStats(
         catches: row.totalCatches,
         runOuts: row.totalRunOuts,
         stumpings: row.totalStumpings,
+        ducks: row.ducks,
+        directHits: row.totalDirectHits,
       };
     });
 

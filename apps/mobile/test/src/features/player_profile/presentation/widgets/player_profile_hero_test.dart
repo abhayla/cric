@@ -49,7 +49,7 @@ void main() {
       expect(find.textContaining('Batter'), findsOneWidget);
     });
 
-    testWidgets('displays primary team name', (tester) async {
+    testWidgets('does not show team chip', (tester) async {
       const profile = PlayerProfile(
         id: 'p1',
         displayName: 'Test Player',
@@ -58,28 +58,8 @@ void main() {
         ],
       );
       await tester.pumpWidget(buildWidget(profile));
-      expect(find.text('Mumbai Warriors'), findsOneWidget);
-    });
-
-    testWidgets('hides team section when no teams', (tester) async {
-      const profile = PlayerProfile(
-        id: 'p1',
-        displayName: 'Test Player',
-      );
-      await tester.pumpWidget(buildWidget(profile));
+      // Team chip was removed — team name should not appear
       expect(find.text('Mumbai Warriors'), findsNothing);
-    });
-
-    testWidgets('displays team initial when no logo', (tester) async {
-      const profile = PlayerProfile(
-        id: 'p1',
-        displayName: 'Test Player',
-        teams: [
-          TeamAffiliation(teamId: 't1', teamName: 'Mumbai Warriors', role: 'player'),
-        ],
-      );
-      await tester.pumpWidget(buildWidget(profile));
-      expect(find.text('M'), findsOneWidget);
     });
 
     testWidgets('hides role section when no role', (tester) async {
