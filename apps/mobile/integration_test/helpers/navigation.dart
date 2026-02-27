@@ -124,6 +124,22 @@ Future<void> navigateToUpdates(WidgetTester tester) async {
   }
 }
 
+/// Navigate to More page (fourth bottom nav tab).
+Future<void> navigateToMore(WidgetTester tester) async {
+  final navBar = find.byType(NavigationBar);
+  final moreNav = find.text('More');
+  if (navBar.evaluate().isNotEmpty && moreNav.evaluate().isNotEmpty) {
+    final navBarMore = find.descendant(of: navBar, matching: moreNav);
+    if (navBarMore.evaluate().isNotEmpty) {
+      await tester.tap(navBarMore.first);
+    } else {
+      await tester.tap(moreNav.first);
+    }
+    await settle(tester);
+    await visualPause(tester);
+  }
+}
+
 /// Navigate to match setup page via GoRouter.
 Future<void> navigateToMatchSetup(WidgetTester tester) async {
   try {
