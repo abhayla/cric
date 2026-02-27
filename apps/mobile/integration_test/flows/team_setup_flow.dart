@@ -111,19 +111,25 @@ Future<bool> _teamExistsInList(WidgetTester tester, String teamName) async {
   // First check immediate visibility
   if (find.text(teamName).evaluate().isNotEmpty) return true;
 
-  // Scroll through the list to find it
-  final scrollable = find.byType(Scrollable);
+  // Find the outer ListView's Scrollable (not the inner GridView which has
+  // NeverScrollableScrollPhysics)
+  final listView = find.byType(ListView);
+  if (listView.evaluate().isEmpty) return false;
+  final scrollable = find.descendant(
+    of: listView.first,
+    matching: find.byType(Scrollable),
+  );
   if (scrollable.evaluate().isEmpty) return false;
 
   for (var scroll = 0; scroll < 10; scroll++) {
-    await tester.drag(scrollable.last, const Offset(0, -300));
+    await tester.drag(scrollable.first, const Offset(0, -300));
     await settle(tester);
     if (find.text(teamName).evaluate().isNotEmpty) return true;
   }
 
   // Scroll back to top for next team check
   for (var scroll = 0; scroll < 10; scroll++) {
-    await tester.drag(scrollable.last, const Offset(0, 300));
+    await tester.drag(scrollable.first, const Offset(0, 300));
     await settle(tester);
   }
 

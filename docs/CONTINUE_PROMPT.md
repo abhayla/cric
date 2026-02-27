@@ -16,6 +16,21 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-27j: Fix "Add to Team" button + E2E test hang + scroll warnings
+
+**Status:** Fixed. All 28 add_player_page tests pass, `flutter analyze` clean.
+
+**Root causes (3 bugs):**
+1. **Fire-and-forget async callback** — `onCreatePlayer`/`onAddExisting` typed as `void Function(...)` but router passes `async` functions. Returned Future silently discarded → no await, no loading, button appears to do nothing.
+2. **Same issue for `onAddExisting`** — search tab's "Add to Team" also fire-and-forget.
+3. **`_teamExistsInList` drags wrong Scrollable** — `find.byType(Scrollable).last` grabbed inner GridView (NeverScrollableScrollPhysics) instead of outer ListView, producing 40+ drag warnings.
+
+**Changes (4 files):**
+- `lib/src/features/teams/presentation/pages/add_player_page.dart` — Changed callback types to `Future<void> Function(...)`, added `_isSubmitting`/`_isAdding` loading guards, loading spinner on Create tab button
+- `integration_test/flows/team_setup_flow.dart` — Fixed `_teamExistsInList` to target ListView's Scrollable via `find.descendant`
+- `integration_test/helpers/forms.dart` — Added Stopwatch logging around `waitForFinderGone`, increased timeout 45s→60s
+- `test/.../add_player_page_test.dart` — Updated callback types to `Future<void> Function(...)` with `async` lambdas
+
 ### Session 2026-02-27i: Fix E2E keyboard occlusion in fillAndSubmitPlayer
 
 **Status:** Fixed. Added `dismissKeyboard(tester)` helper to `core/test_utils.dart`. Updated `helpers/forms.dart` to use it. Added keyboard dismissal rule to `integration_test/CLAUDE.md`.

@@ -16,7 +16,7 @@ class AddPlayerPage extends StatefulWidget {
   final String teamId;
 
   /// Called when creating a new player.
-  final void Function(
+  final Future<void> Function(
     String name,
     String? phone,
     String? playerRole,
@@ -26,7 +26,7 @@ class AddPlayerPage extends StatefulWidget {
   onCreatePlayer;
 
   /// Called when adding an existing player by ID.
-  final void Function(String playerId)? onAddExisting;
+  final Future<void> Function(String playerId)? onAddExisting;
 
   @override
   State<AddPlayerPage> createState() => _AddPlayerPageState();
@@ -61,7 +61,7 @@ class _AddPlayerPageState extends State<AddPlayerPage> {
 class _SearchTab extends ConsumerStatefulWidget {
   const _SearchTab({this.onAddExisting});
 
-  final void Function(String playerId)? onAddExisting;
+  final Future<void> Function(String playerId)? onAddExisting;
 
   @override
   ConsumerState<_SearchTab> createState() => _SearchTabState();
@@ -70,11 +70,24 @@ class _SearchTab extends ConsumerStatefulWidget {
 class _SearchTabState extends ConsumerState<_SearchTab> {
   final _phoneController = TextEditingController();
   AsyncValue<PlayerSearchResult?>? _searchResult;
+  bool _isAdding = false;
 
   @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleAddExisting(String playerId) async {
+    if (_isAdding) return;
+    setState(() => _isAdding = true);
+    try {
+      await widget.onAddExisting?.call(playerId);
+    } catch (_) {
+      // Error handling is in the callback (router shows SnackBar)
+    } finally {
+      if (mounted) setState(() => _isAdding = false);
+    }
   }
 
   Future<void> _handleSearch() async {
@@ -165,7 +178,9 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
                     )
                   : _PlayerResultCard(
                       player: player,
-                      onAdd: () => widget.onAddExisting?.call(player.id),
+                      onAdd: _isAdding
+                          ? null
+                          : () => _handleAddExisting(player.id),
                     ),
             ),
           ],
@@ -177,10 +192,10 @@ class _SearchTabState extends ConsumerState<_SearchTab> {
 }
 
 class _PlayerResultCard extends StatelessWidget {
-  const _PlayerResultCard({required this.player, required this.onAdd});
+  const _PlayerResultCard({required this.player, this.onAdd});
 
   final PlayerSearchResult player;
-  final VoidCallback onAdd;
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +240,7 @@ class _PlayerResultCard extends StatelessWidget {
 class _CreateTab extends StatefulWidget {
   const _CreateTab({this.onCreatePlayer});
 
-  final void Function(
+  final Future<void> Function(
     String name,
     String? phone,
     String? playerRole,
@@ -245,6 +260,7 @@ class _CreateTabState extends State<_CreateTab> {
   String _selectedRole = 'batter';
   String _selectedBattingStyle = 'right_hand';
   String _selectedBowlingStyle = 'right_arm_medium';
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -259,16 +275,23 @@ class _CreateTabState extends State<_CreateTab> {
 
   bool get _isValid => _nameController.text.trim().length >= 2 && _isPhoneValid;
 
-  void _handleSubmit() {
-    if (!_isValid) return;
-    final phone = _phoneController.text.trim();
-    widget.onCreatePlayer?.call(
-      _nameController.text.trim(),
-      phone.isEmpty ? null : '+91$phone',
-      _selectedRole,
-      _selectedBattingStyle,
-      _selectedBowlingStyle,
-    );
+  Future<void> _handleSubmit() async {
+    if (!_isValid || _isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final phone = _phoneController.text.trim();
+      await widget.onCreatePlayer?.call(
+        _nameController.text.trim(),
+        phone.isEmpty ? null : '+91$phone',
+        _selectedRole,
+        _selectedBattingStyle,
+        _selectedBowlingStyle,
+      );
+    } catch (_) {
+      // Error handling is in the callback (router shows SnackBar)
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -412,8 +435,17 @@ class _CreateTabState extends State<_CreateTab> {
             width: double.infinity,
             height: 48,
             child: FilledButton(
-              onPressed: _isValid ? _handleSubmit : null,
-              child: const Text('Add to Team'),
+              onPressed: _isValid && !_isSubmitting ? _handleSubmit : null,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Add to Team'),
             ),
           ),
           SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 24),

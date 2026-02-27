@@ -206,11 +206,15 @@ Future<void> fillAndSubmitPlayer(
   await tester.tap(submitButton.first, warnIfMissed: false);
 
   // Wait for page pop (API calls complete).
-  // Prod server can be slow — Dio receive timeout is 30s, so wait up to 45s
-  // for the full round-trip (API call + page pop animation).
+  // Prod server can be slow — 2 sequential API calls × 30s Dio timeout = 60s worst case.
+  print('    [fillPlayer] Tapped submit, waiting for page pop (${player.name})...');
+  final sw = Stopwatch()..start();
   final popped = await waitForFinderGone(
       tester, find.byKey(const Key('playerNameField')),
-      timeoutMs: 45000, intervalMs: 300);
+      timeoutMs: 60000, intervalMs: 300);
+  sw.stop();
+  print('    [fillPlayer] Page pop ${popped ? "OK" : "TIMEOUT"} '
+      'for ${player.name} (${sw.elapsedMilliseconds}ms)');
   await settle(tester);
   expect(popped, isTrue,
       reason: 'AddPlayerPage should pop after adding ${player.name}');

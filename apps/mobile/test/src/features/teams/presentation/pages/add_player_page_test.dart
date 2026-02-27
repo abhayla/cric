@@ -13,10 +13,10 @@ class MockTeamRepository extends Mock implements TeamRepository {}
 
 void main() {
   Widget buildTestWidget({
-    void Function(String name, String? phone, String? playerRole,
+    Future<void> Function(String name, String? phone, String? playerRole,
             String? battingStyle, String? bowlingStyle)?
         onCreatePlayer,
-    void Function(String playerId)? onAddExisting,
+    Future<void> Function(String playerId)? onAddExisting,
   }) {
     return ProviderScope(
       child: MaterialApp(
@@ -237,7 +237,7 @@ void main() {
       });
 
       Widget buildWithMock({
-        void Function(String playerId)? onAddExisting,
+        Future<void> Function(String playerId)? onAddExisting,
       }) {
         return ProviderScope(
           overrides: [
@@ -320,7 +320,7 @@ void main() {
                 ));
 
         await tester.pumpWidget(buildWithMock(
-          onAddExisting: (id) => addedPlayerId = id,
+          onAddExisting: (id) async => addedPlayerId = id,
         ));
         await tester.pumpAndSettle();
 
@@ -556,7 +556,7 @@ void main() {
       String? createdRole;
 
       await tester.pumpWidget(buildTestWidget(
-        onCreatePlayer: (name, phone, role, batting, bowling) {
+        onCreatePlayer: (name, phone, role, batting, bowling) async {
           createdName = name;
           createdPhone = phone;
           createdRole = role;
