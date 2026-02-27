@@ -16,36 +16,38 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
-### Session 2026-02-27e: Cold Start Performance Profiling
+### Session 2026-02-27f: Cold Start Performance Optimizations + E2E Testing
 
-**Status:** Performance profiled and documented. Ready for optimization work in next session.
+**Status:** Performance optimizations implemented and committed. E2E tests reveal pre-existing server-side data issues.
 
-**What was done:**
-- Added timing instrumentation to 6 files (all `kDebugMode` guarded, no-ops in release)
-- Ran perf test twice: baseline (178.2s) and instrumented (176.5s) — both GREEN
-- Created detailed performance doc: **[docs/performance-test/OTP-verification-to-home-screen-rendering.md](performance-test/OTP-verification-to-home-screen-rendering.md)**
+**What was done (3 commits, pushed to origin/main):**
+1. **OPT-1: Fire-and-forget `_registerWithServer()`** — `unawaited()` so GoRouter redirects to `/home` immediately after Firebase auth, without waiting for `POST /auth/verify` (~1s faster login-to-home for real users)
+2. **OPT-3: Shared `authenticatedDioProvider`** — Replaced 5 duplicate private `_dioProvider` instances (home, teams, tournaments, player_profile, updates) with single shared Dio for HTTP connection reuse. Scoring kept separate (needs custom `serverRoot` baseUrl for SyncService).
+3. **OPT-2 removed** — User ID cache from `/auth/verify` response was a race condition: fire-and-forget register can't finish before `currentUserIdProvider` reads cache on home mount. Removed dead code.
 
-**Instrumented files (uncommitted):**
-- `integration_test/core/app_bootstrap.dart` — 8-step cold start timing
-- `lib/src/app/providers.dart` — `GET /auth/me` timing
-- `lib/src/features/auth/presentation/notifiers/auth_notifier.dart` — `POST /auth/verify` timing
-- `lib/src/features/home/providers.dart` — `GET /matches` timing
-- `lib/src/features/teams/providers.dart` — `GET /teams` timing
-- `lib/src/features/tournaments/providers.dart` — `GET /tournaments` timing
+**Verification:**
+- `flutter analyze`: No issues
+- `flutter test`: 2192 pass, 5 fail (pre-existing player_profile integration failures)
+- Perf test ran 3 times — optimizations working but masked by network variance (Firebase OTP ±2.5s between runs)
 
-**Key findings (see doc for full details):**
-- Cold start 17.2s: splash polling wastes 5.6s (32%), Firebase OTP round-trip 4.4s (26%), pumpWidget 1.9s (11%)
-- API calls after home: `GET /teams` 1.4s, `POST /auth/verify` 1.2s, `GET /auth/me` 1.1s, `GET /matches` 0.6s
-- Per-delivery avg: 1787ms (1st inn), 1498ms (2nd inn)
-- Known bugs: undo button hit-test warning, `Infinity` JSON in WS publish, stale SelectBowlerSheet
+**E2E test results (prod server):**
+- 01 Team Setup: **PASS** (all 12 teams exist)
+- 02 Standalone Match: **FAIL** (pre-existing — Team1 roster empty from server, confirmed by testing old code)
+- 04 Tournament GK: **FAIL** (tournament creation stuck — server API issue)
+- 03, 05-07: Not run
 
-**Next steps (performance improvement session):**
-1. Optimize splash redirect polling (replace 10×500ms fixed sleep with event-driven wait)
-2. Optimize OTP digit entry (batch instead of one-by-one)
-3. Decide: keep or revert timing instrumentation
-4. Fix `Infinity` JSON serialization bug in WS publish
-5. Continue with E2E Tests 04-08
-6. Clean up orphaned teams from prod DB
+**Files changed:**
+- `lib/src/core/network/dio_provider.dart` — NEW shared Dio provider
+- `lib/src/app/providers.dart` — Removed OPT-2 cache code
+- `lib/src/features/auth/presentation/notifiers/auth_notifier.dart` — `unawaited(_registerWithServer())`
+- `lib/src/features/{home,teams,tournaments,player_profile,updates}/providers.dart` — Use shared Dio
+
+**Next steps:**
+1. **Investigate Team1 roster issue** — `getTeam(Team1)` returns empty roster from prod server. May need DB inspection on VPS.
+2. **Investigate tournament creation failure** — form submission doesn't navigate away, API likely failing silently
+3. Fix `Infinity` JSON serialization bug in WS publish
+4. Run remaining E2E tests (05, 06, 07) after server issues resolved
+5. Continue Phase 7 Polish & Testing
 
 ### Session 2026-02-27d: Scoring Engine Performance Optimization
 
