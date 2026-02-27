@@ -16,17 +16,37 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-27k: Add "Custom" format chip to Player Profile
+
+**Status:** Complete. E2E test passing on emulator.
+
+**What was done:**
+- Added 4th format chip "Custom" to player profile format selector (was: All/T20/ODI → now: All/T20/ODI/Custom)
+- Wrapped chip row in `SingleChildScrollView(scrollDirection: Axis.horizontal)` for narrow screen safety
+- Frontend-only change — server already computes and stores `custom` format career stats correctly
+
+**Why:** Most amateur cricketers play non-standard overs (5, 10, 15, 25) stored as format `'custom'`. These stats were invisible in the UI, only visible rolled up into "All".
+
+**Files changed (2):**
+- `lib/src/features/player_profile/presentation/pages/player_profile_page.dart` — Added `'custom'`/`'Custom'` to format/label lists, wrapped Row in SingleChildScrollView
+- `integration_test/verification/player_profile_verifier.dart` — Added `Custom` chip assertion to `verifyFormatSelector()`
+
+**Verification:** `flutter analyze` clean, E2E test 09 passing (All/T20/ODI/Custom chips verified).
+
 ### Session 2026-02-27j: Fix "Add to Team" button + E2E test hang + scroll warnings
 
 **Status:** Fixed. All 28 add_player_page tests pass, `flutter analyze` clean.
 
-**Root causes (3 bugs):**
+**Root causes (4 bugs):**
 1. **Fire-and-forget async callback** — `onCreatePlayer`/`onAddExisting` typed as `void Function(...)` but router passes `async` functions. Returned Future silently discarded → no await, no loading, button appears to do nothing.
 2. **Same issue for `onAddExisting`** — search tab's "Add to Team" also fire-and-forget.
 3. **`_teamExistsInList` drags wrong Scrollable** — `find.byType(Scrollable).last` grabbed inner GridView (NeverScrollableScrollPhysics) instead of outer ListView, producing 40+ drag warnings.
+4. **`settle()` burns 7s per call due to PulsingLiveDot** — `pumpAndSettle()` never settles with infinite repeating animations. With 5s timeout + 2s fallback per call × hundreds of calls in team setup, the 60-min test timeout was exhausted. Replaced with pump-based settling (10 × 100ms = 1s).
 
-**Changes (4 files):**
+**Changes (6 files):**
 - `lib/src/features/teams/presentation/pages/add_player_page.dart` — Changed callback types to `Future<void> Function(...)`, added `_isSubmitting`/`_isAdding` loading guards, loading spinner on Create tab button
+- `integration_test/core/test_utils.dart` — Replaced `pumpAndSettle`-based `settle()` with pump-based approach (10 × 100ms) to avoid 5s timeout per call from PulsingLiveDot infinite animation
+- `integration_test/config/constants.dart` — Removed unused `settleTimeoutMs` constant
 - `integration_test/flows/team_setup_flow.dart` — Fixed `_teamExistsInList` to target ListView's Scrollable via `find.descendant`
 - `integration_test/helpers/forms.dart` — Added Stopwatch logging around `waitForFinderGone`, increased timeout 45s→60s
 - `test/.../add_player_page_test.dart` — Updated callback types to `Future<void> Function(...)` with `async` lambdas
