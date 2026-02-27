@@ -23,9 +23,10 @@ class TeamCard extends StatelessWidget {
         onTap: onTap,
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
+            SizedBox.expand(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircleAvatar(
@@ -63,6 +64,7 @@ class TeamCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   _RoleBadge(role: team.role),
                 ],
+                ),
               ),
             ),
             if (team.hasLiveMatch)
