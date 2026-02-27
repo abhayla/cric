@@ -6,15 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../config/constants.dart';
 
-/// Like pumpAndSettle but with a timeout — won't hang on infinite animations.
-Future<void> settle(WidgetTester tester, {int fallbackMs = settleTimeoutMs}) async {
-  try {
-    await tester.pumpAndSettle(const Duration(milliseconds: 100),
-        EnginePhase.sendSemanticsUpdate, const Duration(seconds: 5));
-  } catch (_) {
-    for (var i = 0; i < (fallbackMs ~/ 100); i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+/// Pump a fixed number of frames to let the UI settle.
+///
+/// Uses pump-based settling instead of pumpAndSettle because the app has
+/// infinite repeating animations (PulsingLiveDot) that prevent pumpAndSettle
+/// from ever completing — it burns the full timeout (5s) on every call.
+/// With hundreds of settle() calls per test, that alone exhausts the timeout.
+///
+/// 10 × 100ms = 1s of frame processing, enough for route transitions and
+/// most UI animations to complete.
+Future<void> settle(WidgetTester tester, {int pumpCount = 10}) async {
+  for (var i = 0; i < pumpCount; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
   }
 }
 

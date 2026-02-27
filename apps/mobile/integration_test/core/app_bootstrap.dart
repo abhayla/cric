@@ -7,6 +7,7 @@ library;
 import 'package:drift/native.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -68,6 +69,16 @@ Future<void> pumpAppAndWaitForHome(
   );
   swPump.stop();
   print('  [cold-start] 2. pumpWidget: ${swPump.elapsedMilliseconds}ms');
+
+  // Keep screen on to prevent device sleep during long E2E tests.
+  // Uses FLAG_KEEP_SCREEN_ON via platform channel in MainActivity.
+  try {
+    const screenChannel = MethodChannel('in.cricscores.app/screen');
+    await screenChannel.invokeMethod('keepScreenOn');
+    print('  [cold-start] Screen wakelock acquired');
+  } catch (e) {
+    print('  [cold-start] Screen wakelock failed (OK on emulator): $e');
+  }
 
   // Step 3: Splash → login redirect
   final swSplash = Stopwatch()..start();

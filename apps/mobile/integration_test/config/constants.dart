@@ -16,9 +16,6 @@ const loginTimeoutSeconds = 180;
 /// Timeout for match setup navigation + API calls.
 const matchSetupTimeoutSeconds = 30;
 
-/// Default settle timeout for pumpAndSettle fallback.
-const settleTimeoutMs = 2000;
-
 /// Visual pause between UI taps for observability.
 const defaultPauseMs = 300;
 

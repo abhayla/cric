@@ -65,7 +65,7 @@ void main() {
         initialData:
             const TournamentListResult(tournaments: [], total: 0, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Tournaments'), findsOneWidget);
     });
@@ -81,7 +81,7 @@ void main() {
         initialData:
             const TournamentListResult(tournaments: [], total: 0, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('No Tournaments'), findsOneWidget);
       expect(
@@ -97,7 +97,7 @@ void main() {
         initialData:
             const TournamentListResult(tournaments: [], total: 0, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(FloatingActionButton), findsOneWidget);
       expect(find.byIcon(Icons.add), findsWidgets);
@@ -108,7 +108,7 @@ void main() {
         initialData:
             const TournamentListResult(tournaments: [], total: 0, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(RefreshIndicator), findsOneWidget);
     });
@@ -137,7 +137,7 @@ void main() {
         initialData:
             TournamentListResult(tournaments: tournaments, total: 2, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Summer League'), findsOneWidget);
       expect(find.text('Winter Cup'), findsOneWidget);
@@ -167,7 +167,7 @@ void main() {
         initialData:
             TournamentListResult(tournaments: tournaments, total: 4, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('LIVE'), findsOneWidget);
       expect(find.text('DRAFT'), findsOneWidget);
@@ -184,7 +184,7 @@ void main() {
         initialData:
             TournamentListResult(tournaments: tournaments, total: 1, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('ROUND ROBIN'), findsOneWidget);
     });
@@ -198,7 +198,7 @@ void main() {
         initialData:
             TournamentListResult(tournaments: tournaments, total: 1, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('20 overs'), findsOneWidget);
     });
@@ -212,7 +212,7 @@ void main() {
         initialData:
             TournamentListResult(tournaments: tournaments, total: 1, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('8 teams'), findsOneWidget);
     });
@@ -226,7 +226,7 @@ void main() {
         initialData:
             TournamentListResult(tournaments: tournaments, total: 1, page: 1),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('2026-03-01 - 2026-03-31'), findsOneWidget);
     });
@@ -244,6 +244,7 @@ void main() {
           ),
         ),
       );
+      // Error state has no PulsingLiveDot, so pumpAndSettle is safe here
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Something went wrong'), findsOneWidget);
