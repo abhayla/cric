@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:cricscores/src/features/teams/domain/entities/team.dart';
+import 'package:cricscores/src/features/teams/domain/repositories/team_repository.dart';
+import 'package:cricscores/src/features/teams/providers.dart'
+    show TeamsListNotifier, teamsListProvider;
 import 'package:cricscores/src/features/tournaments/domain/entities/fixture.dart';
 import 'package:cricscores/src/features/tournaments/domain/entities/standing.dart';
 import 'package:cricscores/src/features/tournaments/domain/entities/tournament.dart';
@@ -247,5 +251,245 @@ void main() {
 
       expect(find.text('Mumbai Warriors'), findsWidgets);
     });
+
+    testWidgets('shows Add Team button on Teams tab when status is draft',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget(
+        tournament: _makeTournament(status: TournamentStatus.draft, teams: []),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(Tab, 'Teams'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add Team'), findsOneWidget);
+    });
+
+    testWidgets('hides Add Team button when status is completed',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget(
+        tournament:
+            _makeTournament(status: TournamentStatus.completed, teams: []),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(Tab, 'Teams'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add Team'), findsNothing);
+    });
+
+    testWidgets('shows group headers on Teams tab', (tester) async {
+      final teams = [
+        TournamentTeam(
+          id: 'tt-1',
+          tournamentId: 'tour-1',
+          teamId: 'team-1',
+          joinedAt: DateTime(2026, 1, 15),
+          updatedAt: DateTime(2026, 1, 15),
+          groupName: 'A',
+          teamName: 'Mumbai Warriors',
+        ),
+        TournamentTeam(
+          id: 'tt-2',
+          tournamentId: 'tour-1',
+          teamId: 'team-2',
+          joinedAt: DateTime(2026, 1, 15),
+          updatedAt: DateTime(2026, 1, 15),
+          groupName: 'B',
+          teamName: 'Chennai Kings',
+        ),
+      ];
+
+      await tester.pumpWidget(buildTestWidget(
+        tournament: _makeTournament(teams: teams),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(Tab, 'Teams'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('A'), findsOneWidget);
+      expect(find.text('B'), findsOneWidget);
+    });
+
+    testWidgets('shows seed number on team row', (tester) async {
+      final teams = [
+        TournamentTeam(
+          id: 'tt-1',
+          tournamentId: 'tour-1',
+          teamId: 'team-1',
+          joinedAt: DateTime(2026, 1, 15),
+          updatedAt: DateTime(2026, 1, 15),
+          groupName: 'A',
+          seedNumber: 1,
+          teamName: 'Mumbai Warriors',
+        ),
+      ];
+
+      await tester.pumpWidget(buildTestWidget(
+        tournament: _makeTournament(teams: teams),
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(Tab, 'Teams'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Seed #1'), findsOneWidget);
+    });
+
+    testWidgets('shows empty standings message on Overview', (tester) async {
+      await tester.pumpWidget(buildTestWidget(
+        standings: const StandingsResult(standings: [], groups: []),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No Upcoming Matches'), findsOneWidget);
+    });
+
+    group('AddTeamSheet', () {
+      Widget buildWithTeams({
+        required Tournament tournament,
+        required List<Team> userTeams,
+      }) {
+        return ProviderScope(
+          overrides: [
+            tournamentDetailProvider('tour-1').overrideWith(
+              (ref) async => tournament,
+            ),
+            tournamentFixturesProvider('tour-1').overrideWith(
+              (ref) async => <Fixture>[],
+            ),
+            tournamentStandingsProvider('tour-1').overrideWith(
+              (ref) async =>
+                  const StandingsResult(standings: [], groups: []),
+            ),
+            teamsListProvider.overrideWith(
+              () => _FakeTeamsListNotifier(TeamListResult(
+                teams: userTeams,
+                total: userTeams.length,
+                page: 1,
+              )),
+            ),
+          ],
+          child: const MaterialApp(
+            home: TournamentDetailPage(tournamentId: 'tour-1'),
+          ),
+        );
+      }
+
+      testWidgets('shows eligible teams as tappable', (tester) async {
+        final userTeams = [
+          Team(
+            id: 'team-1',
+            name: 'Full Squad',
+            createdBy: 'user-1',
+            isActive: true,
+            playerCount: 11,
+            role: TeamMemberRole.owner,
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+          ),
+        ];
+
+        await tester.pumpWidget(buildWithTeams(
+          tournament:
+              _makeTournament(status: TournamentStatus.draft, teams: []),
+          userTeams: userTeams,
+        ));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(Tab, 'Teams'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Add Team'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Full Squad'), findsOneWidget);
+        expect(find.text('11 players'), findsOneWidget);
+      });
+
+      testWidgets('shows ineligible teams as disabled', (tester) async {
+        final userTeams = [
+          Team(
+            id: 'team-2',
+            name: 'Small Team',
+            createdBy: 'user-1',
+            isActive: true,
+            playerCount: 5,
+            role: TeamMemberRole.owner,
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+          ),
+        ];
+
+        await tester.pumpWidget(buildWithTeams(
+          tournament:
+              _makeTournament(status: TournamentStatus.draft, teams: []),
+          userTeams: userTeams,
+        ));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(Tab, 'Teams'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Add Team'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Small Team'), findsOneWidget);
+        expect(find.text('5/11 players required'), findsOneWidget);
+      });
+
+      testWidgets('shows group selector chips when hasGroupStage',
+          (tester) async {
+        await tester.pumpWidget(buildWithTeams(
+          tournament: _makeTournament(
+            status: TournamentStatus.draft,
+            format: TournamentFormat.groupKnockout,
+            teams: [],
+          ),
+          userTeams: [],
+        ));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(Tab, 'Teams'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Add Team'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Group A'), findsOneWidget);
+        expect(find.text('Group B'), findsOneWidget);
+      });
+
+      testWidgets('hides group selector when no group stage',
+          (tester) async {
+        await tester.pumpWidget(buildWithTeams(
+          tournament: _makeTournament(
+            status: TournamentStatus.draft,
+            format: TournamentFormat.knockout,
+            teams: [],
+          ),
+          userTeams: [],
+        ));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(Tab, 'Teams'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Add Team'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Group'), findsNothing);
+      });
+    });
   });
+}
+
+class _FakeTeamsListNotifier extends TeamsListNotifier {
+  _FakeTeamsListNotifier(this._result);
+  final TeamListResult _result;
+
+  @override
+  Future<TeamListResult> build() async => _result;
 }

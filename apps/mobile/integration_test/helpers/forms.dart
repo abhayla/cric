@@ -178,9 +178,8 @@ Future<void> fillAndSubmitPlayer(
     print('    [fillPlayer] Entered phone: ${player.phone}');
   }
 
-  // Dismiss keyboard before scrolling to chips
-  await tester.testTextInput.receiveAction(TextInputAction.done);
-  await settle(tester);
+  // Dismiss keyboard before scrolling to chips/button
+  await dismissKeyboard(tester);
 
   // Select role chip
   final roleLabel = switch (player.role) {

@@ -84,6 +84,19 @@ Future<bool> waitForFinderGone(
   return false;
 }
 
+/// Dismiss the soft keyboard and wait for it to animate away.
+///
+/// Must be called before tapping buttons that may be occluded by the keyboard.
+/// Uses FocusManager to unfocus, then pumps frames for the dismiss animation.
+Future<void> dismissKeyboard(WidgetTester tester) async {
+  // Send 'done' action in case a text field is active
+  await tester.testTextInput.receiveAction(TextInputAction.done);
+  await settle(tester);
+  // Unfocus any remaining focus to ensure keyboard is fully dismissed
+  FocusManager.instance.primaryFocus?.unfocus();
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
 /// Conditional print that respects [verboseTestOutput].
 ///
 /// Always prints if the message contains WARNING or ERROR.

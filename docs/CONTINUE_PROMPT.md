@@ -16,6 +16,17 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-27i: Fix E2E keyboard occlusion in fillAndSubmitPlayer
+
+**Status:** Fixed. Added `dismissKeyboard(tester)` helper to `core/test_utils.dart`. Updated `helpers/forms.dart` to use it. Added keyboard dismissal rule to `integration_test/CLAUDE.md`.
+
+**Root cause:** On device/emulator, the soft keyboard occludes the "Add to Team" button at the bottom of the Create New player form. `ensureVisible` scrolls within the `ScrollView` extent but doesn't account for keyboard occlusion — the button is "visible" in scroll terms but physically behind the keyboard, causing the tap to miss and the test to hang.
+
+**Changes (3 files):**
+- `integration_test/core/test_utils.dart` — New `dismissKeyboard(tester)` helper (TextInputAction.done + FocusManager.unfocus + 500ms pump)
+- `integration_test/helpers/forms.dart` — Replaced inline keyboard dismiss with `dismissKeyboard(tester)` call
+- `integration_test/CLAUDE.md` — Added Rules section with keyboard dismissal rule; updated stale gotcha
+
 ### Session 2026-02-27h: LIVE Indicators Across All Card Types
 
 **Status:** Implemented and tested. All Flutter tests pass (28 new/updated tests).

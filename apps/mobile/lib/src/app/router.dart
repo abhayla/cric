@@ -380,6 +380,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   );
                   await repo.addPlayer(teamId, playerId: player.id);
                   ref.invalidate(teams.teamDetailProvider(teamId));
+                  ref.invalidate(teams.teamsListProvider);
                   if (context.mounted) {
                     GoRouter.of(context).pop();
                   }
@@ -396,6 +397,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   await ref.read(teams.teamRepositoryProvider)
                       .addPlayer(teamId, playerId: playerId);
                   ref.invalidate(teams.teamDetailProvider(teamId));
+                  ref.invalidate(teams.teamsListProvider);
                   if (context.mounted) {
                     GoRouter.of(context).pop();
                   }

@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'package:cricscores/src/features/auth/domain/entities/app_user.dart';
 import 'package:cricscores/src/features/teams/domain/entities/team.dart';
 import 'package:cricscores/src/features/teams/domain/repositories/team_repository.dart';
 import 'package:cricscores/src/features/teams/presentation/pages/team_detail_page.dart';
 import 'package:cricscores/src/features/teams/providers.dart';
+
+class MockTeamRepository extends Mock implements TeamRepository {}
 
 void main() {
   final testTeam = Team(
@@ -110,7 +113,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(initialData: testDetail));
       await tester.pumpAndSettle();
 
-      expect(find.text('11 players · Mumbai'), findsOneWidget);
+      expect(find.text('4 players · Mumbai'), findsOneWidget);
     });
 
     testWidgets('renders stats row with zero values', (tester) async {
@@ -273,6 +276,191 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('4 players'), findsOneWidget);
+    });
+
+    testWidgets('header shows player count without location', (tester) async {
+      final noLocationTeam = Team(
+        id: 'team-1',
+        name: 'Mumbai Warriors',
+        createdBy: 'user-1',
+        isActive: true,
+        playerCount: 11,
+        role: TeamMemberRole.owner,
+        createdAt: DateTime(2025, 3, 15),
+        updatedAt: DateTime(2025, 3, 15),
+      );
+      final detail = TeamDetail(team: noLocationTeam, roster: testRoster);
+
+      await tester.pumpWidget(buildTestWidget(initialData: detail));
+      await tester.pumpAndSettle();
+
+      // Should show just player count, no dot separator
+      expect(find.text('4 players'), findsOneWidget);
+      expect(find.textContaining('·'), findsNothing);
+    });
+
+    testWidgets('header shows singular player for single roster entry',
+        (tester) async {
+      final singleRoster = [testRoster.first];
+      final detail = TeamDetail(team: testTeam, roster: singleRoster);
+
+      await tester.pumpWidget(buildTestWidget(initialData: detail));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 player · Mumbai'), findsOneWidget);
+    });
+
+    testWidgets('shows ALL-ROUNDERS and WK-BATTERS group headers',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget(initialData: testDetail));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Tab).last);
+      await tester.pumpAndSettle();
+
+      // Scroll through all groups
+      final scrollable = find.byType(Scrollable).last;
+
+      await tester.scrollUntilVisible(
+        find.text('ALL-ROUNDERS'),
+        200,
+        scrollable: scrollable,
+      );
+      expect(find.text('ALL-ROUNDERS'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('WK-BATTERS'),
+        200,
+        scrollable: scrollable,
+      );
+      expect(find.text('WK-BATTERS'), findsOneWidget);
+    });
+
+    testWidgets('shows FAB on Players tab for captain', (tester) async {
+      final captainTeam = Team(
+        id: 'team-1',
+        name: 'Mumbai Warriors',
+        createdBy: 'user-1',
+        isActive: true,
+        playerCount: 11,
+        role: TeamMemberRole.captain,
+        location: 'Mumbai',
+        createdAt: DateTime(2025, 3, 15),
+        updatedAt: DateTime(2025, 3, 15),
+      );
+      final captainDetail = TeamDetail(team: captainTeam, roster: testRoster);
+
+      await tester.pumpWidget(buildTestWidget(initialData: captainDetail));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Tab).last);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+
+    group('delete player', () {
+      late MockTeamRepository mockRepo;
+
+      setUp(() {
+        mockRepo = MockTeamRepository();
+      });
+
+      Widget buildWithMock({TeamDetail? detail}) {
+        return ProviderScope(
+          overrides: [
+            teamDetailProvider('team-1').overrideWith(
+              (ref) => Future.value(detail ?? testDetail),
+            ),
+            teamRepositoryProvider.overrideWithValue(mockRepo),
+          ],
+          child: const MaterialApp(
+            home: TeamDetailPage(teamId: 'team-1'),
+          ),
+        );
+      }
+
+      testWidgets('shows confirmation dialog', (tester) async {
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(Tab).last);
+        await tester.pumpAndSettle();
+
+        // Tap first delete icon
+        await tester.tap(find.byIcon(Icons.delete_outline).first);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text('Remove Player'), findsOneWidget);
+        expect(
+          find.text('Remove Arjun Mehta from the roster?'),
+          findsOneWidget,
+        );
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Remove'), findsOneWidget);
+      });
+
+      testWidgets('cancel dismisses dialog', (tester) async {
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(Tab).last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.delete_outline).first);
+        await tester.pumpAndSettle();
+
+        // Tap Cancel
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        // Dialog closed
+        expect(find.byType(AlertDialog), findsNothing);
+        // removePlayer never called
+        verifyNever(() => mockRepo.removePlayer(any(), any()));
+      });
+
+      testWidgets('confirm calls removePlayer and shows success snackbar',
+          (tester) async {
+        when(() => mockRepo.removePlayer('team-1', 'p-1'))
+            .thenAnswer((_) async {});
+
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(Tab).last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.delete_outline).first);
+        await tester.pumpAndSettle();
+
+        // Tap Remove
+        await tester.tap(find.text('Remove'));
+        await tester.pumpAndSettle();
+
+        verify(() => mockRepo.removePlayer('team-1', 'p-1')).called(1);
+        expect(find.text('Player removed'), findsOneWidget);
+      });
+
+      testWidgets('shows error snackbar on failure', (tester) async {
+        when(() => mockRepo.removePlayer('team-1', 'p-1'))
+            .thenThrow(Exception('Server error'));
+
+        await tester.pumpWidget(buildWithMock());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(Tab).last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.delete_outline).first);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Remove'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Failed to remove player'), findsOneWidget);
+      });
     });
   });
 }

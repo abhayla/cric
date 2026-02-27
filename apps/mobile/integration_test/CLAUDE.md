@@ -35,9 +35,13 @@ TestTeam(name: 'SpeedAlpha', players: [TestPlayer(name: 'Alpha1', phone: '555555
 TestTeam(name: 'Team20', players: [TestPlayer(name: 'Player501', phone: '9999999501')])
 ```
 
+## Rules
+
+- **Dismiss keyboard before tapping off-screen buttons.** On device/emulator, the soft keyboard occludes the bottom portion of the screen. `ensureVisible` scrolls within the `ScrollView` extent but does NOT account for keyboard occlusion — the button may be "visible" in scroll terms but physically behind the keyboard. Always call `dismissKeyboard(tester)` (from `core/test_utils.dart`) before `ensureVisible` + `tap` on any button that could be below the fold. This applies to all form submission flows.
+
 ## Known Gotchas
 
-- **`ensureTeamsExist` skips existing teams** regardless of player count. If a team exists with 2/6 players, it won't add the remaining 4. Delete incomplete teams from the server before re-running.
+- **`ensureTeamsExist` verifies roster completeness** via API. If a team has the wrong player count (e.g., from a prior crashed run), it deletes and recreates from scratch.
 - **`_selectPlayingXIIfNeeded`** taps generic `InkWell` widgets by index. When `roster.length < playersPerSide`, the toss wizard gets stuck. Ensure teams have the correct number of players before match setup.
 - **Prod server latency**: `fillAndSubmitPlayer` uses a 30s timeout for the page pop after API call. If the server is slow, player creation may time out.
 - **`fillAndSubmitPlayer` timeout** is in `helpers/forms.dart` line ~211 (`waitForFinderGone timeoutMs: 30000`).

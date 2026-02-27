@@ -661,6 +661,7 @@ class _TeamsTabState extends ConsumerState<_TeamsTab> {
         tournamentId: widget.tournamentId,
         numGroups: widget.tournament.numGroups,
         hasGroupStage: widget.tournament.hasGroupStage,
+        playersPerSide: widget.tournament.playersPerSide,
         parentRef: ref,
       ),
     );
@@ -751,12 +752,14 @@ class _AddTeamSheet extends ConsumerStatefulWidget {
     required this.tournamentId,
     required this.numGroups,
     required this.hasGroupStage,
+    required this.playersPerSide,
     required this.parentRef,
   });
 
   final String tournamentId;
   final int numGroups;
   final bool hasGroupStage;
+  final int playersPerSide;
   final WidgetRef parentRef;
 
   @override
@@ -865,24 +868,36 @@ class _AddTeamSheetState extends ConsumerState<_AddTeamSheet> {
                 return ListView(
                   children: [
                     for (final team in result.teams)
-                      ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              theme.colorScheme.primaryContainer,
-                          child: Text(
-                            team.name[0],
-                            style: TextStyle(
-                              color:
-                                  theme.colorScheme.onPrimaryContainer,
+                      () {
+                        final isEligible =
+                            team.playerCount >= widget.playersPerSide;
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor:
+                                theme.colorScheme.primaryContainer,
+                            child: Text(
+                              team.name[0],
+                              style: TextStyle(
+                                color:
+                                    theme.colorScheme.onPrimaryContainer,
+                              ),
                             ),
                           ),
-                        ),
-                        title: Text(team.name),
-                        subtitle:
-                            Text('${team.playerCount} players'),
-                        enabled: !_isLoading,
-                        onTap: () => _addTeam(team.id, team.name),
-                      ),
+                          title: Text(team.name),
+                          subtitle: isEligible
+                              ? Text('${team.playerCount} players')
+                              : Text(
+                                  '${team.playerCount}/${widget.playersPerSide} players required',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.error,
+                                  ),
+                                ),
+                          enabled: !_isLoading && isEligible,
+                          onTap: isEligible
+                              ? () => _addTeam(team.id, team.name)
+                              : null,
+                        );
+                      }(),
                   ],
                 );
               },

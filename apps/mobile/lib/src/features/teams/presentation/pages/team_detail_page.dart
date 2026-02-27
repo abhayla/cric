@@ -89,7 +89,10 @@ class _TeamDetailViewState extends ConsumerState<_TeamDetailView>
           : null,
       body: Column(
         children: [
-          _TeamHeader(team: widget.detail.team),
+          _TeamHeader(
+            team: widget.detail.team,
+            playerCount: widget.detail.roster.length,
+          ),
           const TeamStatsRow(),
           TabBar(
             controller: _tabController,
@@ -120,9 +123,18 @@ class _TeamDetailViewState extends ConsumerState<_TeamDetailView>
 }
 
 class _TeamHeader extends StatelessWidget {
-  const _TeamHeader({required this.team});
+  const _TeamHeader({required this.team, required this.playerCount});
 
   final Team team;
+  final int playerCount;
+
+  String get _subtitle {
+    final playerText = playerCount == 1 ? '1 player' : '$playerCount players';
+    if (team.location != null && team.location!.isNotEmpty) {
+      return '$playerText · ${team.location}';
+    }
+    return playerText;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +169,7 @@ class _TeamHeader extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            team.subtitle,
+            _subtitle,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
