@@ -59,14 +59,40 @@ TestTeam(name: 'Team20', players: [TestPlayer(name: 'Player501', phone: '9999999
 - **Prod server latency**: `fillAndSubmitPlayer` uses a 30s timeout for the page pop after API call. If the server is slow, player creation may time out.
 - **`fillAndSubmitPlayer` timeout** is in `helpers/forms.dart` line ~211 (`waitForFinderGone timeoutMs: 30000`).
 
+## Emulators
+
+Three dedicated emulators, one per role:
+
+| Emulator | Port | Phone | Role |
+|----------|------|-------|------|
+| Scorer | `emulator-5554` | `9999999999` | Creates and scores matches |
+| Viewer | `emulator-5556` | `9999999998` | Team member, watches live |
+| Spectator | `emulator-5558` | `9999999997` | Not on any team, public discovery |
+
+Single-device tests run on Scorer (`emulator-5554`). Multi-device tests use Scorer + Viewer or Scorer + Spectator.
+
 ## Test Execution
 
 All integration tests run against the prod server (`cricscores.in`):
 
 ```bash
+# Single-device tests (scorer emulator)
 cd apps/mobile
 flutter test --flavor prod --dart-define=FLAVOR=prod \
   integration_test/tests/<test>.dart -d emulator-5554
+
+# Multi-device: viewer live test
+flutter test --flavor prod --dart-define=FLAVOR=prod \
+  --dart-define=ROLE=scorer integration_test/tests/08_viewer_live_test.dart -d emulator-5554
+flutter test --flavor prod --dart-define=FLAVOR=prod \
+  --dart-define=ROLE=viewer integration_test/tests/08_viewer_live_test.dart -d emulator-5556
+
+# Multi-device: spectator live test
+flutter test --flavor prod --dart-define=FLAVOR=prod \
+  --dart-define=ROLE=scorer integration_test/tests/spectator_live_test.dart -d emulator-5554
+flutter test --flavor prod --dart-define=FLAVOR=prod \
+  --dart-define=ROLE=viewer --dart-define=VIEWER_PHONE=9999999997 \
+  integration_test/tests/spectator_live_test.dart -d emulator-5558
 ```
 
 Tests that create teams (01, perf) should run before tests that assume teams exist (02-08).

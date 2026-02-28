@@ -116,7 +116,9 @@ flutter test --flavor prod --dart-define=FLAVOR=prod \
 |--------|-----|---------|------|
 | OPPO CPH2691 | `843773fe` | 16 | Scorer or Viewer |
 | OnePlus EB2101 | `f7d1d240` | 13 | Scorer or Viewer |
-| Emulator (Resizable) | `emulator-5554` | varies | Dev testing, perf |
+| Scorer Emulator | `emulator-5554` | varies | Scorer |
+| Viewer Emulator | `emulator-5556` | varies | Viewer (team member) |
+| Spectator Emulator | `emulator-5558` | varies | Spectator (no team) |
 
 Check connected devices:
 ```bash

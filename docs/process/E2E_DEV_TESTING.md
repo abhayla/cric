@@ -17,14 +17,22 @@ Developer Machine
 │   ├── REST API (http://localhost:3001)
 │   ├── WebSocket server (ws://localhost:3001)
 │   └── Signal endpoints (/api/v1/test/signal/:name)
-├── Scorer Emulator (emulator-5554)
+├── Scorer Emulator (emulator-5554) — logs in as 9999999999
 │   └── Flutter app (--flavor dev) → 10.0.2.2:3001
-├── Viewer Emulator 1 (emulator-5556)  [optional]
+├── Viewer Emulator (emulator-5556) — logs in as 9999999998 (team member)
 │   └── Flutter app (--flavor dev) → 10.0.2.2:3001
-├── Viewer Emulator N (emulator-5558+) [optional]
+├── Spectator Emulator (emulator-5558) — logs in as 9999999997 (no team)
 │   └── Flutter app (--flavor dev) → 10.0.2.2:3001
 └── Flutter integration tests
 ```
+
+**Three dedicated emulators:**
+
+| Emulator | Port | Phone | Role | Purpose |
+|----------|------|-------|------|---------|
+| Scorer | `emulator-5554` | `9999999999` | Creates and scores matches | All tests |
+| Viewer | `emulator-5556` | `9999999998` | Team member, watches live | `08_viewer_live_test` |
+| Spectator | `emulator-5558` | `9999999997` | Not on any team, public discovery | `spectator_live_test` |
 
 - Local server with `NODE_ENV=test` and `ENABLE_TEST_AUTH=true`
 - Separate test database (`cricapp_dev` or dedicated `cricapp_e2e_test`)
@@ -203,24 +211,28 @@ WebSocket viewer testing (scorer scores, viewers see live updates) is a critical
 
 ### Emulator Setup
 
-Each emulator needs a distinct AVD or port assignment:
+Launch all three emulators on distinct ports:
 
 ```bash
-# Launch scorer emulator (default port)
+# Launch scorer emulator
 emulator -avd Resizable_Experimental -port 5554
 
-# Launch viewer emulator (separate AVD or same AVD name with different port)
+# Launch viewer emulator
 emulator -avd Resizable_Experimental -port 5556
 
-# Verify both are running
+# Launch spectator emulator
+emulator -avd Resizable_Experimental -port 5558
+
+# Verify all three are running
 adb devices
-# emulator-5554   device
-# emulator-5556   device
+# emulator-5554   device  (Scorer)
+# emulator-5556   device  (Viewer)
+# emulator-5558   device  (Spectator)
 ```
 
-**Resource requirements:** Each emulator uses ~2-3 GB RAM. Two emulators + local server = ~8 GB minimum. Close other heavy apps during multi-emulator testing.
+**Resource requirements:** Each emulator uses ~2-3 GB RAM. Three emulators + local server = ~11 GB minimum. Close other heavy apps during multi-emulator testing.
 
-**Note:** Two emulators from the same AVD image will share app data. If this causes issues, create a second AVD (e.g., `Viewer_Emulator`) via Android Studio AVD Manager.
+**Note:** Emulators from the same AVD image may share app data. If this causes issues, create separate AVDs (e.g., `Scorer_Emulator`, `Viewer_Emulator`, `Spectator_Emulator`) via Android Studio AVD Manager.
 
 ### Signal-Based Coordination
 
@@ -267,14 +279,12 @@ flutter test --flavor dev \
   integration_test/tests/viewer_live_test.dart \
   --dart-define=ROLE=scorer -d emulator-5554
 
-# Terminal 3: Viewer on emulator-5556 (as Player301, on Team1 roster)
+# Terminal 3: Viewer on emulator-5556 (team member)
 cd apps/mobile
 flutter test --flavor dev \
   integration_test/tests/viewer_live_test.dart \
-  --dart-define=ROLE=viewer --dart-define=VIEWER_PHONE=9999999301 -d emulator-5556
+  --dart-define=ROLE=viewer --dart-define=VIEWER_PHONE=9999999998 -d emulator-5556
 ```
-
-**Bootstrap:** `pumpAppAndWaitForHome(tester, phoneNumber: '9999999301')` already supports multi-user login — pass the viewer's phone number to log in as that player.
 
 ### Viewer Assertions (Stronger Than Regex)
 
@@ -295,14 +305,14 @@ For automated runs, adapt the existing `scripts/multi-device-e2e.sh` or create `
 
 ```bash
 #!/bin/bash
-# scripts/dev-multi-emulator.sh — Launch scorer+viewer on local emulators
+# scripts/dev-multi-emulator.sh — Launch scorer+viewer+spectator on local emulators
 SCORER_DEVICE="emulator-5554"
 VIEWER_DEVICE="emulator-5556"
-VIEWER_PHONE="9999999301"
+SPECTATOR_DEVICE="emulator-5558"
 
 cd apps/mobile
 
-# Run scorer and viewer in parallel
+# --- Viewer live test (scorer + viewer) ---
 flutter test --flavor dev \
   integration_test/tests/viewer_live_test.dart \
   --dart-define=ROLE=scorer -d $SCORER_DEVICE &
@@ -310,12 +320,25 @@ SCORER_PID=$!
 
 flutter test --flavor dev \
   integration_test/tests/viewer_live_test.dart \
-  --dart-define=ROLE=viewer --dart-define=VIEWER_PHONE=$VIEWER_PHONE -d $VIEWER_DEVICE &
+  --dart-define=ROLE=viewer --dart-define=VIEWER_PHONE=9999999998 -d $VIEWER_DEVICE &
 VIEWER_PID=$!
 
-# Wait for both to complete
 wait $SCORER_PID $VIEWER_PID
-echo "Multi-emulator test complete"
+echo "Viewer live test complete"
+
+# --- Spectator live test (scorer + spectator) ---
+flutter test --flavor dev \
+  integration_test/tests/spectator_live_test.dart \
+  --dart-define=ROLE=scorer -d $SCORER_DEVICE &
+SCORER_PID=$!
+
+flutter test --flavor dev \
+  integration_test/tests/spectator_live_test.dart \
+  --dart-define=ROLE=viewer --dart-define=VIEWER_PHONE=9999999997 -d $SPECTATOR_DEVICE &
+SPECTATOR_PID=$!
+
+wait $SCORER_PID $SPECTATOR_PID
+echo "Spectator live test complete"
 ```
 
 ## Non-Team Viewer Testing
@@ -371,21 +394,22 @@ flutter test --flavor dev \
   integration_test/tests/spectator_live_test.dart \
   --dart-define=ROLE=scorer -d emulator-5554
 
-# Terminal 3: Spectator on emulator-5556 (not on any team)
+# Terminal 3: Spectator on emulator-5558 (not on any team)
 cd apps/mobile
 flutter test --flavor dev \
   integration_test/tests/spectator_live_test.dart \
-  --dart-define=ROLE=viewer --dart-define=VIEWER_PHONE=9999999997 -d emulator-5556
+  --dart-define=ROLE=viewer --dart-define=VIEWER_PHONE=9999999997 -d emulator-5558
 ```
 
 ## Parallel Execution
 
-The primary parallelism use case is scorer+viewer testing on multiple emulators (see above). Independent tests can also run in parallel on separate emulators:
+The primary parallelism use case is scorer+viewer+spectator testing on multiple emulators (see above). Independent single-device tests can also run in parallel across all three emulators:
 
 ```bash
 # Independent tests on separate emulators (each shares the local server)
 flutter test --flavor dev integration_test/tests/match_scoring_test.dart -d emulator-5554 &
 flutter test --flavor dev integration_test/tests/tournament_gk_test.dart -d emulator-5556 &
+flutter test --flavor dev integration_test/tests/tournament_ko_test.dart -d emulator-5558 &
 wait
 ```
 
@@ -420,7 +444,7 @@ The emulator accesses the local server at `10.0.2.2:3001` (Android's host loopba
 | 9 | Create dev-flavor `viewer_live_test.dart` (adapt from prod test 08) | Medium |
 | 10 | Add signal-based sync point assertions for viewer | Medium |
 | 11 | Create `scripts/dev-multi-emulator.sh` orchestrator | Small |
-| 12 | Set up second AVD for viewer emulator | Trivial |
+| 12 | Set up 3 AVDs (Scorer, Viewer, Spectator) or reuse same AVD on ports 5554/5556/5558 | Trivial |
 | 13 | Fix server `getMatches` to support `scope=public` for Live tab | Medium |
 | 14 | Wire Flutter Live tab to use `publicMatchesByStatusProvider` | Small |
 | 15 | Register `9999999997` as Firebase test phone | Trivial |
