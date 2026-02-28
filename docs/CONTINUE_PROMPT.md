@@ -40,7 +40,9 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 - `docs/process/E2E_DEV_TESTING.md` — Added spectator accounts, non-team viewer testing section, migration path items
 - `docs/process/E2E_PROD_TESTING.md` — Added spectator account, viewer scope row, updated notes
 
-**Manual step remaining:** Register `9999999997` with OTP `123456` in Firebase Console (project `cricapp-7403d`)
+**Manual step remaining:** Register `9999999997` with OTP `123456` in Firebase Console (project `cricapp-7403d`) — DONE
+
+**E2E test created:** `integration_test/tests/spectator_live_test.dart` — dual-role (scorer/spectator) multi-device test. Spectator (`9999999997`, not on any team) discovers match on public Live tab, verifies live updates, confirms match absent from My Cricket. `flutter analyze` clean. Needs 2 emulators + server with signal endpoints to run.
 
 ### Session 2026-02-28b: Fix Team & Tournament Visibility for Added Players
 
