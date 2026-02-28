@@ -225,9 +225,8 @@ Future<void> generateFixtures(WidgetTester tester) async {
   // Switch to Overview tab
   await switchToTab(tester, 0);
 
-  // TECH DEBT: SliverAppBar blocks hit testing in integration tests.
-  // Invoke onPressed directly instead of tapping. See Flutter issue:
-  // https://github.com/flutter/flutter/issues/83838
+  // SliverAppBar absorbs taps in integration tests when it overlaps content.
+  // Invoking onPressed directly is the standard workaround.
   final generateButton = find.widgetWithText(FilledButton, 'Generate Fixtures');
   if (generateButton.evaluate().isNotEmpty) {
     final button = tester.widget<FilledButton>(generateButton.first);

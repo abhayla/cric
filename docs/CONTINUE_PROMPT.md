@@ -16,6 +16,37 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-28d: E2E Test Suite Cleanup (8 fixes)
+
+**Status:** Complete. `flutter analyze` clean, all 8 issues fixed.
+
+**What was done:** Comprehensive review of all E2E/integration tests (11 test files, 7 helper dirs). Fixed 8 categories of issues:
+
+1. **Silent failures in `scoring.dart`** — `confirmExtra` silently returned on failure (now `fail()`), `selectBowler`/`selectBatter` clarified auto-select vs real failure cases
+2. **Silent skip in `09_player_profile_test.dart`** — Removed try/catch DioException that swallowed API errors; documented expected null player case
+3. **Dead code removed** — Deleted `stat_tracker.dart`, `player_stats.dart`; removed unused `PlayerPerformance` class from `match_outcome.dart`
+4. **Stale comments** — Fixed perf test comment about Team1/Team2 rosters
+5. **Doc gap** — Added reserved phone numbers table to `integration_test/CLAUDE.md`
+6. **Signal collision risk** — Namespaced `spectator_live_test` signals with `spectator-` prefix to avoid collision with `08_viewer_live_test`
+7. **SliverAppBar TECH DEBT comments** — Removed incorrect Flutter issue #83838 references across 3 helper files; clarified as standard workaround
+8. **Toss wizard race condition** — Fixed root cause in `toss_page.dart`: added guard to prevent opener deselection after striker is chosen (`if (_state.strikerId != null) return;`)
+
+**Files changed (12):**
+- `apps/mobile/integration_test/helpers/scoring.dart` — fail() on true failures
+- `apps/mobile/integration_test/tests/09_player_profile_test.dart` — removed silent skip
+- `apps/mobile/integration_test/core/stat_tracker.dart` — DELETED
+- `apps/mobile/integration_test/models/player_stats.dart` — DELETED
+- `apps/mobile/integration_test/models/match_outcome.dart` — removed PlayerPerformance
+- `apps/mobile/integration_test/tests/perf_basic_test.dart` — fixed stale comment
+- `apps/mobile/integration_test/CLAUDE.md` — added reserved phones table
+- `apps/mobile/integration_test/tests/spectator_live_test.dart` — namespaced signals
+- `apps/mobile/integration_test/helpers/match_setup.dart` — fixed TECH DEBT comment
+- `apps/mobile/integration_test/helpers/tournament_mgmt.dart` — fixed TECH DEBT comment
+- `apps/mobile/integration_test/helpers/fixture_scanning.dart` — fixed TECH DEBT comment
+- `apps/mobile/lib/src/features/scoring/presentation/pages/toss_page.dart` — fixed toss race condition
+
+**Follow-up consideration:** The defensive re-selection workaround in `match_setup.dart` (lines 238-264) may be simplifiable now that the toss_page root cause is fixed — needs on-device testing to confirm.
+
 ### Session 2026-02-28c: Public Live Tab + Non-Team Viewer Support
 
 **Status:** Complete. Server 33/33 match service tests pass (3 new), Flutter `flutter analyze` clean, live_page_test 15/15 pass.

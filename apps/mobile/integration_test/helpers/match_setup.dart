@@ -109,9 +109,8 @@ Future<void> completeMatchSetup(WidgetTester tester) async {
   expect(proceedButton, findsAtLeast(1),
       reason: 'Match setup page should show "Proceed to Toss" button');
 
-  // TECH DEBT: SliverAppBar blocks hit testing in integration tests.
-  // Invoke onPressed directly instead of tapping. See Flutter issue:
-  // https://github.com/flutter/flutter/issues/83838
+  // SliverAppBar absorbs taps in integration tests when it overlaps content.
+  // Invoking onPressed directly is the standard workaround.
   final filledButtonFinder = find.widgetWithText(FilledButton, 'Proceed to Toss');
   if (filledButtonFinder.evaluate().isNotEmpty) {
     final button = tester.widget<FilledButton>(filledButtonFinder.first);

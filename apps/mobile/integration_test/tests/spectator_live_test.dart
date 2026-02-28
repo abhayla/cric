@@ -104,7 +104,7 @@ void _runScorerTest() {
 
     // Signal spectator that scorer is ready
     try {
-      await signalDio.post('/api/v1/test/signal/scorer-ready',
+      await signalDio.post('/api/v1/test/signal/spectator-scorer-ready',
           data: {'value': 'true'});
       print('[SCORER] Signal: scorer-ready posted');
 
@@ -113,7 +113,7 @@ void _runScorerTest() {
       var spectatorReady = false;
       while (DateTime.now().isBefore(deadline)) {
         try {
-          final r = await signalDio.get('/api/v1/test/signal/viewer-ready');
+          final r = await signalDio.get('/api/v1/test/signal/spectator-viewer-ready');
           if (r.data['value'] != null) {
             spectatorReady = true;
             print('[SCORER] Signal: spectator-ready received');
@@ -257,7 +257,7 @@ void _runSpectatorTest() {
     var scorerReady = false;
     while (DateTime.now().isBefore(scorerDeadline)) {
       try {
-        final r = await signalDio.get('/api/v1/test/signal/scorer-ready');
+        final r = await signalDio.get('/api/v1/test/signal/spectator-scorer-ready');
         if (r.data['value'] != null) {
           scorerReady = true;
           print('[SPECTATOR] Signal: scorer-ready received');
@@ -312,7 +312,7 @@ void _runSpectatorTest() {
 
     // ── Step 4: Signal scorer that spectator is ready ──
     try {
-      await signalDio.post('/api/v1/test/signal/viewer-ready',
+      await signalDio.post('/api/v1/test/signal/spectator-viewer-ready',
           data: {'value': 'true'});
       print('[SPECTATOR] Signal: spectator-ready posted');
     } catch (e) {

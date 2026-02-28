@@ -21,6 +21,14 @@ All test teams and players MUST follow the naming pattern from `config/test_data
 | Team1–12 | Standard test set (`test_data.dart`) | `generateTeams(12)` | Player301–432 |
 | Team20–21 | Performance test (`perf_basic_test.dart`) | 2 teams × 6 players | Player501–512 |
 
+### Reserved Phone Numbers
+
+| Phone | OTP | Used By |
+|-------|-----|---------|
+| `9999999999` | `123456` | Scorer (device 1) — all tests |
+| `9999999998` | `123456` | Viewer/Abhay (device 2) — `08_viewer_live_test` |
+| `9999999997` | `123456` | Spectator (device 2) — `spectator_live_test` (not on any team) |
+
 ### Adding New Test Data
 
 1. Pick a `Team{N}` number NOT in the reserved ranges above.

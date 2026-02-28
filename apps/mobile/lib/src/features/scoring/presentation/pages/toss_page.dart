@@ -603,15 +603,13 @@ class _TossPageState extends State<TossPage> {
               final updated =
                   List<String>.from(_state.openingBatterIds);
               if (updated.contains(player.playerId)) {
+                // Don't allow deselection once striker is chosen —
+                // prevents accidental taps from corrupting state.
+                if (_state.strikerId != null) return;
                 updated.remove(player.playerId);
-                // Clear striker if deselected
-                final newStriker =
-                    _state.strikerId == player.playerId
-                        ? null
-                        : _state.strikerId;
                 _updateState(_state.copyWith(
                   openingBatterIds: updated,
-                  strikerId: newStriker,
+                  strikerId: null,
                 ));
               } else if (updated.length < 2) {
                 updated.add(player.playerId);

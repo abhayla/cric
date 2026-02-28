@@ -107,9 +107,8 @@ Future<void> tapFixtureCard(
           }
         }
 
-        // TECH DEBT: SliverAppBar blocks hit testing in integration tests.
-        // Invoke onTap directly instead of tapping. See Flutter issue:
-        // https://github.com/flutter/flutter/issues/83838
+        // SliverAppBar absorbs taps in integration tests when it overlaps content.
+        // Invoking onTap directly is the standard workaround.
         final inkWell = find.descendant(
           of: cardFinder,
           matching: find.byType(InkWell),

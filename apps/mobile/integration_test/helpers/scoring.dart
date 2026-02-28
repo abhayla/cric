@@ -89,8 +89,8 @@ Future<void> confirmExtra(WidgetTester tester) async {
       matching: find.text('Confirm'),
     );
     if (retryConfirm.evaluate().isEmpty) {
-      print('    [confirmExtra] ExtrasPanel still not found — skipping');
-      return;
+      fail('[confirmExtra] ExtrasPanel not found after 2s of retries — '
+          'extras was tapped but never confirmed, match state is corrupt');
     }
     await tester.tap(retryConfirm);
   } else {
@@ -165,7 +165,8 @@ Future<void> selectBowler(WidgetTester tester, String name,
   await settle(tester);
 
   if (find.byType(SelectBowlerSheet).evaluate().isEmpty) {
-    print('    [selectBowler] No SelectBowlerSheet found — skipping');
+    // Sheet may not appear if auto-selected (1 eligible bowler).
+    print('    [selectBowler] No SelectBowlerSheet — likely auto-selected');
     return;
   }
 
@@ -208,7 +209,8 @@ Future<void> selectBowler(WidgetTester tester, String name,
     print('    [selectBowler] Selected first available bowler (last resort)');
     return;
   }
-  print('    [selectBowler] WARNING: Could not select any bowler!');
+  fail('[selectBowler] Could not select any bowler — '
+      'no InkWell found in SelectBowlerSheet');
 }
 
 /// Select a batter in the SelectBatterSheet.
@@ -220,7 +222,8 @@ Future<void> selectBatter(WidgetTester tester, String name) async {
   await settle(tester);
 
   if (find.byType(SelectBatterSheet).evaluate().isEmpty) {
-    print('    [selectBatter] No SelectBatterSheet found — skipping');
+    // Sheet may not appear if auto-selected (1 available batter).
+    print('    [selectBatter] No SelectBatterSheet — likely auto-selected');
     return;
   }
 
@@ -243,7 +246,8 @@ Future<void> selectBatter(WidgetTester tester, String name) async {
       await settle(tester);
       print('    [selectBatter] "$name" not found — selected first available');
     } else {
-      print('    [selectBatter] WARNING: "$name" not found in sheet!');
+      fail('[selectBatter] "$name" not found and no InkWell available in '
+          'SelectBatterSheet');
     }
   }
 }
