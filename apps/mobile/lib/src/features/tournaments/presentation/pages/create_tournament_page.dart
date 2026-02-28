@@ -103,10 +103,10 @@ class _CreateTournamentPageState extends ConsumerState<CreateTournamentPage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: SizedBox(
                 width: double.infinity,
-                height: 52,
+                height: 48,
                 child: FilledButton(
                   onPressed: _isSubmitting ? null : _handleCreate,
                   child: _isSubmitting

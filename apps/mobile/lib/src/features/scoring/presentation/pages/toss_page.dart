@@ -749,7 +749,7 @@ class _TossPageState extends State<TossPage> {
 
   Widget _buildButtonRow(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
       child: Row(
         children: [
           if (!_state.isFirstStep)

@@ -128,7 +128,7 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: SizedBox(
                 width: double.infinity,
                 height: 48,

@@ -85,57 +85,60 @@ class _PlayerProfilePageState extends ConsumerState<PlayerProfilePage>
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Column(
-      children: [
-        Expanded(
-          child: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              SliverToBoxAdapter(child: PlayerProfileHero(profile: profile)),
-              SliverToBoxAdapter(child: QuickStatsGrid(stats: state.stats)),
-              SliverToBoxAdapter(child: _buildFormatSelector(state)),
-              SliverToBoxAdapter(
-                child: TabBar(
-                  controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'Batting'),
-                    Tab(text: 'Bowling'),
-                    Tab(text: 'Fielding'),
-                  ],
-                ),
-              ),
-            ],
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                SingleChildScrollView(
-                  child: BattingStatsCard(stats: state.stats?.batting),
-                ),
-                SingleChildScrollView(
-                  child: BowlingStatsCard(stats: state.stats?.bowling),
-                ),
-                SingleChildScrollView(
-                  child: FieldingStatsCard(stats: state.stats?.fielding),
+    return SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverToBoxAdapter(child: PlayerProfileHero(profile: profile)),
+                SliverToBoxAdapter(child: QuickStatsGrid(stats: state.stats)),
+                SliverToBoxAdapter(child: _buildFormatSelector(state)),
+                SliverToBoxAdapter(
+                  child: TabBar(
+                    controller: _tabController,
+                    tabs: const [
+                      Tab(text: 'Batting'),
+                      Tab(text: 'Bowling'),
+                      Tab(text: 'Fielding'),
+                    ],
+                  ),
                 ),
               ],
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton.tonal(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) =>
-                      PlayerMatchHistoryPage(playerId: widget.playerId),
-                ),
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  SingleChildScrollView(
+                    child: BattingStatsCard(stats: state.stats?.batting),
+                  ),
+                  SingleChildScrollView(
+                    child: BowlingStatsCard(stats: state.stats?.bowling),
+                  ),
+                  SingleChildScrollView(
+                    child: FieldingStatsCard(stats: state.stats?.fielding),
+                  ),
+                ],
               ),
-              child: const Text('View Match History'),
             ),
           ),
-        ),
-      ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton.tonal(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        PlayerMatchHistoryPage(playerId: widget.playerId),
+                  ),
+                ),
+                child: const Text('View Match History'),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
