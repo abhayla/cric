@@ -37,6 +37,7 @@ void main() {
             error: (e, s) => throw e,
           ),
         ),
+        userWsNotificationsProvider.overrideWith((ref) {}),
       ],
       child: const MaterialApp(home: HomePage()),
     );
@@ -155,6 +156,7 @@ void main() {
               (ref, page) async =>
                   const MatchListResult(matches: [], total: 0, page: 1),
             ),
+            userWsNotificationsProvider.overrideWith((ref) {}),
           ],
           child: const MaterialApp(home: HomePage()),
         ),
@@ -178,6 +180,7 @@ void main() {
               (ref, page) async =>
                   const MatchListResult(matches: [], total: 0, page: 1),
             ),
+            userWsNotificationsProvider.overrideWith((ref) {}),
           ],
           child: const MaterialApp(home: HomePage()),
         ),
@@ -200,6 +203,7 @@ void main() {
               (ref, page) async =>
                   const MatchListResult(matches: [], total: 0, page: 1),
             ),
+            userWsNotificationsProvider.overrideWith((ref) {}),
           ],
           child: const MaterialApp(home: HomePage()),
         ),
@@ -221,6 +225,7 @@ void main() {
             allMatchesProvider.overrideWith(
               (ref, page) async => throw Exception('match error'),
             ),
+            userWsNotificationsProvider.overrideWith((ref) {}),
           ],
           child: const MaterialApp(home: HomePage()),
         ),
@@ -247,6 +252,7 @@ void main() {
               (ref, page) async =>
                   const MatchListResult(matches: [], total: 0, page: 1),
             ),
+            userWsNotificationsProvider.overrideWith((ref) {}),
           ],
           child: const MaterialApp(home: HomePage()),
         ),
