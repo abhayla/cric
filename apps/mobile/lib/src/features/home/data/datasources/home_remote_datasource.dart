@@ -12,6 +12,7 @@ class HomeRemoteDatasource {
     String? status,
     int page = 1,
     int limit = 20,
+    String? scope,
   }) async {
     try {
       final response = await dio.get(
@@ -20,6 +21,7 @@ class HomeRemoteDatasource {
           'page': page.toString(),
           'limit': limit.toString(),
           'status': ?status,
+          'scope': ?scope,
         },
       );
       return response.data as Map<String, dynamic>;

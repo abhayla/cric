@@ -16,6 +16,32 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-28c: Public Live Tab + Non-Team Viewer Support
+
+**Status:** Complete. Server 33/33 match service tests pass (3 new), Flutter `flutter analyze` clean, live_page_test 15/15 pass.
+
+**Bug fixed:** `GET /api/v1/matches` unconditionally filtered by team membership (scorer or matchPlayers), making the Live tab behave like "My Cricket." Non-team users saw zero matches on the Live tab.
+
+**Root cause:** `match.service.ts:getMatches()` always applied a WHERE clause filtering to user's matches. The Live tab is meant for public discovery.
+
+**Solution:** Added `scope` query parameter (`'public'` | `'user'`). When `scope=public`, the team/scorer filter is skipped. Default `'user'` preserves existing behavior for My Cricket.
+
+**Changes (10 files + 2 docs):**
+- `apps/server/src/services/match.service.ts` — Added `scope` to `GetMatchesOptions`, conditionally skip team filter when `scope === 'public'`
+- `apps/server/src/routes/v1/matches.ts` — Accept `scope` query param
+- `apps/server/test/services/match.service.test.ts` — 3 new tests (default excludes others, public includes all, public + status filter)
+- `apps/mobile/lib/src/features/home/data/datasources/home_remote_datasource.dart` — Added `scope` param
+- `apps/mobile/lib/src/features/home/domain/repositories/home_repository.dart` — Added `scope` to interface
+- `apps/mobile/lib/src/features/home/data/repositories/home_repository_impl.dart` — Pass `scope` through
+- `apps/mobile/lib/src/features/home/providers.dart` — New `publicMatchesByStatusProvider` (scope: 'public')
+- `apps/mobile/lib/src/features/live/providers.dart` — Re-export new provider
+- `apps/mobile/lib/src/features/live/presentation/pages/live_page.dart` — Switch to `publicMatchesByStatusProvider`
+- `apps/mobile/test/src/features/live/presentation/pages/live_page_test.dart` — Updated overrides to new provider
+- `docs/process/E2E_DEV_TESTING.md` — Added spectator accounts, non-team viewer testing section, migration path items
+- `docs/process/E2E_PROD_TESTING.md` — Added spectator account, viewer scope row, updated notes
+
+**Manual step remaining:** Register `9999999997` with OTP `123456` in Firebase Console (project `cricapp-7403d`)
+
 ### Session 2026-02-28b: Fix Team & Tournament Visibility for Added Players
 
 **Status:** Complete. All 2251 Flutter tests pass, `flutter analyze` clean, server typecheck clean, team service tests (32/32) pass.

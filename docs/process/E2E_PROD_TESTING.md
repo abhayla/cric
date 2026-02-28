@@ -131,8 +131,9 @@ adb devices
 |------|-------|-----|---------|
 | Scorer | `9999999999` | `123456` | Creates and scores matches |
 | Viewer (Abhay) | `9999999998` | `123456` | Views matches on second device |
+| Spectator | `9999999997` | `123456` | Views matches with no team connection |
 
-Both are Firebase test phone numbers configured in project `cricapp-7403d`. Abhay must be on at least one team's roster in every test match for live viewing.
+All are Firebase test phone numbers configured in project `cricapp-7403d`. The Live tab shows all live matches publicly (no team membership required). My Cricket filters by user's teams.
 
 ## Known Issues & Constraints
 
@@ -191,9 +192,10 @@ When a test fails on prod:
 | Data seeding | API calls (fast) | UI-driven (slow, idempotent) |
 | Frequency | Every code change | Pre-release only |
 | Devices | Emulator only | Real devices + emulator |
-| Multi-device | Not needed | Test 08 |
+| Multi-device | Multi-emulator scorer+viewer | Real device scorer+viewer (Test 08) |
 | State cleanup | `reset-match-data` | Accumulates |
 | Random seeds | Fixed (`Random(42)`) | Random (prod-realistic) |
+| Viewer scope | Team-member + public spectator | Team-member + public spectator |
 | CI-runnable | Yes (headless emulator) | No (needs physical devices) |
 
 Dev E2E catches logic bugs fast. Prod E2E validates the full deployment stack and real-world device behavior.

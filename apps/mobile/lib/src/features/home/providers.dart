@@ -30,10 +30,19 @@ final liveMatchesProvider = FutureProvider<MatchListResult>((ref) {
 });
 
 /// Fetch matches filtered by optional status ('live', 'completed', or null for all).
+/// Scoped to user's own matches (scorer or match player).
 final matchesByStatusProvider =
     FutureProvider.family<MatchListResult, String?>((ref, status) {
   final repository = ref.read(homeRepositoryProvider);
   return repository.getMatches(status: status);
+});
+
+/// Fetch matches with public scope (all matches, not filtered by team).
+/// Used by the Live tab for public match discovery.
+final publicMatchesByStatusProvider =
+    FutureProvider.family<MatchListResult, String?>((ref, status) {
+  final repository = ref.read(homeRepositoryProvider);
+  return repository.getMatches(status: status, scope: 'public');
 });
 
 /// Fetch recent completed matches (latest 5).

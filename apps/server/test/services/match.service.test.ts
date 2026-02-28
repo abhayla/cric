@@ -309,6 +309,47 @@ describe('Match Service', () => {
       expect(setupMatch!.currentInnings).toBeNull();
       expect(setupMatch!.result).toBeNull();
     });
+
+    it('default scope returns only user matches (not other users)', async () => {
+      // Create a separate user who is NOT the scorer or a match player
+      const [outsider] = await db
+        .insert(users)
+        .values({
+          firebaseUid: `test-match-outsider-${TEST_SUFFIX}`,
+          phone: '+919876559999',
+          displayName: 'Outsider User',
+        })
+        .returning();
+      testUserIds.push(outsider!.id);
+
+      const result = await getMatches(outsider!.id);
+      const found = result.matches.find((m) => m.id === testMatchId);
+      expect(found).toBeUndefined();
+    });
+
+    it('scope "public" returns all matches including other users', async () => {
+      // Use a random user ID that has no matches — public scope should still return matches
+      const [outsider] = await db
+        .insert(users)
+        .values({
+          firebaseUid: `test-match-outsider-pub-${TEST_SUFFIX}`,
+          phone: '+919876559998',
+          displayName: 'Public Outsider',
+        })
+        .returning();
+      testUserIds.push(outsider!.id);
+
+      const result = await getMatches(outsider!.id, { scope: 'public' });
+      const found = result.matches.find((m) => m.id === testMatchId);
+      expect(found).toBeDefined();
+      expect(found!.homeTeam.id).toBe(homeTeamId);
+    });
+
+    it('scope "public" with status filter returns filtered results', async () => {
+      const result = await getMatches(scorerUserId, { scope: 'public', status: 'setup' });
+      expect(result.matches.length).toBeGreaterThanOrEqual(1);
+      result.matches.forEach((m) => expect(m.status).toBe('setup'));
+    });
   });
 
   describe('getMatch', () => {

@@ -82,6 +82,7 @@ export const matchRoutes = new Elysia({ prefix: '/api/v1/matches' })
         status: ctx.query.status,
         page,
         limit,
+        scope: ctx.query.scope === 'public' ? 'public' : 'user',
       });
     },
     {
@@ -89,6 +90,7 @@ export const matchRoutes = new Elysia({ prefix: '/api/v1/matches' })
         status: t.Optional(t.String()),
         page: t.Optional(t.String()),
         limit: t.Optional(t.String()),
+        scope: t.Optional(t.String()),
       }),
     },
   )

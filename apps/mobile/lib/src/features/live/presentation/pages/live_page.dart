@@ -85,11 +85,11 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final matchesAsync = ref.watch(matchesByStatusProvider(_statusArg));
+    final matchesAsync = ref.watch(publicMatchesByStatusProvider(_statusArg));
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(matchesByStatusProvider(_statusArg));
+        ref.invalidate(publicMatchesByStatusProvider(_statusArg));
       },
       child: CustomScrollView(
         slivers: [

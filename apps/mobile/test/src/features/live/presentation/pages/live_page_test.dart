@@ -14,7 +14,7 @@ void main() {
   Widget buildTestWidget() {
     return ProviderScope(
       overrides: [
-        matchesByStatusProvider.overrideWith(
+        publicMatchesByStatusProvider.overrideWith(
           (ref, status) async =>
               const MatchListResult(matches: [], total: 0, page: 1),
         ),
@@ -172,7 +172,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            matchesByStatusProvider.overrideWith(
+            publicMatchesByStatusProvider.overrideWith(
               (ref, status) async => throw Exception('network error'),
             ),
             tournamentsListProvider
@@ -191,7 +191,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            matchesByStatusProvider.overrideWith(
+            publicMatchesByStatusProvider.overrideWith(
               (ref, status) => Completer<MatchListResult>().future,
             ),
             tournamentsListProvider
@@ -210,7 +210,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            matchesByStatusProvider.overrideWith(
+            publicMatchesByStatusProvider.overrideWith(
               (ref, status) async =>
                   const MatchListResult(matches: [], total: 0, page: 1),
             ),

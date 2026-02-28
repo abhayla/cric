@@ -12,11 +12,13 @@ class HomeRepositoryImpl implements HomeRepository {
     String? status,
     int page = 1,
     int limit = 20,
+    String? scope,
   }) async {
     final data = await remoteDatasource.getMatches(
       status: status,
       page: page,
       limit: limit,
+      scope: scope,
     );
 
     final matchModels = (data['matches'] as List)

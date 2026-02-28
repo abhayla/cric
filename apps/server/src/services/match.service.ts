@@ -1,4 +1,4 @@
-import { eq, and, sql, count, inArray, desc } from 'drizzle-orm';
+import { eq, and, sql, count, inArray, desc, type SQL } from 'drizzle-orm';
 import { db } from '../db/index.ts';
 import { matches, matchPlayers, matchResult } from '../db/schema/matches.ts';
 import { innings } from '../db/schema/innings.ts';
@@ -30,6 +30,7 @@ interface GetMatchesOptions {
   status?: string;
   page?: number;
   limit?: number;
+  scope?: 'public' | 'user';
 }
 
 interface SetPlayingXIInput {
@@ -122,18 +123,28 @@ export async function getMatches(userId: string, options: GetMatchesOptions = {}
   const limit = Math.min(options.limit ?? 20, 50);
   const offset = (page - 1) * limit;
 
-  const conditions = [
-    sql`(${matches.scorerId} = ${userId} OR ${matches.id} IN (
-      SELECT ${matchPlayers.matchId} FROM ${matchPlayers}
-      WHERE ${matchPlayers.playerId} = ${userId}
-    ))`,
-  ];
+  const conditions: SQL[] = [];
+
+  // When scope is 'public', skip the team/scorer filter — show all matches.
+  // Default ('user') filters to matches where the user is scorer or a match player.
+  if (options.scope !== 'public') {
+    conditions.push(
+      sql`(${matches.scorerId} = ${userId} OR ${matches.id} IN (
+        SELECT ${matchPlayers.matchId} FROM ${matchPlayers}
+        WHERE ${matchPlayers.playerId} = ${userId}
+      ))`,
+    );
+  }
 
   if (options.status) {
     conditions.push(eq(matches.status, options.status));
   }
 
-  const whereClause = conditions.length === 1 ? conditions[0]! : and(...conditions);
+  const whereClause = conditions.length === 0
+    ? undefined
+    : conditions.length === 1
+      ? conditions[0]!
+      : and(...conditions);
 
   const result = await db
     .select({
