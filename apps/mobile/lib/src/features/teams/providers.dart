@@ -55,7 +55,8 @@ class TeamsListNotifier extends AsyncNotifier<TeamListResult> {
   Future<TeamListResult> _fetchTeams({int page = 1}) async {
     final sw = Stopwatch()..start();
     final repository = ref.read(teamRepositoryProvider);
-    final result = repository.getTeams(page: page);
+    // Use limit=100 to load all teams for picker/selection contexts.
+    final result = repository.getTeams(page: page, limit: 100);
     result.then((_) {
       sw.stop();
       if (kDebugMode) {

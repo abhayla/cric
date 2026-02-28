@@ -182,31 +182,54 @@ Future<void> addTeamToTournament(
     }
   }
 
-  // Find and tap team name — scroll if needed
-  var teamOption = find.text(teamName);
-  if (teamOption.evaluate().isEmpty) {
-    final scrollables = find.byType(Scrollable);
-    if (scrollables.evaluate().length >= 2) {
-      try {
-        await tester.scrollUntilVisible(
-          find.text(teamName), 200,
-          scrollable: scrollables.last, maxScrolls: 20,
-        );
-      } catch (_) {}
-      teamOption = find.text(teamName);
+  // Wait for team list to load (ListTile appears when data arrives)
+  await waitForFinder(tester, find.byType(ListTile),
+      timeoutMs: 10000, intervalMs: 300);
+  await settle(tester);
+
+  // Type team name into search field to filter the list.
+  // Find search field by hint text — this is unique within the bottom sheet
+  // and avoids hitting other TextFields that may exist in the widget tree.
+  final searchHint = find.text('Search teams');
+  final searchField = find.ancestor(
+    of: searchHint,
+    matching: find.byType(TextField),
+  );
+  if (searchField.evaluate().isNotEmpty) {
+    // Use the last one if multiple exist (the most recently opened sheet)
+    await tester.enterText(searchField.last, teamName);
+    await settle(tester);
+    await dismissKeyboard(tester);
+    await settle(tester);
+    print('    [addTeamToTournament] Searched for: $teamName');
+  } else {
+    print('    [addTeamToTournament] WARNING: Search field not found');
+  }
+
+  // Find the exact team name inside a ListTile (not in the search field)
+  final teamTexts = find.text(teamName);
+  Finder? targetTile;
+  for (final element in teamTexts.evaluate()) {
+    final listTile = find.ancestor(
+      of: find.byWidget(element.widget),
+      matching: find.byType(ListTile),
+    );
+    if (listTile.evaluate().isNotEmpty) {
+      targetTile = listTile;
+      break;
     }
   }
 
-  if (teamOption.evaluate().isNotEmpty) {
-    await tester.ensureVisible(teamOption.first);
+  if (targetTile != null && targetTile.evaluate().isNotEmpty) {
+    await tester.ensureVisible(targetTile.first);
     await settle(tester);
-    await tester.tap(teamOption.first);
+    await tester.tap(targetTile.first, warnIfMissed: false);
     await settle(tester);
     await visualPause(tester, 1000);
     print('    [addTeamToTournament] Tapped team: $teamName');
   } else {
     dumpVisibleTexts(tester, 'addTeam-noTeam', 40);
-    fail('Team "$teamName" not found in bottom sheet after scrolling');
+    fail('Team "$teamName" not found in bottom sheet after searching');
   }
 
   // Wait for sheet to dismiss

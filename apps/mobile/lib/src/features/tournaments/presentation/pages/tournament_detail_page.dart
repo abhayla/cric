@@ -769,6 +769,7 @@ class _AddTeamSheet extends ConsumerStatefulWidget {
 class _AddTeamSheetState extends ConsumerState<_AddTeamSheet> {
   String _selectedGroup = 'A';
   bool _isLoading = false;
+  String _searchQuery = '';
 
   Future<void> _addTeam(String teamId, String teamName) async {
     setState(() => _isLoading = true);
@@ -851,6 +852,22 @@ class _AddTeamSheetState extends ConsumerState<_AddTeamSheet> {
             ),
             const SizedBox(height: 12),
           ],
+          // Search field
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              autofocus: false,
+              decoration: const InputDecoration(
+                hintText: 'Search teams',
+                prefixIcon: Icon(Icons.search),
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Divider(height: 1),
           // Team list
           Expanded(
             child: teamsAsync.when(
@@ -859,15 +876,23 @@ class _AddTeamSheetState extends ConsumerState<_AddTeamSheet> {
               error: (e, _) =>
                   Center(child: Text('Error loading teams: $e')),
               data: (result) {
-                if (result.teams.isEmpty) {
-                  return const Center(
-                    child:
-                        Text('No teams found. Create a team first.'),
+                final filtered = _searchQuery.isEmpty
+                    ? result.teams
+                    : result.teams
+                        .where((t) => t.name
+                            .toLowerCase()
+                            .contains(_searchQuery.toLowerCase()))
+                        .toList();
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Text(_searchQuery.isEmpty
+                        ? 'No teams found. Create a team first.'
+                        : 'No teams match "$_searchQuery"'),
                   );
                 }
                 return ListView(
                   children: [
-                    for (final team in result.teams)
+                    for (final team in filtered)
                       () {
                         final isEligible =
                             team.playerCount >= widget.playersPerSide;
