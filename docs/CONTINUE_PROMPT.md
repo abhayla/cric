@@ -51,6 +51,10 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 **3-emulator setup:** Scorer (`emulator-5554`, `9999999999`), Viewer (`emulator-5556`, `9999999998`), Spectator (`emulator-5558`, `9999999997`). Documented in all E2E docs.
 
+**Team picker scroll fix:** `match_setup.dart` — bottom sheet could open mid-list; old code only scrolled down. New code logs visible ListTiles for diagnostics and uses ListTile-based dragging. Also increased `waitForFinder` timeout from 6s to 10s.
+
+**Blocking issue:** E2E tests 01-09 blocked by stale prod server data. Team picker shows orphan teams (`PerfA`, `PerfB`, `SpeedAlpha`) from old runs but no Team1-12 with full rosters. Test 01 creates Team1 but fails on Team2 with `Bad state: No element` in player creation flow. Needs investigation or prod data cleanup.
+
 ### Session 2026-02-28c: Public Live Tab + Non-Team Viewer Support
 
 **Status:** Complete. Server 33/33 match service tests pass (3 new), Flutter `flutter analyze` clean, live_page_test 15/15 pass.

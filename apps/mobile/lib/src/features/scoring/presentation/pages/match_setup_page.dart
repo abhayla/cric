@@ -650,78 +650,10 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        return Consumer(
-          builder: (context, ref, _) {
-            final teamsAsync = ref.watch(teams.teamsListProvider);
-            final teamList = teamsAsync.value?.teams ?? [];
-            final isLoading = teamsAsync.isLoading;
-
-            return DraggableScrollableSheet(
-              initialChildSize: 0.5,
-              maxChildSize: 0.8,
-              minChildSize: 0.3,
-              expand: false,
-              builder: (context, scrollController) {
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        isHome ? 'Select Team A' : 'Select Team B',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : teamList.isEmpty
-                              ? Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text('No teams found'),
-                                      const SizedBox(height: 8),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                          widget.onNavigateToCreateTeam?.call();
-                                        },
-                                        child: const Text('Create Team'),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : ListView.builder(
-                                  controller: scrollController,
-                                  itemCount: teamList.length,
-                                  itemBuilder: (context, index) {
-                                    final team = teamList[index];
-                                    // Exclude already-selected team
-                                    final isDisabled = isHome
-                                        ? team.id == _state.awayTeamId
-                                        : team.id == _state.homeTeamId;
-                                    return ListTile(
-                                      leading: CircleAvatar(
-                                        child: Text(team.initial),
-                                      ),
-                                      title: Text(team.name),
-                                      subtitle: Text(team.subtitle),
-                                      enabled: !isDisabled,
-                                      onTap: isDisabled
-                                          ? null
-                                          : () => Navigator.of(context).pop(team),
-                                    );
-                                  },
-                                ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
+        return _TeamPickerSheet(
+          isHome: isHome,
+          excludeTeamId: isHome ? _state.awayTeamId : _state.homeTeamId,
+          onCreateTeam: widget.onNavigateToCreateTeam,
         );
       },
     );
@@ -770,5 +702,121 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
         SnackBar(content: Text('Failed to create match: $e')),
       );
     }
+  }
+}
+
+/// Bottom sheet with search/filter for picking a team.
+class _TeamPickerSheet extends ConsumerStatefulWidget {
+  const _TeamPickerSheet({
+    required this.isHome,
+    required this.excludeTeamId,
+    this.onCreateTeam,
+  });
+
+  final bool isHome;
+  final String? excludeTeamId;
+  final VoidCallback? onCreateTeam;
+
+  @override
+  ConsumerState<_TeamPickerSheet> createState() => _TeamPickerSheetState();
+}
+
+class _TeamPickerSheetState extends ConsumerState<_TeamPickerSheet> {
+  String _searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final teamsAsync = ref.watch(teams.teamsListProvider);
+    final allTeams = teamsAsync.value?.teams ?? [];
+    final isLoading = teamsAsync.isLoading;
+
+    final filtered = _searchQuery.isEmpty
+        ? allTeams
+        : allTeams
+            .where((t) =>
+                t.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .toList();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      maxChildSize: 0.85,
+      minChildSize: 0.3,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                widget.isHome ? 'Select Team A' : 'Select Team B',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                autofocus: false,
+                decoration: const InputDecoration(
+                  hintText: 'Search teams',
+                  prefixIcon: Icon(Icons.search),
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Divider(height: 1),
+            Expanded(
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : filtered.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_searchQuery.isEmpty
+                                  ? 'No teams found'
+                                  : 'No teams match "$_searchQuery"'),
+                              if (_searchQuery.isEmpty) ...[
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    widget.onCreateTeam?.call();
+                                  },
+                                  child: const Text('Create Team'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final team = filtered[index];
+                            final isDisabled =
+                                team.id == widget.excludeTeamId;
+                            return ListTile(
+                              leading: CircleAvatar(
+                                child: Text(team.initial),
+                              ),
+                              title: Text(team.name),
+                              subtitle: Text(team.subtitle),
+                              enabled: !isDisabled,
+                              onTap: isDisabled
+                                  ? null
+                                  : () => Navigator.of(context).pop(team),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
