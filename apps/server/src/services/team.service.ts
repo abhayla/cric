@@ -302,6 +302,18 @@ export async function addPlayer(teamId: string, userId: string, input: AddPlayer
       .innerJoin(users, eq(teamRosters.playerId, users.id))
       .where(eq(teamRosters.id, existing.id))
       .limit(1);
+
+    // Fire-and-forget activity feed events (same as new-insert path)
+    emitPlayerAddedEvents(teamId, input.playerId).catch((err) =>
+      console.error(`[ActivityFeed] Failed for team=${teamId}:`, err),
+    );
+    emitTeamJoinedEvents(teamId, input.playerId).catch((err) =>
+      console.error(`[ActivityFeed] Team joined emit failed for team=${teamId}:`, err),
+    );
+
+    // Fire-and-forget WS notification to the re-added player
+    notifyPlayerAddedToTeam(teamId, input.playerId);
+
     return enriched!;
   }
 
@@ -346,16 +358,25 @@ export async function addPlayer(teamId: string, userId: string, input: AddPlayer
   );
 
   // Fire-and-forget WS notification to the added player
-  const [teamForName] = await db
-    .select({ name: teams.name })
-    .from(teams)
-    .where(eq(teams.id, teamId))
-    .limit(1);
-  if (teamForName) {
-    broadcastTeamUpdated(input.playerId, teamId, teamForName.name);
-  }
+  notifyPlayerAddedToTeam(teamId, input.playerId);
 
   return enriched!;
+}
+
+/** Fire-and-forget: query team name and broadcast WS notification to the player. */
+function notifyPlayerAddedToTeam(teamId: string, playerId: string): void {
+  db.select({ name: teams.name })
+    .from(teams)
+    .where(eq(teams.id, teamId))
+    .limit(1)
+    .then(([teamForName]) => {
+      if (teamForName) {
+        broadcastTeamUpdated(playerId, teamId, teamForName.name);
+      }
+    })
+    .catch((err) =>
+      console.error(`[WS] Failed to notify player=${playerId} for team=${teamId}:`, err),
+    );
 }
 
 export async function removePlayer(teamId: string, userId: string, playerId: string) {

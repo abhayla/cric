@@ -340,6 +340,27 @@ During rapid scoring or brief WS disconnects, the fast-path relay can silently d
 
 ---
 
+## User Notification Channel
+
+Beyond match-scoped rooms, the WebSocket layer supports per-user notification topics for non-scoring events (team roster changes, tournament additions).
+
+**Topic format:** `user:<userId>`
+
+**Server subscription:** In `handler.ts`, when a WebSocket connection opens with a valid `?token=` query param, the server decodes the Firebase JWT and calls `ws.subscribe(userTopic(userId))`. Anonymous connections (no token) skip this subscription.
+
+**Broadcast points:**
+| Service | Method | Message type | Target |
+|---------|--------|-------------|--------|
+| `team.service.ts` | `addPlayer()` | `team_updated` | `user:<playerId>` — the player being added |
+| `tournament.service.ts` | `addTeam()` | `tournament_updated` | `user:<playerId>` — all roster members of the team |
+| `tournament.service.ts` | `resolveRequest()` | `tournament_updated` | `user:<playerId>` — all roster members (on approval) |
+
+**Client reaction:** `userWsNotificationsProvider` (in `home/providers.dart`) listens on `WebSocketClient.messages` and invalidates `teamsListProvider` / `tournamentsListProvider` on receipt, causing the "My Cricket" tabs to re-fetch from the server.
+
+**Key design:** All WS notification broadcasts are fire-and-forget (`.then().catch()` pattern). If the notification fails, the roster/tournament mutation still succeeds — the user will see the change on next manual refresh.
+
+---
+
 ## Deferred: Option C (WebSocket Bidirectional) — Phase 8+
 
 Option C is a legitimate optimization for a future where CricScores has:

@@ -1779,7 +1779,39 @@ The scorer sends `publish_score` immediately after each delivery is written to l
 - On join/rejoin, server sends `match_state` snapshot to the connecting client
 - Automatic cleanup when all connections leave a room
 
-### 2.5 Reconnection & Catch-Up
+### 2.5 User Notification Messages
+
+In addition to match-scoped rooms, the server maintains per-user notification topics (`user:<userId>`). Authenticated WebSocket connections (with `?token=` query param) are automatically subscribed to their user topic on `open()`.
+
+**`team_updated` message (sent to `user:<playerId>` when added to a team):**
+```json
+{
+  "type": "team_updated",
+  "data": {
+    "teamId": "uuid",
+    "teamName": "string"
+  }
+}
+```
+
+**`tournament_updated` message (sent to all roster members when their team is added to a tournament):**
+```json
+{
+  "type": "tournament_updated",
+  "data": {
+    "tournamentId": "uuid",
+    "tournamentName": "string"
+  }
+}
+```
+
+**Broadcast points:**
+- `team.service.ts` → `addPlayer()` — sends `team_updated` to the added player (both new-insert and reactivation paths)
+- `tournament.service.ts` → `addTeam()` / `resolveRequest()` — sends `tournament_updated` to all roster members of the added team
+
+**Client reaction:** On receiving these messages, the Flutter app invalidates `teamsListProvider` and/or `tournamentsListProvider`, causing the "My Cricket" tabs to auto-refresh.
+
+### 2.6 Reconnection & Catch-Up
 
 When a viewer or scorer disconnects and reconnects:
 1. Client re-sends `join_match` message with `matchId`.
@@ -1815,7 +1847,7 @@ When a viewer or scorer disconnects and reconnects:
 }
 ```
 
-### 2.6 Concurrent Scoring Prevention
+### 2.7 Concurrent Scoring Prevention
 
 The `matches.scorer_id` field acts as a lock. Only the designated scorer can submit deliveries or undo actions:
 - Server validates that the authenticated user's ID matches `matches.scorer_id` on every REST scoring endpoint (`POST /matches/:id/deliveries`, `DELETE /matches/:id/deliveries/:did`, `POST /sync/push`).

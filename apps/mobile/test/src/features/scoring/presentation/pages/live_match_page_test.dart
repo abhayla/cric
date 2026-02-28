@@ -78,7 +78,7 @@ void main() {
   Widget buildPage(WidgetTester tester, {String matchId = 'test-match-1'}) {
     return ProviderScope(
       overrides: [
-        websocketClientProvider.overrideWithValue(client),
+        websocketClientProvider.overrideWithValue(AsyncData(client)),
       ],
       child: MaterialApp(
         theme: ThemeData(

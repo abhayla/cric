@@ -166,16 +166,19 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
     return const LiveMatchState();
   }
 
-  WebSocketClient get _client => ref.read(websocketClientProvider);
+  WebSocketClient? get _client => ref.read(websocketClientProvider).value;
 
   /// Connect to WebSocket and join the match room.
   Future<void> joinMatch(String matchId) async {
     state = state.copyWith(matchId: matchId);
 
-    await _client.connect();
+    final client = _client;
+    if (client == null) return;
+
+    await client.connect();
 
     _statusSubscription?.cancel();
-    _statusSubscription = _client.statusStream.listen(
+    _statusSubscription = client.statusStream.listen(
       _onStatusChange,
       onError: (_) {
         state = state.copyWith(connectionStatus: ConnectionStatus.disconnected);
@@ -183,7 +186,7 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
     );
 
     _messageSubscription?.cancel();
-    _messageSubscription = _client.messages.listen(
+    _messageSubscription = client.messages.listen(
       _onMessage,
       onError: (_) {
         state = state.copyWith(connectionStatus: ConnectionStatus.disconnected);
@@ -191,10 +194,10 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
     );
 
     state = state.copyWith(
-      connectionStatus: _client.status,
+      connectionStatus: client.status,
     );
 
-    _client.joinMatch(matchId);
+    client.joinMatch(matchId);
   }
 
   /// Leave match room and reset state.
@@ -325,7 +328,7 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
                 '${state.lastDeliveryCount + 1}, got $incoming. '
                 'Requesting match_state refresh.');
           }
-          _client.joinMatch(matchId);
+          _client?.joinMatch(matchId);
         }
       }
       return;

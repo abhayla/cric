@@ -77,7 +77,7 @@ void main() {
     );
     container = ProviderContainer(
       overrides: [
-        websocketClientProvider.overrideWithValue(client),
+        websocketClientProvider.overrideWithValue(AsyncData(client)),
       ],
     );
   });

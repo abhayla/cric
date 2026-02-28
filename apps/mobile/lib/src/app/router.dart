@@ -651,7 +651,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               args: args,
               datasource: ref.read(scoring.scoringLocalDatasourceProvider),
               syncService: ref.read(scoring.syncServiceProvider),
-              wsClient: ref.read(websocketClientProvider),
+              wsClient: ref.read(websocketClientProvider).value,
             );
           }
           // Fallback: navigate home if no args (shouldn't happen in normal flow)

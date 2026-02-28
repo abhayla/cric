@@ -16,6 +16,26 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-28b: Fix Team & Tournament Visibility for Added Players
+
+**Status:** Complete. All 2251 Flutter tests pass, `flutter analyze` clean, server typecheck clean, team service tests (32/32) pass.
+
+**Root causes (3 bugs forming a broken chain):**
+1. **Client: WebSocket connects without auth token** — `websocketClientProvider` was a sync `Provider` that fired `getIdToken().then(...)` asynchronously but returned the client immediately. Token was always `null` at `connect()` time → server saw anonymous connection → no `user:<userId>` topic subscription → notifications silently dropped.
+2. **Server: Reactivation path skips WS notification + activity feed** — `addPlayer()` had early `return enriched!` for re-added players, skipping the WS broadcast and activity feed events that the new-insert path had.
+3. **Server: WS notification used `await` instead of fire-and-forget** — Comment said "fire-and-forget" but code used `await`. DB failure would throw 500 even though roster insert already succeeded.
+
+**Changes (7 files + 2 docs):**
+- `apps/server/src/services/team.service.ts` — Extracted `notifyPlayerAddedToTeam()` helper (true fire-and-forget `.then().catch()`), added activity feed + WS notification to reactivation path, replaced `await` block in new-insert path
+- `apps/mobile/lib/src/shared/providers/websocket_provider.dart` — Changed from `Provider<WebSocketClient>` to `FutureProvider<WebSocketClient>`, awaits token before creating client
+- `apps/mobile/lib/src/features/home/providers.dart` — Uses `ref.watch(websocketClientProvider).value` (nullable), returns early if null
+- `apps/mobile/lib/src/app/router.dart` — Uses `.value` (nullable, `wsClient` is already optional)
+- `apps/mobile/lib/src/features/scoring/presentation/notifiers/match_live_notifier.dart` — `_client` getter returns nullable, `joinMatch` caches and null-checks
+- `apps/mobile/test/.../match_live_notifier_test.dart` — Override uses `AsyncData(client)` for immediate availability
+- `apps/mobile/test/.../live_match_page_test.dart` — Same override change
+- `docs/planning/API.md` — Added section 2.5 "User Notification Messages" (renumbered 2.5→2.6, 2.6→2.7)
+- `docs/planning/SYNC_ARCHITECTURE.md` — Added "User Notification Channel" section
+
 ### Session 2026-02-28: E2E Test Run on Real Devices
 
 **Status:** In progress. Prod APK built and installed on both devices. OPPO disconnected mid-session.

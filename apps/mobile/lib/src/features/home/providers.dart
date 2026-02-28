@@ -58,7 +58,9 @@ final allMatchesProvider =
 /// Listens for user-targeted WS messages (team_updated, tournament_updated)
 /// and invalidates the relevant list providers so the UI auto-refreshes.
 final userWsNotificationsProvider = Provider<void>((ref) {
-  final client = ref.read(websocketClientProvider);
+  final clientAsync = ref.watch(websocketClientProvider);
+  final client = clientAsync.value;
+  if (client == null) return; // Still loading token
 
   // Connect WS if not already connected
   if (client.status != ConnectionStatus.connected &&
