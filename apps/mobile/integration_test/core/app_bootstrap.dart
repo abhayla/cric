@@ -213,10 +213,16 @@ Future<void> _loginWithTestPhone(
   }
 
   // Step 6: Enter OTP digits
+  // OTP page has 6 TextFields with maxLength=1 (digit boxes). The login page
+  // phone field (no maxLength) may still exist in the GoRouter stack.
+  // Filter by maxLength to target only OTP digit fields.
   final swOtpEntry = Stopwatch()..start();
-  final otpFields = find.byType(TextField);
-  print('[login] Found ${otpFields.evaluate().length} TextFields on OTP page');
-  if (otpFields.evaluate().length >= 6) {
+  final otpFields = find.byWidgetPredicate(
+    (widget) => widget is TextField && widget.maxLength == 1,
+  );
+  final otpFieldCount = otpFields.evaluate().length;
+  print('[login] Found $otpFieldCount OTP TextFields (maxLength:1)');
+  if (otpFieldCount >= 6) {
     for (var i = 0; i < 6; i++) {
       await tester.enterText(otpFields.at(i), testOtpCode[i]);
       await tester.pump(const Duration(milliseconds: 100));
@@ -225,6 +231,30 @@ Future<void> _loginWithTestPhone(
   }
   swOtpEntry.stop();
   print('  [cold-start] 6. OTP digit entry: ${swOtpEntry.elapsedMilliseconds}ms');
+
+  // Tap the Verify button explicitly — auto-verify via onChanged may not
+  // trigger reliably when enterText replaces field content in fullyLive mode.
+  await tester.pump(const Duration(milliseconds: 300));
+  final verifyButton = find.widgetWithText(FilledButton, 'Verify');
+  if (verifyButton.evaluate().isNotEmpty) {
+    final btn = tester.widget<FilledButton>(verifyButton.first);
+    if (btn.onPressed != null) {
+      await tester.tap(verifyButton.first);
+      print('[login] Tapped Verify button (enabled)');
+    } else {
+      print('[login] Verify button DISABLED — pumping to let setState propagate');
+      await tester.pump(const Duration(milliseconds: 500));
+      final retryBtn = tester.widget<FilledButton>(verifyButton.first);
+      if (retryBtn.onPressed != null) {
+        retryBtn.onPressed!();
+        print('[login] Verify invoked after pump');
+      } else {
+        print('[login] ERROR: Verify still disabled after pump');
+      }
+    }
+  } else {
+    print('[login] No Verify button found — relying on auto-verify');
+  }
 
   // Step 7: Wait for OTP verification + GoRouter redirect to /home
   final swVerify = Stopwatch()..start();
