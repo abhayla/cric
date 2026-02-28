@@ -1,6 +1,6 @@
 /// 02: Standalone Match — Score, undo, magic over, target chase, persistence.
 ///
-/// Team1 vs Team2 | 5 overs | 6 players | Magic Over: 2
+/// Team3 vs Team4 | 5 overs | 6 players | Magic Over: 2
 /// Tests: undo (G4), magic over (G10), target chase (G6), persistence (G5).
 ///
 /// Run:
@@ -16,7 +16,6 @@ import 'package:cricscores/src/features/scoring/presentation/widgets/innings_tra
 import 'package:cricscores/src/features/scoring/presentation/widgets/match_complete_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import '../config/test_data.dart';
 import '../core/app_bootstrap.dart';
@@ -30,7 +29,7 @@ import '../flows/random_innings.dart';
 import '../models/delivery_record.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  initIntegrationTest();
 
   testWidgets(
       'Standalone match: score, undo, target chase, magic over, persistence',
@@ -38,7 +37,7 @@ void main() {
     await pumpAppAndWaitForHome(tester);
 
     print('\n=== STANDALONE MATCH TEST ===');
-    print('Team1 vs Team2 | 5 overs | 6 players | Magic Over: 2\n');
+    print('Team3 vs Team4 | 5 overs | 6 players | Magic Over: 2\n');
 
     final stopwatch = Stopwatch()..start();
     final tracker = ErrorTracker();
@@ -50,11 +49,11 @@ void main() {
       tracker.recordSuccess('Navigated to match setup');
 
       // 2. Select teams
-      await selectTeamInMatchSetup(tester, 'Team1', isHome: true);
-      tracker.recordSuccess('Selected Team A: Team1');
+      await selectTeamInMatchSetup(tester, 'Team3', isHome: true);
+      tracker.recordSuccess('Selected Team A: Team3');
 
-      await selectTeamInMatchSetup(tester, 'Team2', isHome: false);
-      tracker.recordSuccess('Selected Team B: Team2');
+      await selectTeamInMatchSetup(tester, 'Team4', isHome: false);
+      tracker.recordSuccess('Selected Team B: Team4');
 
       // 3. Set overs to 5
       final oversChip = find.widgetWithText(ChoiceChip, '5');
@@ -115,9 +114,9 @@ void main() {
       await completeMatchSetup(tester);
       tracker.recordSuccess('Proceeded to toss');
 
-      // 7. Complete Toss: Team1 bats
-      final team1Data = allTeams[0];
-      final team2Data = allTeams[1];
+      // 7. Complete Toss: Team3 bats
+      final team1Data = allTeams[2];
+      final team2Data = allTeams[3];
 
       final opener1 = team1Data.players[0].name;
       final opener2 = team1Data.players[1].name;
@@ -125,7 +124,7 @@ void main() {
 
       await completeTossWizard(
         tester,
-        tossWinnerName: 'Team1',
+        tossWinnerName: 'Team3',
         battingOpener1: opener1,
         battingOpener2: opener2,
         openingBowler: openingBowler,
@@ -214,7 +213,7 @@ void main() {
 
         // 13. Target Chase
         final target = matchRecord.firstInningsRuns + 1;
-        print('  [Innings 2] Team2 chasing target: $target');
+        print('  [Innings 2] Team4 chasing target: $target');
 
         final battingPlayerNames2 = team2Data.players.map((p) => p.name).toList();
         final bowlingPlayerNames2 = team1Data.players.map((p) => p.name).toList();
@@ -278,17 +277,17 @@ void main() {
       }
       await visualPause(tester, 2000);
 
-      final team1OnCard = find.textContaining('Team1');
-      final team2OnCard = find.textContaining('Team2');
+      final team1OnCard = find.textContaining('Team3');
+      final team2OnCard = find.textContaining('Team4');
       final hasTeam1 = team1OnCard.evaluate().isNotEmpty;
       final hasTeam2 = team2OnCard.evaluate().isNotEmpty;
 
       if (hasTeam1 || hasTeam2) {
-        print('  [Persistence] Match card found (Team1: $hasTeam1, Team2: $hasTeam2)');
+        print('  [Persistence] Match card found (Team3: $hasTeam1, Team4: $hasTeam2)');
         tracker.recordSuccess('Persistence verified');
       } else {
         print('  [Persistence] ERROR: No match card found');
-        tracker.recordError('Persistence check', 'Neither Team1 nor Team2 found on Matches tab');
+        tracker.recordError('Persistence check', 'Neither Team3 nor Team4 found on Matches tab');
       }
     } catch (e) {
       tracker.recordError('Standalone match test', e);

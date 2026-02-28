@@ -13,7 +13,6 @@ library;
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import '../config/test_data.dart';
 import '../config/tournament_presets.dart';
@@ -22,7 +21,7 @@ import '../core/error_tracker.dart';
 import '../flows/tournament_flow.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  initIntegrationTest();
 
   testWidgets('Group+Knockout tournament: 8 teams, 2 groups, 3 overs',
       (tester) async {

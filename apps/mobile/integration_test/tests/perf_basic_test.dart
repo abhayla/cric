@@ -19,7 +19,6 @@ import 'package:cricscores/src/features/scoring/presentation/widgets/innings_tra
 import 'package:cricscores/src/features/scoring/presentation/widgets/match_complete_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import '../config/test_data.dart';
 import '../core/app_bootstrap.dart';
@@ -32,7 +31,7 @@ import '../flows/random_innings.dart';
 import '../models/delivery_record.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  initIntegrationTest();
 
   testWidgets('Performance baseline: full app flow timing', (tester) async {
     final totalStopwatch = Stopwatch()..start();

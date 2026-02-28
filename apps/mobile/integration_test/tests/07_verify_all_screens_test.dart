@@ -11,7 +11,6 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import 'package:cricscores/src/features/teams/presentation/widgets/team_card.dart';
 import 'package:cricscores/src/features/tournaments/presentation/widgets/tournament_card.dart';
@@ -26,7 +25,7 @@ import '../verification/tournament_verifier.dart';
 import '../verification/updates_verifier.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  initIntegrationTest();
 
   testWidgets('Verify all screens: My Cricket, Live, Updates, detail pages',
       (tester) async {

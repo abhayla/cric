@@ -10,12 +10,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 
 import 'package:cricscores/src/app/app.dart';
 import 'package:cricscores/src/shared/data/database/app_database.dart';
 import 'package:cricscores/src/shared/providers/database_provider.dart';
 
 import '../config/constants.dart';
+
+/// Initialize the integration test binding with fullyLive frame policy so
+/// the UI is rendered on the device/emulator screen during test execution.
+IntegrationTestWidgetsFlutterBinding initIntegrationTest() {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
+  return binding;
+}
 
 /// Whether Firebase has been initialized in this test process.
 bool _firebaseInitialized = false;

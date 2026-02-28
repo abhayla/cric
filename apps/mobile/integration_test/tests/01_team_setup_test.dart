@@ -24,7 +24,6 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import '../config/test_data.dart';
 import '../core/app_bootstrap.dart';
@@ -32,7 +31,7 @@ import '../core/error_tracker.dart';
 import '../flows/team_setup_flow.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  initIntegrationTest();
 
   testWidgets('Create 12 teams with 11 players each (check-then-skip)',
       (tester) async {

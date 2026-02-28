@@ -11,13 +11,12 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import '../core/app_bootstrap.dart';
 import '../verification/my_cricket_verifier.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  initIntegrationTest();
 
   testWidgets('Verify My Cricket tabs after standalone match', (tester) async {
     await pumpAppAndWaitForHome(tester);

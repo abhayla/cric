@@ -42,59 +42,48 @@ Future<void> selectTeamInMatchSetup(
   await settle(tester);
   await visualPause(tester, 500);
 
-  // Wait for bottom sheet and teams to load
-  await waitForFinder(tester, find.byType(ListTile),
-      timeoutMs: 6000, intervalMs: 100);
+  // Wait for bottom sheet with search field to load
+  await waitForFinder(tester, find.text('Search teams'),
+      timeoutMs: 10000, intervalMs: 200);
   await settle(tester);
 
-  // Find and tap the team
-  final teamInSheet = find.text(teamName);
-  if (teamInSheet.evaluate().isNotEmpty) {
+  // Type team name into the search field to filter the list.
+  // Find search field via hint text to avoid hitting the venue TextField.
+  final searchField = find.ancestor(
+    of: find.text('Search teams'),
+    matching: find.byType(TextField),
+  );
+  if (searchField.evaluate().isNotEmpty) {
+    await tester.enterText(searchField.first, teamName);
+    await settle(tester);
+    await dismissKeyboard(tester);
+    await settle(tester);
+  }
+
+  // Find the exact team name inside a ListTile (not in the search field).
+  final teamTexts = find.text(teamName);
+  Finder? targetTile;
+  for (final element in teamTexts.evaluate()) {
     final listTile = find.ancestor(
-      of: teamInSheet,
+      of: find.byWidget(element.widget),
       matching: find.byType(ListTile),
     );
     if (listTile.evaluate().isNotEmpty) {
-      await tester.ensureVisible(listTile.first);
-      await settle(tester);
-      await tester.tap(listTile.first, warnIfMissed: false);
-    } else {
-      await tester.tap(teamInSheet.last, warnIfMissed: false);
+      targetTile = listTile;
+      break;
     }
+  }
+
+  if (targetTile != null && targetTile.evaluate().isNotEmpty) {
+    await tester.ensureVisible(targetTile.first);
+    await settle(tester);
+    await tester.tap(targetTile.first, warnIfMissed: false);
     await settle(tester);
     await visualPause(tester, 500);
     print('    [teamPicker] Selected ${isHome ? "Team A" : "Team B"}: $teamName');
   } else {
-    // Scroll through the list
-    print('    [teamPicker] "$teamName" not immediately visible, scrolling...');
-    final scrollable = find.byType(Scrollable);
-    var found = false;
-    for (var scroll = 0; scroll < 10 && !found; scroll++) {
-      if (scrollable.evaluate().isNotEmpty) {
-        await tester.drag(scrollable.last, const Offset(0, -200));
-        await settle(tester);
-      }
-      final retry = find.text(teamName);
-      if (retry.evaluate().isNotEmpty) {
-        final listTile = find.ancestor(
-          of: retry,
-          matching: find.byType(ListTile),
-        );
-        if (listTile.evaluate().isNotEmpty) {
-          await tester.ensureVisible(listTile.first);
-          await settle(tester);
-          await tester.tap(listTile.first, warnIfMissed: false);
-        } else {
-          await tester.tap(retry.last, warnIfMissed: false);
-        }
-        await settle(tester);
-        await visualPause(tester, 500);
-        print('    [teamPicker] Selected ${isHome ? "Team A" : "Team B"}: $teamName (after scroll)');
-        found = true;
-      }
-    }
-    expect(found, isTrue,
-        reason: 'Team "$teamName" must be found in the team picker list');
+    dumpVisibleTexts(tester, 'teamPicker-notFound', 40);
+    fail('Team "$teamName" must be found in the team picker list');
   }
 }
 

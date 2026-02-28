@@ -12,7 +12,6 @@ library;
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import '../config/test_data.dart';
 import '../config/tournament_presets.dart';
@@ -21,7 +20,7 @@ import '../core/error_tracker.dart';
 import '../flows/tournament_flow.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  initIntegrationTest();
 
   testWidgets('Round Robin tournament: 4 teams, 3 overs, 6 matches',
       (tester) async {

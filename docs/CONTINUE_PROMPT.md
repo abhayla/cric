@@ -16,6 +16,35 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-28e: E2E fullyLive Frame Policy + Team Picker Search
+
+**Status:** Complete. `flutter analyze` clean, all 11 test files updated.
+
+**What was done:**
+
+1. **fullyLive frame policy** — All 11 integration test files were using `IntegrationTestWidgetsFlutterBinding.ensureInitialized()` directly, which defaults to a non-rendering frame policy (white screen on emulator). Created `initIntegrationTest()` helper in `app_bootstrap.dart` that sets `framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive` so the UI renders on the device/emulator screen during test execution. All 11 test files updated to call `initIntegrationTest()` instead, and the now-unused `import 'package:integration_test/integration_test.dart'` removed from each.
+
+2. **Team picker search field** (from previous sub-session) — Added `_TeamPickerSheet` widget with search/filter `TextField` to `match_setup_page.dart`. Test helper `match_setup.dart` updated to use search field.
+
+3. **Test 02 uses Team3/Team4** — Swapped from Team1/Team2 to avoid team picker scrolling issues with orphan teams.
+
+**Files changed (13):**
+- `apps/mobile/integration_test/core/app_bootstrap.dart` — Added `initIntegrationTest()` with fullyLive frame policy
+- `apps/mobile/integration_test/tests/01_team_setup_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/tests/02_standalone_match_test.dart` — Use `initIntegrationTest()`, Team3/Team4
+- `apps/mobile/integration_test/tests/03_verify_after_match_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/tests/04_tournament_gk_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/tests/05_tournament_ko_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/tests/06_tournament_rr_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/tests/07_verify_all_screens_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/tests/08_viewer_live_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/tests/09_player_profile_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/tests/perf_basic_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/tests/spectator_live_test.dart` — Use `initIntegrationTest()`
+- `apps/mobile/integration_test/helpers/match_setup.dart` — Search field team selection
+
+**E2E test results:** Test 02 passed (6m55s, Team3 vs Team4), Test 03 passed (40s). Tests 04+ need on-device testing. Tournament tests (04-06) use Team1 in team selection and may need the search helper update in their tournament-specific team selection flows.
+
 ### Session 2026-02-28d: E2E Test Suite Cleanup (8 fixes)
 
 **Status:** Complete. `flutter analyze` clean, all 8 issues fixed.
@@ -51,9 +80,11 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 **3-emulator setup:** Scorer (`emulator-5554`, `9999999999`), Viewer (`emulator-5556`, `9999999998`), Spectator (`emulator-5558`, `9999999997`). Documented in all E2E docs.
 
-**Team picker scroll fix:** `match_setup.dart` — bottom sheet could open mid-list; old code only scrolled down. New code logs visible ListTiles for diagnostics and uses ListTile-based dragging. Also increased `waitForFinder` timeout from 6s to 10s.
+**Team picker search field:** Added `_TeamPickerSheet` widget with search/filter `TextField` to `match_setup_page.dart`. Fixes team picker being unusable when orphan teams push target teams off-screen. Test helper `match_setup.dart` updated to use search field via `find.ancestor(of: find.text('Search teams'), matching: find.byType(TextField))`.
 
-**Blocking issue:** E2E tests 01-09 blocked by stale prod server data. Team picker shows orphan teams (`PerfA`, `PerfB`, `SpeedAlpha`) from old runs but no Team1-12 with full rosters. Test 01 creates Team1 but fails on Team2 with `Bad state: No element` in player creation flow. Needs investigation or prod data cleanup.
+**Test 02 uses Team3/Team4:** Swapped from Team1/Team2 to Team3/Team4 (already exist with 11 players on prod). Test 02 passes (6m55s): team picker search, toss, scoring, undo, innings transition, target chase, persistence all verified.
+
+**E2E test results:** Test 01 passed (8m39s), Test 02 passed (6m55s, Team3 vs Team4), Test 03 passed (40s). Tests 04+ need team picker search helper update in their tournament setup flows.
 
 ### Session 2026-02-28c: Public Live Tab + Non-Team Viewer Support
 

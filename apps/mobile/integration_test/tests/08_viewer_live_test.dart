@@ -27,7 +27,6 @@ import 'package:cricscores/src/features/scoring/presentation/widgets/match_compl
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 
 import '../config/constants.dart';
 import '../config/test_data.dart';
@@ -42,7 +41,7 @@ import '../helpers/scoring.dart';
 const _role = String.fromEnvironment('ROLE', defaultValue: 'scorer');
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  initIntegrationTest();
 
   if (_role == 'scorer') {
     _runScorerTest();

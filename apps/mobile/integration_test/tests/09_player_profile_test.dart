@@ -17,7 +17,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:integration_test/integration_test.dart';
 
 import 'package:cricscores/src/core/constants/app_constants.dart';
 
@@ -27,7 +26,7 @@ import '../helpers/navigation.dart';
 import '../verification/player_profile_verifier.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  initIntegrationTest();
 
   testWidgets('Player Profile: verify via More tab and direct navigation',
       (tester) async {
