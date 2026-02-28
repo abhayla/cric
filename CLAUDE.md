@@ -60,6 +60,8 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 | [API.md](docs/planning/API.md) | REST endpoint specs, request/response shapes |
 | [SYNC_ARCHITECTURE.md](docs/planning/SYNC_ARCHITECTURE.md) | Dual-path broadcast, gap detection, offline sync queue |
 | [CRICHEROES_REFERENCE.md](docs/planning/CRICHEROES_REFERENCE.md) | Competitive analysis for CricHeroes comparison |
+| [E2E_DEV_TESTING.md](docs/process/E2E_DEV_TESTING.md) | Dev/local E2E strategy — fast, API-seeded, local server |
+| [E2E_PROD_TESTING.md](docs/process/E2E_PROD_TESTING.md) | Prod E2E strategy — real devices, cricscores.in, pre-release |
 | [PROJECT_MANAGEMENT.md](docs/process/PROJECT_MANAGEMENT.md) | Full documentation map and update frequencies |
 
 ## Build & Run Commands (once initialized)
@@ -185,6 +187,7 @@ The scoring engine is the most complex subsystem. Key files and their roles:
 - Pre-transaction validation pattern: move fail-fast checks (match status, scorer auth, input validation) **before** `db.transaction()` for better performance and to avoid the bun test hang issue.
 
 ### Test Patterns
+- **`pumpAndSettle()` hangs with infinite animations.** `PulsingLiveDot` and `SyncStatusIndicator` use repeating animations that prevent `pumpAndSettle()` from ever settling. In integration tests, **always use `settle(tester)`** (from `integration_test/core/test_utils.dart`) instead of bare `tester.pumpAndSettle()`. The `settle()` helper pumps 10×100ms frames, avoiding the infinite-wait issue. Zero bare `pumpAndSettle()` calls should exist in `integration_test/`.
 - In Flutter tests, use `Completer<T>().future` for never-completing futures (not `Future.delayed(Duration(days: 1))` which leaves pending timers).
 - Server tests: always use `bun run test` (not `bun test` directly) to get `--max-concurrency=1` and avoid DB contention.
 
