@@ -189,7 +189,7 @@ When a test fails on prod:
 | Server | Local Bun (port 3001) | cricscores.in (VPS) |
 | Database | Local test DB | Production PostgreSQL |
 | API latency | ~5ms | ~600-1400ms |
-| Data seeding | API calls (fast) | UI-driven (slow, idempotent) |
+| Data seeding | UI-driven (same as prod) | UI-driven (slow, idempotent) |
 | Frequency | Every code change | Pre-release only |
 | Devices | Emulator only | Real devices + emulator |
 | Multi-device | Multi-emulator scorer+viewer | Real device scorer+viewer (Test 08) |

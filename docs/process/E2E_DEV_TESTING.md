@@ -35,29 +35,22 @@ Developer Machine
 
 ## Test Data Strategy
 
-### API-Seeded Data (Not UI-Driven)
+### UI-Driven Data Entry (Mandatory)
 
-Team/player creation is infrastructure, not the feature under test. Seed via direct API calls:
+**All E2E test data must be created through the UI** — tapping buttons, filling forms, navigating screens — exactly as a real user would. No direct API calls (`Dio`, `http`) for creating teams, players, matches, or tournaments.
 
-```dart
-// Instead of UI taps (tap "Create Team" → type name → add 11 players one-by-one):
-Future<void> seedTeamsViaApi(List<TestTeam> teams) async {
-  final dio = Dio(BaseOptions(baseUrl: 'http://10.0.2.2:3001/api/v1'));
-  // Authenticate as test user
-  dio.options.headers['Authorization'] = 'Bearer $testToken';
-  for (final team in teams) {
-    await dio.post('/teams', data: {'name': team.name, 'location': 'Test'});
-    for (final player in team.players) {
-      // Create user + add to roster via API
-      await dio.post('/teams/$teamId/roster', data: {...});
-    }
-  }
-}
-```
+**Why:** E2E tests validate the full stack from user interaction to server persistence. Bypassing the UI with API calls defeats the purpose — it leaves form validation, navigation flows, error handling, and UI state management untested. A passing E2E test should prove that a real user can complete the workflow end-to-end.
 
-**Benefit:** 12 teams × 11 players in ~5 seconds (vs ~5 minutes via UI).
+**What this means:**
+- Team creation → use `createTeam(tester, ...)` helper (taps "Create Team", fills form, submits)
+- Player creation → use `fillAndSubmitPlayer(tester, ...)` helper (fills player form, waits for API response)
+- Match creation → use match setup wizard flow (select teams, configure overs, etc.)
+- Tournament creation → use `createTournament(tester, preset, name)` helper
+- Toss → use `completeToss(tester, ...)` helper
 
-Reserve UI-driven creation only for tests that specifically validate the create-team or add-player UI flow.
+**Existing helpers** in `integration_test/helpers/` already implement UI-driven flows for teams, players, matches, tournaments, toss, and scoring. Use them.
+
+**Exception:** Signal endpoints (`POST/GET /api/v1/test/signal/:name`) for multi-device coordination are allowed — they are test infrastructure, not data creation.
 
 ### Fixed Random Seeds
 
@@ -103,7 +96,7 @@ Single test file that validates the critical path:
 
 ```
 smoke_test.dart
-├── Seed 2 teams × 3 players via API
+├── Create 2 teams × 3 players (UI)
 ├── Create match (UI) — match setup wizard
 ├── Complete toss (UI)
 ├── Score 1 over per innings (6 legal deliveries each)
@@ -133,7 +126,7 @@ Independent tests, each seeds its own data:
 | `viewer_live_test.dart` | Multi-emulator scorer+viewer WebSocket live updates | 2 × 6 players (same as match test) |
 | `spectator_live_test.dart` | Non-team user discovers match on Live tab, views live updates | 2 × 6 players (scored by scorer, viewed by spectator) |
 
-**Key change from current:** Each test creates its own teams (via API), so they don't depend on test 01 or each other.
+**Key change from current:** Each test creates its own teams (via UI), so they don't depend on test 01 or each other.
 
 ### Tier 3: Full Suite (~20-30 min) — Pre-Release
 
@@ -151,8 +144,6 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    // Seed data via API once for all tests in this file
-    await seedTeamsViaApi([team1, team2]);
     await resetMatchData();
   });
 
@@ -419,10 +410,9 @@ The emulator accesses the local server at `10.0.2.2:3001` (Android's host loopba
 
 | Step | Change | Effort |
 |------|--------|--------|
-| 1 | Add `seedTeamsViaApi()` helper using test auth | Small |
-| 2 | Create `smoke_test.dart` (Tier 1) | Small |
-| 3 | Add fixed `Random(42)` seeds to tournament tests | Trivial |
-| 4 | Make each tournament test seed its own teams | Medium |
+| 1 | Create `smoke_test.dart` (Tier 1) | Small |
+| 2 | Add fixed `Random(42)` seeds to tournament tests | Trivial |
+| 3 | Make each tournament test create its own teams via UI | Medium |
 | 5 | Split test 02 into multiple `testWidgets` | Medium |
 | 6 | Merge test 03 into test 02, test 07 into relevant tests | Small |
 | 7 | Add screenshot-on-failure wrapper | Small |

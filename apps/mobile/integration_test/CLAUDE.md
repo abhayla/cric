@@ -49,6 +49,7 @@ TestTeam(name: 'Team20', players: [TestPlayer(name: 'Player501', phone: '9999999
 
 ## Rules
 
+- **All data entry through UI.** Teams, players, matches, tournaments, toss — everything must be created by tapping buttons and filling forms via the existing helpers (`ensureTeamsExist`, `fillAndSubmitPlayer`, `createTournament`, `completeToss`, etc.). No direct API calls (`Dio`, `http`) for data creation. Signal endpoints for multi-device coordination are the only exception.
 - **Dismiss keyboard before tapping off-screen buttons.** On device/emulator, the soft keyboard occludes the bottom portion of the screen. `ensureVisible` scrolls within the `ScrollView` extent but does NOT account for keyboard occlusion — the button may be "visible" in scroll terms but physically behind the keyboard. Always call `dismissKeyboard(tester)` (from `core/test_utils.dart`) before `ensureVisible` + `tap` on any button that could be below the fold. This applies to all form submission flows.
 
 ## Known Gotchas

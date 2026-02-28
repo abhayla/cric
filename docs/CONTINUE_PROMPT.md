@@ -47,6 +47,8 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 **Follow-up consideration:** The defensive re-selection workaround in `match_setup.dart` (lines 238-264) may be simplifiable now that the toss_page root cause is fixed — needs on-device testing to confirm.
 
+**Policy change:** Updated E2E testing docs to mandate all data entry through UI (no direct API calls). Updated `E2E_DEV_TESTING.md`, `E2E_PROD_TESTING.md`, and `integration_test/CLAUDE.md`.
+
 ### Session 2026-02-28c: Public Live Tab + Non-Team Viewer Support
 
 **Status:** Complete. Server 33/33 match service tests pass (3 new), Flutter `flutter analyze` clean, live_page_test 15/15 pass.
