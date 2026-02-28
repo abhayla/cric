@@ -1,4 +1,4 @@
-import { matchTopic } from './rooms.ts';
+import { matchTopic, userTopic } from './rooms.ts';
 import type {
   ScoreUpdateMessage,
   WicketMessage,
@@ -6,6 +6,8 @@ import type {
   MatchCompleteMessage,
   DeliveryUndoneMessage,
   MatchStateMessage,
+  TeamUpdatedMessage,
+  TournamentUpdatedMessage,
 } from '../types/websocket.ts';
 
 // ============================================================
@@ -54,4 +56,21 @@ export function broadcastDeliveryUndone(matchId: string, data: DeliveryUndoneMes
 
 export function broadcastMatchState(matchId: string, data: MatchStateMessage): void {
   publish(matchId, data);
+}
+
+function publishToUser(userId: string, message: object): void {
+  if (!server) return;
+  server.publish(userTopic(userId), JSON.stringify(message));
+}
+
+export function broadcastTeamUpdated(userId: string, teamId: string, teamName: string): void {
+  const msg: TeamUpdatedMessage = { type: 'team_updated', teamId, teamName };
+  publishToUser(userId, msg);
+}
+
+export function broadcastTournamentUpdated(userIds: string[], tournamentId: string, tournamentName: string): void {
+  const msg: TournamentUpdatedMessage = { type: 'tournament_updated', tournamentId, tournamentName };
+  for (const userId of userIds) {
+    publishToUser(userId, msg);
+  }
 }

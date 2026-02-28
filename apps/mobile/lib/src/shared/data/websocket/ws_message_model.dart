@@ -589,6 +589,37 @@ class WsUpdatedBowlerStats {
   }
 }
 
+class WsTeamUpdatedMessage extends WsServerMessage {
+  WsTeamUpdatedMessage({required this.teamId, required this.teamName});
+
+  final String teamId;
+  final String teamName;
+
+  factory WsTeamUpdatedMessage.fromJson(Map<String, dynamic> json) {
+    return WsTeamUpdatedMessage(
+      teamId: json['teamId'] as String,
+      teamName: json['teamName'] as String,
+    );
+  }
+}
+
+class WsTournamentUpdatedMessage extends WsServerMessage {
+  WsTournamentUpdatedMessage({
+    required this.tournamentId,
+    required this.tournamentName,
+  });
+
+  final String tournamentId;
+  final String tournamentName;
+
+  factory WsTournamentUpdatedMessage.fromJson(Map<String, dynamic> json) {
+    return WsTournamentUpdatedMessage(
+      tournamentId: json['tournamentId'] as String,
+      tournamentName: json['tournamentName'] as String,
+    );
+  }
+}
+
 class WsErrorMessage extends WsServerMessage {
   WsErrorMessage({required this.message});
 
@@ -612,6 +643,8 @@ WsServerMessage parseServerMessage(String raw) {
       'innings_complete' => WsInningsCompleteMessage.fromJson(json),
       'match_complete' => WsMatchCompleteMessage.fromJson(json),
       'delivery_undone' => WsDeliveryUndoneMessage.fromJson(json),
+      'team_updated' => WsTeamUpdatedMessage.fromJson(json),
+      'tournament_updated' => WsTournamentUpdatedMessage.fromJson(json),
       'error' => WsErrorMessage.fromJson(json),
       _ => WsErrorMessage(
           message: 'Unknown message type: ${json['type']}'),

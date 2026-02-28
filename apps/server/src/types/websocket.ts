@@ -189,6 +189,18 @@ export interface ErrorMessage {
   message: string;
 }
 
+export interface TeamUpdatedMessage {
+  type: 'team_updated';
+  teamId: string;
+  teamName: string;
+}
+
+export interface TournamentUpdatedMessage {
+  type: 'tournament_updated';
+  tournamentId: string;
+  tournamentName: string;
+}
+
 export type ServerMessage =
   | MatchStateMessage
   | ScoreUpdateMessage
@@ -196,4 +208,6 @@ export type ServerMessage =
   | InningsCompleteMessage
   | MatchCompleteMessage
   | DeliveryUndoneMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | TeamUpdatedMessage
+  | TournamentUpdatedMessage;

@@ -2,6 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/dio_provider.dart';
+import '../../shared/data/websocket/websocket_client.dart';
+import '../../shared/data/websocket/ws_message_model.dart';
+import '../../shared/providers/websocket_provider.dart';
+import '../teams/providers.dart' as teams_prov;
+import '../tournaments/providers.dart' as tourn_prov;
 import 'data/datasources/home_remote_datasource.dart';
 import 'data/repositories/home_repository_impl.dart';
 import 'domain/repositories/home_repository.dart';
@@ -48,4 +53,30 @@ final allMatchesProvider =
     debugPrint('[API-timing] GET /matches (page=$page): ${sw.elapsedMilliseconds}ms');
   }
   return result;
+});
+
+/// Listens for user-targeted WS messages (team_updated, tournament_updated)
+/// and invalidates the relevant list providers so the UI auto-refreshes.
+final userWsNotificationsProvider = Provider<void>((ref) {
+  final client = ref.read(websocketClientProvider);
+
+  // Connect WS if not already connected
+  if (client.status != ConnectionStatus.connected &&
+      client.status != ConnectionStatus.connecting) {
+    client.connect();
+  }
+
+  final sub = client.messages.listen((msg) {
+    switch (msg) {
+      case WsTeamUpdatedMessage():
+        ref.invalidate(teams_prov.teamsListProvider);
+        ref.invalidate(tourn_prov.tournamentsListProvider);
+      case WsTournamentUpdatedMessage():
+        ref.invalidate(tourn_prov.tournamentsListProvider);
+      default:
+        break;
+    }
+  });
+
+  ref.onDispose(() => sub.cancel());
 });

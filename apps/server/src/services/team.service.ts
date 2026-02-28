@@ -6,6 +6,7 @@ import { matches } from '../db/schema/matches.ts';
 import { users } from '../db/schema/users.ts';
 import { AppError } from '../middleware/error-handler.ts';
 import { emitPlayerAddedEvents, emitPlayerRemovedEvents, emitTeamJoinedEvents } from './activity-feed.service.ts';
+import { broadcastTeamUpdated } from '../websocket/broadcaster.ts';
 
 const MAX_ROSTER_SIZE = 25;
 
@@ -343,6 +344,16 @@ export async function addPlayer(teamId: string, userId: string, input: AddPlayer
   emitTeamJoinedEvents(teamId, input.playerId).catch((err) =>
     console.error(`[ActivityFeed] Team joined emit failed for team=${teamId}:`, err),
   );
+
+  // Fire-and-forget WS notification to the added player
+  const [teamForName] = await db
+    .select({ name: teams.name })
+    .from(teams)
+    .where(eq(teams.id, teamId))
+    .limit(1);
+  if (teamForName) {
+    broadcastTeamUpdated(input.playerId, teamId, teamForName.name);
+  }
 
   return enriched!;
 }

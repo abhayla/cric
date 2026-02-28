@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { eq } from 'drizzle-orm';
-import { getMatchState, matchTopic } from './rooms.ts';
+import { getMatchState, matchTopic, userTopic } from './rooms.ts';
 import { getFirebaseAuth } from '../config/firebase.ts';
 import { db } from '../db/index.ts';
 import { matches } from '../db/schema/matches.ts';
@@ -60,11 +60,23 @@ export const websocketHandler = new Elysia({ name: 'websocket' }).ws('/ws', {
       // In test mode with explicit opt-in, accept any token as the test user
       if (process.env.NODE_ENV === 'test' && process.env.ENABLE_TEST_AUTH === 'true') {
         verifiedConnections.set(getWsKey(ws), 'test-user-e2e-001');
+        ws.subscribe(userTopic('test-user-e2e-001'));
         return;
       }
 
       const decodedToken = await getFirebaseAuth().verifyIdToken(token);
       verifiedConnections.set(getWsKey(ws), decodedToken.uid);
+
+      // Subscribe to user-specific topic for team/tournament notifications
+      const [userRow] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.firebaseUid, decodedToken.uid))
+        .limit(1);
+
+      if (userRow) {
+        ws.subscribe(userTopic(userRow.id));
+      }
     } catch {
       // Token invalid — connection stays open as anonymous viewer
       // They just won't be able to publish scores

@@ -270,6 +270,9 @@ class MatchLiveNotifier extends Notifier<LiveMatchState> {
         _handleDeliveryUndone(message);
       case WsErrorMessage():
         state = state.copyWith(error: message.message);
+      case WsTeamUpdatedMessage():
+      case WsTournamentUpdatedMessage():
+        break; // Not relevant for live match viewer
     }
   }
 

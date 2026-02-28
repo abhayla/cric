@@ -27,6 +27,10 @@ export function matchTopic(matchId: string): string {
   return `match:${matchId}`;
 }
 
+export function userTopic(userId: string): string {
+  return `user:${userId}`;
+}
+
 // ============================================================
 // Get Match State — Full snapshot for room join
 // ============================================================

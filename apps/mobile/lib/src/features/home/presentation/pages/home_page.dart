@@ -45,6 +45,7 @@ class _HomePageState extends ConsumerState<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    ref.watch(userWsNotificationsProvider);
     final theme = Theme.of(context);
     final userId = ref.watch(currentUserIdProvider).value;
 

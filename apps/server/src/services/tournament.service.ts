@@ -8,6 +8,7 @@ import { innings } from '../db/schema/innings.ts';
 import { battingStats, bowlingStats } from '../db/schema/stats.ts';
 import { AppError } from '../middleware/error-handler.ts';
 import { emitTournamentUpdateEvents, emitTeamAddedToTournamentEvents, emitRegistrationResolvedEvents, emitFixturesGeneratedEvents } from './activity-feed.service.ts';
+import { broadcastTournamentUpdated } from '../websocket/broadcaster.ts';
 
 // -- Types --
 
@@ -349,7 +350,7 @@ export async function addTeam(
   await assertOrganizerAccess(tournamentId, userId);
 
   const [tournament] = await db
-    .select({ status: tournaments.status, playersPerSide: tournaments.playersPerSide })
+    .select({ status: tournaments.status, playersPerSide: tournaments.playersPerSide, name: tournaments.name })
     .from(tournaments)
     .where(eq(tournaments.id, tournamentId))
     .limit(1);
@@ -409,6 +410,19 @@ export async function addTeam(
   emitTeamAddedToTournamentEvents(tournamentId, teamId).catch((err) =>
     console.error(`[ActivityFeed] Team added to tournament emit failed:`, err),
   );
+
+  // Fire-and-forget WS notification to all roster members of the added team
+  db.select({ playerId: teamRosters.playerId })
+    .from(teamRosters)
+    .where(and(eq(teamRosters.teamId, teamId), eq(teamRosters.isActive, true)))
+    .then((rosterMembers) => {
+      broadcastTournamentUpdated(
+        rosterMembers.map((r) => r.playerId),
+        tournamentId,
+        tournament!.name,
+      );
+    })
+    .catch((err) => console.error(`[WS] Tournament updated broadcast failed:`, err));
 
   return {
     ...entry!,
@@ -605,6 +619,27 @@ export async function resolveRequest(
   emitRegistrationResolvedEvents(tournamentId, request.teamId, action, rejectionReason).catch((err) =>
     console.error(`[ActivityFeed] Registration resolved emit failed:`, err),
   );
+
+  // Fire-and-forget WS notification when a registration is approved
+  if (action === 'approved') {
+    const [tournForName] = await db
+      .select({ name: tournaments.name })
+      .from(tournaments)
+      .where(eq(tournaments.id, tournamentId))
+      .limit(1);
+
+    db.select({ playerId: teamRosters.playerId })
+      .from(teamRosters)
+      .where(and(eq(teamRosters.teamId, request.teamId), eq(teamRosters.isActive, true)))
+      .then((rosterMembers) => {
+        broadcastTournamentUpdated(
+          rosterMembers.map((r) => r.playerId),
+          tournamentId,
+          tournForName?.name ?? 'Tournament',
+        );
+      })
+      .catch((err) => console.error(`[WS] Tournament updated broadcast failed:`, err));
+  }
 
   return {
     ...updated!,
