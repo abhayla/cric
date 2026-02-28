@@ -16,6 +16,28 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-02-28: E2E Test Run on Real Devices
+
+**Status:** In progress. Prod APK built and installed on both devices. OPPO disconnected mid-session.
+
+**What was done:**
+- Built prod release APK (`app-prod-release.apk`, 62.3MB) and installed on both devices
+- Added Viewer Account Rule to `integration_test/CLAUDE.md` — Abhay (`9999999998`) must be on at least one team in every test match for live viewing from second device
+- Polished `CLAUDE.md` — added `flutter analyze`/`flutter devices` commands, trimmed VPS table, tightened server tests paragraph
+- Committed and pushed CLAUDE.md changes as `6fefb57`
+
+**Devices:**
+- OPPO CPH2691 (`843773fe`) — Android 16 — APK installed, then disconnected
+- OnePlus EB2101 (`f7d1d240`) — Android 13 — APK installed, connected
+
+**Test sequence planned:** 01 → 02 → 03 → 09 → 04 → 05 → 06 → 07 (scorer on one device, Abhay views from second)
+
+**Next steps:**
+1. Reconnect OPPO device
+2. Run test 01 (team setup) on scorer device
+3. Continue through test sequence, logging issues without fixing
+4. Test 08 (viewer live) needs both devices with scorer/viewer coordination
+
 ### Session 2026-02-27k: Add "Custom" format chip to Player Profile
 
 **Status:** Complete. E2E test passing on emulator.

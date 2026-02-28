@@ -10,6 +10,10 @@ All test teams and players MUST follow the naming pattern from `config/test_data
 | Player name | `Player{suffix}` | `Player301`, `Player507` |
 | Player phone | `9999999{suffix}` | `9999999301`, `9999999507` |
 
+### Viewer Account Rule
+
+**Abhay (phone `9999999998`, OTP `123456`) is the viewer/second-device account.** He must be added as a roster member on at least one team involved in every test match, so he can view the match live from the second device. Currently, `generateTeams()` in `test_data.dart` adds him to Team1. If a test uses teams other than Team1 (e.g., perf test uses Team3/Team4), ensure Abhay is on one of those teams too.
+
 ### Reserved Ranges
 
 | Range | Used By | Teams | Players |

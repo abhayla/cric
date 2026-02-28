@@ -2,7 +2,8 @@ Add this condition to Passing criteria - take screenshot after each testing, ana
 
      
 If any issue or error found then fix it and retest it. Do this in loop until the issue is fixed and test passes. Instead of shortcuts, Focus on the roor cause of the problem
-
+/plugin marketplace add anthropics/claude-code                                                                                 
+/plugin install frontend-design@claude-code-plugins
 
 Do not proceed until you have 100% confidence of what I want. Ask me questions until you reach that confidence. 
 Ask one question at a time. Tell me the approximate number of questions you are going to ask.
@@ -314,27 +315,39 @@ room.
   Score: 43/1 vs 38/0
   ══════════════════════════════════════════════════
 
-  ● Here are all 9 integration tests and the recommended sequence:                                                                                                                                                                                              
-  ┌──────┬────────────────────────────┬──────────────────────────────────────────────────────────┬──────────────────────────┐    
-  │  #   │            Test            │                       What it does                       │        Depends on        │  
-  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤    
-  │ 01   │ 01_team_setup_test         │ Creates 12 teams × 11 players each (idempotent)          │ Nothing — must run first │    
-  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤    
-  │ 02   │ 02_standalone_match_test   │ Scores 5-over match (Team1 vs Team2), undo, target chase │ 01                       │    
-  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤  
+● The updated table should be:                                                                                                                                                          
+                                                                                                                                                                                          
+                                                                                                                                                                                          
+                                                                                                                                                                                          
+  ┌──────┬────────────────────────────┬──────────────────────────────────────────────────────────┬──────────────────────────┐                                                           
+  │  #   │            Test            │                       What it does                       │        Depends on        │                                                           
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤                                                             
+  │ 01   │ 01_team_setup_test         │ Creates 12 teams x 11 players each (idempotent)          │ Nothing — must run first │
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤                                                           
+  │ 02   │ 02_standalone_match_test   │ Scores 5-over match (Team1 vs Team2), undo, target chase │ 01                       │
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤
   │ 03   │ 03_verify_after_match_test │ Verifies My Cricket tabs & filter chips after match      │ 01, 02                   │
-  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤  
-  │ 04   │ 04_tournament_gk_test      │ Group+Knockout tournament, 8 teams, ~15 matches          │ 01                       │  
-  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤  
-  │ 05   │ 05_tournament_ko_test      │ Knockout tournament, 8 teams, 7 matches                  │ 01                       │  
-  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤  
-  │ 06   │ 06_tournament_rr_test      │ Round Robin tournament, 4 teams, 6 matches               │ 01                       │  
-  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤  
-  │ 07   │ 07_verify_all_screens_test │ Full screen verification sweep after all data exists     │ 01–06                    │  
-  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤  
-  │ 08   │ 08_viewer_live_test        │ Multi-device WebSocket test (needs 2 devices)            │ 01                       │  
-  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤  
-  │ perf │ perf_basic_test            │ Performance timing (already ran 3 times today)           │ 01                       │  
-  └──────┴────────────────────────────┴──────────────────────────────────────────────────────────┴──────────────────────────┘  
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤
+  │ 04   │ 04_tournament_gk_test      │ Group+Knockout tournament, 8 teams, ~15 matches          │ 01                       │
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤
+  │ 05   │ 05_tournament_ko_test      │ Knockout tournament, 8 teams, 7 matches                  │ 01                       │
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤
+  │ 06   │ 06_tournament_rr_test      │ Round Robin tournament, 4 teams, 6 matches               │ 01                       │
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤
+  │ 07   │ 07_verify_all_screens_test │ Full screen verification sweep after all data exists     │ 01–06                    │
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤
+  │ 08   │ 08_viewer_live_test        │ Multi-device WebSocket test (needs 2 devices)            │ 01                       │
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤
+  │ 09   │ 09_player_profile_test     │ Player profile via both entry points (own + other)       │ 01, 02                   │
+  ├──────┼────────────────────────────┼──────────────────────────────────────────────────────────┼──────────────────────────┤
+  │ perf │ perf_basic_test            │ Performance timing                                       │ 01                       │
+  └──────┴────────────────────────────┴──────────────────────────────────────────────────────────┴──────────────────────────┘
 
-  Recommended sequence: 01 → 02 → 03 → 04 → 05 → 06 → 07
+  Only change is the addition of test 09. It should run after 02 (needs at least 1 completed match for career stats).
+
+  Updated recommended sequence: 01 → 02 → 03 → 09 → 04 → 05 → 06 → 07
+
+  Test 09 slots after 03 since both depend on 01+02. Tests 04-06 are long tournament runs, so it's better to validate the quick profile test first. Test 08 is separate (needs 2 devices
+   with scorer/viewer coordination).
+
+   
