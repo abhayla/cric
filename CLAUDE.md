@@ -69,9 +69,11 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 cd apps/mobile && flutter run --flavor dev              # Run on connected device
 cd apps/mobile && flutter build apk --flavor dev        # Build dev APK
 cd apps/mobile && flutter build apk --flavor prod --release --dart-define=FLAVOR=prod  # Build prod APK
+cd apps/mobile && flutter analyze                              # Static analysis (lint + type checks)
 cd apps/mobile && flutter test             # Run all tests
 cd apps/mobile && flutter test test/path/to_test.dart          # Run single test file
 cd apps/mobile && flutter test --name "test name"              # Run test by name
+cd apps/mobile && flutter devices                              # List connected devices/emulators
 cd apps/mobile && dart run build_runner build --delete-conflicting-outputs  # Code generation (Drift, Freezed, Riverpod)
 
 # Bun server
@@ -79,7 +81,7 @@ cd apps/server && bun install              # Install dependencies
 cd apps/server && bun run dev              # Start server (watch mode)
 cd apps/server && bun run start            # Start server (production)
 cd apps/server && bun run src/index.ts     # Start server (direct)
-cd apps/server && bun run test             # Run all tests (--timeout=60000 --max-concurrency=1 via package.json)
+cd apps/server && bun run test             # Run all tests (uses --max-concurrency=1 + ENABLE_TEST_AUTH=true)
 cd apps/server && bun test src/path/to.test.ts                 # Run single test file
 cd apps/server && bun run typecheck        # TypeScript type check (alias for bunx tsc --noEmit)
 cd apps/server && bun run db:generate      # Generate migrations
@@ -101,7 +103,7 @@ cd apps/mobile && flutter test --flavor prod --dart-define=FLAVOR=prod integrati
 
 **Code generation:** Files matching `*.g.dart`, `*.freezed.dart`, `*.gr.dart` are auto-generated. Never edit them manually — re-run `build_runner` instead.
 
-**Server tests:** Use `bun run test` (not `bun test`) to run all tests — the npm script passes `--max-concurrency=1` and `ENABLE_TEST_AUTH=true` to avoid DB contention and enable test auth bypass. Individual files work with `NODE_ENV=test ENABLE_TEST_AUTH=true bun test path/to.test.ts`.
+**Server tests:** Use `bun run test` (not `bun test`) for the full suite — it sets `--max-concurrency=1` and `ENABLE_TEST_AUTH=true` to avoid DB contention. Individual files: `NODE_ENV=test ENABLE_TEST_AUTH=true bun test path/to.test.ts`.
 
 **Android build flavors:** Two flavors — `dev` (default, Firebase app `com.cricapp.cricapp`) and `prod` (Firebase app `in.cricscores.app`). Dev builds: `flutter run --flavor dev`. Prod builds: `flutter build apk --flavor prod --release --dart-define=FLAVOR=prod`. Each flavor has its own `google-services.json` in `android/app/src/<flavor>/`.
 
@@ -206,9 +208,6 @@ Production/friend-testing VPS: **544934-ABHAYVPS** at `103.118.16.189` (Windows 
 | Reverse proxy | Nginx at `C:\Apps\nginx\` (on VPS) — port 80, site config in `conf\sites\cricscores.conf` |
 | SSL | Cloudflare Flexible mode (terminates HTTPS at edge, HTTP to Nginx) |
 | Health monitoring | `C:\Apps\shared\scripts\health-check.ps1` (on VPS) — runs every 5 min, auto-restarts crashed services |
-| VPS docs | `C:\Apps\shared\docs\` (on VPS) — **do not modify these files** |
-| Other hosted apps | bestdemataccount, firekaro, ipodhan, algochanakya (ports 3001-3004, 8000) |
-| Available ports | 3006-3008 |
 
 **Important:** All `C:\Apps\` paths above are on the **remote VPS** (`103.118.16.189`), not on the local development machine. Access via RDP or SSH.
 
