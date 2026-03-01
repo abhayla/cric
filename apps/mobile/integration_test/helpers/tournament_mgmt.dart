@@ -3,10 +3,12 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:cricscores/src/features/tournaments/presentation/widgets/fixture_card.dart';
+import 'package:cricscores/src/features/tournaments/providers.dart';
 
 import '../config/tournament_presets.dart';
 import '../core/test_utils.dart';
@@ -269,9 +271,38 @@ Future<void> generateFixtures(WidgetTester tester) async {
     dumpVisibleTexts(tester, 'generateFixtures', 30);
   }
 
+  // Invalidate fixtures provider to force fresh data from server after generation.
+  try {
+    final routerState = GoRouterState.of(
+      tester.element(find.byType(Scaffold).first),
+    );
+    final uri = routerState.uri.toString();
+    final idMatch = RegExp(
+      r'/tournaments/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
+      caseSensitive: false,
+    ).firstMatch(uri);
+    if (idMatch != null) {
+      final tid = idMatch.group(1)!;
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(Scaffold).first),
+      );
+      container.invalidate(tournamentFixturesProvider(tid));
+      print('    [generateFixtures] Invalidated fixtures provider for $tid');
+    }
+  } catch (e) {
+    print('    [generateFixtures] Could not invalidate provider: $e');
+  }
+
   // Verify fixtures were actually created by checking Fixtures tab
   await switchToTab(tester, 1);
   await settle(tester);
+  await tester.pump(const Duration(seconds: 3));
+  await settle(tester);
+
+  // Wait for FixtureCards to appear (provider may need time to refetch)
+  await waitForFinder(tester, find.byType(FixtureCard),
+      timeoutMs: 10000, intervalMs: 500);
+
   final fixtureCards = find.byType(FixtureCard);
   expect(fixtureCards, findsAtLeast(1),
       reason: 'Fixtures tab should show at least one FixtureCard after generation');

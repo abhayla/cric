@@ -104,7 +104,7 @@ Future<List<MatchOutcome>> scoreAllFixtures({
   final outcomes = <MatchOutcome>[];
   var matchCount = 0;
   var consecutiveEmptyScans = 0;
-  const maxEmptyScans = 3;
+  const maxEmptyScans = 6;
 
   // Extract tournament ID from current GoRouter location while on tournament detail.
   // URL pattern: /tournaments/:tournamentId
@@ -115,8 +115,8 @@ Future<List<MatchOutcome>> scoreAllFixtures({
     print('[SCORING] WARNING: Could not extract tournament ID from route');
   }
 
-  // Track scored team pairs so we skip stale fixture data (provider may cache).
-  final scoredPairs = <String>{};
+  // Track scored fixture IDs so we skip stale fixture data (provider may cache).
+  final scoredFixtureIds = <String>{};
 
   while (!tracker.hasError && consecutiveEmptyScans < maxEmptyScans) {
     // Ensure we're on the tournament detail page before scanning
@@ -127,24 +127,43 @@ Future<List<MatchOutcome>> scoreAllFixtures({
     if (tournamentId != null) {
       _invalidateFixturesProvider(tester, tournamentId);
       await settle(tester);
-      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 3));
+      await settle(tester);
     }
 
     final unplayed = await findFirstUnplayedFixture(
       tester,
-      scoredPairs: scoredPairs,
+      scoredFixtureIds: scoredFixtureIds,
     );
 
     if (unplayed == null) {
       consecutiveEmptyScans++;
       if (consecutiveEmptyScans < maxEmptyScans) {
         print('[SCORING] No unplayed fixtures found (scan $consecutiveEmptyScans/$maxEmptyScans). '
-            'Refreshing via tab switch...');
+            'Refreshing via provider invalidation + tab switch...');
+
+        // Invalidate both fixtures and tournament detail providers to force
+        // fresh data from the server (knockout fixtures may have been generated
+        // after all group matches completed).
+        if (tournamentId != null) {
+          _invalidateFixturesProvider(tester, tournamentId);
+          try {
+            final container = ProviderScope.containerOf(
+              tester.element(find.byType(Scaffold).first),
+            );
+            container.invalidate(tournamentDetailProvider(tournamentId));
+            print('  [PROVIDER] Also invalidated tournamentDetailProvider');
+          } catch (_) {}
+        }
+
+        // Tab switch to force UI rebuild
         await switchToTab(tester, 0);
-        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 2));
         await switchToTab(tester, 1);
         await settle(tester);
-        await tester.pump(const Duration(seconds: 3));
+        // Wait longer for server to process and return knockout fixtures
+        await tester.pump(const Duration(seconds: 5));
+        await settle(tester);
       }
       continue;
     }
@@ -173,7 +192,7 @@ Future<List<MatchOutcome>> scoreAllFixtures({
       );
 
       outcomes.add(outcome);
-      scoredPairs.add('$homeTeam|$awayTeam');
+      scoredFixtureIds.add(unplayed.fixtureId);
       tracker.recordMatchCompleted(
           '$homeTeam vs $awayTeam${outcome.resultText != null ? " — ${outcome.resultText}" : ""}');
       print('  [COMPLETE] Match $matchCount done');

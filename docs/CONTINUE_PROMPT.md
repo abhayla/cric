@@ -16,6 +16,14 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-03-01: DB Connectivity Check
+
+**Status:** No code changes. Diagnostic only.
+
+**Finding:** Direct PostgreSQL connection from local machine to VPS (`103.118.16.189:5432`) times out — port 5432 is firewalled on VPS (by design). VPS health endpoint (`cricscores.in/api/v1/health`) confirms server is up and DB is connected with 1ms latency. All DB access must go through the API, not direct connection.
+
+**Uncommitted files (from prior sessions):** 4 integration test files (`tournament_flow.dart`, `fixture_scanning.dart`, `modals.dart`, `tournament_mgmt.dart`) — need review and commit.
+
 ### Session 2026-02-28e: E2E fullyLive Frame Policy + Team Picker Search
 
 **Status:** Complete. `flutter analyze` clean, all 11 test files updated.

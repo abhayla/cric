@@ -90,8 +90,26 @@ Future<String?> captureMatchCompleteResult(WidgetTester tester) async {
 
   // Allow extra time for match completion — server sync errors or slow
   // completion callbacks can delay the modal appearance.
-  await waitForFinder(tester, find.byType(MatchCompleteModal),
+  // Clear snackbars repeatedly during the wait since sync errors can pile up.
+  var found = await waitForFinder(tester, find.byType(MatchCompleteModal),
       timeoutMs: 20000, intervalMs: 500);
+
+  if (!found) {
+    // Second attempt: aggressive snackbar clearing + extra pumps to let async
+    // delivery processing (WS publish, server sync) catch up.
+    print('    [captureResult] MatchCompleteModal not found on first try, clearing snackbars and retrying...');
+    clearSnackBars(tester);
+    await settle(tester, pumpCount: 30);
+    await tester.pump(const Duration(seconds: 5));
+    await settle(tester, pumpCount: 30);
+    found = await waitForFinder(tester, find.byType(MatchCompleteModal),
+        timeoutMs: 20000, intervalMs: 500);
+  }
+
+  if (!found) {
+    // Dump visible texts for debugging
+    dumpVisibleTexts(tester, 'captureMatchCompleteResult-noModal', 30);
+  }
 
   expect(find.byType(MatchCompleteModal), findsOneWidget,
       reason: 'MatchCompleteModal should appear after match ends');

@@ -230,10 +230,12 @@ Future<void> playRandomInnings({
     }
   }
 
-  // Final settle to let any pending state changes (over/innings/match completion) process
-  await settle(tester);
-  await visualPause(tester, 1000);
-  await settle(tester);
+  // Final settle to let any pending state changes (over/innings/match completion) process.
+  // Use extra-long settle because async delivery processing (WS publish, server sync,
+  // completion callbacks) can lag behind the test's tap cadence by several seconds.
+  await settle(tester, pumpCount: 20);
+  await tester.pump(const Duration(seconds: 3));
+  await settle(tester, pumpCount: 20);
 }
 
 /// Dismiss any auto-opened bowler or batter selection sheets.

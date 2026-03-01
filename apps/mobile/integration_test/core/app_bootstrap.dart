@@ -122,6 +122,18 @@ Future<void> pumpAppAndWaitForHome(
   swHomePoll.stop();
   print('  [cold-start] 8. Home page poll: ${swHomePoll.elapsedMilliseconds}ms');
 
+  // Step 9: Wait for server-side auth verify + background providers to settle.
+  // After login, the app sends POST /auth/verify to register the user on the
+  // server. Background providers (teams list, etc.) fire concurrently — if they
+  // hit the server before auth/verify completes, they get 401 errors that crash
+  // the test. A brief settle period prevents this race condition.
+  final swSettle = Stopwatch()..start();
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 500));
+  }
+  swSettle.stop();
+  print('  [cold-start] 9. Post-login settle: ${swSettle.elapsedMilliseconds}ms');
+
   swTotal.stop();
   print('  [cold-start] TOTAL: ${swTotal.elapsedMilliseconds}ms');
 

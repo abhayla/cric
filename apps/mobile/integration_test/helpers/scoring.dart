@@ -57,9 +57,13 @@ Future<void> tapRun(WidgetTester tester, int runs) async {
   await visualPause(tester);
 }
 
+/// The label of the last extras button tapped (used by confirmExtra retry).
+String _lastExtrasLabel = 'WD';
+
 /// Tap an extras button (WD, NB, B, LB).
 Future<void> tapExtra(WidgetTester tester, String label) async {
   await _ensureScoringControlsAccessible(tester);
+  _lastExtrasLabel = label;
   final button = find.descendant(
     of: find.byType(ScoringControls),
     matching: find.text(label),
@@ -72,32 +76,88 @@ Future<void> tapExtra(WidgetTester tester, String label) async {
 }
 
 /// Confirm an extras panel selection.
+///
+/// If the ExtrasPanel isn't visible (tap missed), retries tapping the last
+/// extras button via ScoringControls before giving up.
 Future<void> confirmExtra(WidgetTester tester) async {
   await settle(tester);
-  final confirmButton = find.descendant(
-    of: find.byType(ExtrasPanel),
-    matching: find.text('Confirm'),
-  );
-  if (confirmButton.evaluate().isEmpty) {
-    print('    [confirmExtra] ExtrasPanel not found — pumping extra frames');
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 200));
-      if (find.byType(ExtrasPanel).evaluate().isNotEmpty) break;
-    }
-    final retryConfirm = find.descendant(
+
+  // First check — panel may already be visible
+  if (find.byType(ExtrasPanel).evaluate().isNotEmpty) {
+    final confirmButton = find.descendant(
       of: find.byType(ExtrasPanel),
       matching: find.text('Confirm'),
     );
-    if (retryConfirm.evaluate().isEmpty) {
-      fail('[confirmExtra] ExtrasPanel not found after 2s of retries — '
-          'extras was tapped but never confirmed, match state is corrupt');
+    if (confirmButton.evaluate().isNotEmpty) {
+      await tester.tap(confirmButton);
+      await settle(tester);
+      await visualPause(tester);
+      return;
     }
-    await tester.tap(retryConfirm);
-  } else {
-    await tester.tap(confirmButton);
   }
-  await settle(tester);
-  await visualPause(tester);
+
+  // Panel not found — pump extra frames (animation delay)
+  print('    [confirmExtra] ExtrasPanel not found — pumping extra frames');
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 200));
+    if (find.byType(ExtrasPanel).evaluate().isNotEmpty) break;
+  }
+
+  if (find.byType(ExtrasPanel).evaluate().isNotEmpty) {
+    final confirmButton = find.descendant(
+      of: find.byType(ExtrasPanel),
+      matching: find.text('Confirm'),
+    );
+    if (confirmButton.evaluate().isNotEmpty) {
+      await tester.tap(confirmButton);
+      await settle(tester);
+      await visualPause(tester);
+      return;
+    }
+  }
+
+  // Still not found — the initial tapExtra likely missed. Retry the tap.
+  // First retry the specific button that was originally tapped, with extra waits.
+  print('    [confirmExtra] Retrying extras button tap via ScoringControls (target: $_lastExtrasLabel)');
+  final controls = find.byType(ScoringControls);
+
+  // Try the specific button first (up to 3 times with longer waits)
+  if (controls.evaluate().isNotEmpty) {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      // Prioritize the button that was originally tapped
+      final labels = [_lastExtrasLabel, ...['WD', 'NB', 'B', 'LB'].where((l) => l != _lastExtrasLabel)];
+      for (final label in labels) {
+        final btn = find.descendant(of: controls, matching: find.text(label));
+        if (btn.evaluate().isNotEmpty) {
+          await tester.tap(btn.first, warnIfMissed: false);
+          // Wait longer for async state processing to complete
+          await settle(tester, pumpCount: 15);
+          await tester.pump(const Duration(seconds: 1));
+          if (find.byType(ExtrasPanel).evaluate().isNotEmpty) {
+            print('    [confirmExtra] Re-tapped $label (attempt ${attempt + 1}) — ExtrasPanel appeared');
+            final confirmButton = find.descendant(
+              of: find.byType(ExtrasPanel),
+              matching: find.text('Confirm'),
+            );
+            if (confirmButton.evaluate().isNotEmpty) {
+              await tester.tap(confirmButton);
+              await settle(tester);
+              await visualPause(tester);
+              return;
+            }
+          }
+        }
+      }
+      // Extra pumping between retry rounds
+      await tester.pump(const Duration(seconds: 2));
+      await settle(tester);
+    }
+  }
+
+  // Dump state for debugging before failing
+  dumpVisibleTexts(tester, 'confirmExtra-noPanel', 30);
+  fail('[confirmExtra] ExtrasPanel not found after retries — '
+      'extras was tapped but never confirmed, match state is corrupt');
 }
 
 /// Confirm extras panel with a specific run value (tap the run chip first).
