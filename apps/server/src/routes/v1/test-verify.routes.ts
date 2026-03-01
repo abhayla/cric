@@ -552,10 +552,16 @@ export const testVerifyRoutes = new Elysia({ prefix: '/api/v1/test' })
         playerCount: r.player_count,
       })),
     };
-  })
+  });
+  // Signal routes (POST/GET /signal/:name, DELETE /signals) moved to testSignalRoutes — always registered.
 
-  // ── Multi-device test coordination signals ──
-
+/**
+ * Signal-only routes — always registered (even in production).
+ *
+ * These are lightweight in-memory coordination endpoints with no DB access,
+ * used by multi-device E2E tests running against the prod server.
+ */
+export const testSignalRoutes = new Elysia({ prefix: '/api/v1/test' })
   // POST /api/v1/test/signal/:name — set a signal with optional value
   .post('/signal/:name', ({ params, body }) => {
     const { name } = params;

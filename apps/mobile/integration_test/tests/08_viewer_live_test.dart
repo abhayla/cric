@@ -66,10 +66,10 @@ void _runScorerTest() {
     await selectTeamInMatchSetup(tester, 'Team1', isHome: true);
     await selectTeamInMatchSetup(tester, 'Team3', isHome: false);
 
-    // Set 5 overs, 6 players
-    final overs5 = find.text('5');
-    if (overs5.evaluate().isNotEmpty) {
-      await tester.tap(overs5.first);
+    // Set 2 overs, 6 players
+    final overs2 = find.text('2');
+    if (overs2.evaluate().isNotEmpty) {
+      await tester.tap(overs2.first);
       await settle(tester);
     }
     final players6 = find.text('6');
@@ -183,8 +183,8 @@ void _runScorerTest() {
     print('[SCORER] 2.5 → 1');
     await deliveryPause();
 
-    await tapRun(tester, 6);
-    print('[SCORER] 2.6 → 6  End Over 2');
+    await tapRun(tester, 0);
+    print('[SCORER] 2.6 → 0  End Over 2');
     await deliveryPause();
 
     // Innings transition

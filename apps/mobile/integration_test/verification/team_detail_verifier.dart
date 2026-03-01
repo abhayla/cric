@@ -11,10 +11,14 @@ Future<void> verifyTeamDetail(
   required String teamName,
   int? expectedPlayerCount,
 }) async {
-  // Verify team name in title
-  final nameText = find.text(teamName);
-  expect(nameText, findsAtLeast(1),
-      reason: 'Team detail page should show team name "$teamName"');
+  // Wait for team name to appear (async data load from API)
+  final nameFound = await waitForFinder(
+    tester,
+    find.text(teamName),
+    timeoutMs: 10000,
+  );
+  expect(nameFound, isTrue,
+      reason: 'Team detail page should show team name "$teamName" after loading');
   print('  [verify-team] Team name found: $teamName');
 
   // Check Players tab

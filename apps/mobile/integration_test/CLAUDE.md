@@ -55,6 +55,7 @@ TestTeam(name: 'Team20', players: [TestPlayer(name: 'Player501', phone: '9999999
 
 ## Known Gotchas
 
+- **Firebase test phone prerequisite:** All reserved phone numbers (`9999999999`, `9999999998`, `9999999997`) must be configured as test phone numbers in the Firebase Console (project `cricapp-7403d`) with OTP `123456`. If a phone is missing (e.g., `9999999997` for spectator), authentication will fail and all API calls return "User not found".
 - **`ensureTeamsExist` verifies roster completeness** via API. If a team has the wrong player count (e.g., from a prior crashed run), it deletes and recreates from scratch.
 - **`_selectPlayingXIIfNeeded`** taps generic `InkWell` widgets by index. When `roster.length < playersPerSide`, the toss wizard gets stuck. Ensure teams have the correct number of players before match setup.
 - **Prod server latency**: `fillAndSubmitPlayer` uses a 30s timeout for the page pop after API call. If the server is slow, player creation may time out.

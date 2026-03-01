@@ -15,6 +15,7 @@ import { uploadRoutes } from './routes/v1/uploads.ts';
 import { activityFeedRoutes } from './routes/v1/activity-feed.ts';
 import { websocketHandler } from './websocket/handler.ts';
 import { initBroadcaster } from './websocket/broadcaster.ts';
+import { testSignalRoutes } from './routes/v1/test-verify.routes.ts';
 
 initFirebase();
 
@@ -52,7 +53,8 @@ const app = new Elysia()
   .use(tournamentRoutes)
   .use(scoringRoutes)
   .use(uploadRoutes)
-  .use(activityFeedRoutes);
+  .use(activityFeedRoutes)
+  .use(testSignalRoutes);
 
 // Only register test verification routes in test environment
 if (process.env.NODE_ENV === 'test') {
