@@ -1024,6 +1024,7 @@ class ScoringNotifier {
       magicOverNumbers: _state.magicOverNumbers,
       magicOverRunMultiplier: _state.magicOverRunMultiplier,
       magicOverWicketPenalty: _state.magicOverWicketPenalty,
+      isKnockoutMatch: _state.isKnockoutMatch,
       target: target,
       firstInningsSummary: firstSummary,
       firstInnings: firstInningsData,

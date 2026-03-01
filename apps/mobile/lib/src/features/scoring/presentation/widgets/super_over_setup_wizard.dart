@@ -117,10 +117,12 @@ class _SuperOverSetupWizardState extends State<SuperOverSetupWizard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+      child: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -168,8 +170,8 @@ class _SuperOverSetupWizardState extends State<SuperOverSetupWizard> {
             // Footer
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: OverflowBar(
+                alignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
                     onPressed: _step > 1 ? _onBack : null,

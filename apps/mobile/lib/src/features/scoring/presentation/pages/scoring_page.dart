@@ -536,7 +536,8 @@ class _ScoringPageState extends State<ScoringPage> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => SuperOverSetupWizard(
+      builder: (ctx) => Center(
+        child: SuperOverSetupWizard(
         battingTeamName: _state.bowlingTeamName,
         bowlingTeamName: _state.battingTeamName,
         battingTeamPlayers: _state.bowlingTeamPlayers,
@@ -566,6 +567,7 @@ class _ScoringPageState extends State<ScoringPage> {
           }
           setState(() {});
         },
+      ),
       ),
     );
   }

@@ -1,6 +1,6 @@
 /// 10: Special Match Flows — Abandonment, Declaration, Super Over.
 ///
-/// Three sequential matches using Team5 vs Team6, 3 overs, 6 players.
+/// Three sequential matches using Team5 vs Team6, 5 overs, 6 players.
 /// Tests match abandonment (D), innings declaration (E), and super over (F).
 ///
 /// ## Test Ordering Dependencies
@@ -38,7 +38,7 @@ void main() {
     await pumpAppAndWaitForHome(tester);
 
     print('\n=== SPECIAL MATCH FLOWS TEST ===');
-    print('Team5 vs Team6 | 3 overs | 6 players\n');
+    print('Team5 vs Team6 | 5 overs | 6 players\n');
 
     final stopwatch = Stopwatch()..start();
 
@@ -59,10 +59,10 @@ void main() {
     await selectTeamInMatchSetup(tester, 'Team5', isHome: true);
     await selectTeamInMatchSetup(tester, 'Team6', isHome: false);
 
-    // Set overs to 3
-    final oversChip3 = find.widgetWithText(ChoiceChip, '3');
-    if (oversChip3.evaluate().isNotEmpty) {
-      await tester.tap(oversChip3.first);
+    // Set overs to 5 (smallest available preset: [5, 10, 15, 20, 25, 50])
+    final oversChip5 = find.widgetWithText(ChoiceChip, '5');
+    if (oversChip5.evaluate().isNotEmpty) {
+      await tester.tap(oversChip5.first);
       await settle(tester);
     }
 
@@ -147,10 +147,10 @@ void main() {
     await selectTeamInMatchSetup(tester, 'Team5', isHome: true);
     await selectTeamInMatchSetup(tester, 'Team6', isHome: false);
 
-    // Set overs to 3
-    final oversChip3b = find.widgetWithText(ChoiceChip, '3');
-    if (oversChip3b.evaluate().isNotEmpty) {
-      await tester.tap(oversChip3b.first);
+    // Set overs to 5 (smallest available preset: [5, 10, 15, 20, 25, 50])
+    final oversChip5b = find.widgetWithText(ChoiceChip, '5');
+    if (oversChip5b.evaluate().isNotEmpty) {
+      await tester.tap(oversChip5b.first);
       await settle(tester);
     }
 
@@ -189,7 +189,7 @@ void main() {
     );
     print('  [Match 2] 1st innings: scored $ballsScored balls');
 
-    // Check if innings ended early (shouldn't for 3-over match with 8 balls)
+    // Check if innings ended early (shouldn't for 5-over match with 8 balls)
     if (find.byType(InningsTransitionModal).evaluate().isEmpty &&
         find.byType(MatchCompleteModal).evaluate().isEmpty) {
       // Declare innings via PopupMenuButton
@@ -240,8 +240,8 @@ void main() {
     );
 
     // Score 2nd innings to completion (all dots = 0 runs, overs exhausted)
-    // 3 overs × 6 balls = 18 balls of dots
-    final inn2Runs = List.filled(18, 0);
+    // 5 overs × 6 balls = 30 balls of dots
+    final inn2Runs = List.filled(30, 0);
     await scoreDeterministicInnings(
       tester: tester,
       runsPerBall: inn2Runs,
@@ -275,10 +275,10 @@ void main() {
     await selectTeamInMatchSetup(tester, 'Team5', isHome: true);
     await selectTeamInMatchSetup(tester, 'Team6', isHome: false);
 
-    // Set overs to 3
-    final oversChip3c = find.widgetWithText(ChoiceChip, '3');
-    if (oversChip3c.evaluate().isNotEmpty) {
-      await tester.tap(oversChip3c.first);
+    // Set overs to 5 (smallest available preset: [5, 10, 15, 20, 25, 50])
+    final oversChip5c = find.widgetWithText(ChoiceChip, '5');
+    if (oversChip5c.evaluate().isNotEmpty) {
+      await tester.tap(oversChip5c.first);
       await settle(tester);
     }
 
@@ -291,27 +291,28 @@ void main() {
       await settle(tester);
     }
 
-    // Scroll down to find and enable Knockout Match toggle
-    final scrollable = find.byType(Scrollable);
-    if (scrollable.evaluate().isNotEmpty) {
-      await tester.drag(scrollable.first, const Offset(0, -300));
-      await settle(tester);
-    }
+    // Open Advanced Settings (collapsed by default) to reveal Knockout toggle
+    final advancedSettings = find.text('Advanced Settings');
+    await tester.ensureVisible(advancedSettings.first);
+    await settle(tester);
+    await tester.tap(advancedSettings.first);
+    await settle(tester);
+    print('  [Match 3] Advanced Settings expanded');
+
+    // Enable Knockout Match toggle (now visible after expanding)
     final knockoutToggle = find.text('Knockout Match');
-    if (knockoutToggle.evaluate().isNotEmpty) {
-      await tester.ensureVisible(knockoutToggle.first);
-      await settle(tester);
-      // Find the SwitchListTile ancestor and tap it
-      final switchTile = find.ancestor(
-        of: knockoutToggle,
-        matching: find.byType(SwitchListTile),
-      );
-      if (switchTile.evaluate().isNotEmpty) {
-        await tester.tap(switchTile.first);
-        await settle(tester);
-        print('  [Match 3] Knockout Match toggle enabled');
-      }
-    }
+    expect(knockoutToggle, findsOneWidget,
+        reason: 'Knockout Match toggle should exist in Advanced Settings');
+    await tester.ensureVisible(knockoutToggle.first);
+    await settle(tester);
+    // Find the SwitchListTile ancestor and tap it
+    final switchTile = find.ancestor(
+      of: knockoutToggle,
+      matching: find.byType(SwitchListTile),
+    );
+    await tester.tap(switchTile.first, warnIfMissed: false);
+    await settle(tester);
+    print('  [Match 3] Knockout Match toggle enabled');
 
     // Proceed to toss — Team5 bats first
     await completeMatchSetup(tester);
@@ -326,15 +327,15 @@ void main() {
     );
     print('  [Match 3] Scoring page loaded, scoring for a tie...');
 
-    // Score 1st innings: all dots (18 balls × 0 runs = 0/0)
-    final tieInn1 = List.filled(18, 0);
+    // Score 1st innings: all dots (30 balls × 0 runs = 0/0)
+    final tieInn1 = List.filled(30, 0);
     await scoreDeterministicInnings(
       tester: tester,
       runsPerBall: tieInn1,
       bowlerNames: team6Players,
       batterNames: team5Players,
     );
-    print('  [Match 3] 1st innings: 0/0 (all dots, 3 overs)');
+    print('  [Match 3] 1st innings: 0/0 (all dots, 5 overs)');
 
     // Wait for innings transition
     await waitForFinder(
@@ -355,102 +356,80 @@ void main() {
       bowler: team5Players[0],
     );
 
-    // Score 2nd innings: all dots (18 balls × 0 runs = 0/0) → TIE
-    final tieInn2 = List.filled(18, 0);
+    // Score 2nd innings: all dots (30 balls × 0 runs = 0/0) → TIE
+    final tieInn2 = List.filled(30, 0);
     await scoreDeterministicInnings(
       tester: tester,
       runsPerBall: tieInn2,
       bowlerNames: team5Players,
       batterNames: team6Players,
     );
-    print('  [Match 3] 2nd innings: 0/0 (all dots, 3 overs) → TIE');
+    print('  [Match 3] 2nd innings: 0/0 (all dots, 5 overs) → TIE');
 
-    // Wait for match complete modal (tied result)
+    // In a knockout match, a tie triggers needsSuperOver directly
+    // (no MatchCompleteModal). The SuperOverSetupWizard appears automatically.
     await settle(tester, pumpCount: 20);
     await tester.pump(const Duration(seconds: 3));
     await settle(tester, pumpCount: 20);
 
-    // For a knockout match with a tie, we expect either:
-    // a) A "Start Super Over" button in the MatchCompleteModal
-    // b) The SuperOverSetupWizard to appear automatically
-    // Check for MatchCompleteModal first
-    final hasMatchModal = await waitForFinder(
+    // Wait for SuperOverSetupWizard to appear
+    final wizardFound = await waitForFinder(
       tester,
-      find.byType(MatchCompleteModal),
+      find.byType(SuperOverSetupWizard),
+      timeoutMs: 15000,
+      intervalMs: 500,
+    );
+    expect(wizardFound, isTrue,
+        reason: 'SuperOverSetupWizard should appear after tied knockout match');
+    print('  [Match 3] SuperOverSetupWizard appeared');
+
+    // Complete the wizard — select batters and bowler for SO innings 1
+    // The wizard shows _state.bowlingTeamPlayers as batters (Team5 bowled 2nd)
+    // and _state.battingTeamPlayers as bowlers (Team6 batted 2nd)
+    await completeSuperOverWizard(
+      tester,
+      batter1: team5Players[0], // Team5 bats first in SO
+      batter2: team5Players[1],
+      bowler: team6Players[2], // Team6 bowls in SO innings 1
+    );
+
+    // Score super over innings 1: 1,1,0,0,0,0 = 2 runs
+    print('  [Match 3] Super Over Innings 1: Team5 batting...');
+    final soInn1 = [1, 1, 0, 0, 0, 0];
+    await scoreDeterministicInnings(
+      tester: tester,
+      runsPerBall: soInn1,
+      bowlerNames: team6Players,
+      batterNames: team5Players,
+    );
+    print('  [Match 3] Super Over Innings 1: 2 runs');
+
+    // After SO innings 1, InningsTransitionModal appears (inningsNumber == 1)
+    await settle(tester, pumpCount: 20);
+    await tester.pump(const Duration(seconds: 2));
+    await settle(tester, pumpCount: 20);
+
+    await waitForFinder(
+      tester,
+      find.byType(InningsTransitionModal),
       timeoutMs: 15000,
       intervalMs: 500,
     );
 
-    if (hasMatchModal) {
-      // Look for "Start Super Over" button in the modal
-      final superOverButton = find.text('Start Super Over');
-      if (superOverButton.evaluate().isNotEmpty) {
-        print('  [Match 3] Found "Start Super Over" button — tapping');
-        await tester.tap(superOverButton.first);
-        await settle(tester);
-        await visualPause(tester, 1000);
-      } else {
-        // The modal might just show Tied — capture result
-        final tieResult = await captureMatchCompleteResult(tester);
-        print('  [Match 3] Match result (no super over button): $tieResult');
-        // If no super over button exists, the feature may not trigger super over
-        // from the modal. Dismiss and check.
-        await dismissMatchCompleteModal(tester);
-      }
-    }
-
-    // Complete Super Over Setup Wizard (if it appeared)
-    final wizardFinder =
-        find.byType(SuperOverSetupWizard);
-    if (wizardFinder.evaluate().isNotEmpty ||
-        await waitForFinder(tester, wizardFinder,
-            timeoutMs: 5000, intervalMs: 500)) {
-      await completeSuperOverWizard(
+    if (find.byType(InningsTransitionModal).evaluate().isNotEmpty) {
+      // SO innings 2: Team6 bats, Team5 bowls
+      await completeInningsTransition(
         tester,
-        batter1: team6Players[0], // Team6 bats in SO (batted 2nd)
-        batter2: team6Players[1],
-        bowler: team5Players[2], // Different bowler from Team5
+        striker: team6Players[0],
+        nonStriker: team6Players[1],
+        bowler: team5Players[2],
       );
-
-      // Score super over innings 1: 1,1,0,0,0,0 = 2 runs
-      print('  [Match 3] Super Over Innings 1: Team6 batting...');
-      final soInn1 = [1, 1, 0, 0, 0, 0];
-      await scoreDeterministicInnings(
-        tester: tester,
-        runsPerBall: soInn1,
-        bowlerNames: team5Players,
-        batterNames: team6Players,
-      );
-      print('  [Match 3] Super Over Innings 1: 2 runs');
-
-      // Handle SO innings transition (if needed)
-      if (find.byType(InningsTransitionModal).evaluate().isNotEmpty) {
-        await completeInningsTransition(
-          tester,
-          striker: team5Players[0],
-          nonStriker: team5Players[1],
-          bowler: team6Players[2],
-        );
-      }
-
-      // Check for second super over wizard (Team5 bats now)
-      final soWizard2 = find.byType(SuperOverSetupWizard);
-      if (soWizard2.evaluate().isNotEmpty ||
-          await waitForFinder(tester, soWizard2,
-              timeoutMs: 5000, intervalMs: 500)) {
-        await completeSuperOverWizard(
-          tester,
-          batter1: team5Players[0],
-          batter2: team5Players[1],
-          bowler: team6Players[2],
-        );
-      }
-
-      // Score super over innings 2: 4 = wins immediately (target 3, boundary chase)
-      print('  [Match 3] Super Over Innings 2: Team5 batting (target: 3)...');
-      await tapRun(tester, 4);
-      print('  [Match 3] Super Over Innings 2: 4 runs — wins by boundary!');
     }
+
+    // Score super over innings 2: 4 = wins immediately (target 3, boundary chase)
+    print('  [Match 3] Super Over Innings 2: Team6 batting (target: 3)...');
+    await tapRun(tester, 4);
+    print('  [Match 3] Super Over Innings 2: 4 runs — Team6 wins!');
 
     // Capture final result
     await settle(tester, pumpCount: 20);
