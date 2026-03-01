@@ -10,6 +10,7 @@
 /// ```
 library;
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/teams/presentation/widgets/team_card.dart';
@@ -43,19 +44,41 @@ void main() {
       expectedOwnerTeams: ['Team1', 'Team2', 'Team3', 'Team4'],
     );
 
-    // 2. Team Detail — tap first TeamCard and verify detail page
+    // 2. Team Detail — tap Team1 card and verify detail page
     print('\n[2/7] Verifying Team Detail page...');
     await navigateToTeams(tester);
     await settle(tester);
-    final teamCards = find.byType(TeamCard);
-    if (teamCards.evaluate().isNotEmpty) {
-      await tester.tap(teamCards.first);
+    // Ensure "All" filter is active so Team1 is visible
+    final allFilterChip = find.ancestor(
+      of: find.text('All'),
+      matching: find.byType(FilterChip),
+    );
+    if (allFilterChip.evaluate().isNotEmpty) {
+      await tester.ensureVisible(allFilterChip.first);
       await settle(tester);
-      await visualPause(tester, 1000);
-      await verifyTeamDetail(tester, teamName: 'Team1');
-      await goBack(tester);
+      await tester.tap(allFilterChip.first);
+      await settle(tester);
+    }
+    // Find the TeamCard containing "Team1" and scroll to it
+    final team1Text = find.text('Team1');
+    if (team1Text.evaluate().isNotEmpty) {
+      final team1Card = find.ancestor(
+        of: team1Text.first,
+        matching: find.byType(TeamCard),
+      );
+      if (team1Card.evaluate().isNotEmpty) {
+        await tester.ensureVisible(team1Card.first);
+        await settle(tester);
+        await tester.tap(team1Card.first);
+        await settle(tester);
+        await visualPause(tester, 1000);
+        await verifyTeamDetail(tester, teamName: 'Team1');
+        await goBack(tester);
+      } else {
+        print('  [verify-team-detail] WARNING: Team1 text found but not inside a TeamCard');
+      }
     } else {
-      print('  [verify-team-detail] WARNING: No TeamCard found to tap');
+      print('  [verify-team-detail] WARNING: Team1 not found in teams list');
     }
 
     // 3. My Cricket — Matches tab (1 standalone + tournament fixtures = many matches)
@@ -70,15 +93,22 @@ void main() {
     print('\n[4b/7] Verifying Tournament Detail page...');
     await navigateToTournaments(tester);
     await settle(tester);
-    // Tap "All" to see all tournaments
-    final allChip = find.text('All');
+    // Tap "All" filter chip to see all tournaments
+    final allChip = find.ancestor(
+      of: find.text('All'),
+      matching: find.byType(FilterChip),
+    );
     if (allChip.evaluate().isNotEmpty) {
+      await tester.ensureVisible(allChip.first);
+      await settle(tester);
       await tester.tap(allChip.first);
       await settle(tester);
       await visualPause(tester, 500);
     }
     final tournamentCards = find.byType(TournamentCard);
     if (tournamentCards.evaluate().isNotEmpty) {
+      await tester.ensureVisible(tournamentCards.first);
+      await settle(tester);
       await tester.tap(tournamentCards.first);
       await settle(tester);
       await visualPause(tester, 1000);

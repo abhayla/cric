@@ -2,6 +2,7 @@
 /// with Live/Completed/All filters.
 library;
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/home/presentation/widgets/match_card.dart';
@@ -9,6 +10,40 @@ import 'package:cricscores/src/features/tournaments/presentation/widgets/tournam
 
 import '../core/test_utils.dart';
 import '../helpers/navigation.dart';
+
+/// Find a [FilterChip] whose label contains [label] text.
+Finder _findFilterChip(String label) {
+  return find.ancestor(
+    of: find.text(label),
+    matching: find.byType(FilterChip),
+  );
+}
+
+/// Tap a filter chip by label, using [ensureVisible] to scroll it into view.
+Future<bool> _tapFilterChip(WidgetTester tester, String label) async {
+  final chip = _findFilterChip(label);
+  if (chip.evaluate().isEmpty) return false;
+  await tester.ensureVisible(chip.first);
+  await settle(tester);
+  await tester.tap(chip.first);
+  await settle(tester);
+  await visualPause(tester, 500);
+  return true;
+}
+
+/// Tap a [Tab] widget inside a [TabBar] by its text label.
+Future<bool> _tapTabBarTab(WidgetTester tester, String label) async {
+  final tabBar = find.byType(TabBar);
+  if (tabBar.evaluate().isEmpty) return false;
+  final tab = find.descendant(of: tabBar.first, matching: find.text(label));
+  if (tab.evaluate().isEmpty) return false;
+  await tester.ensureVisible(tab.first);
+  await settle(tester);
+  await tester.tap(tab.first);
+  await settle(tester);
+  await visualPause(tester, 500);
+  return true;
+}
 
 /// Verify the Live page with its sub-tabs and filter chips.
 ///
@@ -23,22 +58,15 @@ Future<void> verifyLivePage(
   await navigateToLive(tester);
   await settle(tester);
 
-  // Check Matches sub-tab (usually default)
-  final matchesTab = find.text('Matches');
-  if (matchesTab.evaluate().isNotEmpty) {
-    await tester.tap(matchesTab.first);
-    await settle(tester);
-    await visualPause(tester, 500);
+  // Check Matches sub-tab (usually default) — tap via TabBar
+  if (await _tapTabBarTab(tester, 'Matches')) {
     print('  [verify-live] Matches sub-tab tapped');
   }
 
-  // Check filter chips on Matches
+  // Check filter chips on Matches — use FilterChip finder to avoid
+  // hitting the AppBar title "Live" or bottom nav "Live" label.
   for (final chipLabel in ['Live', 'Completed', 'All']) {
-    final chip = find.text(chipLabel);
-    if (chip.evaluate().isNotEmpty) {
-      await tester.tap(chip.first);
-      await settle(tester);
-      await visualPause(tester, 500);
+    if (await _tapFilterChip(tester, chipLabel)) {
       print('  [verify-live] Matches > $chipLabel chip tapped');
 
       // After "Completed", verify at least one card if expected
@@ -48,25 +76,19 @@ Future<void> verifyLivePage(
             reason: 'Live > Matches > Completed should show at least one MatchCard');
         print('  [verify-live] Completed matches: ${cards.evaluate().length} MatchCards');
       }
+    } else {
+      print('  [verify-live] Matches > $chipLabel chip not found');
     }
   }
 
-  // Check Tournaments sub-tab
-  final tournamentsTab = find.text('Tournaments');
-  if (tournamentsTab.evaluate().isNotEmpty) {
-    await tester.tap(tournamentsTab.first);
-    await settle(tester);
-    await visualPause(tester, 500);
+  // Check Tournaments sub-tab — tap via TabBar
+  if (await _tapTabBarTab(tester, 'Tournaments')) {
     print('  [verify-live] Tournaments sub-tab tapped');
   }
 
   // Check filter chips on Tournaments
   for (final chipLabel in ['Live', 'Completed', 'All']) {
-    final chip = find.text(chipLabel);
-    if (chip.evaluate().isNotEmpty) {
-      await tester.tap(chip.first);
-      await settle(tester);
-      await visualPause(tester, 500);
+    if (await _tapFilterChip(tester, chipLabel)) {
       print('  [verify-live] Tournaments > $chipLabel chip tapped');
 
       // After "All", verify at least one tournament card if expected
@@ -76,6 +98,8 @@ Future<void> verifyLivePage(
             reason: 'Live > Tournaments > All should show at least one TournamentCard');
         print('  [verify-live] Tournaments All: ${cards.evaluate().length} TournamentCards');
       }
+    } else {
+      print('  [verify-live] Tournaments > $chipLabel chip not found');
     }
   }
 

@@ -2,6 +2,7 @@
 /// with all filter chips.
 library;
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/home/presentation/widgets/match_card.dart';
@@ -10,6 +11,26 @@ import 'package:cricscores/src/features/tournaments/presentation/widgets/tournam
 
 import '../core/test_utils.dart';
 import '../helpers/navigation.dart';
+
+/// Find a [FilterChip] whose label contains [label] text.
+Finder _findFilterChip(String label) {
+  return find.ancestor(
+    of: find.text(label),
+    matching: find.byType(FilterChip),
+  );
+}
+
+/// Tap a filter chip by label, using [ensureVisible] to scroll it into view.
+Future<bool> _tapFilterChip(WidgetTester tester, String label) async {
+  final chip = _findFilterChip(label);
+  if (chip.evaluate().isEmpty) return false;
+  await tester.ensureVisible(chip.first);
+  await settle(tester);
+  await tester.tap(chip.first);
+  await settle(tester);
+  await visualPause(tester, 500);
+  return true;
+}
 
 /// Verify the Teams tab with Owner/Member/All filter chips.
 Future<void> verifyTeamsTab(
@@ -21,11 +42,8 @@ Future<void> verifyTeamsTab(
   await settle(tester);
 
   // Tap "All" chip
-  final allChip = find.text('All');
-  if (allChip.evaluate().isNotEmpty) {
-    await tester.tap(allChip.first);
-    await settle(tester);
-    await visualPause(tester, 500);
+  if (await _tapFilterChip(tester, 'All')) {
+    print('  [verify-teams] All chip tapped');
   }
 
   if (expectedMinAllTeams != null) {
@@ -39,11 +57,8 @@ Future<void> verifyTeamsTab(
   // Check each expected owner team is visible
   if (expectedOwnerTeams != null) {
     // Tap "Owner" chip
-    final ownerChip = find.text('Owner');
-    if (ownerChip.evaluate().isNotEmpty) {
-      await tester.tap(ownerChip.first);
-      await settle(tester);
-      await visualPause(tester, 500);
+    if (await _tapFilterChip(tester, 'Owner')) {
+      print('  [verify-teams] Owner chip tapped');
     }
 
     for (final teamName in expectedOwnerTeams) {
@@ -55,20 +70,12 @@ Future<void> verifyTeamsTab(
   }
 
   // Tap "Member" chip
-  final memberChip = find.text('Member');
-  if (memberChip.evaluate().isNotEmpty) {
-    await tester.tap(memberChip.first);
-    await settle(tester);
-    await visualPause(tester, 500);
+  if (await _tapFilterChip(tester, 'Member')) {
     print('  [verify-teams] Member chip tapped');
   }
 
   // Back to All
-  final allChip2 = find.text('All');
-  if (allChip2.evaluate().isNotEmpty) {
-    await tester.tap(allChip2.first);
-    await settle(tester);
-  }
+  await _tapFilterChip(tester, 'All');
 
   print('  [verify-teams] Teams tab verification complete');
 }
@@ -84,21 +91,13 @@ Future<void> verifyMatchesTab(
   await settle(tester);
 
   // Check "Live" chip
-  final liveChip = find.text('Live');
-  if (liveChip.evaluate().isNotEmpty) {
-    await tester.tap(liveChip.first);
-    await settle(tester);
-    await visualPause(tester, 500);
+  if (await _tapFilterChip(tester, 'Live')) {
     print('  [verify-matches] Live chip tapped');
   }
 
   // Check "Won" chip
   if (expectWon) {
-    final wonChip = find.text('Won');
-    if (wonChip.evaluate().isNotEmpty) {
-      await tester.tap(wonChip.first);
-      await settle(tester);
-      await visualPause(tester, 500);
+    if (await _tapFilterChip(tester, 'Won')) {
       final matchCards = find.byType(MatchCard);
       expect(matchCards, findsAtLeast(1),
           reason: 'Won filter should show at least one MatchCard');
@@ -108,22 +107,13 @@ Future<void> verifyMatchesTab(
 
   // Check "Lost" chip
   if (expectLost) {
-    final lostChip = find.text('Lost');
-    if (lostChip.evaluate().isNotEmpty) {
-      await tester.tap(lostChip.first);
-      await settle(tester);
-      await visualPause(tester, 500);
+    if (await _tapFilterChip(tester, 'Lost')) {
       print('  [verify-matches] Lost chip tapped');
     }
   }
 
   // Check "All" chip — always assert at least some matches if minAllCount provided
-  final allChip = find.text('All');
-  if (allChip.evaluate().isNotEmpty) {
-    await tester.tap(allChip.first);
-    await settle(tester);
-    await visualPause(tester, 500);
-
+  if (await _tapFilterChip(tester, 'All')) {
     if (minAllCount != null) {
       final matchCards = find.byType(MatchCard);
       final cardCount = matchCards.evaluate().length;
@@ -149,11 +139,7 @@ Future<void> verifyTournamentsTab(
 
   // Check filter chips — assert content on specific filters
   for (final chipLabel in ['Live', 'Completed', 'All']) {
-    final chip = find.text(chipLabel);
-    if (chip.evaluate().isNotEmpty) {
-      await tester.tap(chip.first);
-      await settle(tester);
-      await visualPause(tester, 500);
+    if (await _tapFilterChip(tester, chipLabel)) {
       print('  [verify-tournaments] $chipLabel chip tapped');
     }
   }
