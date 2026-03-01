@@ -210,7 +210,8 @@ Future<List<MatchOutcome>> scoreAllFixtures({
       await settle(tester);
       await tester.pump(const Duration(seconds: 2));
     }
-    final remaining = await findFirstUnplayedFixture(tester);
+    final remaining = await findFirstUnplayedFixture(tester,
+        scoredFixtureIds: scoredFixtureIds);
     expect(remaining, isNull,
         reason: 'All fixtures should be scored — found unplayed: '
             '${remaining?.homeTeamName ?? "?"} vs ${remaining?.awayTeamName ?? "?"}');

@@ -48,11 +48,12 @@ Future<void> ensureTeamsExist(
       final teamExists = await _teamExistsInList(tester, team.name);
 
       if (teamExists) {
-        // Verify roster completeness via API before skipping
+        // Verify roster completeness AND player names via API before skipping
         final rosterOk = await _verifyRosterViaApi(
           tester,
           team.name,
           team.players.length,
+          expectedPlayers: team.players,
         );
         if (rosterOk) {
           print('  [SKIP] ${team.name} already exists'
@@ -136,15 +137,17 @@ Future<bool> _teamExistsInList(WidgetTester tester, String teamName) async {
   return false;
 }
 
-/// Verify a team's roster count via the API (not UI).
+/// Verify a team's roster count and player names via the API (not UI).
 ///
-/// Returns true if the team has exactly [expectedCount] players.
-/// Returns false if the team can't be found or has the wrong count.
+/// Returns true if the team has exactly [expectedCount] players AND the
+/// first player's name matches. This catches stale rosters from prior
+/// test runs that used a different playersPerTeam value.
 Future<bool> _verifyRosterViaApi(
   WidgetTester tester,
   String teamName,
-  int expectedCount,
-) async {
+  int expectedCount, {
+  List<TestPlayer> expectedPlayers = const [],
+}) async {
   try {
     final container = ProviderScope.containerOf(
       tester.element(find.byType(Scaffold).first),
@@ -153,9 +156,31 @@ Future<bool> _verifyRosterViaApi(
     final result = await repo.getTeams(page: 1, limit: 50);
     final team = result.teams.where((t) => t.name == teamName).firstOrNull;
     if (team == null) return false;
+
+    // Count check
+    if (team.playerCount != expectedCount) {
+      print('  [ROSTER-CHECK] ${team.name}: '
+          '${team.playerCount} players (expected $expectedCount) — MISMATCH');
+      return false;
+    }
+
+    // Name check: fetch full roster and verify first player matches
+    if (expectedPlayers.isNotEmpty) {
+      final detail = await repo.getTeam(team.id);
+      final rosterNames =
+          detail.roster.map((r) => r.displayName).toSet();
+      final expectedFirstName = expectedPlayers.first.name;
+      if (!rosterNames.contains(expectedFirstName)) {
+        print('  [ROSTER-CHECK] ${team.name}: '
+            '${team.playerCount} players but missing $expectedFirstName '
+            '(has: ${rosterNames.take(3)}) — STALE ROSTER');
+        return false;
+      }
+    }
+
     print('  [ROSTER-CHECK] ${team.name}: '
         '${team.playerCount} players (expected $expectedCount)');
-    return team.playerCount == expectedCount;
+    return true;
   } catch (e) {
     print('  [ROSTER-CHECK] API check failed for $teamName: $e');
     // If API fails, assume roster is OK to avoid breaking the flow

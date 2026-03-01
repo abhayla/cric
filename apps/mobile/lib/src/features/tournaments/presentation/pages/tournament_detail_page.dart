@@ -1021,11 +1021,14 @@ class _SectionEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
+    // SingleChildScrollView prevents RenderFlex overflow when this widget
+    // receives a tight height constraint (e.g. inside Expanded or TabBarView)
+    // and the widget tree is being disposed during navigation.
+    return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 32),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 48, color: theme.colorScheme.outline),
             const SizedBox(height: 16),

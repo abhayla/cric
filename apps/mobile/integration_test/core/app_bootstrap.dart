@@ -23,6 +23,7 @@ import '../config/constants.dart';
 IntegrationTestWidgetsFlutterBinding initIntegrationTest() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
+
   return binding;
 }
 

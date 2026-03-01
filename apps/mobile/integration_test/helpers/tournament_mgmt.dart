@@ -47,17 +47,13 @@ Future<void> createTournament(
     await settle(tester);
   }
 
-  // Set overs
-  final oversPreset = find.text('${preset.overs}');
-  if (oversPreset.evaluate().isNotEmpty) {
-    await tester.tap(oversPreset.first);
+  // Set overs — always use the text field directly since preset chips
+  // [5,10,15,20,25,50] may not include the desired value (e.g. 2 overs).
+  // Using find.text risks matching an unrelated widget.
+  final oversInput = find.byKey(const Key('oversInput'));
+  if (oversInput.evaluate().isNotEmpty) {
+    await tester.enterText(oversInput.first, '${preset.overs}');
     await settle(tester);
-  } else {
-    final oversInput = find.byKey(const Key('oversInput'));
-    if (oversInput.evaluate().isNotEmpty) {
-      await tester.enterText(oversInput.first, '${preset.overs}');
-      await settle(tester);
-    }
   }
 
   // Select ball type

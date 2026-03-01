@@ -51,128 +51,118 @@ class MatchCompleteModal extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         clipBehavior: Clip.antiAlias,
         elevation: 4,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header (fixed)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-              ),
-              child: Text(
-                'Match Complete!',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                ),
+                child: Text(
+                  'Match Complete!',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
 
-            // Scrollable middle section (score comparison + result text)
-            Flexible(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              // Score comparison
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                color: colorScheme.primary,
+                child: Row(
                   children: [
-                    // Score comparison
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 20, horizontal: 16),
-                      color: colorScheme.primary,
-                      child: Row(
-                        children: [
-                          // 1st innings team
-                          Expanded(
-                            child: _buildTeamBlock(
-                              context,
-                              teamName: firstInnings.teamName,
-                              score: firstInnings.scoreDisplay,
-                              overs: firstInnings.oversDisplay,
-                              avatarBackground: const Color(0xFFE3F2FD),
-                              avatarForeground: const Color(0xFF1565C0),
-                            ),
-                          ),
-                          // VS separator
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              'VS',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color:
-                                    Colors.white.withValues(alpha: 0.5),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          // 2nd innings team
-                          Expanded(
-                            child: _buildTeamBlock(
-                              context,
-                              teamName: secondTeamName,
-                              score:
-                                  '$secondTotalRuns/$secondTotalWickets',
-                              overs: secondOversDisplay,
-                              avatarBackground: const Color(0xFFFCE4EC),
-                              avatarForeground: const Color(0xFFC62828),
-                            ),
-                          ),
-                        ],
+                    // 1st innings team
+                    Expanded(
+                      child: _buildTeamBlock(
+                        context,
+                        teamName: firstInnings.teamName,
+                        score: firstInnings.scoreDisplay,
+                        overs: firstInnings.oversDisplay,
+                        avatarBackground: const Color(0xFFE3F2FD),
+                        avatarForeground: const Color(0xFF1565C0),
                       ),
                     ),
-
-                    // Result text
+                    // VS separator
                     Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        matchResult.resultDescription,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
+                        'VS',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
+                    // 2nd innings team
+                    Expanded(
+                      child: _buildTeamBlock(
+                        context,
+                        teamName: secondTeamName,
+                        score: '$secondTotalRuns/$secondTotalWickets',
+                        overs: secondOversDisplay,
+                        avatarBackground: const Color(0xFFFCE4EC),
+                        avatarForeground: const Color(0xFFC62828),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
 
-            // Footer actions (fixed)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (showSuperOverButton) ...[
+              // Result text
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  matchResult.resultDescription,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+
+              // Footer actions
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (showSuperOverButton) ...[
+                      FilledButton(
+                        onPressed: () =>
+                            onAction(MatchCompleteAction.startSuperOver),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colorScheme.tertiary,
+                        ),
+                        child: const Text('Start Super Over'),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     FilledButton(
                       onPressed: () =>
-                          onAction(MatchCompleteAction.startSuperOver),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colorScheme.tertiary,
-                      ),
-                      child: const Text('Start Super Over'),
+                          onAction(MatchCompleteAction.viewScorecard),
+                      child: const Text('View Scorecard'),
                     ),
                     const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: () =>
+                          onAction(MatchCompleteAction.backToHome),
+                      child: const Text('Back to Home'),
+                    ),
                   ],
-                  FilledButton(
-                    onPressed: () =>
-                        onAction(MatchCompleteAction.viewScorecard),
-                    child: const Text('View Scorecard'),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: () => onAction(MatchCompleteAction.backToHome),
-                    child: const Text('Back to Home'),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
