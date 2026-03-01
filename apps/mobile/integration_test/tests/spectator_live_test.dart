@@ -25,6 +25,7 @@
 library;
 
 import 'package:cricscores/src/core/constants/app_constants.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:cricscores/src/features/scoring/presentation/widgets/match_complete_modal.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -72,10 +73,10 @@ void _runScorerTest() {
     await selectTeamInMatchSetup(tester, 'Team1', isHome: true);
     await selectTeamInMatchSetup(tester, 'Team3', isHome: false);
 
-    // Set 2 overs, 6 players (short match for fast E2E)
-    final overs2 = find.text('2');
-    if (overs2.evaluate().isNotEmpty) {
-      await tester.tap(overs2.first);
+    // Set 5 overs (smallest preset), 6 players
+    final overs5 = find.text('5');
+    if (overs5.evaluate().isNotEmpty) {
+      await tester.tap(overs5.first);
       await settle(tester);
     }
     final players6 = find.text('6');
@@ -135,61 +136,77 @@ void _runScorerTest() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    // Over 1: 4, 1, 2, 0, 6, 1 = 14 runs
+    // === INNINGS 1: Team1 batting (5 overs, 6 players) ===
+    // All-out strategy: 5 wickets ends innings quickly.
+    // Over 1: 4, W, 0, W, 6, W → 10 runs, 3 wickets
     await tapRun(tester, 4);
     print('[SCORER] 1.1 → 4');
     await deliveryPause();
 
-    await tapRun(tester, 1);
-    print('[SCORER] 1.2 → 1');
-    await deliveryPause();
-
-    await tapRun(tester, 2);
-    print('[SCORER] 1.3 → 2');
+    await tapWicket(tester);
+    await selectDismissalType(tester, 'Bowled');
+    await tapWicketConfirm(tester);
+    print('[SCORER] 1.2 → W');
+    await selectBatter(tester, team1.players[2].name);
     await deliveryPause();
 
     await tapRun(tester, 0);
-    print('[SCORER] 1.4 → 0');
+    print('[SCORER] 1.3 → 0');
+    await deliveryPause();
+
+    await tapWicket(tester);
+    await selectDismissalType(tester, 'Bowled');
+    await tapWicketConfirm(tester);
+    print('[SCORER] 1.4 → W');
+    await selectBatter(tester, team1.players[3].name);
     await deliveryPause();
 
     await tapRun(tester, 6);
     print('[SCORER] 1.5 → 6');
     await deliveryPause();
 
-    await tapRun(tester, 1);
-    print('[SCORER] 1.6 → 1  End Over 1');
+    await tapWicket(tester);
+    await selectDismissalType(tester, 'Bowled');
+    await tapWicketConfirm(tester);
+    print('[SCORER] 1.6 → W  End Over 1 (3 wickets)');
+    await selectBatter(tester, team1.players[4].name);
     await deliveryPause();
 
     // Select bowler for over 2
     await selectBowler(tester, team3.players[1].name,
         fallbackNames: team3.players.map((p) => p.name).toList());
 
-    // Over 2: 4, 2, 1, 0, 3, 2 = 12 runs, total = 26
-    await tapRun(tester, 4);
-    print('[SCORER] 2.1 → 4');
+    // Over 2: 0, W, 0, W → 5 wickets = ALL OUT
+    await tapRun(tester, 0);
+    print('[SCORER] 2.1 → 0');
     await deliveryPause();
 
-    await tapRun(tester, 2);
-    print('[SCORER] 2.2 → 2');
-    await deliveryPause();
-
-    await tapRun(tester, 1);
-    print('[SCORER] 2.3 → 1');
+    await tapWicket(tester);
+    await selectDismissalType(tester, 'Bowled');
+    await tapWicketConfirm(tester);
+    print('[SCORER] 2.2 → W');
+    await selectBatter(tester, team1.players[5].name);
     await deliveryPause();
 
     await tapRun(tester, 0);
-    print('[SCORER] 2.4 → 0');
+    print('[SCORER] 2.3 → 0');
     await deliveryPause();
 
-    await tapRun(tester, 3);
-    print('[SCORER] 2.5 → 3');
+    await tapWicket(tester);
+    await selectDismissalType(tester, 'Bowled');
+    await tapWicketConfirm(tester);
+    print('[SCORER] 2.4 → W  ALL OUT (5 wickets)');
     await deliveryPause();
 
-    await tapRun(tester, 2);
-    print('[SCORER] 2.6 → 2  End Over 2 — innings 1 complete');
-    await deliveryPause();
+    // Wait for innings transition modal (all-out triggers it)
+    await waitForFinder(
+      tester,
+      find.byType(InningsTransitionModal),
+      timeoutMs: 15000,
+      intervalMs: 500,
+    );
 
-    // Innings transition
+    // Innings transition: Team3 chasing
     await completeInningsTransition(
       tester,
       striker: team3.players[0].name,
@@ -198,22 +215,13 @@ void _runScorerTest() {
     );
     print('[SCORER] Innings transition complete');
 
-    // Innings 2: chase 27 in 2 overs
-    // Over 1: 6, 6, 6, 6 = 24, need 3 more
+    // === INNINGS 2: Team3 chasing (target ~11) ===
     await tapRun(tester, 6);
     print('[SCORER] Inn2 1.1 → 6');
     await deliveryPause();
 
     await tapRun(tester, 6);
-    print('[SCORER] Inn2 1.2 → 6');
-    await deliveryPause();
-
-    await tapRun(tester, 6);
-    print('[SCORER] Inn2 1.3 → 6');
-    await deliveryPause();
-
-    await tapRun(tester, 6);
-    print('[SCORER] Inn2 1.4 → 6  TARGET CHASED');
+    print('[SCORER] Inn2 1.2 → 6  TARGET CHASED');
 
     await settle(tester);
     await visualPause(tester, 2000);
