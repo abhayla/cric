@@ -210,3 +210,117 @@ Future<void> _deleteTeamViaApi(
   container.invalidate(teamsListProvider);
   print('  [DELETE] $teamName (${team.id}) deleted via API');
 }
+
+/// Test removing a player from a team.
+///
+/// Navigates to Teams → Team12 detail → Players tab, removes the last player,
+/// and verifies the count decreases by 1.
+/// Safe: re-running test 01 detects missing player via roster check and recreates.
+Future<void> testRemovePlayer(
+  WidgetTester tester,
+  ErrorTracker tracker,
+) async {
+  print('\n  [Remove Player] Testing player removal from Team12...');
+
+  await navigateToTeams(tester);
+  await settle(tester);
+
+  // Tap "All" filter
+  final allFilter = find.ancestor(
+    of: find.text('All'),
+    matching: find.byType(FilterChip),
+  );
+  if (allFilter.evaluate().isNotEmpty) {
+    await tester.ensureVisible(allFilter.first);
+    await settle(tester);
+    await tester.tap(allFilter.first);
+    await settle(tester);
+    await visualPause(tester, 1000);
+  }
+
+  // Find Team12 and tap it
+  final team12Text = find.text('Team12');
+  if (team12Text.evaluate().isEmpty) {
+    // Scroll to find Team12
+    for (var scroll = 0; scroll < 10; scroll++) {
+      await tester.drag(find.byType(ListView).first, const Offset(0, -200));
+      await settle(tester);
+      if (find.text('Team12').evaluate().isNotEmpty) break;
+    }
+  }
+
+  if (team12Text.evaluate().isEmpty) {
+    print('  [Remove Player] WARNING: Team12 not found, skipping');
+    tracker.recordError('Remove player', 'Team12 not found in teams list');
+    return;
+  }
+
+  await tester.ensureVisible(team12Text.first);
+  await settle(tester);
+  await tester.tap(team12Text.first);
+  await settle(tester);
+  await visualPause(tester, 1000);
+
+  // Navigate to Players tab
+  final playersTab = find.text('Players');
+  if (playersTab.evaluate().isNotEmpty) {
+    await tester.tap(playersTab.first);
+    await settle(tester);
+    await visualPause(tester, 500);
+  }
+
+  // Count players before removal
+  final playerCountBefore = find.textContaining('Player').evaluate().length;
+  print('  [Remove Player] Player count before: $playerCountBefore');
+
+  // Find delete icon and tap it (last one)
+  final deleteIcons = find.byIcon(Icons.delete_outline);
+  if (deleteIcons.evaluate().isEmpty) {
+    // Try alternate icon
+    final removeIcons = find.byIcon(Icons.remove_circle_outline);
+    if (removeIcons.evaluate().isEmpty) {
+      print('  [Remove Player] No delete icons found, skipping');
+      tracker.recordError('Remove player', 'No delete icons found');
+      await goBack(tester);
+      return;
+    }
+    await tester.ensureVisible(removeIcons.last);
+    await settle(tester);
+    await tester.tap(removeIcons.last, warnIfMissed: false);
+  } else {
+    await tester.ensureVisible(deleteIcons.last);
+    await settle(tester);
+    await tester.tap(deleteIcons.last, warnIfMissed: false);
+  }
+  await settle(tester);
+  await visualPause(tester, 500);
+
+  // Confirm removal dialog
+  final removeButton = find.text('Remove');
+  if (removeButton.evaluate().isNotEmpty) {
+    await tester.tap(removeButton.last);
+    await settle(tester);
+    await visualPause(tester, 1000);
+    print('  [Remove Player] Confirmed removal dialog');
+  }
+
+  // Verify count decreased
+  final playerCountAfter = find.textContaining('Player').evaluate().length;
+  print('  [Remove Player] Player count after: $playerCountAfter');
+
+  if (playerCountAfter < playerCountBefore) {
+    tracker.recordSuccess('Player removed from Team12 ($playerCountBefore → $playerCountAfter)');
+  } else {
+    // May still have removed — check for snackbar confirmation
+    final snackbar = find.textContaining('removed');
+    if (snackbar.evaluate().isNotEmpty) {
+      tracker.recordSuccess('Player removed (snackbar confirmed)');
+    } else {
+      tracker.recordError('Remove player', 'Player count did not decrease');
+    }
+  }
+
+  // Navigate back
+  await goBack(tester);
+  await settle(tester);
+}

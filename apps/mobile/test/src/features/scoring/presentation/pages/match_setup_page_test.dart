@@ -19,6 +19,7 @@ void main() {
       required List<int>? magicOverNumbers,
       required int magicOverRunMultiplier,
       required int magicOverWicketPenalty,
+      required bool isKnockoutMatch,
     })? onMatchCreated,
     void Function()? onNavigateToCreateTeam,
   }) {
@@ -38,6 +39,7 @@ void main() {
                 required magicOverNumbers,
                 required magicOverRunMultiplier,
                 required magicOverWicketPenalty,
+                required isKnockoutMatch,
               }) {},
           onNavigateToCreateTeam: onNavigateToCreateTeam,
         ),

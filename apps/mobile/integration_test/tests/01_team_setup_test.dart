@@ -45,6 +45,11 @@ void main() {
 
     await ensureTeamsExist(tester, allTeams, tracker);
 
+    // Test removing a player from Team12
+    if (!tracker.hasError) {
+      await testRemovePlayer(tester, tracker);
+    }
+
     stopwatch.stop();
     print('\n=== TEAM SETUP COMPLETE ===');
     print('Duration: ${stopwatch.elapsed.inMinutes}m ${stopwatch.elapsed.inSeconds % 60}s');

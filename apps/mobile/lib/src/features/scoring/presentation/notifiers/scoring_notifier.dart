@@ -96,7 +96,7 @@ class FirstInningsSummary {
 }
 
 /// Result type for a completed match.
-enum MatchResultType { runs, wickets, tie }
+enum MatchResultType { runs, wickets, tie, noResult }
 
 /// Computed match result after both innings are complete.
 class MatchResult {
@@ -428,6 +428,18 @@ class ScoringState {
   /// Returns null if the match is not complete or first innings summary is missing.
   MatchResult? get matchResult {
     if (!isMatchComplete) return null;
+
+    // Abandoned match — no result
+    if (completionReason == InningsCompletionReason.abandoned) {
+      return const MatchResult(
+        winnerTeamId: null,
+        winnerTeamName: null,
+        resultType: MatchResultType.noResult,
+        margin: null,
+        resultDescription: 'Match Abandoned',
+      );
+    }
+
     if (firstInningsSummary == null) return null;
 
     final firstRuns = firstInningsSummary!.totalRuns;
@@ -934,6 +946,33 @@ class ScoringNotifier {
     _state = _state.copyWith(
       isInningsComplete: true,
       completionReason: InningsCompletionReason.declared,
+    );
+  }
+
+  /// Abandon the match at any point during play.
+  ///
+  /// Sets both innings and match as complete with abandoned reason.
+  /// If called during 1st innings (no firstInningsSummary yet), captures
+  /// the current innings as the first innings summary so matchResult works.
+  void abandonMatch() {
+    if (_state.isMatchComplete) return;
+
+    // If 1st innings hasn't completed yet, capture summary
+    final summary = _state.firstInningsSummary ??
+        FirstInningsSummary(
+          teamName: _state.battingTeamName,
+          teamId: _state.battingTeamId,
+          totalRuns: _state.totalRuns,
+          totalWickets: _state.totalWickets,
+          totalBalls: _state.totalBalls,
+          oversDisplay: _state.oversDisplay,
+        );
+
+    _state = _state.copyWith(
+      isInningsComplete: true,
+      isMatchComplete: true,
+      completionReason: InningsCompletionReason.abandoned,
+      firstInningsSummary: summary,
     );
   }
 

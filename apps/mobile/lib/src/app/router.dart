@@ -438,6 +438,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 required List<int>? magicOverNumbers,
                 required int magicOverRunMultiplier,
                 required int magicOverWicketPenalty,
+                required bool isKnockoutMatch,
               }) async {
                 // Fetch team rosters for the toss page
                 final teamRepo = ref.read(teams.teamRepositoryProvider);
@@ -501,6 +502,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       'magicOverNumbers': magicOverNumbers,
                       'magicOverRunMultiplier': magicOverRunMultiplier,
                       'magicOverWicketPenalty': magicOverWicketPenalty,
+                      'isKnockoutMatch': isKnockoutMatch,
                     },
                   );
                 }
@@ -595,6 +597,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     magicOverNumbers: data['magicOverNumbers'] as List<int>?,
                     magicOverRunMultiplier: data['magicOverRunMultiplier'] as int? ?? 2,
                     magicOverWicketPenalty: data['magicOverWicketPenalty'] as int? ?? -5,
+                    isKnockoutMatch: data['isKnockoutMatch'] as bool? ?? false,
                     battingTeamPlayers: battingXI
                         .map((p) => PlayingXIPlayer(
                               playerId: p.playerId,

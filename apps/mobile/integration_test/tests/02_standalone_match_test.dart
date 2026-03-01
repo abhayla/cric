@@ -27,6 +27,7 @@ import '../helpers/navigation.dart';
 import '../helpers/scoring.dart';
 import '../flows/random_innings.dart';
 import '../models/delivery_record.dart';
+import '../verification/scorecard_verifier.dart';
 
 void main() {
   initIntegrationTest();
@@ -251,9 +252,33 @@ void main() {
       final matchResult = await captureMatchCompleteResult(tester);
       tracker.recordSuccess('Match result captured: ${matchResult ?? "unknown"}');
 
-      // 15. Dismiss modal and navigate home
+      // 15. Verify Scorecard + Analytics via MatchCompleteModal
+      print('  [Scorecard] Tapping "View Scorecard"...');
       if (find.byType(MatchCompleteModal).evaluate().isNotEmpty) {
-        await dismissMatchCompleteModal(tester);
+        final viewScorecard = find.text('View Scorecard');
+        if (viewScorecard.evaluate().isNotEmpty) {
+          await tester.tap(viewScorecard.first);
+          await settle(tester);
+          await visualPause(tester, 1500);
+
+          // Verify scorecard deep
+          try {
+            await verifyScorecardDeep(tester);
+            tracker.recordSuccess('Scorecard deep verification passed');
+
+            await verifyAnalyticsTab(tester);
+            tracker.recordSuccess('Analytics tab verification passed');
+          } catch (e) {
+            tracker.recordError('Scorecard/Analytics verification', e);
+          }
+
+          // Navigate back to home
+          await goBack(tester);
+          await settle(tester);
+        } else {
+          // Fall back to dismiss
+          await dismissMatchCompleteModal(tester);
+        }
       }
       await settle(tester);
       await navigateToHome(tester);

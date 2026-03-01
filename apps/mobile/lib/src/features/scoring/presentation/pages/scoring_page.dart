@@ -50,6 +50,7 @@ class ScoringPageArgs {
     required this.openingBowlerId,
     required this.openingBowlerName,
     this.firstInningsSummary,
+    this.isKnockoutMatch = false,
   });
 
   final String matchId;
@@ -76,6 +77,7 @@ class ScoringPageArgs {
   final String openingBowlerId;
   final String openingBowlerName;
   final FirstInningsSummary? firstInningsSummary;
+  final bool isKnockoutMatch;
 }
 
 /// Main scoring page where the scorer records deliveries ball-by-ball.
@@ -212,6 +214,7 @@ class _ScoringPageState extends State<ScoringPage> {
       battingTeamPlayers: args.battingTeamPlayers,
       bowlingTeamPlayers: args.bowlingTeamPlayers,
       firstInningsSummary: args.firstInningsSummary,
+      isKnockoutMatch: args.isKnockoutMatch,
     );
     final notifier = ScoringNotifier(state);
 
@@ -676,6 +679,73 @@ class _ScoringPageState extends State<ScoringPage> {
     });
   }
 
+  void _showAbandonDialog() {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Abandon Match'),
+        content: const Text(
+          'Are you sure you want to abandon this match? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Abandon'),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) {
+        if (_hasPersistence) {
+          _service!.abandonMatch();
+        } else {
+          _notifier!.abandonMatch();
+        }
+        setState(() {});
+        _showMatchCompleteModal();
+      }
+    });
+  }
+
+  void _showDeclareDialog() {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Declare Innings'),
+        content: Text(
+          '${_state.battingTeamName} will declare at ${_state.scoreDisplay} (${_state.oversDisplay} overs).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Declare'),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) {
+        if (_hasPersistence) {
+          _service!.declareInnings();
+        } else {
+          _notifier!.declareInnings();
+        }
+        setState(() {});
+        _showInningsTransitionModal();
+      }
+    });
+  }
+
   void _showExitDialog() {
     showDialog<bool>(
       context: context,
@@ -801,6 +871,10 @@ class _ScoringPageState extends State<ScoringPage> {
               isMagicOver: _state.isMagicOver,
               magicOverMultiplier: _state.magicOverRunMultiplier,
               isFreeHitPending: _state.isFreeHitPending,
+              onAbandon: _showAbandonDialog,
+              onDeclare: _showDeclareDialog,
+              showDeclare: _state.inningsNumber == 1 && !_state.isInningsComplete,
+              isInningsComplete: _state.isInningsComplete,
             ),
 
             // Scrollable middle: batters + bowler + this over

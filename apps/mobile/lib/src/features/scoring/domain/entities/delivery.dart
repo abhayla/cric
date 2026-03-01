@@ -112,7 +112,8 @@ enum InningsCompletionReason {
   allOut('all_out', 'All Out'),
   oversExhausted('overs_exhausted', 'Overs Exhausted'),
   targetChased('target_chased', 'Target Chased'),
-  declared('declared', 'Declared');
+  declared('declared', 'Declared'),
+  abandoned('abandoned', 'Abandoned');
 
   const InningsCompletionReason(this.apiValue, this.label);
 

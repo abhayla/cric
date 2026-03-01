@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../core/app_bootstrap.dart';
 import '../verification/my_cricket_verifier.dart';
+import '../verification/scorecard_verifier.dart';
 
 void main() {
   initIntegrationTest();
@@ -34,11 +35,15 @@ void main() {
     );
 
     // Verify Matches tab — at least 1 match played (standalone from test 02)
-    print('\n[2/3] Verifying Matches tab...');
+    print('\n[2/4] Verifying Matches tab...');
     await verifyMatchesTab(tester, minAllCount: 1, expectWon: true);
 
+    // Verify Scorecard structure — tap first match card
+    print('\n[3/4] Verifying Scorecard structure...');
+    await verifyScorecardStructure(tester);
+
     // Verify Tournaments tab — no tournaments yet at this point
-    print('\n[3/3] Verifying Tournaments tab...');
+    print('\n[4/4] Verifying Tournaments tab...');
     await verifyTournamentsTab(tester);
 
     stopwatch.stop();

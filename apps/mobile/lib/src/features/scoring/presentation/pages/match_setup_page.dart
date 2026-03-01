@@ -32,6 +32,7 @@ class MatchSetupPage extends ConsumerStatefulWidget {
     required List<int>? magicOverNumbers,
     required int magicOverRunMultiplier,
     required int magicOverWicketPenalty,
+    required bool isKnockoutMatch,
   }) onMatchCreated;
   final void Function()? onNavigateToCreateTeam;
 
@@ -469,6 +470,21 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
           ),
           const SizedBox(height: 24),
           _buildMagicOverSection(theme),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Knockout Match',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            subtitle: const Text('Enables Super Over on tied result'),
+            value: _state.isKnockoutMatch,
+            onChanged: (value) {
+              _updateState(_state.copyWith(isKnockoutMatch: value));
+            },
+          ),
         ],
       ],
     );
@@ -694,6 +710,7 @@ class _MatchSetupPageState extends ConsumerState<MatchSetupPage> {
         magicOverNumbers: _state.magicOverEnabled ? _state.magicOverNumbers : null,
         magicOverRunMultiplier: _state.magicOverRunMultiplier,
         magicOverWicketPenalty: _state.magicOverWicketPenalty,
+        isKnockoutMatch: _state.isKnockoutMatch,
       );
     } catch (e) {
       if (!mounted) return;

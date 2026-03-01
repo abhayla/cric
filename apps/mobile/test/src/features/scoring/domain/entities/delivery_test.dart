@@ -146,8 +146,8 @@ void main() {
   // ── InningsCompletionReason enum ─────────────────────────────────────
 
   group('InningsCompletionReason', () {
-    test('has exactly 4 values', () {
-      expect(InningsCompletionReason.values.length, 4);
+    test('has exactly 5 values', () {
+      expect(InningsCompletionReason.values.length, 5);
     });
 
     test('apiValues are correct', () {
@@ -155,6 +155,7 @@ void main() {
       expect(InningsCompletionReason.oversExhausted.apiValue, 'overs_exhausted');
       expect(InningsCompletionReason.targetChased.apiValue, 'target_chased');
       expect(InningsCompletionReason.declared.apiValue, 'declared');
+      expect(InningsCompletionReason.abandoned.apiValue, 'abandoned');
     });
 
     test('labels are correct', () {

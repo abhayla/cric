@@ -36,6 +36,7 @@ class MatchSetupState {
     this.isAdvancedOpen = false,
     this.isSubmitting = false,
     this.error,
+    this.isKnockoutMatch = false,
   }) : matchDate = matchDate ?? _todayFormatted();
 
   final String? homeTeamId;
@@ -58,6 +59,7 @@ class MatchSetupState {
   final bool isAdvancedOpen;
   final bool isSubmitting;
   final String? error;
+  final bool isKnockoutMatch;
 
   /// Today's date in yyyy-MM-dd format.
   static String _todayFormatted() {
@@ -159,6 +161,7 @@ class MatchSetupState {
     bool? isAdvancedOpen,
     bool? isSubmitting,
     String? error,
+    bool? isKnockoutMatch,
   }) {
     return MatchSetupState(
       homeTeamId: homeTeamId ?? this.homeTeamId,
@@ -181,6 +184,7 @@ class MatchSetupState {
       isAdvancedOpen: isAdvancedOpen ?? this.isAdvancedOpen,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       error: error ?? this.error,
+      isKnockoutMatch: isKnockoutMatch ?? this.isKnockoutMatch,
     );
   }
 }

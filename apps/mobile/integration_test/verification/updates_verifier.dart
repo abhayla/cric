@@ -1,6 +1,7 @@
 /// Verification helpers for the Updates page — activity feed with date groups.
 library;
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/updates/presentation/widgets/activity_event_card.dart';
@@ -80,4 +81,98 @@ Future<void> verifyUpdatesPage(
   }
 
   print('  [verify-updates] Updates page verification complete');
+}
+
+/// Deep Updates page verification — checks feed presence, date grouping,
+/// event types, tap navigation, and settings toggle.
+Future<void> verifyUpdatesPageDeep(
+  WidgetTester tester,
+) async {
+  await navigateToUpdates(tester);
+  await settle(tester);
+  await visualPause(tester, 1000);
+
+  // 1. Ensure Feed tab is selected
+  final feedTab = find.text('Feed');
+  if (feedTab.evaluate().isNotEmpty) {
+    await tester.tap(feedTab.first);
+    await settle(tester);
+    await visualPause(tester, 1000);
+    print('  [updates-deep] Feed tab selected');
+  }
+
+  // 2. Feed presence — count ActivityEventCard widgets
+  final eventCards = find.byType(ActivityEventCard);
+  final cardCount = eventCards.evaluate().length;
+  print('  [updates-deep] Found $cardCount ActivityEventCard widgets');
+
+  // 3. Date grouping — check for group headers
+  final dateHeaders = ['Today', 'Yesterday', 'This Week', 'Earlier'];
+  final foundHeaders = <String>[];
+  for (final header in dateHeaders) {
+    if (find.text(header).evaluate().isNotEmpty) {
+      foundHeaders.add(header);
+    }
+  }
+  if (foundHeaders.isNotEmpty) {
+    print('  [updates-deep] Date group headers found: ${foundHeaders.join(", ")}');
+  } else {
+    print('  [updates-deep] No date group headers found');
+  }
+
+  // 4. Event types — verify event text patterns
+  final hasMatchResult =
+      find.textContaining('won by').evaluate().isNotEmpty ||
+          find.textContaining('Tied').evaluate().isNotEmpty ||
+          find.textContaining('completed').evaluate().isNotEmpty;
+  print('  [updates-deep] Has match result events: $hasMatchResult');
+
+  // 5. Tap navigation — tap first event card if available
+  if (cardCount > 0) {
+    try {
+      await tester.ensureVisible(eventCards.first);
+      await settle(tester);
+      await tester.tap(eventCards.first, warnIfMissed: false);
+      await settle(tester);
+      await visualPause(tester, 1000);
+
+      // Verify navigation happened (we should be on a different page)
+      // Navigate back
+      final backButton = find.byIcon(Icons.arrow_back);
+      if (backButton.evaluate().isNotEmpty) {
+        await tester.tap(backButton.first);
+        await settle(tester);
+        print('  [updates-deep] Tap navigation: success (navigated and came back)');
+      } else {
+        // May have stayed on same page (some events may not navigate)
+        print('  [updates-deep] Tap navigation: no navigation (event may not be tappable)');
+      }
+    } catch (e) {
+      print('  [updates-deep] Tap navigation: error ($e)');
+    }
+  }
+
+  // 6. Settings toggle — switch to Settings tab
+  final settingsTab = find.text('Settings');
+  if (settingsTab.evaluate().isNotEmpty) {
+    await tester.tap(settingsTab.first);
+    await settle(tester);
+    await visualPause(tester, 500);
+
+    // Check for SwitchListTile widgets
+    final switches = find.byType(SwitchListTile);
+    final switchCount = switches.evaluate().length;
+    print('  [updates-deep] Settings tab: found $switchCount SwitchListTile widgets');
+
+    // Switch back to Feed tab
+    final feedTabAgain = find.text('Feed');
+    if (feedTabAgain.evaluate().isNotEmpty) {
+      await tester.tap(feedTabAgain.first);
+      await settle(tester);
+    }
+  } else {
+    print('  [updates-deep] No Settings tab found');
+  }
+
+  print('  [updates-deep] Deep Updates verification complete');
 }

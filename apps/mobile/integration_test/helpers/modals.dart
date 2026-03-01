@@ -1,4 +1,4 @@
-/// Modal interaction helpers — innings transition, match complete.
+/// Modal interaction helpers — innings transition, match complete, super over.
 library;
 
 import 'package:flutter/material.dart';
@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cricscores/src/features/scoring/presentation/widgets/innings_transition_modal.dart';
 import 'package:cricscores/src/features/scoring/presentation/widgets/match_complete_modal.dart';
+import 'package:cricscores/src/features/scoring/presentation/widgets/super_over_setup_wizard.dart';
 
 import '../core/test_utils.dart';
 
@@ -127,7 +128,8 @@ Future<String?> captureMatchCompleteResult(WidgetTester tester) async {
         (text.contains('won by') ||
             text.contains('Tied') ||
             text.contains('No Result') ||
-            text.contains('Draw'))) {
+            text.contains('Draw') ||
+            text.contains('Abandoned'))) {
       result = text;
       break;
     }
@@ -170,4 +172,102 @@ Future<void> dismissMatchCompleteModal(WidgetTester tester) async {
     await tester.tap(buttons.first);
     await settle(tester);
   }
+}
+
+/// Complete the Super Over Setup Wizard (3 steps).
+///
+/// Step 1: Select 2 batters from the batting team (tap by name).
+/// Step 2: Select 1 bowler from the bowling team (tap by name).
+/// Step 3: Confirm selections → tap "Start Super Over".
+Future<void> completeSuperOverWizard(
+  WidgetTester tester, {
+  required String batter1,
+  required String batter2,
+  required String bowler,
+}) async {
+  // Wait for wizard to appear
+  final found = await waitForFinder(
+    tester,
+    find.byType(SuperOverSetupWizard),
+    timeoutMs: 15000,
+    intervalMs: 500,
+  );
+  expect(found, isTrue,
+      reason: 'SuperOverSetupWizard should appear after tied knockout match');
+  print('    [superOver] Wizard appeared');
+
+  // Step 1: Select 2 batters
+  final batter1Text = find.descendant(
+    of: find.byType(SuperOverSetupWizard),
+    matching: find.textContaining(batter1),
+  );
+  expect(batter1Text, findsAtLeast(1),
+      reason: 'Batter "$batter1" must exist in wizard');
+  await tester.ensureVisible(batter1Text.first);
+  await settle(tester);
+  await tester.tap(batter1Text.first, warnIfMissed: false);
+  await settle(tester);
+  await visualPause(tester);
+  print('    [superOver] Step 1: Selected batter1 $batter1');
+
+  final batter2Text = find.descendant(
+    of: find.byType(SuperOverSetupWizard),
+    matching: find.textContaining(batter2),
+  );
+  expect(batter2Text, findsAtLeast(1),
+      reason: 'Batter "$batter2" must exist in wizard');
+  await tester.ensureVisible(batter2Text.first);
+  await settle(tester);
+  await tester.tap(batter2Text.first, warnIfMissed: false);
+  await settle(tester);
+  await visualPause(tester);
+  print('    [superOver] Step 1: Selected batter2 $batter2');
+
+  // Tap "Next" to go to Step 2
+  final nextButton1 = find.descendant(
+    of: find.byType(SuperOverSetupWizard),
+    matching: find.text('Next'),
+  );
+  await tester.tap(nextButton1);
+  await settle(tester);
+  await visualPause(tester);
+  print('    [superOver] Step 1 → Step 2');
+
+  // Step 2: Select bowler
+  final bowlerText = find.descendant(
+    of: find.byType(SuperOverSetupWizard),
+    matching: find.textContaining(bowler),
+  );
+  expect(bowlerText, findsAtLeast(1),
+      reason: 'Bowler "$bowler" must exist in wizard');
+  await tester.ensureVisible(bowlerText.first);
+  await settle(tester);
+  await tester.tap(bowlerText.first, warnIfMissed: false);
+  await settle(tester);
+  await visualPause(tester);
+  print('    [superOver] Step 2: Selected bowler $bowler');
+
+  // Tap "Next" to go to Step 3
+  final nextButton2 = find.descendant(
+    of: find.byType(SuperOverSetupWizard),
+    matching: find.text('Next'),
+  );
+  await tester.tap(nextButton2);
+  await settle(tester);
+  await visualPause(tester);
+  print('    [superOver] Step 2 → Step 3');
+
+  // Step 3: Confirm — tap "Start Super Over"
+  final startButton = find.descendant(
+    of: find.byType(SuperOverSetupWizard),
+    matching: find.text('Start Super Over'),
+  );
+  expect(startButton, findsOneWidget,
+      reason: 'Step 3 should show "Start Super Over" button');
+  await tester.tap(startButton);
+  await settle(tester);
+  await visualPause(tester, 1000);
+  // Extra settle to let wizard close and scoring page reload
+  await settle(tester);
+  print('    [superOver] Wizard completed — super over started');
 }

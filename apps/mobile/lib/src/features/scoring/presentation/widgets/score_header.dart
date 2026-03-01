@@ -25,6 +25,10 @@ class ScoreHeader extends StatelessWidget {
     this.isMagicOver = false,
     this.magicOverMultiplier = 2,
     this.isFreeHitPending = false,
+    this.onAbandon,
+    this.onDeclare,
+    this.showDeclare = false,
+    this.isInningsComplete = false,
   });
 
   final String battingTeamName;
@@ -42,6 +46,10 @@ class ScoreHeader extends StatelessWidget {
   final bool isMagicOver;
   final int magicOverMultiplier;
   final bool isFreeHitPending;
+  final VoidCallback? onAbandon;
+  final VoidCallback? onDeclare;
+  final bool showDeclare;
+  final bool isInningsComplete;
 
   String get _inningsLabel =>
       inningsNumber == 1 ? '1st Innings' : '2nd Innings';
@@ -120,6 +128,30 @@ class ScoreHeader extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (!isInningsComplete && (onAbandon != null || showDeclare))
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: onPrimary),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'abandon':
+                          onAbandon?.call();
+                        case 'declare':
+                          onDeclare?.call();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      if (onAbandon != null)
+                        const PopupMenuItem(
+                          value: 'abandon',
+                          child: Text('Abandon Match'),
+                        ),
+                      if (showDeclare && onDeclare != null)
+                        const PopupMenuItem(
+                          value: 'declare',
+                          child: Text('Declare Innings'),
+                        ),
+                    ],
+                  ),
               ],
             ),
             // Indicators row: Magic Over / Free Hit

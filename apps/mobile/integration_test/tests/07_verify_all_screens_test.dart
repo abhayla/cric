@@ -123,9 +123,9 @@ void main() {
     await verifyLivePage(tester,
         expectCompletedMatches: true, expectTournaments: true);
 
-    // 6. Updates page (activity feed should have content after all those matches)
-    print('\n[6/7] Verifying Updates page...');
-    await verifyUpdatesPage(tester, expectContent: true);
+    // 6. Updates page deep verification (activity feed + settings)
+    print('\n[6/7] Verifying Updates page (deep)...');
+    await verifyUpdatesPageDeep(tester);
 
     stopwatch.stop();
     print('\n=== VERIFY ALL SCREENS COMPLETE ===');

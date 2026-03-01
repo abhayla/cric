@@ -2168,10 +2168,11 @@ void main() {
     });
 
     test('MatchResultType enum values', () {
-      expect(MatchResultType.values, hasLength(3));
+      expect(MatchResultType.values, hasLength(4));
       expect(MatchResultType.values, contains(MatchResultType.runs));
       expect(MatchResultType.values, contains(MatchResultType.wickets));
       expect(MatchResultType.values, contains(MatchResultType.tie));
+      expect(MatchResultType.values, contains(MatchResultType.noResult));
     });
   });
 
@@ -2913,6 +2914,93 @@ void main() {
       );
       expect(n.state.isInningsComplete, true);
       expect(n.state.completionReason, InningsCompletionReason.allOut);
+    });
+  });
+
+  // ── abandonMatch ────────────────────────────────────────
+
+  group('ScoringNotifier.abandonMatch', () {
+    test('abandon during 1st innings sets match complete with abandoned reason', () {
+      final n = makeNotifier();
+      // Score a few deliveries
+      n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+      n.recordDelivery(runsFromBat: 1);
+
+      n.abandonMatch();
+
+      expect(n.state.isInningsComplete, true);
+      expect(n.state.isMatchComplete, true);
+      expect(n.state.completionReason, InningsCompletionReason.abandoned);
+      // firstInningsSummary should be captured from current state
+      expect(n.state.firstInningsSummary, isNotNull);
+      expect(n.state.firstInningsSummary!.totalRuns, 5);
+      expect(n.state.firstInningsSummary!.totalBalls, 2);
+    });
+
+    test('abandon during 2nd innings sets match complete', () {
+      final n = makeNotifier(totalOvers: 2, playersPerSide: 3);
+      // Complete 1st innings (overs exhausted in 2-over match)
+      for (int i = 0; i < 12; i++) {
+        if (n.state.needsNewBowler) {
+          n.selectNewBowler(playerId: 'bowl-2', displayName: 'Bowler 2');
+        }
+        n.recordDelivery(runsFromBat: 1);
+      }
+      expect(n.state.isInningsComplete, true);
+
+      // Start 2nd innings
+      n.startSecondInnings(
+        strikerId: 'bat-a', strikerName: 'A',
+        nonStrikerId: 'bat-b', nonStrikerName: 'B',
+        bowlerId: 'bowl-x', bowlerName: 'X',
+      );
+      n.recordDelivery(runsFromBat: 2);
+
+      n.abandonMatch();
+
+      expect(n.state.isMatchComplete, true);
+      expect(n.state.completionReason, InningsCompletionReason.abandoned);
+    });
+
+    test('abandon when already complete is no-op', () {
+      final n = makeNotifier(totalOvers: 2, playersPerSide: 3);
+      // Complete 1st innings
+      for (int i = 0; i < 12; i++) {
+        if (n.state.needsNewBowler) {
+          n.selectNewBowler(playerId: 'bowl-2', displayName: 'Bowler 2');
+        }
+        n.recordDelivery(runsFromBat: 0);
+      }
+      n.startSecondInnings(
+        strikerId: 'bat-a', strikerName: 'A',
+        nonStrikerId: 'bat-b', nonStrikerName: 'B',
+        bowlerId: 'bowl-x', bowlerName: 'X',
+      );
+      // Complete 2nd innings
+      for (int i = 0; i < 12; i++) {
+        if (n.state.needsNewBowler) {
+          n.selectNewBowler(playerId: 'bowl-y', displayName: 'Y');
+        }
+        n.recordDelivery(runsFromBat: 0);
+      }
+      expect(n.state.isMatchComplete, true);
+
+      // Try to abandon — should be no-op
+      final prevReason = n.state.completionReason;
+      n.abandonMatch();
+      expect(n.state.completionReason, prevReason);
+    });
+
+    test('matchResult returns Match Abandoned for abandoned match', () {
+      final n = makeNotifier();
+      n.recordDelivery(runsFromBat: 4, isBoundaryFour: true);
+      n.abandonMatch();
+
+      final result = n.state.matchResult;
+      expect(result, isNotNull);
+      expect(result!.resultType, MatchResultType.noResult);
+      expect(result.resultDescription, 'Match Abandoned');
+      expect(result.winnerTeamId, isNull);
     });
   });
 }

@@ -238,6 +238,82 @@ Future<void> playRandomInnings({
   await settle(tester, pumpCount: 20);
 }
 
+/// Score a deterministic innings by tapping runs from a pre-defined list.
+///
+/// Each entry in [runsPerBall] corresponds to one tap: 0, 1, 2, 3, 4, or 6.
+/// Handles bowler selection between overs and checks for early completion
+/// (MatchCompleteModal or InningsTransitionModal).
+///
+/// Returns the number of legal balls actually scored (may be fewer than
+/// [runsPerBall.length] if the innings ended early).
+Future<int> scoreDeterministicInnings({
+  required WidgetTester tester,
+  required List<int> runsPerBall,
+  required List<String> bowlerNames,
+  required List<String> batterNames,
+}) async {
+  var legalBalls = 0;
+  var currentOverBalls = 0;
+  var bowlerIndex = 0;
+  var lastBowlerIndex = -1;
+
+  // Dismiss any auto-opened sheets at start
+  await _dismissAnyOpenSheet(
+    tester,
+    bowlerNames: bowlerNames,
+    batterNames: batterNames,
+    bowlerIndex: bowlerIndex,
+    nextBatterIndex: 2,
+  );
+
+  for (var i = 0; i < runsPerBall.length; i++) {
+    // Check for early completion
+    await settle(tester);
+    if (find.byType(MatchCompleteModal).evaluate().isNotEmpty ||
+        find.byType(InningsTransitionModal).evaluate().isNotEmpty) {
+      print('  [deterministic] Breaking at ball $i: completion modal detected');
+      break;
+    }
+
+    await tapRun(tester, runsPerBall[i]);
+    legalBalls++;
+    currentOverBalls++;
+
+    // Over completion
+    if (currentOverBalls >= 6) {
+      final overNum = legalBalls ~/ 6;
+      print('  [deterministic] Over $overNum complete (legal=$legalBalls)');
+      currentOverBalls = 0;
+
+      // Check for completion after over
+      await settle(tester);
+      if (find.byType(MatchCompleteModal).evaluate().isNotEmpty ||
+          find.byType(InningsTransitionModal).evaluate().isNotEmpty) {
+        break;
+      }
+
+      // Select next bowler if more balls remain
+      if (i < runsPerBall.length - 1) {
+        var nextBowlerIdx = (bowlerIndex + 1) % bowlerNames.length;
+        if (nextBowlerIdx == lastBowlerIndex) {
+          nextBowlerIdx = (nextBowlerIdx + 1) % bowlerNames.length;
+        }
+        lastBowlerIndex = bowlerIndex;
+        bowlerIndex = nextBowlerIdx;
+        await selectBowler(tester, bowlerNames[bowlerIndex],
+            fallbackNames: bowlerNames);
+      }
+    }
+  }
+
+  // Final settle
+  await settle(tester, pumpCount: 20);
+  await tester.pump(const Duration(seconds: 3));
+  await settle(tester, pumpCount: 20);
+
+  return legalBalls;
+}
+
 /// Dismiss any auto-opened bowler or batter selection sheets.
 Future<void> _dismissAnyOpenSheet(
   WidgetTester tester, {

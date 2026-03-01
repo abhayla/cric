@@ -198,6 +198,11 @@ class ScoringPersistenceService {
     _persistState();
   }
 
+  void abandonMatch() {
+    _notifier.abandonMatch();
+    _persistState();
+  }
+
   void startSecondInnings({
     required String strikerId,
     required String strikerName,
