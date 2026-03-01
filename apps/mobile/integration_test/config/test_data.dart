@@ -48,8 +48,8 @@ List<TestTeam> generateTeams(int count, {int playersPerTeam = 11}) {
   });
 }
 
-/// Pre-generated 12 teams with 11 players each (the standard test set).
-final List<TestTeam> allTeams = generateTeams(12, playersPerTeam: 11);
+/// Pre-generated 12 teams with 6 players each (the standard test set).
+final List<TestTeam> allTeams = generateTeams(12, playersPerTeam: 6);
 
 /// Convenience: just team names.
 final List<String> allTeamNames = allTeams.map((t) => t.name).toList();

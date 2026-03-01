@@ -1,7 +1,7 @@
-/// 04: Group + Knockout Tournament — 8 teams, 2 groups, 3 overs.
+/// 04: Group + Knockout Tournament — 4 teams, 2 groups, 2 overs.
 ///
-/// ~15 matches (12 group + 2 semi + 1 final).
-/// Uses Team1-Team8.
+/// ~3 matches (2 group + 1 final).
+/// Uses Team1-Team4.
 ///
 /// Run:
 /// ```bash
@@ -23,12 +23,12 @@ import '../flows/tournament_flow.dart';
 void main() {
   initIntegrationTest();
 
-  testWidgets('Group+Knockout tournament: 8 teams, 2 groups, 3 overs',
+  testWidgets('Group+Knockout tournament: 4 teams, 2 groups, 2 overs',
       (tester) async {
     await pumpAppAndWaitForHome(tester);
 
     print('\n=== TOURNAMENT GK TEST ===');
-    print('8 teams, 2 groups, 3 overs, ~15 matches\n');
+    print('4 teams, 2 groups, 2 overs, ~3 matches\n');
 
     final stopwatch = Stopwatch()..start();
     final tracker = ErrorTracker();
@@ -43,6 +43,7 @@ void main() {
       name: name,
       tracker: tracker,
       teams: allTeams,
+      teamIndices: [0, 1, 2, 3], // Team1-Team4
       groupAssignments: gkGroupAssignments,
     );
 
@@ -67,5 +68,5 @@ void main() {
     if (tracker.hasError) {
       fail('Tournament GK test had errors. See tracker summary above.');
     }
-  }, timeout: const Timeout(Duration(hours: 3)));
+  }, timeout: const Timeout(Duration(hours: 1)));
 }

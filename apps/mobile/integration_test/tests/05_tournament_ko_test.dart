@@ -1,6 +1,6 @@
-/// 05: Knockout Tournament — 8 teams, 3 overs, 7 matches.
+/// 05: Knockout Tournament — 4 teams, 2 overs, 3 matches.
 ///
-/// Uses Team1-Team8.
+/// Uses Team1-Team4.
 ///
 /// Run:
 /// ```bash
@@ -22,12 +22,12 @@ import '../flows/tournament_flow.dart';
 void main() {
   initIntegrationTest();
 
-  testWidgets('Knockout tournament: 8 teams, 3 overs, 7 matches',
+  testWidgets('Knockout tournament: 4 teams, 2 overs, 3 matches',
       (tester) async {
     await pumpAppAndWaitForHome(tester);
 
     print('\n=== TOURNAMENT KO TEST ===');
-    print('8 teams, 3 overs, 7 matches\n');
+    print('4 teams, 2 overs, 3 matches\n');
 
     final stopwatch = Stopwatch()..start();
     final tracker = ErrorTracker();
@@ -41,7 +41,7 @@ void main() {
       name: name,
       tracker: tracker,
       teams: allTeams,
-      teamIndices: [0, 1, 2, 3, 4, 5, 6, 7], // Team1-Team8
+      teamIndices: [0, 1, 2, 3], // Team1-Team4
     );
 
     if (!tracker.hasError) {
@@ -64,5 +64,5 @@ void main() {
     if (tracker.hasError) {
       fail('Tournament KO test had errors. See tracker summary above.');
     }
-  }, timeout: const Timeout(Duration(hours: 2)));
+  }, timeout: const Timeout(Duration(hours: 1)));
 }

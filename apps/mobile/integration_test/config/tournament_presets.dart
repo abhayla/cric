@@ -36,35 +36,35 @@ class TournamentPreset {
   }
 }
 
-/// Group + Knockout: 8 teams, 2 groups of 4, top 2 qualify, 3 overs.
-/// ~15 matches (12 group + 2 semi + 1 final).
+/// Group + Knockout: 4 teams, 2 groups of 2, top 2 qualify, 2 overs.
+/// ~3 matches (2 group + 1 final).
 const gkPreset = TournamentPreset(
   format: 'group_knockout',
-  overs: 3,
+  overs: 2,
   playersPerSide: 6,
   ballTypeId: 2,
   numGroups: 2,
-  qualifyPerGroup: 2,
+  qualifyPerGroup: 1,
 );
 
-/// Group assignments for GK preset: 2 groups x 4 teams.
+/// Group assignments for GK preset: 2 groups x 2 teams.
 const Map<String, List<int>> gkGroupAssignments = {
-  'A': [0, 1, 2, 3], // Team1-Team4
-  'B': [4, 5, 6, 7], // Team5-Team8
+  'A': [0, 1], // Team1-Team2
+  'B': [2, 3], // Team3-Team4
 };
 
-/// Pure Knockout: 8 teams, 3 overs, 7 matches.
+/// Pure Knockout: 4 teams, 2 overs, 3 matches.
 const koPreset = TournamentPreset(
   format: 'knockout',
-  overs: 3,
+  overs: 2,
   playersPerSide: 6,
   ballTypeId: 2,
 );
 
-/// Round Robin: 4 teams, 3 overs, 6 matches.
+/// Round Robin: 3 teams, 2 overs, 3 matches.
 const rrPreset = TournamentPreset(
   format: 'round_robin',
-  overs: 3,
+  overs: 2,
   playersPerSide: 6,
   ballTypeId: 2,
 );

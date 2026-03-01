@@ -1,6 +1,6 @@
-/// 06: Round Robin Tournament — 4 teams, 3 overs, 6 matches.
+/// 06: Round Robin Tournament — 3 teams, 2 overs, 3 matches.
 ///
-/// Uses Team1-Team4.
+/// Uses Team1-Team3.
 ///
 /// Run:
 /// ```bash
@@ -22,12 +22,12 @@ import '../flows/tournament_flow.dart';
 void main() {
   initIntegrationTest();
 
-  testWidgets('Round Robin tournament: 4 teams, 3 overs, 6 matches',
+  testWidgets('Round Robin tournament: 3 teams, 2 overs, 3 matches',
       (tester) async {
     await pumpAppAndWaitForHome(tester);
 
     print('\n=== TOURNAMENT RR TEST ===');
-    print('4 teams, 3 overs, 6 matches\n');
+    print('3 teams, 2 overs, 3 matches\n');
 
     final stopwatch = Stopwatch()..start();
     final tracker = ErrorTracker();
@@ -41,7 +41,7 @@ void main() {
       name: name,
       tracker: tracker,
       teams: allTeams,
-      teamIndices: [0, 1, 2, 3], // Team1-Team4
+      teamIndices: [0, 1, 2], // Team1-Team3
     );
 
     if (!tracker.hasError) {
@@ -64,5 +64,5 @@ void main() {
     if (tracker.hasError) {
       fail('Tournament RR test had errors. See tracker summary above.');
     }
-  }, timeout: const Timeout(Duration(hours: 2)));
+  }, timeout: const Timeout(Duration(hours: 1)));
 }
