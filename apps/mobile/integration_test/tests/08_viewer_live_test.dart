@@ -57,6 +57,9 @@ void _runScorerTest() {
     await pumpAppAndWaitForHome(tester, phoneNumber: scorerPhone);
     print('\n[SCORER] My Cricket page loaded');
 
+    // Clear stale signals from prior runs
+    await clearTestSignals();
+
     final signalDio = _createSignalDio();
 
     // Navigate to match setup
@@ -113,7 +116,9 @@ void _runScorerTest() {
             print('[SCORER] Signal: viewer-ready received');
             break;
           }
-        } catch (_) {}
+        } catch (e) {
+          print('[SCORER] Signal poll error: $e');
+        }
         await Future<void>.delayed(const Duration(seconds: 2));
       }
       if (!viewerReady) {
@@ -259,7 +264,9 @@ void _runViewerTest() {
           print('[VIEWER] Signal: scorer-ready received');
           break;
         }
-      } catch (_) {}
+      } catch (e) {
+        print('[VIEWER] Signal poll error: $e');
+      }
       await Future<void>.delayed(const Duration(seconds: 2));
     }
     if (!scorerReady) {
@@ -313,6 +320,9 @@ void _runViewerTest() {
     }
 
     print('\n[VIEWER] Total score updates observed: $scoreChanges');
+    expect(scoreChanges, greaterThan(0),
+        reason: 'Viewer must observe at least 1 score update via WebSocket/polling');
+    print('[VIEWER] Final score observed: $lastScore');
     print('[VIEWER] Viewer test PASSED.');
   }, timeout: const Timeout(Duration(minutes: 15)));
 }

@@ -42,7 +42,7 @@ void main() {
 
     final stopwatch = Stopwatch()..start();
     final tracker = ErrorTracker();
-    final rng = Random();
+    final rng = Random(42); // Fixed seed for reproducibility
 
     try {
       // 1. Navigate to Match Setup
@@ -141,28 +141,19 @@ void main() {
       }
       await settle(tester);
 
-      final score3 = find.text('3/0');
-      if (score3.evaluate().isNotEmpty) {
-        print('  [Undo Test] Score verified: 3/0');
-      } else {
-        print('  [Undo Test] Score 3/0 not found');
-        dumpVisibleTexts(tester, 'score-check', 20);
-      }
+      expect(find.text('3/0'), findsOneWidget,
+          reason: 'Score should be 3/0 after 3 singles');
+      print('  [Undo Test] Score verified: 3/0');
       tracker.recordSuccess('Scored 3 singles');
 
       // 9. Tap Undo → verify "2/0"
       print('  [Undo Test] Tapping undo...');
       final undoSuccess = await tapUndo(tester);
-      if (undoSuccess) {
-        await settle(tester);
-        final score2 = find.text('2/0');
-        if (score2.evaluate().isNotEmpty) {
-          print('  [Undo Test] After undo, score verified: 2/0');
-        } else {
-          print('  [Undo Test] After undo, score 2/0 not found');
-          dumpVisibleTexts(tester, 'undo-check', 20);
-        }
-      }
+      expect(undoSuccess, isTrue, reason: 'Undo button should be tappable');
+      await settle(tester);
+      expect(find.text('2/0'), findsOneWidget,
+          reason: 'Score should revert to 2/0 after undo');
+      print('  [Undo Test] After undo, score verified: 2/0');
       tracker.recordSuccess('Undo tested');
 
       // 10. Score 1 more to restore → "3/0"
@@ -250,6 +241,15 @@ void main() {
       }
 
       final matchResult = await captureMatchCompleteResult(tester);
+      expect(matchResult, isNotNull,
+          reason: 'Match should complete with a result (won by X runs/wickets)');
+      print('  [Result] $matchResult');
+
+      // MatchRecord sanity checks
+      expect(matchRecord.firstInningsRuns, greaterThan(0),
+          reason: '1st innings must score at least 1 run');
+      expect(matchRecord.firstInningsDeliveries.length, greaterThan(3),
+          reason: '1st innings must have more than 3 deliveries (3 singles + rest)');
       tracker.recordSuccess('Match result captured: ${matchResult ?? "unknown"}');
 
       // 15. Verify Scorecard + Analytics via MatchCompleteModal
@@ -263,7 +263,7 @@ void main() {
 
           // Verify scorecard deep
           try {
-            await verifyScorecardDeep(tester);
+            await verifyScorecardDeep(tester, matchRecord: matchRecord);
             tracker.recordSuccess('Scorecard deep verification passed');
 
             await verifyAnalyticsTab(tester);
@@ -307,15 +307,13 @@ void main() {
       final hasTeam1 = team1OnCard.evaluate().isNotEmpty;
       final hasTeam2 = team2OnCard.evaluate().isNotEmpty;
 
-      if (hasTeam1 || hasTeam2) {
-        print('  [Persistence] Match card found (Team3: $hasTeam1, Team4: $hasTeam2)');
-        tracker.recordSuccess('Persistence verified');
-      } else {
-        print('  [Persistence] ERROR: No match card found');
-        tracker.recordError('Persistence check', 'Neither Team3 nor Team4 found on Matches tab');
-      }
+      expect(hasTeam1 || hasTeam2, isTrue,
+          reason: 'Match card with Team3 or Team4 should appear on Matches tab');
+      print('  [Persistence] Match card found (Team3: $hasTeam1, Team4: $hasTeam2)');
+      tracker.recordSuccess('Persistence verified');
     } catch (e) {
       tracker.recordError('Standalone match test', e);
+      await takeFailureScreenshot('02_standalone_match');
     }
 
     stopwatch.stop();

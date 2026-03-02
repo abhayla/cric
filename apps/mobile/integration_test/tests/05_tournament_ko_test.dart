@@ -17,6 +17,7 @@ import '../config/test_data.dart';
 import '../config/tournament_presets.dart';
 import '../core/app_bootstrap.dart';
 import '../core/error_tracker.dart';
+import '../core/test_utils.dart';
 import '../flows/tournament_flow.dart';
 
 void main() {
@@ -62,6 +63,7 @@ void main() {
     tracker.printSummary();
 
     if (tracker.hasError) {
+      await takeFailureScreenshot('05_tournament_ko');
       fail('Tournament KO test had errors. See tracker summary above.');
     }
   }, timeout: const Timeout(Duration(hours: 1)));

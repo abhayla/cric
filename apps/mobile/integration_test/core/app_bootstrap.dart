@@ -4,6 +4,7 @@
 /// Extracted from the old app_test_wrapper.dart (same logic, cleaner name).
 library;
 
+import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'package:cricscores/src/app/app.dart';
+import 'package:cricscores/src/core/constants/app_constants.dart';
 import 'package:cricscores/src/shared/data/database/app_database.dart';
 import 'package:cricscores/src/shared/providers/database_provider.dart';
 
@@ -45,6 +47,52 @@ Future<void> _ensureFirebaseInitialized() async {
   }
 }
 
+/// Check that the prod server is reachable before starting the test.
+///
+/// Hits `GET /api/v1/health` with a 10s timeout. Fails fast with a clear
+/// message if the server is down, instead of wasting minutes on timeouts.
+Future<void> checkServerConnectivity() async {
+  final serverRoot = AppConstants.apiBaseUrl.replaceAll('/api/v1', '');
+  final dio = Dio(BaseOptions(
+    baseUrl: serverRoot,
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+  ));
+
+  try {
+    final response = await dio.get('/api/v1/health');
+    print('  [pre-check] Server reachable: ${response.statusCode}');
+  } catch (e) {
+    throw TestFailure(
+      'Server unreachable at $serverRoot — cannot run E2E tests.\n'
+      'Error: $e\n'
+      'Check: Is the server running? Is cricscores.in DNS resolving? '
+      'Is there network connectivity?',
+    );
+  }
+}
+
+/// Clear stale test signals on the server.
+///
+/// Call before multi-device tests to prevent stale signals from prior runs
+/// causing premature synchronization. Uses `DELETE /api/v1/test/signals`.
+Future<void> clearTestSignals() async {
+  final serverRoot = AppConstants.apiBaseUrl.replaceAll('/api/v1', '');
+  final dio = Dio(BaseOptions(
+    baseUrl: serverRoot,
+    connectTimeout: const Duration(seconds: 5),
+    receiveTimeout: const Duration(seconds: 5),
+  ));
+
+  try {
+    await dio.delete('/api/v1/test/signals');
+    print('  [pre-check] Stale test signals cleared');
+  } catch (e) {
+    // Non-fatal: endpoint may not exist yet
+    print('  [pre-check] Could not clear signals (non-fatal): $e');
+  }
+}
+
 /// Pump the app, log in via Firebase phone auth with the given phone number,
 /// and wait for the My Cricket page to appear.
 ///
@@ -58,6 +106,9 @@ Future<void> pumpAppAndWaitForHome(
   String phoneNumber = scorerPhone,
 }) async {
   final swTotal = Stopwatch()..start();
+
+  // Step 0: Server connectivity pre-check (fail fast)
+  await checkServerConnectivity();
 
   // Step 1: Firebase init
   final swFirebase = Stopwatch()..start();

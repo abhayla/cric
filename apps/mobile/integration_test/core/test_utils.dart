@@ -1,8 +1,11 @@
 /// Common test utility functions — settle, visual pause, widget waiting.
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 
 import '../config/constants.dart';
 
@@ -129,5 +132,55 @@ void clearSnackBars(WidgetTester tester) {
   if (scaffoldMessengers.evaluate().isNotEmpty) {
     final state = tester.state<ScaffoldMessengerState>(scaffoldMessengers.first);
     state.clearSnackBars();
+  }
+}
+
+/// Take a screenshot and save it to the device's external storage.
+///
+/// Uses [IntegrationTestWidgetsFlutterBinding.takeScreenshot] to capture
+/// the current screen state. Saves as PNG to `/sdcard/screenshots/` on
+/// Android for easy retrieval via `adb pull`.
+///
+/// Call this in error handlers or `addTearDown` to capture failure state.
+Future<void> takeFailureScreenshot(String name) async {
+  try {
+    final binding = IntegrationTestWidgetsFlutterBinding.instance;
+    final bytes = await binding.takeScreenshot(name);
+
+    // Save to device storage for retrieval
+    final dir = Directory('/sdcard/screenshots');
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final file = File('${dir.path}/${name}_$timestamp.png');
+    file.writeAsBytesSync(bytes);
+    print('  [screenshot] Saved: ${file.path}');
+  } catch (e) {
+    // Screenshot failures should never break the test
+    print('  [screenshot] Failed to capture "$name": $e');
+  }
+}
+
+/// Wrap a test body with screenshot-on-failure.
+///
+/// If the test body throws, captures a screenshot before re-throwing.
+/// Usage:
+/// ```dart
+/// testWidgets('my test', (tester) async {
+///   await withScreenshotOnFailure('my-test', () async {
+///     // test body...
+///   });
+/// });
+/// ```
+Future<void> withScreenshotOnFailure(
+  String testName,
+  Future<void> Function() body,
+) async {
+  try {
+    await body();
+  } catch (e) {
+    await takeFailureScreenshot('FAIL_$testName');
+    rethrow;
   }
 }

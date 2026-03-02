@@ -63,6 +63,9 @@ void _runScorerTest() {
     await pumpAppAndWaitForHome(tester, phoneNumber: scorerPhone);
     print('\n[SCORER] My Cricket page loaded');
 
+    // Clear stale signals from prior runs
+    await clearTestSignals();
+
     final signalDio = _createSignalDio();
 
     // Navigate to match setup
@@ -119,7 +122,9 @@ void _runScorerTest() {
             print('[SCORER] Signal: spectator-ready received');
             break;
           }
-        } catch (_) {}
+        } catch (e) {
+          print('[SCORER] Signal poll error: $e');
+        }
         await Future<void>.delayed(const Duration(seconds: 2));
       }
       if (!spectatorReady) {
@@ -270,7 +275,9 @@ void _runSpectatorTest() {
           print('[SPECTATOR] Signal: scorer-ready received');
           break;
         }
-      } catch (_) {}
+      } catch (e) {
+        print('[SPECTATOR] Signal poll error: $e');
+      }
       await Future<void>.delayed(const Duration(seconds: 2));
     }
     if (!scorerReady) {
@@ -358,6 +365,8 @@ void _runSpectatorTest() {
     }
 
     print('[SPECTATOR] Total score updates observed: $scoreChanges');
+    expect(scoreChanges, greaterThan(0),
+        reason: 'Spectator must observe at least 1 score update on Live tab');
 
     // ── Step 6: Verify match is NOT in My Cricket tab ──
     await navigateToHome(tester);

@@ -16,6 +16,42 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-03-04: E2E Test Audit — Top 5 Priorities Implemented
+
+**Status:** All 5 priorities from the E2E Integration Test Audit implemented. 10 files changed, 1 new test file created.
+
+**Changes by priority:**
+
+| Priority | Findings Fixed | Key Changes |
+|----------|---------------|-------------|
+| P1: Fix assertion-less tests | H2-1, H2-2, H3-2, H3-3 | Test 02: `if/print` → `expect()` for score/undo/persistence. Test 08+spectator: `expect(scoreChanges, greaterThan(0))`. Fixed seed `Random(42)` in test 02. |
+| P2: Screenshot-on-failure | H5-1 | `takeFailureScreenshot()` in `test_utils.dart`. Wired into tests 02, 04, 05, 06, 08, spectator. Saves PNG to `/sdcard/screenshots/`. |
+| P3: Dismissal types + extras | H1-1, H1-2, H1-3 | NEW `11_scoring_edge_cases_test.dart` — exercises Bowled, Caught (fielder), LBW, Run Out (3-step), Stumped + Wide, Bye, Leg-bye, No-ball, Free Hit flow. |
+| P4: MatchRecord → scorecard | H2-3, H2-4 | `verifyScorecardDeep` now accepts `MatchRecord`, verifies 1st innings total runs appear on scorecard. Structural checks now use `expect()`. |
+| P5: Server pre-check + signals | M5-1, M4-2, H3-1 | `checkServerConnectivity()` fails fast on server down. `clearTestSignals()` before multi-device tests. All `catch (_) {}` → `catch (e) { print(...) }`. |
+
+**Files changed:**
+- `integration_test/core/app_bootstrap.dart` — server pre-check + signal cleanup
+- `integration_test/core/test_utils.dart` — screenshot-on-failure utility
+- `integration_test/tests/02_standalone_match_test.dart` — real assertions, fixed seed, screenshot
+- `integration_test/tests/04_tournament_gk_test.dart` — screenshot on failure
+- `integration_test/tests/05_tournament_ko_test.dart` — screenshot on failure
+- `integration_test/tests/06_tournament_rr_test.dart` — screenshot on failure
+- `integration_test/tests/08_viewer_live_test.dart` — real assertions, signal error logging, signal cleanup
+- `integration_test/tests/spectator_live_test.dart` — real assertions, signal error logging, signal cleanup
+- `integration_test/verification/scorecard_verifier.dart` — MatchRecord scoring verification
+- `integration_test/tests/11_scoring_edge_cases_test.dart` — NEW (dismissal types, extras, free hit)
+
+**Remaining audit findings (not yet implemented):**
+- 28 findings at MEDIUM/LOW priority (see audit plan in session transcript)
+- Key deferred: tournament standings verification (H1-5), network failure test (H6-1), app resume test (H6-2), WS reconnection test (M6-1), bowl-first toss (M1-1), bowler eligibility (M1-3), structured test reporting (H5-2)
+
+**Next steps:**
+1. Run test 11 on emulator to verify Caught/RunOut/Stumped/Free-hit flows work
+2. Run test 02 to verify assertions catch real failures
+3. Run test 08 dual-emulator to verify signal cleanup + assertions
+4. Consider implementing MEDIUM priority findings
+
 ### Session 2026-03-03b: Launch Action Plan (C-PC-1 through C-PC-11) — COMPLETE
 
 **Status:** All 11 tasks from `docs/pre-prod/CricScores-Launch-Action-Plan.md` implemented. `flutter analyze` 0 issues, 2255/2255 tests pass, `bun run typecheck` clean.

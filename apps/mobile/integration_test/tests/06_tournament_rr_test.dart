@@ -17,6 +17,7 @@ import '../config/test_data.dart';
 import '../config/tournament_presets.dart';
 import '../core/app_bootstrap.dart';
 import '../core/error_tracker.dart';
+import '../core/test_utils.dart';
 import '../flows/tournament_flow.dart';
 
 void main() {
@@ -62,6 +63,7 @@ void main() {
     tracker.printSummary();
 
     if (tracker.hasError) {
+      await takeFailureScreenshot('06_tournament_rr');
       fail('Tournament RR test had errors. See tracker summary above.');
     }
   }, timeout: const Timeout(Duration(hours: 1)));
