@@ -407,6 +407,7 @@ Verify Phone Authentication is enabled (should already be from dev setup):
 3. Test phone numbers (for friend testing without real SMS costs):
    - `+919999999999` → OTP: `123456` (scorer)
    - `+919999999998` → OTP: `123456` (viewer)
+   - `+919999999997` → OTP: `123456` (spectator)
 
 ### 7.5 Create key.properties (on dev machine)
 

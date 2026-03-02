@@ -16,6 +16,45 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-03-03: Fix Test 10 + Full Regression — COMPLETE
+
+**Status:** ALL 10 E2E TESTS PASSING (01-10 including multi-device test 08). Prod APK installed on real device (CPH2691).
+
+**Test 10 Results (Special Match Flows, 13m 24s):**
+| Match | Flow | Status | Result |
+|-------|------|--------|--------|
+| Match 1 | Abandonment | PASSED | Match Abandoned |
+| Match 2 | Declaration | PASSED | Team5 won by 17 runs |
+| Match 3 | Super Over | PASSED | Team6 won by 2 wickets (SO) |
+
+**Full Regression Results (all passing):**
+| Test | Duration |
+|------|----------|
+| 01 - Team Setup | 4m 6s |
+| 02 - Standalone Match | 7m 48s |
+| 03 - Verify After Match | 1m 7s |
+| 04 - Tournament GK | 20m 22s |
+| 05 - Tournament KO | 21m 20s |
+| 06 - Tournament RR | 20m 19s |
+| 07 - Verify All Screens | 2m 1s |
+| 08 - Multi-device Viewer | PASSED (scorer emulator-5554 + viewer emulator-5556) |
+| 09 - Player Profile | 22s |
+| 10 - Special Match Flows | 13m 24s |
+
+**Root causes fixed:**
+1. **`isKnockoutMatch` lost in 2nd innings** — `startSecondInnings()` in `scoring_notifier.dart` created new `ScoringState` without `isKnockoutMatch`, defaulting to `false`. Tied knockout showed `MatchCompleteModal` instead of `SuperOverSetupWizard`. Fixed by adding `isKnockoutMatch: _state.isKnockoutMatch` to the new state.
+2. **SuperOverSetupWizard infinite width** — `Dialog(child: ConstrainedBox(...))` caused nested constraint conflicts. Replaced with `ConstrainedBox + Material` pattern (matching `InningsTransitionModal`) + `Center()` wrapper at call site.
+3. **Knockout toggle not found** — `SwitchListTile` for "Knockout Match" is inside collapsed "Advanced Settings" section. Test now expands Advanced Settings first.
+
+**Known non-blocking issue:** SyncService reports "Match must be in live status" during super over scoring — server doesn't support super over yet. Client-side scoring works correctly offline-first.
+
+**Commit:** `c4a7cef`
+
+**Next steps:**
+- Run spectator live test (`spectator_live_test.dart`) — phone `9999999997` configured, needs 3rd emulator (`emulator-5558`)
+- Server-side super over support (so SyncService doesn't error during SO scoring)
+- Remaining E2E coverage from plan: scorecard deep verification, analytics charts, updates feed deep verification, remove player
+
 ### Session 2026-03-02: Fix 5 E2E Test Failures — COMPLETE
 
 **Status:** ALL TESTS PASSING (04-08). Server deployed to VPS with signal endpoints.
@@ -38,7 +77,7 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 **Commits:** `67d0919`, `0d12f2b`, `1e55857`
 
-**Next steps:** Spectator live test requires phone `9999999997` configured in Firebase Console with OTP `123456`.
+**Next steps:** Run spectator live test (`spectator_live_test.dart`) — phone `9999999997` is configured in Firebase Console. Needs 3rd emulator (`emulator-5558`).
 
 ### Session 2026-03-01: DB Connectivity Check
 
