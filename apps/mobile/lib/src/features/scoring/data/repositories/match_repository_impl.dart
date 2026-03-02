@@ -65,6 +65,11 @@ class MatchRepositoryImpl implements MatchRepository {
   }
 
   @override
+  Future<void> deleteMatch(String matchId) async {
+    await remoteDatasource.deleteMatch(matchId);
+  }
+
+  @override
   Future<Match> recordToss(String matchId, RecordTossInput input) async {
     final data = await remoteDatasource.recordToss(
       matchId,

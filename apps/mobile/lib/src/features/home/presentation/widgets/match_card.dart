@@ -4,10 +4,11 @@ import '../../../../shared/widgets/pulsing_live_dot.dart';
 import '../../domain/entities/match_list_item.dart';
 
 class MatchCard extends StatelessWidget {
-  const MatchCard({super.key, required this.match, this.onTap});
+  const MatchCard({super.key, required this.match, this.onTap, this.onDelete});
 
   final MatchListItem match;
   final VoidCallback? onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -23,17 +24,51 @@ class MatchCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: meta + badge
+              // Header: meta + badge + overflow menu
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    _metaLine,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  Expanded(
+                    child: Text(
+                      _metaLine,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   _StatusBadge(status: match.status),
+                  if (_canDelete) ...[
+                    const SizedBox(width: 4),
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: PopupMenuButton<String>(
+                        padding: EdgeInsets.zero,
+                        iconSize: 18,
+                        icon: Icon(
+                          Icons.more_vert,
+                          size: 18,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        onSelected: (value) {
+                          if (value == 'delete') onDelete?.call();
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Delete Match', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 8),
@@ -70,6 +105,10 @@ class MatchCard extends StatelessWidget {
       ),
     );
   }
+
+  bool get _canDelete =>
+      onDelete != null &&
+      (match.status == 'setup' || match.status == 'toss');
 
   String get _metaLine {
     final parts = <String>[match.format];

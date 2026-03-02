@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:flutter/foundation.dart';
+import '../core/errors/exceptions.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/otp_page.dart';
 import '../features/auth/presentation/pages/profile_setup_page.dart';
@@ -332,8 +333,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                   try {
                     logoUrl = await ref.read(teams.teamRepositoryProvider)
                         .uploadImage(logoFile);
-                  } catch (_) {
-                    // Non-fatal: proceed without logo
+                  } catch (e) {
+                    if (kDebugMode) debugPrint('[CreateTeam] Logo upload failed: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Team created, but logo upload failed.')),
+                      );
+                    }
                   }
                 }
                 final team = await ref.read(teams.teamRepositoryProvider)
@@ -346,7 +352,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to create team: $e')),
+                    SnackBar(content: Text(toUserFriendlyMessage(e))),
                   );
                 }
               }
@@ -387,7 +393,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to add player: $e')),
+                      SnackBar(content: Text(toUserFriendlyMessage(e))),
                     );
                   }
                 }
@@ -404,7 +410,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to add player: $e')),
+                      SnackBar(content: Text(toUserFriendlyMessage(e))),
                     );
                   }
                 }
@@ -481,8 +487,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                         .toList();
                   }
                 } catch (e) {
-                  debugPrint('[Router] Failed to fetch team rosters: $e');
-                  // Proceed with empty rosters — toss page can still work
+                  if (kDebugMode) {
+                    debugPrint('[Router] Failed to fetch team rosters: $e');
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(toUserFriendlyMessage(e))),
+                    );
+                  }
+                  return; // Stay on match setup — user can retry
                 }
 
                 if (context.mounted) {
@@ -634,7 +647,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   }
                   if (context.mounted) {
                     messenger.showSnackBar(
-                      SnackBar(content: Text('Failed to start match: $e')),
+                      SnackBar(content: Text(toUserFriendlyMessage(e))),
                     );
                   }
                 }

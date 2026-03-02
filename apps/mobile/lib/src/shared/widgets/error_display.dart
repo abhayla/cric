@@ -13,26 +13,7 @@ class ErrorDisplay extends StatelessWidget {
   final Object error;
   final VoidCallback onRetry;
 
-  String get _userMessage {
-    if (error is NetworkException) {
-      return 'Check your internet connection and try again.';
-    }
-    if (error is AuthException) {
-      return 'Session expired. Please log in again.';
-    }
-    if (error is ServerException) {
-      final statusCode = (error as ServerException).statusCode;
-      if (statusCode == null) return 'Something went wrong. Please try again.';
-      return switch (statusCode) {
-        401 => 'Session expired. Please log in again.',
-        403 => 'You don\'t have permission for this action.',
-        404 => 'The requested data was not found.',
-        >= 500 => 'Something went wrong on our end. Please try again.',
-        _ => 'Something went wrong. Please try again.',
-      };
-    }
-    return 'Something went wrong. Please try again.';
-  }
+  String get _userMessage => toUserFriendlyMessage(error);
 
   @override
   Widget build(BuildContext context) {

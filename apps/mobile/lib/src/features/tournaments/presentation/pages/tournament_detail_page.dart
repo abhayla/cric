@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../shared/widgets/error_display.dart';
 import '../../../teams/providers.dart' show teamsListProvider;
 import '../../domain/entities/fixture.dart';
@@ -56,11 +58,11 @@ class _TournamentDetailView extends ConsumerStatefulWidget {
 
 class _TournamentDetailViewState extends ConsumerState<_TournamentDetailView> {
   Future<void> _handleStatusTransition(TournamentStatus newStatus) async {
-    debugPrint('[_handleStatusTransition] ${widget.tournamentId} → ${newStatus.label}');
+    if (kDebugMode) debugPrint('[_handleStatusTransition] ${widget.tournamentId} → ${newStatus.label}');
     try {
       final repository = ref.read(tournamentRepositoryProvider);
       await repository.transitionStatus(widget.tournamentId, newStatus);
-      debugPrint('[_handleStatusTransition] SUCCESS');
+      if (kDebugMode) debugPrint('[_handleStatusTransition] SUCCESS');
       ref.invalidate(tournamentDetailProvider(widget.tournamentId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,10 +70,10 @@ class _TournamentDetailViewState extends ConsumerState<_TournamentDetailView> {
         );
       }
     } catch (e) {
-      debugPrint('[_handleStatusTransition] ERROR: $e');
+      if (kDebugMode) debugPrint('[_handleStatusTransition] ERROR: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to change status: $e')),
+          SnackBar(content: Text(toUserFriendlyMessage(e))),
         );
       }
     }
@@ -357,11 +359,11 @@ class _OverviewTabState extends ConsumerState<_OverviewTab> {
 
   Future<void> _generateFixtures() async {
     setState(() => _isGenerating = true);
-    debugPrint('[_generateFixtures] Starting for tournament: ${widget.tournamentId}');
+    if (kDebugMode) debugPrint('[_generateFixtures] Starting for tournament: ${widget.tournamentId}');
     try {
       final repository = ref.read(tournamentRepositoryProvider);
       final result = await repository.generateFixtures(widget.tournamentId);
-      debugPrint('[_generateFixtures] SUCCESS: ${result.totalFixtures} fixtures generated');
+      if (kDebugMode) debugPrint('[_generateFixtures] SUCCESS: ${result.totalFixtures} fixtures generated');
       ref.invalidate(tournamentFixturesProvider(widget.tournamentId));
       ref.invalidate(tournamentDetailProvider(widget.tournamentId));
       if (mounted) {
@@ -370,10 +372,10 @@ class _OverviewTabState extends ConsumerState<_OverviewTab> {
         );
       }
     } catch (e) {
-      debugPrint('[_generateFixtures] ERROR: $e');
+      if (kDebugMode) debugPrint('[_generateFixtures] ERROR: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to generate fixtures: $e')),
+          SnackBar(content: Text(toUserFriendlyMessage(e))),
         );
       }
     } finally {
@@ -789,11 +791,11 @@ class _AddTeamSheetState extends ConsumerState<_AddTeamSheet> {
         );
       }
     } catch (e) {
-      debugPrint('[_addTeam] ERROR adding $teamName: $e');
+      if (kDebugMode) debugPrint('[_addTeam] ERROR adding $teamName: $e');
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add team: $e')),
+          SnackBar(content: Text(toUserFriendlyMessage(e))),
         );
       }
     }
@@ -874,7 +876,7 @@ class _AddTeamSheetState extends ConsumerState<_AddTeamSheet> {
               loading: () =>
                   const Center(child: CircularProgressIndicator()),
               error: (e, _) =>
-                  Center(child: Text('Error loading teams: $e')),
+                  Center(child: Text(toUserFriendlyMessage(e))),
               data: (result) {
                 final filtered = _searchQuery.isEmpty
                     ? result.teams

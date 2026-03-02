@@ -87,6 +87,12 @@ class MatchesListNotifier extends AsyncNotifier<MatchListResult> {
   }
 }
 
+/// Match IDs that have active Drift snapshots (crash recovery candidates).
+final resumableMatchIdsProvider = FutureProvider<List<String>>((ref) async {
+  final datasource = ref.read(scoringLocalDatasourceProvider);
+  return datasource.getResumableMatchIds();
+});
+
 /// Live match viewer state (WebSocket).
 final matchLiveNotifierProvider =
     NotifierProvider<MatchLiveNotifier, LiveMatchState>(

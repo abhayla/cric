@@ -29,6 +29,7 @@ export const matches = pgTable('matches', {
   matchDate: date('match_date', { mode: 'string' }).notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull().$onUpdate(() => new Date()),
+  deletedAt: timestamp('deleted_at', { mode: 'date' }),
 }, (table) => [
   index('idx_matches_status').on(table.status),
   index('idx_matches_teams').on(table.homeTeamId, table.awayTeamId),

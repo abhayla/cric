@@ -21,7 +21,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(buildWidget(const NetworkException()));
       expect(
-        find.text('Check your internet connection and try again.'),
+        find.text('No internet connection. Please check your network and try again.'),
         findsOneWidget,
       );
     });

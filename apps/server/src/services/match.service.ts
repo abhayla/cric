@@ -1,7 +1,8 @@
-import { eq, and, sql, count, inArray, desc, type SQL } from 'drizzle-orm';
+import { eq, and, sql, count, inArray, desc, isNull, type SQL } from 'drizzle-orm';
 import { db } from '../db/index.ts';
 import { matches, matchPlayers, matchResult } from '../db/schema/matches.ts';
 import { innings } from '../db/schema/innings.ts';
+import { deliveries } from '../db/schema/deliveries.ts';
 import { teams } from '../db/schema/teams.ts';
 import { teamRosters } from '../db/schema/teams.ts';
 import { AppError } from '../middleware/error-handler.ts';
@@ -124,6 +125,7 @@ export async function getMatches(userId: string, options: GetMatchesOptions = {}
   const offset = (page - 1) * limit;
 
   const conditions: SQL[] = [];
+  conditions.push(isNull(matches.deletedAt));
 
   // When scope is 'public', skip the team/scorer filter — show all matches.
   // Default ('user') filters to matches where the user is scorer or a match player.
@@ -268,7 +270,7 @@ export async function getMatch(matchId: string) {
   const [match] = await db
     .select()
     .from(matches)
-    .where(eq(matches.id, matchId))
+    .where(and(eq(matches.id, matchId), isNull(matches.deletedAt)))
     .limit(1);
 
   if (!match) return null;
@@ -519,4 +521,51 @@ export async function recordToss(matchId: string, input: RecordTossInput) {
     match: updatedMatch!,
     innings: firstInnings!,
   };
+}
+
+export async function deleteMatch(matchId: string, userId: string) {
+  // Fetch match where deletedAt IS NULL
+  const [match] = await db
+    .select()
+    .from(matches)
+    .where(and(eq(matches.id, matchId), isNull(matches.deletedAt)))
+    .limit(1);
+
+  if (!match) {
+    throw new AppError('NOT_FOUND', 'Match not found', 404);
+  }
+
+  // Verify user is the scorer
+  if (match.scorerId !== userId) {
+    throw new AppError('FORBIDDEN', 'Only the match scorer can delete this match', 403);
+  }
+
+  // Only allow deletion in setup or toss status
+  if (match.status !== 'setup' && match.status !== 'toss') {
+    throw new AppError('VALIDATION_ERROR', 'Only matches in setup or toss status can be deleted', 400);
+  }
+
+  // Check no deliveries exist
+  const matchInnings = await db
+    .select({ id: innings.id })
+    .from(innings)
+    .where(eq(innings.matchId, matchId));
+
+  if (matchInnings.length > 0) {
+    const deliveryRows = await db
+      .select({ id: deliveries.id })
+      .from(deliveries)
+      .where(inArray(deliveries.inningsId, matchInnings.map(i => i.id)))
+      .limit(1);
+
+    if (deliveryRows.length > 0) {
+      throw new AppError('VALIDATION_ERROR', 'Cannot delete a match that has deliveries', 400);
+    }
+  }
+
+  // Soft delete
+  await db
+    .update(matches)
+    .set({ deletedAt: new Date() })
+    .where(eq(matches.id, matchId));
 }

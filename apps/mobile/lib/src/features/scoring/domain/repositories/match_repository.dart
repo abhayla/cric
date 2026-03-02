@@ -101,4 +101,7 @@ abstract class MatchRepository {
 
   /// Record toss result and start the match.
   Future<Match> recordToss(String matchId, RecordTossInput input);
+
+  /// Soft-delete a match (setup/toss status only).
+  Future<void> deleteMatch(String matchId);
 }

@@ -1,10 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:cricscores/src/app/router.dart';
 import 'package:cricscores/src/app/providers.dart' show currentUserIdProvider;
+import 'package:cricscores/src/core/errors/exceptions.dart';
 import 'package:cricscores/src/features/home/providers.dart';
+import 'package:cricscores/src/features/scoring/presentation/pages/scoring_page.dart';
+import 'package:cricscores/src/features/scoring/providers.dart' as scoring_prov;
 import 'package:cricscores/src/features/teams/providers.dart' as teams_prov;
 import 'package:cricscores/src/features/teams/domain/entities/team.dart';
 import 'package:cricscores/src/features/teams/presentation/widgets/team_card.dart';
@@ -103,12 +107,19 @@ class _HomePageState extends ConsumerState<HomePage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          _TeamsSubTab(),
-          _MatchesSubTab(),
-          _TournamentsSubTab(),
+      body: Column(
+        children: [
+          const _ResumeBanner(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                _TeamsSubTab(),
+                _MatchesSubTab(),
+                _TournamentsSubTab(),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: ExpandableFab(
@@ -130,6 +141,89 @@ class _HomePageState extends ConsumerState<HomePage>
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Banner shown when a resumable scoring session exists in Drift.
+class _ResumeBanner extends ConsumerWidget {
+  const _ResumeBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final resumableIds = ref.watch(scoring_prov.resumableMatchIdsProvider);
+    return resumableIds.when(
+      data: (ids) {
+        if (ids.isEmpty) return const SizedBox.shrink();
+        final matchId = ids.first;
+        return MaterialBanner(
+          content: const Text('You have an unfinished match. Resume scoring?'),
+          leading: const Icon(Icons.sports_cricket, color: Colors.orange),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await ref.read(scoring_prov.scoringLocalDatasourceProvider).clearMatch(matchId);
+                ref.invalidate(scoring_prov.resumableMatchIdsProvider);
+              },
+              child: const Text('DISMISS'),
+            ),
+            FilledButton(
+              onPressed: () => _resumeMatch(context, ref, matchId),
+              child: const Text('RESUME'),
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+
+  Future<void> _resumeMatch(BuildContext context, WidgetRef ref, String matchId) async {
+    final datasource = ref.read(scoring_prov.scoringLocalDatasourceProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+
+    final state = await datasource.loadState(matchId);
+    if (state == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not load saved match state.')),
+      );
+      return;
+    }
+
+    // Reconstruct ScoringPageArgs from saved state
+    final args = ScoringPageArgs(
+      matchId: state.matchId,
+      inningsId: state.inningsId,
+      battingTeamId: state.battingTeamId,
+      bowlingTeamId: state.bowlingTeamId,
+      battingTeamName: state.battingTeamName,
+      bowlingTeamName: state.bowlingTeamName,
+      inningsNumber: state.inningsNumber,
+      totalOvers: state.totalOvers,
+      playersPerSide: state.playersPerSide,
+      target: state.target,
+      wideRunsPenalty: state.wideRunsPenalty,
+      noBallRunsPenalty: state.noBallRunsPenalty,
+      magicOverNumbers: state.magicOverNumbers,
+      magicOverRunMultiplier: state.magicOverRunMultiplier,
+      magicOverWicketPenalty: state.magicOverWicketPenalty,
+      isKnockoutMatch: state.isKnockoutMatch,
+      battingTeamPlayers: state.battingTeamPlayers,
+      bowlingTeamPlayers: state.bowlingTeamPlayers,
+      openingStrikerId: state.strikerId ?? '',
+      openingStrikerName: '',
+      openingNonStrikerId: state.nonStrikerId ?? '',
+      openingNonStrikerName: '',
+      openingBowlerId: state.bowlerId ?? '',
+      openingBowlerName: '',
+      firstInningsSummary: state.firstInningsSummary,
+    );
+
+    router.go(
+      AppRoutes.scoringPath(matchId),
+      extra: args,
     );
   }
 }
@@ -244,6 +338,44 @@ class _MatchesSubTab extends ConsumerStatefulWidget {
 class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
   String _filter = 'live';
 
+  Future<void> _confirmDeleteMatch(
+    BuildContext context,
+    WidgetRef ref,
+    String matchId,
+    String matchTitle,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Match'),
+        content: Text('Delete "$matchTitle"? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(scoring_prov.matchRepositoryProvider).deleteMatch(matchId);
+      // Clean up any local Drift snapshot
+      await ref.read(scoring_prov.scoringLocalDatasourceProvider).clearMatch(matchId);
+      ref.invalidate(allMatchesProvider(1));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Match deleted')),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('[DeleteMatch] ERROR: $e');
+      messenger.showSnackBar(
+        SnackBar(content: Text(toUserFriendlyMessage(e))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final matchesAsync = ref.watch(allMatchesProvider(1));
@@ -345,6 +477,7 @@ class _MatchesSubTabState extends ConsumerState<_MatchesSubTab> {
                       context.push(AppRoutes.scorecardPath(match.id));
                     }
                   },
+                  onDelete: () => _confirmDeleteMatch(context, ref, match.id, match.title),
                 );
               }
 

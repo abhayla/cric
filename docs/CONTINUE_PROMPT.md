@@ -16,6 +16,39 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-03-03b: Launch Action Plan (C-PC-1 through C-PC-11) — COMPLETE
+
+**Status:** All 11 tasks from `docs/pre-prod/CricScores-Launch-Action-Plan.md` implemented. `flutter analyze` 0 issues, 2255/2255 tests pass, `bun run typecheck` clean.
+
+**Code changes (C-PC-1 through C-PC-6):**
+
+| Task | Description | Files Changed |
+|------|-------------|---------------|
+| C-PC-3 | User-friendly error messages | `exceptions.dart` (new `toUserFriendlyMessage()`), `error_display.dart` (DRY refactor), `router.dart` (4 SnackBars), `tournament_detail_page.dart` (4 SnackBars) |
+| C-PC-5 | Guard debugPrint/print | `router.dart` (1 call), `tournament_detail_page.dart` (7 calls) — all wrapped in `kDebugMode` |
+| C-PC-6 | Logo upload failure SnackBar | `router.dart` — silent `catch (_)` → SnackBar "Team created, but logo upload failed." |
+| C-PC-4 | Fix roster fetch dead end | `router.dart` — `return;` on failure instead of navigating to toss with empty rosters |
+| C-PC-1 | Match deletion | Server: `matches.ts` schema (`deletedAt`), `match.service.ts` (`deleteMatch()`, soft-delete filter on `getMatches`/`getMatch`), `matches.ts` route (`DELETE /:id`), migration `0009`. Flutter: `match_repository.dart`, `match_remote_datasource.dart`, `match_repository_impl.dart`, `match_card.dart` (PopupMenuButton), `home_page.dart` (confirm dialog + API) |
+| C-PC-2 | Resume match prompt | `providers.dart` (`resumableMatchIdsProvider`), `home_page.dart` (`_ResumeBanner` with RESUME/DISMISS) |
+
+**Assets (C-PC-7 through C-PC-9):**
+- `docs/pre-prod/privacy.html` — Privacy policy (standalone HTML)
+- `docs/pre-prod/terms.html` — Terms of service (standalone HTML)
+- `docs/pre-prod/play-store-listing.md` — Short/full descriptions, tags, metadata
+
+**Pre-flight (C-PC-10/C-PC-11):**
+- Signing files verified: `cricscores-release.jks` + `key.properties` exist, both in `.gitignore`
+- Build command ready: `flutter build appbundle --flavor prod --release --dart-define=FLAVOR=prod`
+
+**Pending manual steps:**
+1. Apply migration on VPS: `cd C:\Apps\cricscores && bun run db:migrate`
+2. Deploy server to VPS (with new `deleteMatch` endpoint)
+3. Deploy `privacy.html` and `terms.html` to `cricscores.in/privacy` and `cricscores.in/terms` via Nginx
+4. Build signed AAB: `flutter build appbundle --flavor prod --release --dart-define=FLAVOR=prod`
+5. Back up `cricscores-release.jks` and `key.properties` to safe location outside repo
+6. Manual testing: match deletion, resume prompt, error messages, logo upload failure SnackBar
+7. Upload AAB to Play Console
+
 ### Session 2026-03-03: Fix Test 10 + Full Regression — COMPLETE
 
 **Status:** ALL 10 E2E TESTS PASSING (01-10 including multi-device test 08). Prod APK installed on real device (CPH2691).

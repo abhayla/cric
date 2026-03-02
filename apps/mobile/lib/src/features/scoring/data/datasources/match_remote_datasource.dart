@@ -120,6 +120,14 @@ class MatchRemoteDatasource {
     }
   }
 
+  Future<void> deleteMatch(String matchId) async {
+    try {
+      await dio.delete('${AppConstants.apiBaseUrl}/matches/$matchId');
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
   AppException _handleDioError(DioException e) {
     if (e.type == DioExceptionType.connectionError ||
         e.type == DioExceptionType.connectionTimeout) {

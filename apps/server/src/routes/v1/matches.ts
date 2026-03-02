@@ -8,6 +8,7 @@ import {
   getMatch,
   setPlayingXI,
   recordToss,
+  deleteMatch,
 } from '../../services/match.service.ts';
 
 const MATCH_FORMATS = ['T20', 'ODI', 'test', 'custom'] as const;
@@ -167,5 +168,23 @@ export const matchRoutes = new Elysia({ prefix: '/api/v1/matches' })
         openingNonStrikerId: t.String(),
         openingBowlerId: t.String(),
       }),
+    },
+  )
+  .delete(
+    '/:id',
+    async (ctx) => {
+      const { firebaseUser } = ctx as typeof ctx & {
+        firebaseUser: { uid: string; phone: string | null; email: string | null };
+      };
+      const user = await getUserByFirebaseUid(firebaseUser.uid);
+      if (!user) throw new AppError('UNAUTHORIZED', 'User not found', 401);
+
+      validateUuid(ctx.params.id, 'match id');
+      await deleteMatch(ctx.params.id, user.id);
+
+      ctx.set.status = 204;
+    },
+    {
+      params: t.Object({ id: t.String() }),
     },
   );
