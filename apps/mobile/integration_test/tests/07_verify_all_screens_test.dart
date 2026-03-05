@@ -3,7 +3,12 @@
 /// Full verification of all screens after matches and tournaments have been played.
 /// Requires tests 01-06 to have run (12 teams, 1 standalone match, 3 tournaments).
 ///
-/// Run:
+/// Run (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev integration_test/tests/07_verify_all_screens_test.dart -d emulator-5554
+/// ```
+///
+/// Run (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
 ///   integration_test/tests/07_verify_all_screens_test.dart -d emulator-5554

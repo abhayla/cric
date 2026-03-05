@@ -6,7 +6,12 @@
 ///
 /// Team7 vs Team8 | 5 overs | 6 players.
 ///
-/// Run:
+/// Run (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev integration_test/tests/11_scoring_edge_cases_test.dart -d emulator-5554
+/// ```
+///
+/// Run (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
 ///   integration_test/tests/11_scoring_edge_cases_test.dart -d emulator-5554

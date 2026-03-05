@@ -106,9 +106,27 @@ Future<void> ensureTeamsExist(
   }
 }
 
-/// Check if a team name exists in the visible teams list.
-/// Scrolls through the list to find it.
+/// Check if a team name exists — uses API for reliability (avoids fragile UI scrolling).
 Future<bool> _teamExistsInList(WidgetTester tester, String teamName) async {
+  try {
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(Scaffold).first),
+    );
+    final repo = container.read(teamRepositoryProvider);
+    final result = await repo.getTeams(page: 1, limit: 50);
+    final exists = result.teams.any((t) => t.name == teamName);
+    print('  [EXISTS-CHECK] $teamName via API: $exists');
+    return exists;
+  } catch (e) {
+    print('  [EXISTS-CHECK] API check failed for $teamName: $e');
+    // Fall back to UI check if API fails
+    return _teamExistsInListViaUI(tester, teamName);
+  }
+}
+
+/// Fallback: check if a team name exists by scrolling the visible teams list.
+Future<bool> _teamExistsInListViaUI(
+    WidgetTester tester, String teamName) async {
   // First check immediate visibility
   if (find.text(teamName).evaluate().isNotEmpty) return true;
 
@@ -116,13 +134,13 @@ Future<bool> _teamExistsInList(WidgetTester tester, String teamName) async {
   // NeverScrollableScrollPhysics)
   final listView = find.byType(ListView);
   if (listView.evaluate().isEmpty) return false;
-  final scrollable = find.descendant(
-    of: listView.first,
-    matching: find.byType(Scrollable),
-  );
-  if (scrollable.evaluate().isEmpty) return false;
 
   for (var scroll = 0; scroll < 10; scroll++) {
+    final scrollable = find.descendant(
+      of: find.byType(ListView).first,
+      matching: find.byType(Scrollable),
+    );
+    if (scrollable.evaluate().isEmpty) break;
     await tester.drag(scrollable.first, const Offset(0, -300));
     await settle(tester);
     if (find.text(teamName).evaluate().isNotEmpty) return true;
@@ -130,6 +148,11 @@ Future<bool> _teamExistsInList(WidgetTester tester, String teamName) async {
 
   // Scroll back to top for next team check
   for (var scroll = 0; scroll < 10; scroll++) {
+    final scrollable = find.descendant(
+      of: find.byType(ListView).first,
+      matching: find.byType(Scrollable),
+    );
+    if (scrollable.evaluate().isEmpty) break;
     await tester.drag(scrollable.first, const Offset(0, 300));
     await settle(tester);
   }

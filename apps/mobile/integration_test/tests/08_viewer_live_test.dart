@@ -9,13 +9,25 @@
 /// Coordination via HTTP signal endpoints (exception to zero-API rule —
 /// test infrastructure only, not data creation).
 ///
-/// Run scorer:
+/// Run scorer (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev --dart-define=ROLE=scorer \
+///   integration_test/tests/08_viewer_live_test.dart -d emulator-5554
+/// ```
+///
+/// Run viewer (dev mode):
+/// ```bash
+/// flutter test --flavor dev --dart-define=ROLE=viewer \
+///   integration_test/tests/08_viewer_live_test.dart -d emulator-5556
+/// ```
+///
+/// Run scorer (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod --dart-define=ROLE=scorer \
 ///   integration_test/tests/08_viewer_live_test.dart -d emulator-5554
 /// ```
 ///
-/// Run viewer:
+/// Run viewer (prod mode):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod --dart-define=ROLE=viewer \
 ///   integration_test/tests/08_viewer_live_test.dart -d <real-device-id>

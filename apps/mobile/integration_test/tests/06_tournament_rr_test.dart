@@ -2,7 +2,12 @@
 ///
 /// Uses Team1-Team3.
 ///
-/// Run:
+/// Run (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev integration_test/tests/06_tournament_rr_test.dart -d emulator-5554
+/// ```
+///
+/// Run (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
 ///   integration_test/tests/06_tournament_rr_test.dart -d emulator-5554

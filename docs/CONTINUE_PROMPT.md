@@ -16,6 +16,22 @@ See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full document
 
 ## What to Do Next
 
+### Session 2026-03-04: E2E Tests — Dev/Prod Dual-Mode Support
+
+**Status:** All E2E tests updated to support both dev mode (local server) and prod mode (cricscores.in).
+
+**Changes:**
+- 13 test file docstrings now show both `--flavor dev` and `--flavor prod --dart-define=FLAVOR=prod` invocations
+- `app_bootstrap.dart` — `checkServerConnectivity()` error message now dynamically references `$serverRoot` instead of hardcoding "cricscores.in"
+- `integration_test/CLAUDE.md` — "Test Execution Modes" section with Dev/Prod prerequisites and examples
+- `scripts/multi-device-e2e.sh` — `FLAVOR` variable (default: `dev`), fixed test file references to `08_viewer_live_test.dart` with ROLE defines
+- Root `CLAUDE.md` — E2E command examples and rule updated for dual-mode
+
+**Next steps:**
+1. Run a test in dev mode to verify: `cd apps/mobile && flutter test --flavor dev integration_test/tests/01_team_setup_test.dart -d emulator-5554`
+2. Renew `cricscores.in` domain when ready to resume prod testing
+3. Continue with remaining E2E audit findings (28 MEDIUM/LOW priority items)
+
 ### Session 2026-03-04: E2E Test Audit — Top 5 Priorities Implemented
 
 **Status:** All 5 priorities from the E2E Integration Test Audit implemented. 10 files changed, 1 new test file created.

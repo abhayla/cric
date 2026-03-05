@@ -73,13 +73,41 @@ Three dedicated emulators, one per role:
 
 Single-device tests run on Scorer (`emulator-5554`). Multi-device tests use Scorer + Viewer or Scorer + Spectator.
 
-## Test Execution
+## Test Execution Modes
 
-All integration tests run against the prod server (`cricscores.in`):
+Tests support two execution modes via Android build flavors. The app auto-selects the correct API/WS URLs based on flavor (see `AppConstants`).
+
+### Dev Mode (local server)
+
+**Prerequisites:** Local Bun server running on port 3001 (`cd apps/server && bun run dev`).
 
 ```bash
-# Single-device tests (scorer emulator)
 cd apps/mobile
+
+# Single-device tests (scorer emulator)
+flutter test --flavor dev integration_test/tests/<test>.dart -d emulator-5554
+
+# Multi-device: viewer live test
+flutter test --flavor dev --dart-define=ROLE=scorer \
+  integration_test/tests/08_viewer_live_test.dart -d emulator-5554
+flutter test --flavor dev --dart-define=ROLE=viewer \
+  integration_test/tests/08_viewer_live_test.dart -d emulator-5556
+
+# Multi-device: spectator live test
+flutter test --flavor dev --dart-define=ROLE=scorer \
+  integration_test/tests/spectator_live_test.dart -d emulator-5554
+flutter test --flavor dev --dart-define=ROLE=viewer --dart-define=VIEWER_PHONE=9999999997 \
+  integration_test/tests/spectator_live_test.dart -d emulator-5558
+```
+
+### Prod Mode (cricscores.in)
+
+**Prerequisites:** `cricscores.in` domain must be resolving and the prod server must be running.
+
+```bash
+cd apps/mobile
+
+# Single-device tests (scorer emulator)
 flutter test --flavor prod --dart-define=FLAVOR=prod \
   integration_test/tests/<test>.dart -d emulator-5554
 
@@ -97,4 +125,4 @@ flutter test --flavor prod --dart-define=FLAVOR=prod \
   integration_test/tests/spectator_live_test.dart -d emulator-5558
 ```
 
-Tests that create teams (01, perf) should run before tests that assume teams exist (02-08).
+Tests that create teams (01, perf) should run before tests that assume teams exist (02-11).

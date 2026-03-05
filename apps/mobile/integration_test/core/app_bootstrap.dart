@@ -66,7 +66,7 @@ Future<void> checkServerConnectivity() async {
     throw TestFailure(
       'Server unreachable at $serverRoot — cannot run E2E tests.\n'
       'Error: $e\n'
-      'Check: Is the server running? Is cricscores.in DNS resolving? '
+      'Check: Is the server running at $serverRoot? '
       'Is there network connectivity?',
     );
   }

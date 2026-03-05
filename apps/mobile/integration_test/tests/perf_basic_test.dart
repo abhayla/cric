@@ -6,7 +6,12 @@
 /// Scores a 5-over match (6 players per side) and navigates all screens.
 /// Prints a formatted performance report at the end.
 ///
-/// Run:
+/// Run (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev integration_test/tests/perf_basic_test.dart -d emulator-5554
+/// ```
+///
+/// Run (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
 ///   integration_test/tests/perf_basic_test.dart -d emulator-5554

@@ -5,11 +5,30 @@ If any issue or error found then fix it and retest it. Do this in loop until the
 /plugin marketplace add anthropics/claude-code                                                                                 
 /plugin install frontend-design@claude-code-plugins
 
-Do not proceed until you have 100% confidence of what I want. Ask me questions until you reach that confidence. 
-Ask one question at a time. Tell me the approximate number of questions you are going to ask.
-For each question, always give your recommendation. Your recommendation should be based on best practices and standards for similar scenario.
-After each response and before asking next question, Check industry standards, check the related codebase and docs and then add your knowlegebase to proceed.
-Run through your final plan with me for my review iteratively for each section. Create the final plan only after my approval.                                         
+***************************
+  Before starting, clarify requirements by asking me questions one at a time.                                                 
+  How to ask:                                                                                                              
+  - State how many questions remain (e.g., "Question 3 of ~6")    
+  - For each question, provide your recommendation with reasoning (cite industry standards, codebase patterns, or docs
+  you've read)
+  - Before each question, read relevant files/docs in the codebase to ground your recommendation in what actually exists — 
+  don't ask me things you can answer by reading code
+  - Keep questions focused — don't bundle multiple decisions into one question
+  - After I answer, adjust your remaining questions based on what you've learned (some may become unnecessary)
+
+  After all questions are answered:
+  - Present the plan section by section for my review (not all at once)
+  - For each section, wait for my approval or feedback before showing the next
+  - Only finalize the complete plan after all sections are approved
+
+  What NOT to do:
+  - Don't ask generic questions you could resolve by reading the codebase (e.g., "What tech stack do you use?" — that's in 
+  CLAUDE.md)
+  - Don't ask me to confirm things that have obvious best-practice answers — just state your recommendation and ask if I   
+  disagree
+  - Don't present the entire plan in one shot expecting blanket approval
+
+***************************
 
 Create a prompt to Save the current context state and start from here in the next context from here referring the required docs. Save this prompt in 
 \docs\CONTINUE_PROMPT.md
@@ -341,3 +360,38 @@ room.
   ├──────┼─────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────┤
   │ spec │ spectator_live_test.dart        │ ~10 min  │ Non-team user discovers match on Live tab                     │
   └──────┴─────────────────────────────────┴──────────┴───────────────────────────────────────────────────────────────┘
+
+  Act as a senior product manager responsible for shipping CricScores to production (Google Play Store) as fast as possible.                  
+  Context: Read docs/CONTINUE_PROMPT.md for current session state, docs/planning/IMPLEMENTATION_PLAN.md for the full phase breakdown, and  
+  scan the codebase for actual completion status. The app has Phases 1-6 complete, Phase 7 (Polish & Testing) in progress, with all 10 E2E
+  tests passing.
+
+  Your task: Produce a launch action plan with the following structure:
+
+  1. Current State Audit — What is actually done vs. what the plan says? Identify any gaps between documented status and reality (check for
+   uncommitted files, TODO comments, known non-blocking issues listed in CONTINUE_PROMPT.md, and any features that are "complete" but have 
+  caveats).
+  2. Launch Blockers — List every item that MUST be resolved before a real user can download and use the app. Categorize as:
+    - P0 (Ship-blocking): App crashes, data loss, security holes, Play Store rejection risks
+    - P1 (Day-1 critical): Features that are broken/missing but won't block the store listing
+    - P2 (Fast-follow): Can ship without, but should fix within first week
+  3. Cut List — What planned work should be explicitly DEFERRED to post-launch? Be aggressive. For each deferred item, state why it's safe 
+  to cut and what the user impact is.
+  4. Sprint Plan — A sequenced, dependency-ordered task list for the remaining work. For each task:
+    - Estimated effort (S/M/L)
+    - Dependencies (what must be done first)
+    - Who/what does it (Claude Code, manual human action, or external service)
+    - Acceptance criteria (how do we know it's done)
+  5. Play Store Checklist — Everything needed for the actual store submission: signing keys, store listing assets (screenshots,
+  description, icon), privacy policy, content rating, target API level compliance, etc. Flag what exists vs. what's missing.
+  6. Risk Register — Top 3-5 risks that could delay launch, with mitigation strategies.
+
+  Constraints:
+  - Optimize for SPEED, not perfection. If something works but isn't polished, ship it.
+  - The target audience is amateur cricketers in India — friends & local league players, not enterprise users.
+  - Android only (no iOS). Single flavor: prod (in.cricscores.app).
+  - Server is already deployed at cricscores.in on VPS.
+  - Do NOT suggest adding new features. Only focus on making what exists production-ready.
+
+  Output format: Use tables for the sprint plan and checklists. Be specific — no vague items like "fix bugs" or "improve performance."     
+  Every action item should be concrete and verifiable.

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 512px; height: 512px; overflow: hidden; background: transparent; }
+  .icon-container {
+    width: 512px;
+    height: 512px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #C62828;
+    border-radius: 112px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Cricket ball seam - left curve */
+  .seam-left, .seam-right {
+    position: absolute;
+    width: 120px;
+    height: 320px;
+    border: 12px solid rgba(255,255,255,0.95);
+    border-radius: 50%;
+    background: transparent;
+  }
+  .seam-left {
+    left: 130px;
+    top: 96px;
+    border-right: none;
+  }
+  .seam-right {
+    right: 130px;
+    top: 96px;
+    border-left: none;
+  }
+  /* Stitch marks */
+  .stitch {
+    position: absolute;
+    width: 8px;
+    height: 20px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 4px;
+  }
+  /* Left stitches */
+  .sl1 { left: 118px; top: 140px; transform: rotate(-30deg); }
+  .sl2 { left: 110px; top: 180px; transform: rotate(-15deg); }
+  .sl3 { left: 108px; top: 220px; transform: rotate(0deg); }
+  .sl4 { left: 108px; top: 260px; transform: rotate(0deg); }
+  .sl5 { left: 110px; top: 300px; transform: rotate(15deg); }
+  .sl6 { left: 118px; top: 340px; transform: rotate(30deg); }
+  /* Right stitches */
+  .sr1 { right: 118px; top: 140px; transform: rotate(30deg); }
+  .sr2 { right: 110px; top: 180px; transform: rotate(15deg); }
+  .sr3 { right: 108px; top: 220px; transform: rotate(0deg); }
+  .sr4 { right: 108px; top: 260px; transform: rotate(0deg); }
+  .sr5 { right: 110px; top: 300px; transform: rotate(-15deg); }
+  .sr6 { right: 118px; top: 340px; transform: rotate(-30deg); }
+  /* Subtle shine */
+  .shine {
+    position: absolute;
+    top: 40px;
+    left: 80px;
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+<div class="icon-container">
+  <div class="seam-left"></div>
+  <div class="seam-right"></div>
+  <div class="stitch sl1"></div>
+  <div class="stitch sl2"></div>
+  <div class="stitch sl3"></div>
+  <div class="stitch sl4"></div>
+  <div class="stitch sl5"></div>
+  <div class="stitch sl6"></div>
+  <div class="stitch sr1"></div>
+  <div class="stitch sr2"></div>
+  <div class="stitch sr3"></div>
+  <div class="stitch sr4"></div>
+  <div class="stitch sr5"></div>
+  <div class="stitch sr6"></div>
+  <div class="shine"></div>
+</div>
+</body>
+</html>

@@ -10,17 +10,30 @@
 /// Tests the `scope=public` API fix: any authenticated user can see all
 /// live matches on the Live tab regardless of team membership.
 ///
-/// Run scorer:
+/// Run scorer (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev --dart-define=ROLE=scorer \
+///   integration_test/tests/spectator_live_test.dart -d emulator-5554
+/// ```
+///
+/// Run spectator (dev mode):
+/// ```bash
+/// flutter test --flavor dev --dart-define=ROLE=viewer \
+///   --dart-define=VIEWER_PHONE=9999999997 \
+///   integration_test/tests/spectator_live_test.dart -d emulator-5558
+/// ```
+///
+/// Run scorer (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod --dart-define=ROLE=scorer \
 ///   integration_test/tests/spectator_live_test.dart -d emulator-5554
 /// ```
 ///
-/// Run spectator:
+/// Run spectator (prod mode):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod --dart-define=ROLE=viewer \
 ///   --dart-define=VIEWER_PHONE=9999999997 \
-///   integration_test/tests/spectator_live_test.dart -d emulator-5556
+///   integration_test/tests/spectator_live_test.dart -d emulator-5558
 /// ```
 library;
 

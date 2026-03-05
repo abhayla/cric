@@ -5,7 +5,12 @@
 ///
 /// Requires tests 01-02 to have run (scorer has played at least 1 match).
 ///
-/// Run:
+/// Run (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev integration_test/tests/09_player_profile_test.dart -d emulator-5554
+/// ```
+///
+/// Run (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
 ///   integration_test/tests/09_player_profile_test.dart -d emulator-5554

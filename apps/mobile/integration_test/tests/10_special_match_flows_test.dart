@@ -7,7 +7,12 @@
 ///
 /// Requires test 01 to have created teams (Team5, Team6 with 6 players each).
 ///
-/// Run:
+/// Run (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev integration_test/tests/10_special_match_flows_test.dart -d emulator-5554
+/// ```
+///
+/// Run (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
 ///   integration_test/tests/10_special_match_flows_test.dart -d emulator-5554

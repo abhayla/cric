@@ -3,7 +3,12 @@
 /// Checks Teams, Matches, and Tournaments sub-tabs with all filter chips
 /// after at least one standalone match has been played.
 ///
-/// Run:
+/// Run (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev integration_test/tests/03_verify_after_match_test.dart -d emulator-5554
+/// ```
+///
+/// Run (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
 ///   integration_test/tests/03_verify_after_match_test.dart -d emulator-5554

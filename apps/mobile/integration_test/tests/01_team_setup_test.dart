@@ -16,7 +16,12 @@
 /// - **07** Verify All Screens — Full screen sweep. Requires 01-06 for data.
 /// - **08** Viewer Live — Multi-device WebSocket test. Requires 01 (teams).
 ///
-/// Run:
+/// Run (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev integration_test/tests/01_team_setup_test.dart -d emulator-5554
+/// ```
+///
+/// Run (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
 ///   integration_test/tests/01_team_setup_test.dart -d emulator-5554

@@ -17,7 +17,8 @@
 #   - Windows Firewall allows port 3001
 #
 # Usage:
-#   ./scripts/multi-device-e2e.sh
+#   ./scripts/multi-device-e2e.sh                          # dev mode (default)
+#   FLAVOR=prod ./scripts/multi-device-e2e.sh              # prod mode (cricscores.in)
 #   LAN_IP=192.168.1.100 ./scripts/multi-device-e2e.sh
 #   SWAP_DEVICES=1 ./scripts/multi-device-e2e.sh
 #
@@ -46,9 +47,16 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SERVER_DIR="$PROJECT_ROOT/apps/server"
 MOBILE_DIR="$PROJECT_ROOT/apps/mobile"
 SERVER_PORT=3001
+FLAVOR="${FLAVOR:-dev}"  # dev (local server) or prod (cricscores.in)
 SERVER_PID=""
 SCORER_PID=""
 VIEWER_PID=""
+
+# Build flavor flags
+FLAVOR_FLAGS=("--flavor" "$FLAVOR")
+if [[ "$FLAVOR" == "prod" ]]; then
+  FLAVOR_FLAGS+=("--dart-define=FLAVOR=prod")
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -166,6 +174,7 @@ fi
 
 log_ok "Emulator:    $EMULATOR_ID"
 log_ok "Real device: $REAL_DEVICE_ID"
+log_ok "Flavor:      $FLAVOR"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Step 2: Detect LAN IP
@@ -278,8 +287,10 @@ log_ok "Database reset, signals cleared"
 log "Step 5: Launching SCORER on $SCORER_LABEL ($SCORER_DEVICE_ID)..."
 
 cd "$MOBILE_DIR"
-flutter test integration_test/multi_device_scorer_e2e_test.dart \
-  -d "$SCORER_DEVICE_ID" ${SCORER_DART_DEFINES[@]+"${SCORER_DART_DEFINES[@]}"} 2>&1 | sed "s/^/[scorer] /" &
+flutter test "${FLAVOR_FLAGS[@]}" --dart-define=ROLE=scorer \
+  ${SCORER_DART_DEFINES[@]+"${SCORER_DART_DEFINES[@]}"} \
+  integration_test/tests/08_viewer_live_test.dart \
+  -d "$SCORER_DEVICE_ID" 2>&1 | sed "s/^/[scorer] /" &
 SCORER_PID=$!
 cd "$PROJECT_ROOT"
 
@@ -337,8 +348,10 @@ if [[ "$VIEWER_LABEL" == "real device" ]]; then
 fi
 
 cd "$MOBILE_DIR"
-flutter test integration_test/multi_device_viewer_e2e_test.dart \
-  -d "$VIEWER_DEVICE_ID" ${VIEWER_DART_DEFINES[@]+"${VIEWER_DART_DEFINES[@]}"} 2>&1 | sed "s/^/[viewer] /" &
+flutter test "${FLAVOR_FLAGS[@]}" --dart-define=ROLE=viewer \
+  ${VIEWER_DART_DEFINES[@]+"${VIEWER_DART_DEFINES[@]}"} \
+  integration_test/tests/08_viewer_live_test.dart \
+  -d "$VIEWER_DEVICE_ID" 2>&1 | sed "s/^/[viewer] /" &
 VIEWER_PID=$!
 cd "$PROJECT_ROOT"
 

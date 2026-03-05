@@ -19,8 +19,13 @@ Future<void> navigateToHome(WidgetTester tester) async {
   }
 
   // Try navigating via GoRouter
+  final navigators = find.byType(Navigator);
+  if (navigators.evaluate().isEmpty) {
+    await settle(tester);
+    return;
+  }
   try {
-    final context = tester.element(find.byType(Navigator).last);
+    final context = tester.element(navigators.last);
     GoRouter.of(context).go('/home');
     await settle(tester);
     await visualPause(tester);
@@ -44,8 +49,14 @@ Future<void> ensureOnMyCricketPage(WidgetTester tester) async {
   }
 
   // Fallback: use GoRouter
+  final navigators = find.byType(Navigator);
+  if (navigators.evaluate().isEmpty) {
+    print('    [nav] WARNING: No Navigator found, pumping...');
+    await settle(tester);
+    return;
+  }
   try {
-    final ctx = tester.element(find.byType(Navigator).last);
+    final ctx = tester.element(navigators.last);
     GoRouter.of(ctx).go('/home');
     await settle(tester);
     await visualPause(tester);
@@ -142,8 +153,14 @@ Future<void> navigateToMore(WidgetTester tester) async {
 
 /// Navigate to match setup page via GoRouter.
 Future<void> navigateToMatchSetup(WidgetTester tester) async {
+  final navigators = find.byType(Navigator);
+  if (navigators.evaluate().isEmpty) {
+    print('    [nav] WARNING: No Navigator found for match setup');
+    await settle(tester);
+    return;
+  }
   try {
-    final ctx = tester.element(find.byType(Navigator).last);
+    final ctx = tester.element(navigators.last);
     GoRouter.of(ctx).push('/match-setup');
     await settle(tester);
     await visualPause(tester, 500);
@@ -199,13 +216,16 @@ Future<bool> switchToTab(WidgetTester tester, int index) async {
 }
 
 /// Navigate back from team detail to the teams list.
+///
+/// Taps BackButton then verifies we reached My Cricket / Teams tab.
+/// This prevents stale widget tree issues when creating many teams in sequence.
 Future<void> navigateBackToTeamsList(WidgetTester tester) async {
   final backButton = find.byType(BackButton);
   if (backButton.evaluate().isNotEmpty) {
     await tester.tap(backButton.first);
     await settle(tester);
     await visualPause(tester);
-    return;
   }
+  // Always verify we're on My Cricket / Teams — don't trust BackButton alone
   await navigateToTeams(tester);
 }

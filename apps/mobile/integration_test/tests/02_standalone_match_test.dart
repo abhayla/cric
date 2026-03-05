@@ -3,7 +3,12 @@
 /// Team3 vs Team4 | 5 overs | 6 players | Magic Over: 2
 /// Tests: undo (G4), magic over (G10), target chase (G6), persistence (G5).
 ///
-/// Run:
+/// Run (dev mode — local server on port 3001):
+/// ```bash
+/// flutter test --flavor dev integration_test/tests/02_standalone_match_test.dart -d emulator-5554
+/// ```
+///
+/// Run (prod mode — cricscores.in):
 /// ```bash
 /// flutter test --flavor prod --dart-define=FLAVOR=prod \
 ///   integration_test/tests/02_standalone_match_test.dart -d emulator-5554
