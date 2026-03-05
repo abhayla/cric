@@ -45,6 +45,7 @@ import '../config/constants.dart';
 import '../config/test_data.dart';
 import '../core/app_bootstrap.dart';
 import '../core/test_utils.dart';
+import '../helpers/live_score_verification.dart';
 import '../helpers/match_setup.dart';
 import '../helpers/modals.dart';
 import '../helpers/navigation.dart';
@@ -117,8 +118,8 @@ void _runScorerTest() {
           data: {'value': 'true'});
       print('[SCORER] Signal: scorer-ready posted');
 
-      // Wait for viewer
-      final viewerDeadline = DateTime.now().add(const Duration(seconds: 120));
+      // Wait for viewer — 300s to allow for viewer's Gradle build + install + login
+      final viewerDeadline = DateTime.now().add(const Duration(seconds: 300));
       var viewerReady = false;
       while (DateTime.now().isBefore(viewerDeadline)) {
         try {
@@ -134,7 +135,7 @@ void _runScorerTest() {
         await Future<void>.delayed(const Duration(seconds: 2));
       }
       if (!viewerReady) {
-        print('[SCORER] WARNING: Viewer not ready after 120s — proceeding');
+        print('[SCORER] WARNING: Viewer not ready after 300s — proceeding');
       }
     } catch (e) {
       print('[SCORER] Signal endpoint not available — proceeding: $e');
@@ -233,6 +234,18 @@ void _runScorerTest() {
     );
     print('[SCORER] Innings transition complete');
 
+    // Signal innings 1 score checkpoint for viewer verification
+    final inn1Checkpoint = ScoreCheckpoint(
+      inn1Runs: 10, inn1Wkts: 5, inn1Overs: '1.4',
+    );
+    try {
+      await signalDio.post('/api/v1/test/signal/score-innings1-complete',
+          data: {'value': inn1Checkpoint.toSignalValue()});
+      print('[SCORER] Signal: score-innings1-complete posted');
+    } catch (e) {
+      print('[SCORER] Could not post innings1 signal: $e');
+    }
+
     // === INNINGS 2: Team3 chasing (target ~11) ===
     // 6, 6 → should chase immediately
     await tapRun(tester, 6);
@@ -249,9 +262,23 @@ void _runScorerTest() {
       print('[SCORER] MatchCompleteModal displayed');
     }
 
-    // Wait for viewer
-    print('[SCORER] Waiting 5s for viewer to finish verification...');
-    await Future<void>.delayed(const Duration(seconds: 5));
+    // Signal match complete checkpoint for viewer verification
+    final matchCheckpoint = ScoreCheckpoint(
+      inn1Runs: 10, inn1Wkts: 5, inn1Overs: '1.4',
+      inn2Runs: 12, inn2Wkts: 0, inn2Overs: '0.2',
+      result: 'Team3 won by 10 wickets',
+    );
+    try {
+      await signalDio.post('/api/v1/test/signal/score-match-complete',
+          data: {'value': matchCheckpoint.toSignalValue()});
+      print('[SCORER] Signal: score-match-complete posted');
+    } catch (e) {
+      print('[SCORER] Could not post match-complete signal: $e');
+    }
+
+    // Wait for viewer to finish verification
+    print('[SCORER] Waiting 10s for viewer to finish verification...');
+    await Future<void>.delayed(const Duration(seconds: 10));
 
     print('\n[SCORER] Match complete. Scorer test PASSED.');
   }, timeout: const Timeout(Duration(minutes: 30)));
@@ -266,7 +293,7 @@ void _runViewerTest() {
 
     // Wait for scorer to be ready
     print('[VIEWER] Waiting for scorer-ready signal...');
-    final scorerDeadline = DateTime.now().add(const Duration(seconds: 120));
+    final scorerDeadline = DateTime.now().add(const Duration(seconds: 300));
     var scorerReady = false;
     while (DateTime.now().isBefore(scorerDeadline)) {
       try {
@@ -282,7 +309,7 @@ void _runViewerTest() {
       await Future<void>.delayed(const Duration(seconds: 2));
     }
     if (!scorerReady) {
-      fail('[VIEWER] Scorer not ready after 120s');
+      fail('[VIEWER] Scorer not ready after 300s');
     }
 
     // Navigate to Live page
@@ -335,6 +362,22 @@ void _runViewerTest() {
     expect(scoreChanges, greaterThan(0),
         reason: 'Viewer must observe at least 1 score update via WebSocket/polling');
     print('[VIEWER] Final score observed: $lastScore');
+
+    // Cross-device score verification: poll for scorer's checkpoint signal
+    // and verify the expected scores appear on the Live page.
+    try {
+      final matchSignalValue = await pollForSignal(
+        signalDio, 'score-match-complete',
+        timeoutSeconds: 60, role: 'VIEWER',
+      );
+      final checkpoint = ScoreCheckpoint.fromSignalValue(matchSignalValue);
+      await verifyScoreOnLivePage(tester, checkpoint, role: 'VIEWER');
+      print('[VIEWER] Cross-device score verification PASSED');
+    } catch (e) {
+      print('[VIEWER] Cross-device score verification failed: $e');
+      rethrow;
+    }
+
     print('[VIEWER] Viewer test PASSED.');
   }, timeout: const Timeout(Duration(minutes: 15)));
 }
