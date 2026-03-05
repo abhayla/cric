@@ -327,18 +327,23 @@ void _runViewerTest() {
       print('[VIEWER] Could not post viewer-ready signal: $e');
     }
 
-    // Watch for live updates (poll for score changes)
-    print('[VIEWER] Watching for live updates...');
-    final endDeadline = DateTime.now().add(const Duration(minutes: 10));
+    // Watch for live updates while waiting for scorer to finish.
+    // Use signal-driven approach: poll for score-match-complete signal
+    // (posted by scorer after MatchCompleteModal) while observing UI changes.
+    print('[VIEWER] Watching for live updates (signal-driven)...');
     var scoreChanges = 0;
     String? lastScore;
+    String? matchSignalValue;
 
-    while (DateTime.now().isBefore(endDeadline)) {
+    // Poll for scorer's match-complete signal while observing score changes.
+    // Scorer takes ~2-3 min to finish all deliveries after viewer-ready.
+    final signalDeadline = DateTime.now().add(const Duration(minutes: 8));
+    while (DateTime.now().isBefore(signalDeadline)) {
+      // Pump UI to observe score changes
       await tester.pump(const Duration(seconds: 1));
 
-      // Look for score text patterns
-      final allTexts = find.byType(Text);
-      for (final element in allTexts.evaluate()) {
+      // Track score changes for baseline assertion
+      for (final element in find.byType(Text).evaluate()) {
         final textWidget = element.widget as Text;
         final text = textWidget.data;
         if (text != null && RegExp(r'^\d+/\d+$').hasMatch(text)) {
@@ -350,12 +355,17 @@ void _runViewerTest() {
         }
       }
 
-      // Check for match complete
-      if (find.textContaining('won by').evaluate().isNotEmpty ||
-          find.textContaining('Completed').evaluate().isNotEmpty) {
-        print('[VIEWER] Match completion detected');
-        break;
-      }
+      // Check if scorer has posted match-complete signal
+      try {
+        final r = await signalDio.get('/api/v1/test/signal/score-match-complete');
+        if (r.data['value'] != null) {
+          matchSignalValue = r.data['value'] as String;
+          print('[VIEWER] Signal: score-match-complete received');
+          break;
+        }
+      } catch (_) {}
+
+      await Future<void>.delayed(const Duration(seconds: 1));
     }
 
     print('\n[VIEWER] Total score updates observed: $scoreChanges');
@@ -363,20 +373,12 @@ void _runViewerTest() {
         reason: 'Viewer must observe at least 1 score update via WebSocket/polling');
     print('[VIEWER] Final score observed: $lastScore');
 
-    // Cross-device score verification: poll for scorer's checkpoint signal
-    // and verify the expected scores appear on the Live page.
-    try {
-      final matchSignalValue = await pollForSignal(
-        signalDio, 'score-match-complete',
-        timeoutSeconds: 60, role: 'VIEWER',
-      );
-      final checkpoint = ScoreCheckpoint.fromSignalValue(matchSignalValue);
-      await verifyScoreOnLivePage(tester, checkpoint, role: 'VIEWER');
-      print('[VIEWER] Cross-device score verification PASSED');
-    } catch (e) {
-      print('[VIEWER] Cross-device score verification failed: $e');
-      rethrow;
-    }
+    // Cross-device score verification
+    expect(matchSignalValue, isNotNull,
+        reason: 'Scorer must post score-match-complete signal');
+    final checkpoint = ScoreCheckpoint.fromSignalValue(matchSignalValue!);
+    await verifyScoreOnLivePage(tester, checkpoint, role: 'VIEWER');
+    print('[VIEWER] Cross-device score verification PASSED');
 
     print('[VIEWER] Viewer test PASSED.');
   }, timeout: const Timeout(Duration(minutes: 15)));

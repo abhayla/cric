@@ -160,7 +160,7 @@ Future<void> _waitForScoreText(
   fail('[$role] Expected score "$scoreText" not found on screen after ${timeoutSeconds}s');
 }
 
-/// Waits for "won by" result text to appear on screen.
+/// Waits for result text (case-insensitive "won by", "tied", "no result") on screen.
 Future<void> _waitForResultText(
   WidgetTester tester, {
   required String role,
@@ -168,17 +168,26 @@ Future<void> _waitForResultText(
 }) async {
   for (var i = 0; i < timeoutSeconds; i++) {
     await tester.pump(const Duration(seconds: 1));
-    if (find.textContaining('won by').evaluate().isNotEmpty) return;
-  }
-
-  // Also check for other result patterns (tied, no result)
-  if (find.textContaining('Tied').evaluate().isNotEmpty ||
-      find.textContaining('No Result').evaluate().isNotEmpty) {
-    return;
+    if (_findTextContainingIgnoreCase(tester, 'won by') ||
+        _findTextContainingIgnoreCase(tester, 'tied') ||
+        _findTextContainingIgnoreCase(tester, 'no result')) {
+      return;
+    }
   }
 
   dumpVisibleTexts(tester, 'result-verification', 40);
   fail('[$role] Expected result text ("won by") not found after ${timeoutSeconds}s');
+}
+
+/// Case-insensitive text search across all Text widgets.
+bool _findTextContainingIgnoreCase(WidgetTester tester, String substring) {
+  final lower = substring.toLowerCase();
+  for (final element in find.byType(Text).evaluate()) {
+    final textWidget = element.widget as Text;
+    final text = textWidget.data;
+    if (text != null && text.toLowerCase().contains(lower)) return true;
+  }
+  return false;
 }
 
 /// Checks if a specific score text exists in any Text widget on screen.

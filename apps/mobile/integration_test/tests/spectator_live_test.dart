@@ -373,18 +373,19 @@ void _runSpectatorTest() {
       print('[SPECTATOR] Could not post viewer-ready signal: $e');
     }
 
-    // ── Step 5: Watch for live score updates ──
-    print('[SPECTATOR] Watching for live updates...');
-    final endDeadline = DateTime.now().add(const Duration(minutes: 10));
+    // ── Step 5: Watch for live score updates (signal-driven) ──
+    // Poll for scorer's match-complete signal while observing UI score changes.
+    print('[SPECTATOR] Watching for live updates (signal-driven)...');
     var scoreChanges = 0;
     String? lastScore;
+    String? matchSignalValue;
 
-    while (DateTime.now().isBefore(endDeadline)) {
+    final signalDeadline = DateTime.now().add(const Duration(minutes: 8));
+    while (DateTime.now().isBefore(signalDeadline)) {
       await tester.pump(const Duration(seconds: 1));
 
-      // Look for score text patterns (e.g., "14/0", "26/0")
-      final allTexts = find.byType(Text);
-      for (final element in allTexts.evaluate()) {
+      // Track score changes for baseline assertion
+      for (final element in find.byType(Text).evaluate()) {
         final textWidget = element.widget as Text;
         final text = textWidget.data;
         if (text != null && RegExp(r'^\d+/\d+$').hasMatch(text)) {
@@ -396,32 +397,30 @@ void _runSpectatorTest() {
         }
       }
 
-      // Check for match complete
-      if (find.textContaining('won by').evaluate().isNotEmpty ||
-          find.textContaining('Completed').evaluate().isNotEmpty) {
-        print('[SPECTATOR] Match completion detected');
-        break;
-      }
+      // Check if scorer has posted match-complete signal
+      try {
+        final r = await signalDio
+            .get('/api/v1/test/signal/spectator-score-match-complete');
+        if (r.data['value'] != null) {
+          matchSignalValue = r.data['value'] as String;
+          print('[SPECTATOR] Signal: spectator-score-match-complete received');
+          break;
+        }
+      } catch (_) {}
+
+      await Future<void>.delayed(const Duration(seconds: 1));
     }
 
     print('[SPECTATOR] Total score updates observed: $scoreChanges');
     expect(scoreChanges, greaterThan(0),
         reason: 'Spectator must observe at least 1 score update on Live tab');
 
-    // Cross-device score verification: poll for scorer's checkpoint signal
-    // and verify the expected scores appear on the Live page.
-    try {
-      final matchSignalValue = await pollForSignal(
-        signalDio, 'spectator-score-match-complete',
-        timeoutSeconds: 60, role: 'SPECTATOR',
-      );
-      final checkpoint = ScoreCheckpoint.fromSignalValue(matchSignalValue);
-      await verifyScoreOnLivePage(tester, checkpoint, role: 'SPECTATOR');
-      print('[SPECTATOR] Cross-device score verification PASSED');
-    } catch (e) {
-      print('[SPECTATOR] Cross-device score verification failed: $e');
-      rethrow;
-    }
+    // Cross-device score verification
+    expect(matchSignalValue, isNotNull,
+        reason: 'Scorer must post spectator-score-match-complete signal');
+    final checkpoint = ScoreCheckpoint.fromSignalValue(matchSignalValue!);
+    await verifyScoreOnLivePage(tester, checkpoint, role: 'SPECTATOR');
+    print('[SPECTATOR] Cross-device score verification PASSED');
 
     // ── Step 6: Check My Cricket tab ──
     // NOTE: The My Cricket Matches tab currently shows all matches (including
