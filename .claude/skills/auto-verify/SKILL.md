@@ -1,261 +1,412 @@
 ---
 name: auto-verify
-description: "Post-change verification: identifies changed files, maps to targeted tests, runs tests with smart priority, analyzes failures, applies fixes, runs regression checks. Use after code changes, user says 'verify', 'check changes', 'run affected tests', or before committing."
-allowed-tools: Bash, Read, Grep, Glob, Skill, Task
-metadata:
-  version: 1.0.0
+description: >
+  Run a post-change verification pipeline that maps changed files to targeted tests,
+  executes via tester-agent with UI screenshot verdicts, enforces quality gates, and
+  produces structured results for pipeline consumption. Does NOT fix — use /fix-loop
+  for fixes, /test-pipeline for the full fix-verify-commit chain.
+triggers:
+  - auto-verify
+  - verify my changes
+  - post-change verification
+  - run verification
+  - verify before commit
+  - verify correctness
+allowed-tools: "Bash Read Grep Glob Write Skill Agent"
+argument-hint: "[--files <paths>] [--full-suite] [--strict-gates] [--capture-proof | --no-capture-proof] [--allow-degraded-ui]"
+version: "4.1.0"
+type: workflow
 ---
 
-# Auto-Verify
+# Auto-Verify — Post-Change Verification
 
-Post-change verification that identifies changed files, maps to targeted tests, runs tests, analyzes failures, applies fixes, and runs regression checks.
+Verify code changes by running targeted tests, reviewing visual proof, and
+enforcing quality gates. Does NOT apply fixes — fixing belongs in `/fix-loop`.
 
 **Arguments:** $ARGUMENTS
 
 ---
 
-## Input Parameters
+## Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `scope` | string | `"all"` | `flutter`, `server`, or `all` |
-| `base` | string | `"HEAD"` | Git base ref for change detection |
-| `max_iterations` | int | `5` | Max fix iterations before stopping |
-| `skip_regression` | bool | `false` | Skip regression checks after fix |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--files` | git diff | Specific files to verify (overridden by `--full-suite`) |
+| `--full-suite` | false | Run full test suite regardless of risk (overrides `--files`) |
+| `--strict-gates` | false | Missing upstream JSON = BLOCK (set by orchestrator) |
+| `--capture-proof` | true (from config) | Capture screenshots on every test, pass or fail |
+| `--no-capture-proof` | — | Disable screenshot capture even if config says true |
+| `--allow-degraded-ui` | false | Allow PASSED verdict when UI tests are mapped but not screenshot-verified (silent-degradation opt-out) |
 
 ---
 
-## Step 1: Identify Changes
+## STEP 0: Gate Check — Read Upstream Results
+
+Check if the upstream `fix-loop` stage passed:
+
+1. If `test-results/fix-loop.json` exists, read it:
+   - If `result` is `FAILED` or `FLAKY` → BLOCK. Exit immediately.
+   - If `result` is `PASSED` or `FIXED` → proceed to STEP 1.
+
+2. If `test-results/fix-loop.json` does NOT exist:
+   - **With `--strict-gates`:** BLOCK. Report: "BLOCKED: fix-loop output missing — run fix-loop first or use orchestrator."
+   - **Without `--strict-gates`:** WARN: "No fix-loop results found — proceeding without gate check. Run via /test-pipeline for enforced gates."
+   - Proceed to STEP 1.
 
 ```bash
-git diff --name-only {base}
-git diff --name-only --cached
+if [ -f test-results/fix-loop.json ]; then
+  UPSTREAM_RESULT=$(python3 -c "
+import json, sys
+try:
+    data = json.load(open('test-results/fix-loop.json'))
+    print(data.get('result', 'UNKNOWN'))
+except (json.JSONDecodeError, IOError) as e:
+    print(f'WARN: Could not parse fix-loop.json: {e}', file=sys.stderr)
+    print('UNKNOWN')
+")
+  if [ "$UPSTREAM_RESULT" = "FAILED" ] || [ "$UPSTREAM_RESULT" = "FLAKY" ]; then
+    echo "BLOCKED: fix-loop reported $UPSTREAM_RESULT"
+    exit 1
+  fi
+  if [ "$UPSTREAM_RESULT" = "UNKNOWN" ]; then
+    echo "WARN: fix-loop.json unreadable — treating as missing"
+    # Fall through to the missing-file logic below
+  else
+    echo "fix-loop result: $UPSTREAM_RESULT — proceeding"
+  fi
+else
+  if [ "$STRICT_GATES" = "true" ]; then
+    echo "BLOCKED: fix-loop output missing (--strict-gates enforced)"
+    exit 1
+  else
+    echo "WARN: No fix-loop results found — proceeding without gate check"
+  fi
+fi
 ```
 
-Combine staged + unstaged changes.
+---
 
-**Filter rules:**
-- Include: `.dart`, `.ts`, `.sql` files
-- Exclude: `docs/`, `*.md`, `*.json`, `*.yml`, test files, generated files (`*.g.dart`, `*.freezed.dart`)
-- Skip: files with only whitespace/comment changes
+## STEP 1: Map Changes to Tests (via /regression-test)
 
-**Classify each file:**
+Delegate change identification and test mapping to `/regression-test`, which
+provides 2-level import graph tracing, coverage-based mapping, and risk
+classification. This is the single canonical mapper for the pipeline.
 
-| Path Pattern | Category |
-|---|---|
-| `apps/mobile/lib/src/features/{feat}/` | `flutter-{feat}` |
-| `apps/mobile/lib/src/shared/` | `flutter-shared` |
-| `apps/server/src/services/` | `server-service` |
-| `apps/server/src/routes/` | `server-route` |
-| `apps/server/src/db/` | `server-db` |
-| Test files | Skip (test changes don't trigger auto-verify) |
+**IMPORTANT:** `/regression-test` is invoked for MAPPING ONLY — it identifies
+which tests to run and classifies risk, but does NOT execute the tests itself.
+Test execution happens in STEP 2 via `tester-agent`. This avoids double
+execution where tests run once for mapping and again for verification.
 
-If no changed files match scope: report "No changes in scope" and exit SUCCESS.
+```
+Skill("/regression-test", args="$FILES_ARG --framework auto")
+```
+
+**Fallback if `/regression-test` is not installed:** Use `git diff --name-only` to
+identify changed files, then map to tests by naming convention (`*_test.py`,
+`test_*.py`, `*.test.ts`, `*.spec.ts`) and directory adjacency. Set risk to
+MEDIUM (no import graph tracing available). Log: "WARN: /regression-test not
+available — using fallback file-based test mapping."
+
+After `/regression-test` completes, read `test-results/regression-test.json`:
+
+1. Extract the affected test list and overall risk level
+2. If `regression-test` result is `FAILED` with `confidence: BLOCKED`
+   (test infra broken — cannot map tests) → exit with BLOCKED
+3. If `regression-test` result is `FAILED` with `confidence: LOW`
+   (some tests failed during mapping) → note failures but proceed to STEP 2
+   (tester-agent will re-run them with full verdict rules)
+4. Use the mapped test files and risk classification for STEP 2
+5. If zero affected tests found → skip Steps 2-3, write auto-verify.json with
+   `result: "PASSED"`, `summary.total: 0`, and `warnings: ["No tests mapped to
+   changed files"]`. Proceed to Step 4 (quality gates still run).
+
+Coverage gaps flagged by `/regression-test` (source files with no mapped tests)
+are reported in the final auto-verify output as warnings.
+
+## STEP 2: Execute Tests (via tester-agent)
+
+**Fallback if `tester-agent` is not installed:** Run tests directly using the
+project's test runner (detect from CLAUDE.md, pyproject.toml, package.json, or
+build.gradle). All tests use exit-code verdicts (no screenshot verification).
+Log: "WARN: tester-agent not available — running tests directly without UI
+screenshot verification."
+
+**Terminal failure if no test runner detected:** If none of CLAUDE.md test
+commands, pyproject.toml, package.json, or build.gradle exist, write
+`test-results/auto-verify.json` with `result: "FAILED"`,
+`failures: [{"test": "N/A", "category": "INFRA_MISSING", "message": "No test
+framework detected — cannot execute tests"}]` and exit.
+
+Delegate test execution to `tester-agent`, which provides:
+- **UI test detection** — auto-classifies tests by scanning imports for UI frameworks
+- **Per-test screenshot verification (UI tests)** — runs each UI test individually,
+  captures screenshot, verifies via AI/baseline, records screenshot-based verdict
+- **Batch execution (non-UI tests)** — standard batch run with exit-code verdicts
+- Smart test ordering (CRITICAL risk first, then HIGH, MEDIUM, LOW)
+- Verdict rules: UI tests use screenshot verdict; non-UI use exit codes
+- Isolated re-run of failures to detect test pollution
+- Structured output with pass/fail/skip/flaky breakdown and verdict_source per test
+
+```
+Agent("tester-agent", prompt="Run these tests and provide a verdict.
+
+Test files (from /regression-test mapping):
+$AFFECTED_TESTS
+
+Risk classification:
+$OVERALL_RISK
+
+Options:
+- Full suite: $FULL_SUITE
+- Run ID: $RUN_ID
+
+IMPORTANT — UI Test Screenshot Verification:
+1. Classify each test file as UI or non-UI by scanning imports
+   (see your UI Test Detection rules). If visual-tests.yml exists
+   in the project root, use its patterns instead of import scanning.
+2. For UI tests: execute the Per-Test Screenshot Orchestration loop —
+   run one test at a time, capture screenshot, verify screenshot
+   (baseline first, then text hint, then generic AI review),
+   record verdict with verdict_source: 'screenshot'.
+   Screenshot verification is MANDATORY and ALWAYS ON for UI tests.
+3. For non-UI tests: run batch execution with exit-code verdicts,
+   verdict_source: 'exit_code'.
+
+Screenshot storage: test-evidence/{run_id}/screenshots/
+  {test_name}.{pass|fail}.png
+
+Use the project's test runner (detect from CLAUDE.md, pyproject.toml,
+package.json, or build.gradle). Run targeted tests first unless
+risk >= HIGH or --full-suite specified.
+
+Return: verdict (PASSED/FAILED), test counts, failure details,
+ui_test_count, screenshot manifest, per-test verdict_source.")
+```
+
+After `tester-agent` returns, the agent provides TWO verdict dimensions:
+
+| Verdict | Source | Authoritative For |
+|---------|--------|-------------------|
+| `ui_verdict` | Screenshot verification | UI tests |
+| `code_verdict` | Exit codes | Non-UI tests |
+
+1. If EITHER verdict is **FAILED** → proceed to STEP 3 (evaluate results, report)
+2. If BOTH verdicts are **PASSED** → proceed to STEP 2.5 (confirmation review) then STEP 4
+3. Record the agent's screenshot manifest in `test-evidence/{run_id}/manifest.json`
 
 ---
 
-## Step 2: Map to Tests (Smart Selection)
+## STEP 2.5: Visual Proof Review
 
-For each changed file, find tests using prioritized lookup.
+**For UI tests:** This step is MANDATORY and ALWAYS runs. It serves as a
+confirmation pass — the tester-agent already verified each screenshot inline,
+and this step batch-reviews the verdicts for consistency and catches edge cases.
+`--capture-proof` / `--no-capture-proof` flags do NOT affect UI test screenshots.
 
-### Priority 0 — Convention-Based (CricScores-Specific)
+**For non-UI tests:** Skip this step if `--capture-proof` is not enabled or
+`--no-capture-proof` was passed. When enabled for non-UI tests, it provides
+supplementary visual evidence (not authoritative).
 
-| Source Pattern | Test Pattern |
-|---|---|
-| `features/{feat}/domain/entities/{name}.dart` | `test/src/features/{feat}/domain/{name}_test.dart` |
-| `features/{feat}/data/repositories/{name}.dart` | `test/src/features/{feat}/data/{name}_test.dart` |
-| `features/{feat}/data/datasources/{name}.dart` | `test/src/features/{feat}/data/{name}_test.dart` |
-| `features/{feat}/presentation/notifiers/{name}.dart` | `test/src/features/{feat}/presentation/{name}_test.dart` |
-| `features/{feat}/presentation/pages/{name}.dart` | `test/src/features/{feat}/presentation/{name}_test.dart` |
-| `features/{feat}/presentation/widgets/{name}.dart` | `test/src/features/{feat}/presentation/{name}_test.dart` |
-| `shared/data/database/tables/{name}.dart` | `test/src/shared/data/database/{name}_test.dart` |
-| `server/src/services/{name}.service.ts` | `server/test/services/{name}.service.test.ts` |
-| `server/src/routes/{name}.routes.ts` | `server/test/routes/{name}.routes.test.ts` |
+### Sub-steps (detailed in `references/visual-proof-review.md`)
 
-### Priority 1 — Feature-Level Fallback
+1. **2.5.1 Read Manifest** — parse `test-evidence/{run_id}/manifest.json`; skip gracefully if absent or zero screenshots (non-UI project)
+2. **2.5.2 Review All Screenshots** — 100% review rate; multimodal Read each screenshot, evaluate against 8-point criteria, classify per UI/non-UI verdict-source tables
+3. **2.5.3 Write Visual Review Results** — emit `test-evidence/{run_id}/visual-review.json` with overrides + flags; `result: FAILED` if ANY overrides exist
+4. **2.5.4 Gate Impact** — FAILED overrides add to STEP 3's main failure list; PASSED proceeds normally
 
-If no direct test mapping found:
-| Source in Feature | Run All Tests In |
-|---|---|
-| `features/scoring/*` | `test/src/features/scoring/` |
-| `features/auth/*` | `test/src/features/auth/` |
-| `features/matches/*` | `test/src/features/matches/` |
-| `features/teams/*` | `test/src/features/teams/` |
-| `features/tournaments/*` | `test/src/features/tournaments/` |
-| `features/analytics/*` | `test/src/features/analytics/` |
-| `features/players/*` | `test/src/features/players/` |
-| `features/home/*` | `test/src/features/home/` |
-| `shared/*` | `test/src/shared/` |
-| `server/src/*` | `apps/server/test/` (all server tests) |
+**Gate signal:** STEP 3 reads `visual-review.json` to incorporate overrides into its failure union. Visual review is the authoritative screenshot-signal; exit code is secondary.
 
-### Priority 2 — Import-Based
-
-Use Grep to find test files that import the changed module. Cap at 10.
-
-### Priority 3 — Full Module Fallback
-
-- Flutter: `cd apps/mobile && flutter test`
-- Server: `cd apps/server && bun test`
-
-**Cap:** Maximum 20 test files per run. If more, fall back to Priority 3.
+See `references/visual-proof-review.md` for:
+- Full bash snippets for manifest read + skip logic
+- 8-point evaluation criteria for each screenshot
+- Verdict classification tables (UI `screenshot` source; non-UI `exit_code` source)
+- Full `visual-review.json` schema with override/flag examples
+- STEP 3 gate-impact rules
 
 ---
 
-## Step 3: Pre-Check Failure Index
+## STEP 3: Evaluate Results
+
+After test execution and visual review:
+
+### Verdict Logic by Test Type
+
+| Test Type | Primary Verdict Source | Secondary Signal |
+|-----------|----------------------|------------------|
+| UI test | Screenshot verification (from tester-agent) | Exit code (logged, not authoritative) |
+| Non-UI test | Exit code | Screenshot (if captured, supplementary only) |
+
+### Verdict Combinations for UI Tests
+
+| Exit Code | Screenshot Verdict | Final Result | Rationale |
+|-----------|-------------------|--------------|-----------|
+| PASSED | PASSED | **PASSED** | Both agree — confident pass |
+| PASSED | FAILED | **FAILED** | Screenshot is authoritative — visual defect detected |
+| FAILED | PASSED | **FAILED** + FLAG | Still failed (exit code indicates code issue), but flag for review — possible assertion bug or timing issue |
+| FAILED | FAILED | **FAILED** | Both agree — confirmed failure |
+
+### Decision Flow
+
+1. **Silent-degradation gate (MANDATORY for UI tests):**
+   Before declaring PASSED, verify that UI tests actually underwent screenshot
+   verification. Compute: `ui_tests_mapped = count(test_files where UI framework imported)`.
+   If `ui_tests_mapped > 0` AND `summary.ui_tests_screenshot_verified < ui_tests_mapped`,
+   this is a silent-degradation event — tester-agent fell back to exit-code-only
+   verification for UI tests. Gate outcome:
+   - **Default (strict):** set `result: FAILED` with
+     `category: "UI_VERIFICATION_DEGRADED"` and list the unverified tests in
+     `failures[]`. Log: "BLOCKED: {N} UI tests mapped, only {M} screenshot-verified.
+     Either provision tester-agent with MCP / verify-screenshots, or explicitly
+     pass --allow-degraded-ui to proceed."
+   - **With `--allow-degraded-ui`:** set `result: PASSED` but add a WARN to
+     `warnings[]` with the list of unverified UI tests.
+2. **All tests pass** (UI screenshot verdicts + non-UI exit codes, no visual
+   overrides, AND silent-degradation gate satisfied) → proceed to STEP 4 (quality gates)
+3. **Any test fails:**
+   - Classify each failure using the test output AND verdict_source (category, file, message)
+   - Check for pre-existing failures using git-stash verification (see below)
+   - Report FAILED with detailed failure list including verdict_source per test
+   - Do NOT attempt fixes — fixing belongs in `/fix-loop` upstream
+
+### Pre-Existing Failure Detection
+
+For each failing test, verify whether it's caused by our changes:
 
 ```bash
-node -e "
-const fs = require('fs');
-try {
-  const d = JSON.parse(fs.readFileSync('.claude/logs/learning/failure-index.json'));
-  for (const e of d.entries || []) {
-    if (e.known_workaround) console.log('KNOWN:', e.issue_type, '->', e.known_workaround);
-  }
-} catch { console.log('No failure index'); }
-"
+git stash && <test_runner> <failing_test> && git stash pop
 ```
 
-If a known pattern matches an area being tested → note for Step 5.
+| Clean state | Our changes | Verdict | Action |
+|-------------|-------------|---------|--------|
+| FAILS | FAILS | Pre-existing | Note it, do not block |
+| PASSES | FAILS | Our change caused it | BLOCK — report in failures |
+| PASSES | PASSES | Flaky | Log, re-run to confirm |
+| FAILS | PASSES | Incidental fix | Note as bonus |
 
 ---
 
-## Step 4: Run Targeted Tests
+## STEP 4: Quality Gate (if tests pass)
 
-**Flutter:**
-```bash
-cd apps/mobile && flutter test {test_files}
-```
+After all tests pass, run quality checks on changed code:
 
-**Server:**
-```bash
-cd apps/server && bun test {test_files}
-```
+1. **Coverage diff** — verify new/changed code has ≥80% test coverage
+2. **Complexity check** — no new function exceeds cyclomatic complexity 10
+3. **Duplication scan** — no new code blocks duplicate existing code
+4. If any quality check fails → report as QUALITY_GATE warning (non-blocking unless `--strict-quality`)
 
-Record: test count, pass count, fail count, duration.
+Reference: delegates to `/code-quality-gate` skill for detailed analysis.
 
----
+## STEP 4A: Contract Verification (if API changed)
 
-## Step 4b: Static Analysis (Quick Lint)
+If changed files include API routes, endpoints, schemas, or Pydantic models:
 
-After tests pass (or in parallel), run static analysis on changed files only:
+1. Run contract tests to verify consumer-provider compatibility
+2. Check if API response shapes match existing contracts
+3. If contract test fails → report as CONTRACT_BREAK (blocking)
 
-**Flutter (if scope includes flutter):**
-```bash
-cd apps/mobile && flutter analyze {changed_dart_files}
-```
+Reference: delegates to `/contract-test` skill if Pact is configured.
 
-**Server (if scope includes server):**
-```bash
-cd apps/server && bunx tsc --noEmit
-```
+## STEP 4B: Performance Baseline (if perf-sensitive code changed)
 
-**Classification:**
-- **Errors** → treat as test failure, go to Step 5
-- **Warnings** (deprecations, unused imports) → include in report, suggest fixes
-- **Info** → include in report only
+If changed files match perf-sensitive paths (request handlers, database queries, serialization):
 
-This ensures deprecation warnings, unused variables, and lint issues are caught alongside test failures.
+1. Run targeted performance benchmarks if baseline exists
+2. Compare against baseline — flag >10% regression
+3. If regression detected → report as PERF_REGRESSION warning
+
+Reference: delegates to `/perf-test` skill if k6/Lighthouse is configured.
 
 ---
 
-## Step 5: Analyze & Fix (if failures)
+## STEP 5: Report
 
-If all pass → skip to Step 7.
-
-If failures exist:
-
-| Iteration | Action |
-|---|---|
-| 1 | Known pattern from failure-index? Apply known workaround → retest |
-| 1 | Unknown failure? Analyze → apply fix → retest |
-| 2 | Same error? Escalate: invoke `/fix-loop` with `max_iterations: 3` |
-| 3+ | Same error 3x? **STOP** → ask user |
-| max_iterations | **STOP** → show summary |
-
-For each fix, update workflow state:
-```bash
-node -e "
-const fs = require('fs');
-const sf = '.claude/workflow-state.json';
-try {
-  const d = JSON.parse(fs.readFileSync(sf));
-  d.fixesApplied.push({file: '{file}', line: '{line}', description: '{desc}'});
-  d.filesChanged.push('{file}');
-  fs.writeFileSync(sf, JSON.stringify(d, null, 2));
-} catch {}
-"
 ```
+Auto-Verify: [PASSED / FAILED]
+  Changed files: N
+  Tests run: M
+  Passed: P | Failed: F
+  Visual review: N screenshots, K overrides
+  Quality gate: PASSED/WARNED/SKIPPED
+  Contract check: PASSED/FAILED/SKIPPED
+  Perf baseline: PASSED/REGRESSED/SKIPPED
+```
+
+## STEP 6: Structured Output
+
+Write machine-readable results to `test-results/auto-verify.json`:
+
+```json
+{
+  "skill": "auto-verify",
+  "timestamp": "<ISO-8601>",
+  "result": "PASSED|FAILED",
+  "summary": {
+    "total": "<tests_run>",
+    "passed": "<passed_count>",
+    "failed": "<failed_count>",
+    "skipped": "<skipped_count>",
+    "flaky": "<flaky_count>",
+    "ui_tests": "<ui_test_count>",
+    "ui_tests_screenshot_verified": "<count verified via screenshot>",
+    "non_ui_tests": "<non_ui_test_count>"
+  },
+  "change_scope": {
+    "source_files": "<count from regression-test>",
+    "test_files": "<count>",
+    "overall_risk": "<CRITICAL|HIGH|MEDIUM|LOW>",
+    "coverage_gaps": ["<files with no mapped tests>"]
+  },
+  "quality_gate": "PASSED|WARNED|FAILED|SKIPPED",
+  "contract_check": "PASSED|FAILED|SKIPPED",
+  "perf_baseline": "PASSED|REGRESSED|SKIPPED",
+  "visual_review": {
+    "enabled": true,
+    "screenshots_reviewed": 50,
+    "overrides": 1,
+    "flags": 1,
+    "result": "PASSED|FAILED",
+    "evidence_dir": "test-evidence/{run_id}/"
+  },
+  "failures": [
+    {
+      "test": "test_name",
+      "verdict_source": "screenshot|exit_code",
+      "category": "VISUAL_DEFECT|ASSERTION_FAILURE|...",
+      "file": "tests/test_file.py:42",
+      "message": "description",
+      "confidence": "HIGH|MEDIUM|LOW"
+    }
+  ],
+  "warnings": [],
+  "duration_ms": "<elapsed>"
+}
+```
+
+**For UI tests:** `visual_review` is ALWAYS populated (mandatory). The `failures`
+array includes `verdict_source: "screenshot"` for each UI test failure.
+
+**For non-UI tests:** If `--capture-proof` was not enabled:
+```json
+"visual_review": {
+  "enabled": false
+}
+```
+
+Create `test-results/` directory if it doesn't exist. This JSON is consumed by stage gates — see `testing.md` for the full schema.
+
+**Standalone cleanup:** When running outside the pipeline (no Pipeline ID),
+delete stale `test-results/auto-verify.json` before starting to prevent the
+stage gate aggregator from reading results from a previous run.
 
 ---
 
-## Step 6: Regression Check (CricScores Adjacency Map)
+## CRITICAL RULES
 
-After targeted tests pass, run adjacent tests to catch regressions.
-
-| Fixed Area | Also Test |
-|---|---|
-| `scoring/domain` | `scoring/data`, `scoring/presentation` |
-| `scoring/data` | `scoring/presentation`, `shared/data/sync` |
-| `matches/domain` | `scoring/domain` (match state affects scoring) |
-| `teams/data` | `matches/data` (team roster affects match setup) |
-| `shared/data/database` | All features that use those tables |
-| `server/services/scoring` | `server/routes/scoring`, `server/services/sync` |
-| `server/db/schema` | All server services + `server/routes` |
-
-```bash
-cd apps/mobile && flutter test {adjacent_tests}
-cd apps/server && bun test {adjacent_tests}
-```
-
-If regression found:
-1. Revert the fix that caused regression
-2. Escalate to `/fix-loop` with broader context
-3. Record in failure index
-
----
-
-## Step 7: Report
-
-```markdown
-## Auto-Verify Results
-
-### Status: {SUCCESS | PARTIAL | FAILED | MAX_ITERATIONS}
-
-### Summary
-- Scope: {flutter | server | all}
-- Changed files: N
-- Tests mapped: N (P0: N, P1: N, P2: N)
-- Tests run: N
-- Tests passed: N / Tests failed: N
-- Iterations used: N / max_iterations
-- Regressions checked: N (passed: N, failed: N)
-
-### Test Results
-| Test File | Result | Duration | Notes |
-|---|---|---|---|
-| {test_path} | PASS (N/N) | N.Ns | |
-
-### Analysis
-| File | Errors | Warnings | Info |
-|---|---|---|---|
-| {file_path} | 0 | 0 | 0 |
-
-### Fixes Applied
-1. [{file}:{line}] {description}
-
-### Regression Results
-| Adjacent Area | Tests | Result |
-|---|---|---|
-| scoring/data | 5 | PASS |
-```
-
----
-
-## Post-Run
-
-If any fixes were applied:
-1. Invoke `/post-fix-pipeline` with the fixes
-2. Then invoke `/reflect session` to capture learnings
-
-If no fixes needed:
-- Report SUCCESS and exit cleanly
+- MUST NOT apply fixes — fixing belongs in `/fix-loop`. — Why: mixing verification and fixing in one skill creates circular dependencies and unclear verdicts.
+- MUST produce `test-results/auto-verify.json` on every run, even when BLOCKED or zero tests found. — Why: downstream stage gates read this file; missing file = pipeline hang.
+- MUST use `result` as the canonical gate field name — never `status`, `verdict`, or `outcome`. — Why: all pipeline skills parse `result` by convention; renaming breaks the aggregator.
+- MUST distinguish UI test verdicts (screenshot-authoritative) from non-UI (exit-code-authoritative). — Why: UI tests can pass exit code but fail visually (empty table, broken layout).
+- MUST NOT proceed past Step 0 if upstream fix-loop reported FAILED or FLAKY. — Why: verifying known-broken code wastes compute and produces misleading results.
+- MUST report pre-existing failures separately from regression failures in the output. — Why: blocking on pre-existing failures prevents any new work from passing verification.
+- MUST degrade gracefully if `/regression-test` or `tester-agent` are missing — use fallbacks, not hard failures. — Why: not all projects have these installed; hard failure makes the skill unusable in simpler setups.
+- MUST fail the silent-degradation gate when UI tests are mapped but screenshot verification was skipped, unless `--allow-degraded-ui` was explicitly passed. — Why: a silent fallback to exit-code-only verification for UI tests reintroduces exactly the "green tests, broken UI" failure mode the dual-signal architecture exists to prevent.

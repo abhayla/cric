@@ -1,244 +1,206 @@
 ---
 name: fix-loop
-description: "Iterative fix cycle: analyze failures, apply minimal fixes, run code review gates, optionally retest. Full Loop mode (with retest) iterates until resolved. Single Fix mode (no retest) does one pass. Thinking escalation, debugger agent delegation. Use when tests fail, build breaks, or runtime errors."
-allowed-tools: Bash, Read, Grep, Glob, Write, Edit, Task
-metadata:
-  version: 1.0.0
+description: >
+  Analyze failures and iteratively apply minimal fixes, optionally retesting until resolved.
+  Full Loop mode (with retest command) iterates until green. Single Fix mode
+  (no retest) does one pass. Use when tests fail, builds break, or runtime errors
+  occur. For unclear root causes or repeated failures, escalate to
+  /systematic-debugging. For end-to-end bug resolution with verified proof,
+  use /debugging-loop instead.
+triggers:
+  - fix-loop
+  - fix tests
+  - fix build
+  - iterate fix
+  - fix failures
+  - retest until green
+allowed-tools: "Bash Read Grep Glob Write Edit Skill Agent"
+argument-hint: "[failure_output] [retest_command: <cmd>] [max_iterations: N] [--strict-gates] [--capture-proof | --no-capture-proof]"
+version: "1.4.0"
+type: workflow
 ---
 
-# Fix Loop
+# Fix Loop — Iterative Fix Cycle
 
-Iterative fix cycle that analyzes failures, applies minimal fixes, runs code review gates, and optionally retests. Supports Full Loop (with retest) and Single Fix (one pass) modes. Uses thinking escalation, debugger delegation, and structured iteration logging.
+Analyze failures, apply minimal fixes, and optionally retest until resolved.
 
-**Arguments:** $ARGUMENTS
+**Critical:** Maximum {max_iterations} fix attempts — each MUST try a different approach. For simple failures with a known retest command, use this skill. When root cause is unclear or fix-loop has failed 2+ times, escalate to `/systematic-debugging`. For end-to-end bug resolution with verified proof, use `/debugging-loop` instead.
 
----
-
-## Execution Modes
-
-| Mode | Trigger | Behavior |
-|------|---------|----------|
-| **Full Loop** | `retest_command` is provided | Run full analyze → fix → review → build → retest cycle, iterating until resolved or budget exhausted |
-| **Single Fix** | `retest_command` is absent | Run ONE analyze → fix → review → build pass, then return results for the caller to retest externally |
+**Input:** $ARGUMENTS
 
 ---
 
-## Input Parameters
+## Mode Detection
 
-### Required
+| Input | Mode | Behavior |
+|-------|------|----------|
+| `retest_command` provided | **Full Loop** | Fix → retest → repeat until pass (max iterations) |
+| No `retest_command` | **Single Fix** | Analyze → apply one fix → report |
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `failure_output` | string | Raw failure output (test errors, stack traces, assertion messages) |
-| `failure_context` | string | What was tested and what was expected |
-| `files_of_interest` | string[] | File paths to read for understanding the code under test |
-
-### Optional (with defaults)
+## Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `build_command` | null | Rebuild command after fix (null = skip) |
-| `retest_command` | null | **Present = Full Loop, absent = Single Fix** |
-| `retest_timeout` | 300 | Retest timeout in seconds |
-| `max_iterations` | 10 | Maximum total fix-build-test cycles |
-| `max_attempts_per_issue` | 3 | Maximum attempts per discrete issue |
-| `force_thinking_level` | null | Override auto-escalation: `"normal"`, `"thinkhard"`, `"ultrathink"` |
-| `prohibited_actions` | [] | Actions you must NEVER take |
-| `fix_target` | "production" | What to fix: `"production"`, `"test"`, `"either"` |
-| `log_dir` | ".claude/logs/fix-loop/" | Directory for iteration log files |
-| `clear_flags` | [] | Workflow state flags to clear on RESOLVED |
+| `failure_output` | — | The error output to analyze |
+| `retest_command` | — | Command to re-run tests after fix |
+| `max_iterations` | 5 | Maximum fix-test cycles. Callers (e.g., `/executing-plans`) may pass a lower value to keep total retry budgets bounded. |
+| `files_of_interest` | — | Specific files to focus on |
+| `--strict-gates` | false | Passed by orchestrator for consistency; no upstream gate for fix-loop |
+| `--capture-proof` | true (from config) | Forward to retest command — capture screenshots on every test |
+| `--no-capture-proof` | — | Disable screenshot capture even if config says true |
 
 ---
 
-## Step 0: Pre-Execution Knowledge Check
+## STEP 1: Analyze Failure (via test-failure-analyzer-agent)
 
-Before attempting fixes, check for known patterns:
+Delegate failure classification to `test-failure-analyzer-agent` for structured
+diagnosis. The agent is read-only — it classifies failures and suggests fixes
+but does not modify files.
 
-1. Read `failure-index.json` for matching `(skill, issue_type)`:
-   ```bash
-   node -e "
-   const fs = require('fs');
-   try {
-     const d = JSON.parse(fs.readFileSync('.claude/logs/learning/failure-index.json'));
-     for (const e of d.entries || []) {
-       if (e.known_workaround) console.log('KNOWN:', e.skill + '/' + e.issue_type, '->', e.known_workaround);
-     }
-   } catch { console.log('No failure index found'); }
-   "
+```
+Agent("test-failure-analyzer-agent", prompt="Analyze these test failures and
+classify each into exactly one category. Group by root cause. Output: category,
+root file:line, fix suggestion, confidence level.
+
+Test output:
+$FAILURE_OUTPUT")
+```
+
+The agent returns a structured analysis with:
+- **Category** per failure (one of: COMPILE_ERROR, ASSERTION_FAILURE, TIMEOUT,
+  FIXTURE_MISMATCH, MISSING_IMPORT, RUNTIME_EXCEPTION, FLAKY_TEST,
+  INFRASTRUCTURE, CONTRACT_MISMATCH, MIGRATION_FAILURE, AUTH_ERROR,
+  VISUAL_REGRESSION, SCHEMA_VALIDATION, PERFORMANCE_REGRESSION,
+  RESOURCE_LEAK, CONCURRENCY_ERROR, TEST_POLLUTION, EMPTY_ASSERTION)
+- **Root file and line** for each failure
+- **Grouped root causes** (multiple tests may fail from one issue)
+- **Fix priority order** (which fix unblocks the most tests)
+- **Confidence level** (High/Medium/Low)
+
+Use the agent's output to drive STEP 1A (flaky detection) and STEP 2 (apply fix).
+If the agent returns Low confidence on all failures, escalate to user immediately
+rather than attempting fixes.
+
+## STEP 1A: Flaky Test Detection
+
+Before applying a fix, check if the failure is flaky:
+
+1. Re-run ONLY the failing test(s) once
+2. If the test passes on retry → classify as `FLAKY_TEST`
+3. For flaky tests:
+   - Do NOT apply a code fix
+   - Tag with `@pytest.mark.flaky` / `@RepeatedTest` / `test.retry()`
+   - Log a tracking issue
+   - Report as FAILED with `flaky_detected: true` in the structured output — flaky is a failure category, not an acceptable outcome
+4. Continue to STEP 2 only for non-flaky failures
+
+## STEP 2: Apply Fix
+
+1. Make the minimal change to address the root cause
+2. Do NOT refactor unrelated code
+3. Do NOT change test expectations unless the test is wrong
+4. Prefer fixing source code over fixing tests
+
+## STEP 3: Retest (Full Loop mode only)
+
+Run the retest command and check results:
+- If all pass → report success
+- If different failure → analyze new failure (new iteration)
+- If same failure → escalate analysis depth
+- If max iterations reached → report remaining failures and suggest manual review
+
+If `--capture-proof` is enabled, append the platform-appropriate screenshot flag
+to the retest command:
+- pytest/playwright: set `screenshot: 'on'` in config or `--screenshot on`
+- Maestro: auto-inject `takeScreenshot` after each flow step
+- Flutter: append capture-all mode for golden collection
+
+Screenshots from each iteration are stored in
+`test-evidence/{run_id}/screenshots/` with iteration suffix:
+`{test_name}.iter{N}.{pass|fail}.png`
+
+## STEP 4: Report
+
+**On success:**
+```
+Fix Loop: RESOLVED in {N} iterations
+  Category: [FAILURE_CATEGORY]
+  Root cause: [description]
+  Fix applied: [file:line — what changed]
+  Flaky tests detected: M (quarantined)
+  Tests: all passing
+```
+
+**On failure (max iterations):**
+```
+Fix Loop: UNRESOLVED after {N} iterations
+  Category: [FAILURE_CATEGORY]
+  Remaining failures: [list]
+  Attempted fixes: [list]
+  Flaky tests detected: M (quarantined)
+  Suggestion: [manual review guidance]
+```
+
+## STEP 5: Structured Output
+
+Write machine-readable results to `test-results/fix-loop.json`:
+
+```json
+{
+  "skill": "fix-loop",
+  "timestamp": "<ISO-8601>",
+  "result": "PASSED|FAILED",
+  "flaky_detected": true,
+  "summary": {
+    "iterations": "<N>",
+    "max_iterations": "<max>",
+    "category": "<FAILURE_CATEGORY>",
+    "root_cause": "<description>",
+    "flaky_tests_quarantined": "<count>"
+  },
+  "failures": [],
+  "warnings": [],
+  "duration_ms": "<elapsed>"
+}
+```
+
+Create `test-results/` directory if it doesn't exist. This JSON is consumed by stage gates.
+
+---
+
+## ESCALATION
+
+If the same error persists after 2 iterations:
+1. Widen the search — read more context around the failing code
+2. Check for deeper root causes (configuration, dependencies, environment)
+3. Delegate to specialist agents based on failure category:
+   - `COMPILE_ERROR` / `MISSING_IMPORT` → debugger-agent
+   - `INFRASTRUCTURE` → check environment setup (DB connection, Redis, service health)
+   - `CONTRACT_MISMATCH` → delegate to /contract-test for contract analysis
+   - `MIGRATION_FAILURE` → delegate to /db-migrate-verify for schema validation
+   - `VISUAL_REGRESSION` → delegate to /verify-screenshots for baseline comparison
+4. If confidence remains Low after specialist consultation, report UNRESOLVED and ask for user input
+
+## AUTO-RECORD LEARNING (MANDATORY)
+
+After a fix iteration succeeds (test goes from FAIL → PASS), ALWAYS record the learning before reporting success. This is NOT optional.
+
+1. **Classify** the fix: `TIMING`, `NETWORK`, `BUILD`, `STATE`, `CONFIG`, `API-COMPAT`, `AUTH`, `EMULATOR`
+2. **Route** to the right knowledge base:
+   - Test timing/flaky issues → `/test-knowledge add`
+   - Stack-specific issues (emulator, platform, env) → stack knowledge base if available
+   - Other → write symptom + fix to `.claude/learnings.json`
+3. **Log** the learning:
+   ```
+   LEARNING RECORDED: [category] [one-line summary]
    ```
 
-2. If known workaround found → apply it first
-3. If previous stall found → start with the strategy that eventually worked
+This ensures the same failure is auto-resolved next time without re-diagnosing.
 
----
+## CRITICAL RULES
 
-## Iteration Algorithm (Full Loop Mode)
-
-For the detailed pseudocode and edge cases, see [references/iteration-algorithm.md](references/iteration-algorithm.md).
-
-### Per-Iteration Steps
-
-1. **ANALYZE** — Read failure output, trace to source code, identify root cause
-2. **FIX** — Apply minimal, targeted change. Check against `prohibited_actions`
-3. **CODE REVIEW GATE** — Launch `CricScores-code-reviewer` agent (via Task tool, read-only) to review the fix
-   - If APPROVED → proceed
-   - If FLAGGED with Critical → revert fix, re-attempt with rejection context
-4. **BUILD** (if `build_command` provided) — Rebuild. If build fails `3` times → revert, mark FAILED_BUILD
-5. **RETEST** — Run `retest_command`. If PASS → RESOLVED. If FAIL → next iteration
-
-### Thinking Escalation (Canonical)
-
-| Level | When | Approach |
-|-------|------|----------|
-| **normal** | Attempt 1 (or forced) | Analyze directly — read failure, trace to source, fix |
-| **thinkhard** | Attempt 2-3 (or forced) | Launch `debugger` agent (read-only, via Task tool) with extended analysis, all prior attempt logs |
-| **ultrathink** | Attempt 4+ (or forced) | Launch `debugger` agent with maximum depth, complete history, re-examine all assumptions |
-
-Override: `force_thinking_level` skips auto-escalation.
-
-When launching the debugger agent, include: complete failure output, all files of interest, summary of all previous fix attempts. The debugger returns analysis only — YOU apply the fixes.
-
----
-
-## Prohibited Actions Enforcement
-
-Before applying ANY fix, verify it does not involve:
-- Adding `@Skip` or `skip()` annotations to tests
-- Weakening assertions (removing expects, broadening matchers)
-- Deleting or commenting out test methods
-- Adding arbitrary `await Future.delayed()` as timing fixes
-- Creating "fix later" TODO comments to bypass failures
-
-If the ONLY viable fix would violate a prohibited action, mark UNRESOLVED with reason.
-
----
-
-## Fix All Errors — No Dismissals
-
-**All failures must be addressed.** Do NOT dismiss any failure as "pre-existing", "infrastructure issue", "environment problem", or "not caused by current changes." If a test fails, fix it. If the DB is unreachable, diagnose and fix connectivity. If test cleanup has FK ordering bugs, fix the cleanup.
-
-Specifically:
-- Do NOT classify errors as "pre-existing" and skip them
-- Do NOT report failures as "not related to my changes" without fixing them
-- Do NOT declare success while failures remain, regardless of their origin
-- Infrastructure issues (DB down, service unreachable) should be diagnosed and fixed or clearly escalated with actionable next steps
-- Test file compilation errors are real bugs — fix the test code
-- Timeout failures indicate a real problem (connectivity, deadlock, slow query) — investigate root cause
-
-The only acceptable outcome is: all tests pass, or a clear actionable blocker is identified with a concrete fix path.
-
----
-
-## Iteration Log Format
-
-Each iteration written to `{log_dir}/{session_id}/iteration-{NNN}.md`:
-
-```markdown
-# Iteration {NNN}
-
-## Metadata
-- Iteration: {NNN} / {max_iterations}
-- Issue: {description}
-- Attempt: {M} / {max_attempts_per_issue}
-- Thinking level: {normal | thinkhard | ultrathink}
-- Mode: {full_loop | single_fix}
-
-## Failure Analysis
-- Root cause: {description}
-- File: {path}
-
-## Fix Applied
-- File: {path}
-- Change: {description}
-
-## Code Review
-- Verdict: {APPROVED | FLAGGED}
-
-## Result
-- Status: {PASSED | FAILED | TIMEOUT}
-```
-
----
-
-## Workflow State Updates
-
-At start:
-```bash
-node -e "
-const fs = require('fs');
-const sf = '.claude/workflow-state.json';
-try {
-  const d = JSON.parse(fs.readFileSync(sf));
-  d.skillInvocations.fixLoopInvoked = true;
-  fs.writeFileSync(sf, JSON.stringify(d, null, 2));
-} catch {}
-"
-```
-
-On completion, update `fixLoopResult` with the outcome status.
-
----
-
-## Output — Full Loop Mode
-
-```markdown
-## Fix Loop Results
-
-### Status
-- **Overall:** RESOLVED | PARTIALLY_RESOLVED | UNRESOLVED | MAX_ITERATIONS_EXCEEDED
-- **Iterations used:** N / max_iterations
-- **Issues found:** N
-- **Issues resolved:** N
-
-### Fixes Applied
-1. [{file}:{line}] — Root cause: {description} → Fix: {change}
-
-### Unresolved Issues
-1. {description} — Attempts: N, Last error: {message}
-
-### Tracking Metrics
-- Debugger invocations: N
-- Code reviews: N (approved: N, flagged: N)
-
-### Files Changed
-- {file_path}
-
-### Flags Cleared
-- {flag_name}: cleared (or "No flags to clear")
-```
-
-## Output — Single Fix Mode
-
-```markdown
-## Single Fix Result
-
-### Status
-- **Fix applied:** true | false
-- **Review verdict:** APPROVED | FLAGGED
-- **Build status:** PASSED | FAILED | SKIPPED
-
-### Fix Details
-- **File:** {path}
-- **Root cause:** {description}
-- **Change:** {description}
-- **Thinking level:** {level}
-```
-
----
-
-## Edge Cases
-
-| Edge Case | Handling |
-|-----------|----------|
-| No `build_command` | Skip rebuild step |
-| Build fails 3 times | Revert fix, mark FAILED_BUILD |
-| Code reviewer returns Critical | Revert, re-attempt with rejection context |
-| `max_iterations` exceeded | Stop, return MAX_ITERATIONS_EXCEEDED |
-| Fix creates NEW issue | Add to queue (max cascade depth 2) |
-| Retest times out | Treat as failure, next attempt |
-| No `files_of_interest` | Infer via Grep/Glob on error messages |
-| All prohibited actions violated | Mark UNRESOLVED, log reason |
-| DB connectivity timeout | Diagnose: check service status, connection string, firewall. Fix or provide exact steps to restore. |
-| Test cleanup FK errors | Fix cleanup ordering (delete child rows before parent). |
-| Stale test signatures | Update test to match current production API (e.g., sync → async callbacks). |
-| Environment not configured | Provide exact setup commands (start service, create DB, update .env). |
+- Maximum {max_iterations} iterations — do NOT infinite loop — Why: unbounded retries waste compute and mask unfixable issues
+- Each iteration must try a DIFFERENT fix approach — Why: repeating the same fix wastes iterations and hits max without progress
+- Never suppress errors or add broad exception handlers — Why: suppression hides the real bug and creates silent failures downstream
+- If confidence is Low, explain reasoning and ask for user input — Why: low-confidence fixes often introduce new bugs that compound the original failure
+- ALWAYS record learning after successful fix — no exceptions — Why: unrecorded fixes get re-diagnosed from scratch next time, wasting future sessions

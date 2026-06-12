@@ -301,3 +301,20 @@ Each feature in `apps/mobile/lib/src/features/<feature>/` follows clean architec
 - **Git:** Conventional commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`). Branch: `feature/`/`fix/`/`task/` + issue number
 
 Full conventions (variable patterns, error handling, import ordering): [CODE_STANDARDS.md](docs/process/CODE_STANDARDS.md).
+
+<!-- hub:best-practices:start -->
+
+<!-- PROTECTED SECTION — managed by claude-best-practices hub. -->
+<!-- Do NOT condense, rewrite, reorganize, or remove.          -->
+<!-- Any /init or optimization request must SKIP this section.  -->
+
+## Rules for Claude
+
+1. **Bug Fixing**: Use `/fix-loop` or `/fix-github-issue`. Start by writing a test that reproduces the bug, then fix and prove with a passing test.
+2. **Rules**: Path-scoped rules live in `.claude/rules/` and auto-load via `globs:` frontmatter when matching files are opened. Browse with `ls .claude/rules/` — enumerating each rule here would cost ~4k tokens per session for zero enforcement benefit.
+
+## Claude Code Configuration
+
+The `.claude/` directory contains 118 skills, 61 agents, and 32 rules for Claude Code.
+
+<!-- hub:best-practices:end -->

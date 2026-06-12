@@ -11,7 +11,7 @@ nul
 
 # Claude Code (ignore all except rules, settings, agents, skills, hooks)
 .claude/*
-!.claude/rules.md
+!.claude/rules/
 !.claude/settings.json
 !.claude/agents/
 !.claude/skills/
