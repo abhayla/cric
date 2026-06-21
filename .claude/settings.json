@@ -68,7 +68,10 @@
       "Bash(git checkout .:*)",
       "Bash(*--no-verify:*)",
       "Bash(rm -rf:*)",
-      "Bash(rm -fr:*)"
+      "Bash(rm -fr:*)",
+      "Bash(git push --no-verify:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git commit -n:*)"
     ]
   },
   "hooks": {
@@ -142,6 +145,10 @@
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/session-governance-status.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/auto-git.sh\""
           }
         ]
       }
@@ -179,6 +186,28 @@
             "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/no-overask-guard.sh\""
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/no-overask-guard.sh\""
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/verifier-edge-guard.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/auto-git.sh\""
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
@@ -188,6 +217,26 @@
           {
             "type": "command",
             "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/prompt-enhance-reminder.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/ba-usecase-discovery-reminder.sh\""
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/auto-pr.sh\""
           }
         ]
       }
