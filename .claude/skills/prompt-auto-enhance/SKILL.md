@@ -20,7 +20,7 @@ triggers:
 allowed-tools: "Read Grep Glob Skill Agent"
 argument-hint: "[prompt text to enhance or 'score' to evaluate reliability]"
 type: workflow
-version: "3.6.0"
+version: "3.7.0"
 ---
 
 # Prompt Auto-Enhance — Strengthening, Step Transcript, Final Preview, Resource CRUD
@@ -44,6 +44,32 @@ Skipped at the hook layer for:
 - Known continuation phrases ("yes", "ok", "continue", "now do …", "also …", etc.)
 
 Adapted from community pattern by @heyrimsha (source: x.com/heyrimsha/status/2035995286150234480).
+
+## ENHANCE_MODE — the session opt-out flag (`auto` | `ask` | `off`)
+
+A session flag controls whether the **prompt-enhancement pipeline** (this skill's STEP 0–4.6
+strengthening + the L3 reviewer-card / diagnosis-substance enforcement in `no-overask-guard.sh`)
+runs. The governance tail — plan-before-coding, decide-don't-ask, grill-when-unsure,
+narrate-and-stop, git — is **always active in every mode**; it is NOT part of the enhancement
+process and is never gated by this flag.
+
+**Storage:** `.claude/.enhance-mode` (gitignored runtime file). **Absent ⇒ `auto`** — so default
+behavior is unchanged.
+
+**Set it inline** — type one of these as a *whole prompt*; `prompt-enhance-reminder.sh` writes the
+flag and confirms: `enhance auto` · `enhance ask` · `enhance off`.
+
+| Mode | Banner + grade card + reviewer + final-prompt | Stop-hook enhance enforcement | Governance tail |
+|---|---|---|---|
+| `auto` (default) | rendered every substantive turn | on (reviewer-card + diagnosis blocks) | on |
+| `ask` | suppressed; append one line *"Enhance available — reply `enhance`…"* | off | on |
+| `off` | suppressed entirely | off | on |
+
+**One-shot opt-in:** in `ask`/`off`, a bare `enhance` (or `enhance this`) re-runs the PRIOR prompt
+through the full pipeline for that turn without changing the stored mode. Everything in the
+`auto`-mode contract below applies only when the mode is `auto` (or for that one-shot turn) — in
+`ask`/`off` the banner + full-process requirement is suspended (and the L3 hook will not block its
+absence), while the governance rules still hold.
 
 ## STEP 0-pre: Transcription Normalization (runs BEFORE grading)
 
@@ -388,22 +414,35 @@ enhance to a higher number, then run it" — not "rewrite and hope".
 - Grade-A originals (role-only addition) typically move a few tenths via the
   Role dimension — that small lift is expected and sufficient.
 
-**Blind re-grade sampling (anti self-grading bias):** the
-re-grade is scored by the same model that wrote the rewrite — structurally
-motivated to show lift (the author-verifies-own-work blind spot — see independent-test-verification.md).
-Deterministic audit triggers — blind re-grade fires when ANY of:
-- the claimed lift is ≥ 3.0 points (big claims get audited), OR
-- the turn is part of an explicit test/audit campaign, OR
-- the user asks for it.
+**Independent re-grade — the Reviewer-after card column is MANDATORY every enhanced turn; the
+BLIND `Agent()` dispatch is STAKES-THRESHOLDED (audit gap G8, 2026-06-18):** the self re-grade
+is scored by the same model that wrote the rewrite — structurally motivated to show lift (the
+author-verifies-own-work blind spot — see independent-test-verification.md). So the
+**Reviewer-after column is rendered on EVERY non-trivial enhanced turn**, but HOW it is produced
+scales with stakes so the cost never makes the whole card get silently dropped:
+- **Dispatch the context-blind `Agent()` reviewer** when stakes are high — self-grade ≤ B-
+  (any C / D / F), OR claimed lift > 1.5 points, OR the turn does destructive / irreversible /
+  wide-scope / domain-critical work. Label the column `(blind agent)`; its number WINS the lift.
+- **Otherwise** (Grade-A/B, small-lift, low-stakes turns) do a CHEAP **self spot-check** —
+  adversarially re-grade only the 2 LOWEST dimensions + sanity-check the overall — and label the
+  column `(self spot-check)`.
+The column is unconditional (the enforcement hook always sees it); only the expensive blind
+dispatch is proportional to stakes — an unaffordable per-turn mandate is what gets dropped.
 
-**Mechanism:** dispatch a context-blind agent whose prompt contains ONLY the
-original prompt text, the strengthened prompt text, and the rubric path
-(`references/grading-rubric.md`) — no pipeline narrative, no self-graded
-scores, no expected answer. The agent scores both on the rubric and returns
-the two overalls. If `|blind_after − self_after| > 1.5`, log
-`regrade-divergence` to `.claude/.enhance-misses.log` and REPORT the blind
-score alongside the self-score (the blind number wins the rendered lift).
-Cost note: fires only on the triggers above, never per-turn.
+**Who the reviewer is (state this in the output every time):** a context-blind subagent — a
+fresh model instance dispatched via `Agent()` that receives ONLY the original prompt, the
+strengthened prompt, and the rubric (the 6 dimensions + weights inline, or the
+`references/grading-rubric.md` path) — never the pipeline's own scores, narrative, or
+reasoning. It cannot see how the rewrite "wants" to score, which is what makes it independent.
+
+**Mechanism (keep it lean — it runs per turn):** dispatch the reviewer with the rubric
+INLINED (6 dimensions + weights + grade bands) and ask for ONLY the two score tables + the
+two overalls + a one-line verdict — no rationale paragraphs, no file reads unless a value is
+disputed. The reviewer scores both prompts and returns both overalls. ALWAYS report, in the
+STEP 4 after-card: (1) WHO the reviewer is + WHAT it did, and (2) its independent score — and
+**the blind number WINS the rendered lift** (the self-score never overrides it). If
+`|blind_after − self_after| > 1.0`, also log `regrade-divergence` to
+`.claude/.enhance-misses.log` (the over-scoring telemetry).
 
 ## STEP 4: Show Grade Card + Changes Applied
 
@@ -420,29 +459,45 @@ Grade: B (7.4 / 10) — 1 fix applied
   [1] UNDER_CONSTRAINED → added output format spec
 ```
 
-**Full mode** (Grade C/D/F):
+**Full mode** (default — Grade C/D/F and any turn with strengthening):
+render a card with FOUR score columns per dimension — Before, Self-after,
+**Reviewer-after**, Weight — so the independent reviewer's full per-dimension
+grade card is VISIBLE, not just its two overalls. The independent reviewer runs
+EVERY turn (STEP 3.6); its `Reviewer-after` column IS its grade card. The BLIND
+overall is the rendered Overall-after (self-after shown only for comparison), and
+ALWAYS print the "Independent reviewer" line stating who it is and what it did.
+The Reviewer-after column is NOT optional — omitting it (showing only the
+reviewer's overall) is the exact gap this format closes.
 ```
-Prompt Grade Card:
-┌────────────────────────┬───────┬────────┬─────────────┐
-│ Dimension              │ Score │ Weight │ Action      │
-├────────────────────────┼───────┼────────┼─────────────┤
-│ Intent Clarity         │  8.0  │  0.25  │ —           │
-│ Context Sufficiency    │  5.0  │  0.20  │ Fixed [1,2] │
-│ Constraint Precision   │  6.0  │  0.20  │ Fixed [3]   │
-│ Output Specification   │  4.0  │  0.15  │ Fixed [4]   │
-│ Role & Framing         │  9.0  │  0.10  │ —           │
-│ Example Grounding      │  6.0  │  0.10  │ Skipped     │
-├────────────────────────┼───────┼────────┼─────────────┤
-│ Overall                │  6.30 │        │ Grade: B    │
-└────────────────────────┴───────┴────────┴─────────────┘
+Prompt Grade Card (before → after — self vs independent reviewer):
+┌────────────────────────┬────────┬────────────┬────────────────┬────────┬───────┐
+│ Dimension              │ Before │ Self-after │ Reviewer-after │ Weight │ Fix   │
+├────────────────────────┼────────┼────────────┼────────────────┼────────┼───────┤
+│ Intent Clarity         │  4.0   │   9.0      │   9.0          │  0.25  │ [1]   │
+│ Context Sufficiency    │  2.0   │   7.0      │   6.0 ⚠framed  │  0.20  │ [2]   │
+│ Constraint Precision   │  1.0   │   9.0      │   9.0          │  0.20  │ [3]   │
+│ Output Specification   │  1.0   │   8.0      │   8.0          │  0.15  │ [4]   │
+│ Role & Framing         │  1.0   │   9.0      │   9.0          │  0.10  │ [5]   │
+│ Example Grounding      │  2.0   │   7.0      │   6.0          │  0.10  │ —     │
+├────────────────────────┼────────┼────────────┼────────────────┼────────┼───────┤
+│ Overall                │  2.05  │   8.20     │  7.85 (wins)   │        │ F → B │
+└────────────────────────┴────────┴────────────┴────────────────┴────────┴───────┘
+Independent reviewer (ran this turn — no exceptions): a context-blind Agent() subagent
+  re-graded both prompts from the rubric alone; it never saw the self-scores. The
+  Reviewer-after column above IS its grade card. Reviewer overall 7.85 (B) WINS over
+  self 8.20 (A); divergence 0.35 < 1.0 → no flag, but the blind number still wins.
 
-Changes Applied (4):
-  [1] MISSING_CONTEXT (Critical) → defer to Clarification Gate Q1
-  [2] IMPLICIT_ASSUMPTIONS (Low)  → pin precondition explicitly
+Changes Applied (5):
+  [1] VAGUE_INTENT (Critical) → action verb chain (measure → cache → prove)
+  [2] MISSING_CONTEXT (Critical) → defer to Clarification Gate Q1
   [3] UNDER_CONSTRAINED (Medium)  → replace vague phrase with measurable target
   [4] MISSING_OUTPUT_SPEC (Medium)→ add deliverable triple
-  Pruning: removed "please" (Cat A — politeness filler)
+  [5] MISSING_ROLE (cap-exempt)   → prepend task-class persona
+  Pruning: removed "so it's faster" (Cat A — vague threshold)
 ```
+Each `After` score that rose MUST be earned by a listed Fix `[n]` — a lift
+with no fix behind it is an inflated number; flag it `⚠framed` (improved
+framing, unresolved substance) rather than crediting full points.
 
 **Grade D warning line (locked format):** when the prompt graded D,
 render this line ABOVE the grade card — the "heavy warning" is this exact string,
@@ -653,11 +708,15 @@ The gate runs AFTER strengthening and BEFORE STEP 4.6 (final prompt preview),
 so the previewed prompt reflects the resolved intent. It is tiered (merges the
 lightweight clarification gate with the `decision-authority.md` confidence gate):
 
-- **1–2 small gaps** → the Clarification Gate below (one targeted question at a time, locked format).
-- **Consequential fork** (expensive to reverse, materially changes the product, no clear
-  best-practice winner) **and confidence < ~95%** → converge via **`/grill-me`** or
-  **`/grill-with-docs`** before building — do not guess at WHAT to build. (`grill-with-docs`
-  preferred when the decision should be recorded into CONTEXT/ADRs.)
+- **Exactly 1 small gap** (a single unanswerable detail) → the Clarification Gate below (one
+  targeted question at a time, locked format).
+- **≥2 distinct material unknowns, OR a fork that is expensive to reverse / materially changes
+  the product / has no clear best-practice winner** (confidence in WHAT to build < ~95%) →
+  route to **`/grill-me`** (or **`/grill-with-docs`** when the decision should be recorded into
+  CONTEXT/ADRs) and converge BEFORE strengthening — do NOT collapse multiple forks into a single
+  clarification question, and do NOT guess. **Concrete routing test:** if the strengthened prompt
+  would defer 2+ separate Q1-style placeholders, that is a grill, not one Clarification question.
+  No after-card renders on a grill turn — there is no strengthened prompt to re-grade yet.
 - **"You take a call" / pre-authorized** → gate waived; proceed on best judgment, stating
   one-line assumptions.
 
@@ -681,7 +740,7 @@ confidence is reached, not when a question count is hit.
 
 **Question format (locked template):**
 ```
-Question N of unbounded — Clarification Gate
+*Sync-check:* Question N of unbounded — Clarification Gate
 
 <one specific question, unanswerable from Tier 1/2 context>
 
@@ -693,6 +752,11 @@ Why: <one sentence citing a specific source — file path with line number,
 
 (Confirm, correct, or specify a different value.)
 ```
+
+The gate opens with the `*Sync-check:*` marker because it IS a genuine required-intent
+question, not a permission-to-start over-ask — the `no-overask-guard.sh` Stop hook EXEMPTS
+that marker (decision-authority.md "Confidence gate"). Without it, a fired gate (and any
+rendered demo of one) trips the over-ask guard.
 
 Rules for this format:
 - The Recommendation is a **single value**, not a multiple-choice list. The

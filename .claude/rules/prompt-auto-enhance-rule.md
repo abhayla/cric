@@ -3,7 +3,6 @@
 # Prompt Auto-Enhance
 
 Every response starts with `*Enhanced: <what was checked>*` (under 15 words).
-Examples: *Enhanced: prompt graded (B, 2 fixes), git state, 3 rules*
 
 The hook (`prompt-enhance-reminder.sh`) gates triggering: prompts ≤15 chars and known
 continuation phrases skip injection at the deterministic layer, so the strengthening
@@ -13,29 +12,31 @@ pipeline only runs on substantive prompts.
 silent.** The hook gates on PROMPT shape; short / slash-command / continuation prompts
 still spawn substantive work, and the discipline fires on the output's blast radius,
 not the prompt's shape. Whenever a turn produces substantive output (real analysis,
-multi-step answer, tool edits/commits), self-apply the banner + `Role:` line +
-governance tail even with no reminder injected. The Stop hook `no-overask-guard.sh`
+multi-step answer, tool edits/commits), self-apply the banner + full process (transcript
++ grade card + final prompt) + `Role:` line + governance tail even with no reminder injected. The Stop hook `no-overask-guard.sh`
 logs substantive turns missing the banner to `.claude/.enhance-misses.log` (telemetry,
 non-blocking). Genuinely trivial turns (`yes`/`go ahead`) are exempt.
 
-## MANDATORY OUTPUT — always SHOW the enhanced prompt (format A)
+## MANDATORY OUTPUT — always SHOW the full enhancement process (default ON)
 
-The one-liner is NOT enough — without the block the user never sees the strengthened
-prompt or whether enhancement ran. Two shapes:
+The one-liner is NOT enough — by default the user wants to SEE the whole pipeline on
+every substantive turn. Render FULL mode (not the compact block):
 
-- **Non-trivial prompt:** after the banner, render a **compact Enhanced-prompt block**:
-  > **What changed:** <fixes/additions made to the raw ask — 1-3 bullets>
-  > **Final prompt executed:** <the exact strengthened prompt, verbatim>
-
-  Compact — NOT the full grade-card wall (that renders on request, on explicit
-  `/prompt-auto-enhance` invocations, and in test/audit runs). The Final-prompt block
-  MUST open with the R1 `Act as …` persona whenever Role & Framing scored < 7 (skill's
-  Role Selection Guide) — the `Role:` line (R2, stage 4.7) never substitutes for it.
+- **Non-trivial prompt:** after the banner, render in this order:
+  1. **Pipeline transcript** — per-step counts/deltas (skill STEP 4.5)
+  2. **Before→after card + independent reviewer (EVERY turn, no threshold, no bypass)** — per-dim
+     before/after scores + Changes Applied. A context-blind `Agent()` reviewer (fresh instance; sees
+     only the two prompts + rubric, never the pipeline's scores) re-grades both prompts; the card shows
+     its PER-DIMENSION scores (visible Reviewer-after column, not just an overall) — BLIND wins (STEP 3.6).
+  3. **Original → Final Strengthened Prompt**, fenced blocks (skill STEP 4.6); the Final
+     block MUST open with the R1 `Act as …` persona whenever Role & Framing scored < 7
+  4. **`Role: <name> — <why>`** line (R2, stage 4.7) — never a substitute for the R1 persona
 - **Trivial / continuation prompt:** render the one-liner
   `*Enhanced: no change — ran your input as-is*` so the user is never left guessing.
 
-Skipping the block on a non-trivial turn is a defect (class-C telemetry backstop).
-This section is the SSOT for the FORMAT; stage 4.6 produces the content.
+Skipping the process on a non-trivial turn is a defect (class-C telemetry backstop). This
+section is the SSOT for the FORMAT; skill stages 4–4.7 produce the content. Compact
+format-A is a fallback ONLY when the user explicitly asks to reduce verbosity.
 
 ## The unified per-prompt pipeline (0 → 6)
 
@@ -52,32 +53,32 @@ stage's detail lives in its SSOT (`configuration-ssot.md`):
 | **5.5 Verify** | Reproduce the doer's gate + independent review before commit; fires on OUTPUT blast radius, even on turns the hook skipped | `supervisor-verification.md`, `independent-test-verification.md` |
 | **6 Git** | Only if committable changes: secret-scan → commit → push via `git-manager-agent` | `decision-authority.md`, `git-collaboration.md` |
 
-## Tier 1 — Always
+## Context tiers — gather before responding
 
 1. Existing `.claude/` patterns — know what exists, do not duplicate
 2. CLAUDE.md — already loaded, reference it
 3. Git state — branch, recent commits, uncommitted changes
-
-## Tier 2 — Conditional (prompt references specific files/features)
-
-4. Nearby files — structural context
-5. `registry/patterns.json` — check before suggesting new patterns
+4. *(conditional — prompt references files/features)* Nearby files — structural context
+5. *(conditional)* `registry/patterns.json` — check before suggesting new patterns
 
 ## Clarification & Confidence Gate — ask/grill until confident (before STEP 4.6)
 
 Merged intent-resolution gate (Clarification Gate + `decision-authority.md`
-confidence gate), tiered:
+confidence gate), tiered. The gate question opens with the `*Sync-check:*` marker — a
+required-intent stop the `no-overask-guard.sh` hook EXEMPTS, never an over-ask:
 
-- **1–2 small gaps** → one targeted question at a time; no upper limit; stop when
-  confidence is reached, not at a question count. Read the codebase before asking —
-  each question must be unanswerable from Tier 1/2 context.
-- **Consequential fork** and confidence < ~95% → converge via `/grill-me` or
-  `/grill-with-docs` before building — never guess at WHAT to build.
+- **Exactly 1 small gap** → ONE question per turn (no upper limit; stop when confident, not at
+  a count). Hold the full list internally; ask the next only after the current is answered,
+  sequenced on prior answers — never ask what's already answered, implied, or contradicted.
+  Each question gives a **recommended** option + one-line why. Ask only what's unanswerable
+  from Tier 1/2 context.
+- **≥2 material unknowns, OR a fork expensive to reverse with no best-practice default**
+  (confidence in WHAT to build < ~95%) → `/grill-me` (or `/grill-with-docs` for ADR-worthy
+  calls); converge BEFORE strengthening — don't collapse 2+ forks into one question, don't guess.
 - **"You take a call" / pre-authorized** → gate waived; proceed, stating assumptions.
 
-Confidence is about **intent**, never reversible execution detail (stage 5 decides
-those). The final prompt is shown for transparency, not approval — execution proceeds
-in the same response.
+Confidence is about **intent**, never reversible execution detail (stage 5 decides those).
+The final prompt is shown for transparency — execution proceeds in the same response.
 
 ## Resource CRUD
 
@@ -88,10 +89,7 @@ flow in `/prompt-auto-enhance` — no resource changes without explicit user app
 
 - Banner on every response; Tier 1 gathered before responding; strengthening runs on
   every non-filtered prompt via the `/prompt-auto-enhance` pipeline (skip only Grade A
-  / pure knowledge questions — the format-A block still renders)
-- Format A is the default verbosity; full transcript on request / explicit invocation
-- After the final prompt: role (4.7) → plan if coding (4.8) → execute under
-  decision-authority (5) → verify edge (5.5) → git only if changes (6)
+  / pure knowledge questions — the full process still renders)
 - Optional one-line skill hint at STEP 4.6 (max 2 skills, informational only — the
   skill's job is prompt enhancement, not execution routing); skip on direct,
   mechanical, bug-fix, lookup, and documentation prompts

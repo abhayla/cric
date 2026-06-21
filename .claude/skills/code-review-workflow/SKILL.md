@@ -19,7 +19,7 @@ triggers:
   - full review pipeline
 allowed-tools: "Agent Bash Read Write Edit Grep Glob Skill"
 argument-hint: "<branch name, 'current', or review scope description>"
-version: "2.0.0"
+version: "2.3.0"
 ---
 
 # /code-review-workflow — Skill-at-T0 Orchestrator
@@ -52,13 +52,14 @@ findings requires explicit user confirmation.
 | `--no-pr` | off | Stop after STEP 2 QUALITY_GATES; don't create PR |
 | `--auto-fix` | off | Attempt auto-fix for blocking findings before escalating to user |
 | `--deep-audit` | off | Dispatch code-reviewer-agent + security-auditor-agent in STEP 2b for agent-level audit beyond the /review-gate skill's checks |
+| `--nested-verify` | off | (Requires `--deep-audit`.) Run STEP 2b dimension audits as **dual-mode nested orchestrators**: each audit spawns one adversarial verifier subagent per finding (depth-2) to refute-or-confirm BEFORE returning, so only confirmed findings reach T0. Default keeps the flat single-level parallel-sibling dispatch. See STEP 2b "Nested-verify mode". |
 
 ---
 
 ## STEP 1: INIT
 
 1. **Parse args.** Default scope is `current` branch vs `main`.
-2. **Read config.** `config/workflow-contracts.yaml` → `workflows.code-review`.
+2. **Read config.** `.claude/config/workflow-contracts.yaml (hub repo: config/workflow-contracts.yaml; if absent, use the inline steps below — this skill is self-contained)` → `workflows.code-review`.
    `master_agent` should be null; `sub_orchestrators` empty (Phase 3.4 shape).
 3. **Generate `run_id`.** `{ISO-8601}_{7-char git sha}` with `:` → `-`.
 4. **Initialize state** at `.workflows/code-review/state.json` (schema 2.0.0):
@@ -66,6 +67,29 @@ findings requires explicit user confirmation.
    CREATE_PR: pending, HANDLE_FEEDBACK: pending}`, `dispatches_used: 0`,
    `deferred_items: []`.
 5. Append INIT event to `events.jsonl`.
+
+---
+
+## STEP 1.5: PREFLIGHT (dependency-closure gate — BLOCK on missing workers)
+
+Before any dispatch, verify the runtime closure this workflow needs is present
+AND dispatchable. Pattern provisioning copies by tier and may not resolve a
+skill's full closure, so a project can have this skill without its workers — a
+silent inline run or a mid-dispatch crash is the failure this gate prevents.
+
+- **Required sub-skills** (invoked via `Skill()`): `review-gate`, `request-code-review`, `receive-code-review`. Check each exists at
+  `.claude/skills/<name>/SKILL.md` (only those on the path you will actually run).
+- **Required worker agents** (dispatched via `Agent()`): `code-reviewer-agent`, `security-auditor-agent` (when `--deep-audit` runs). File presence
+  (`.claude/agents/<name>.md`) is necessary but NOT sufficient — the agent registry
+  is pinned at session start (`pattern-structure.md` → "registry session-pinning"),
+  so probe runtime dispatchability for any agent on the path about to run.
+- **On any missing/undispatchable dependency → BLOCK** with verdict
+  `WORKER_REGISTRY_NOT_LOADED`, list what is missing, and emit: "run
+  `/update-practices` to provision the closure, then RESTART the session (agent
+  registry is pinned at session start), then re-run." Write the BLOCKED verdict to
+  this workflow's report artifact and STOP.
+
+Only when the required closure is present and dispatchable, continue.
 
 ---
 
@@ -119,6 +143,59 @@ secret leakage, injection vectors). Return audit contract.
 Parallel via single-message dispatch. Increment `dispatches_used` by 2.
 Merge findings into the state's `deep_audit` block. Re-evaluate the
 APPROVED / WITH_CAVEATS / REJECTED verdict incorporating the new findings.
+
+### Nested-verify mode (opt-in, `--nested-verify` — requires `--deep-audit`)
+
+The DEFAULT dispatch above is flat (two parallel-sibling audits return raw findings to T0).
+The known weakness: raw audit findings include false positives, and T0 must then either accept
+them or serialize a second verification wave itself. `--nested-verify` adopts GA **recursive
+subagents** (Claude Code v2.1.172, ≤5-level cap) to push per-finding adversarial verification
+DOWN into each dimension audit — the first concrete nested-dispatch consumer in the hub
+(`agent-orchestration.md` nested-consumer note).
+
+When `--nested-verify` is set, dispatch the SAME two audits, but append `mode: nested-verify`
+to each dispatch prompt. In this mode each dual-mode audit agent (depth-1):
+
+1. Produces its raw findings (as today).
+2. For EACH finding, spawns ONE adversarial verifier subagent (depth-2) prompted to **refute**
+   the finding — default-to-refuted on uncertainty (`independent-test-verification.md` adversarial
+   posture). Per-finding verifiers run as a single-message batch.
+3. Returns ONLY findings the verifier could not refute, each tagged `verified: true` + the
+   verifier's one-line rationale. Refuted findings are dropped (logged in the return as
+   `refuted: <n>`).
+
+```
+Agent(subagent_type="code-reviewer-agent", prompt="""
+## Workflow: code-review deep audit
+## mode: nested-verify          # ← spawns depth-2 per-finding verifiers; flat if absent
+## Branch: <branch>
+## Upstream: <review-gate.json path>
+Audit for code smells, architectural drift, edge cases. For EACH finding, spawn one
+adversarial verifier subagent (depth-2) to refute it; return only the confirmed findings
+with `verified: true`. Design for the 5-level cap — if Agent dispatch fails or you are at
+the cap, fall back to the flat path and set `nested_verify: "fell-back-flat"` in your return.
+""")
+```
+
+**Guard rails (MUST):** (a) the default (no flag) path is byte-for-byte unchanged — flat, no
+nesting; (b) the audit agent's worker path MUST degrade to flat if `Agent` is unavailable
+(depth-5 cap) — never silently inline; (c) increment `dispatches_used` by 2 + the count of
+per-finding verifiers actually spawned, and honor the global retry budget
+(`agent-orchestration.md` §5); (d) T0 still supervises the confirmed findings
+(`supervisor-verification.md`) — nesting moves verification earlier, it does not remove the T0 gate.
+
+> **Verification status:** this mode is **structurally** integrated + CI-validated; its empirical
+> "does it produce better reviews / lower false-positive rate" is a SEPARATE live-run measurement,
+> not yet performed. Treat the false-positive-reduction benefit as designed-for, not yet measured.
+
+**Native cloud alternative (optional):** for an even deeper, independent pass,
+the user MAY run Claude Code's native **`/code-review ultra`** (or
+`/code-review ultra <PR#>` for a GitHub PR) — a multi-agent review that runs in
+the cloud. It is **user-triggered and billed**, needs the Claude GitHub App, and
+**cannot be launched by this workflow itself** — surface it as a recommendation,
+never auto-invoke it. The local `/review-gate` (STEP 2) + this agent dispatch
+remain the free, default deep audit; `/code-review ultra` is an opt-in escalation
+for high-stakes changes.
 
 ---
 
@@ -195,6 +272,7 @@ Capture resolution status + outstanding comment count into state.
 
 ## CRITICAL RULES
 
+- MUST run STEP 1.5 PREFLIGHT before any dispatch and BLOCK with `WORKER_REGISTRY_NOT_LOADED` if a required sub-skill or worker agent (on the path being run) is missing/undispatchable. Provisioning does not always resolve dependency closures, so this skill can be present without its workers.
 - MUST run at T0 — skill body is injected into the user's session.
   Dispatching this as a worker strips `Agent` at runtime and STEP 2b
   `--deep-audit` parallel dispatch would silently inline.
@@ -207,6 +285,11 @@ Capture resolution status + outstanding comment count into state.
   `--auto-fix` is not set. The flag is opt-in, not default.
 - MUST emit both parallel Agent() calls in STEP 2b in a SINGLE T0 message.
   Splitting across messages serializes the dispatch.
+- MUST keep the DEFAULT (no `--nested-verify`) STEP 2b path flat and single-level —
+  `--nested-verify` is opt-in and MUST NOT change behavior when absent. When the flag IS
+  set, the dual-mode audit agents MUST degrade to the flat path if `Agent` is unavailable
+  (depth-5 cap) rather than silently inline, and T0 still supervises the confirmed findings
+  (`supervisor-verification.md`).
 - MUST preserve deferred-item TTL (14-day auto-promotion to blocker) — the
   /review-gate skill handles this; don't override.
 - MUST write `.workflows/code-review/state.json` + `events.jsonl` after

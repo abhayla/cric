@@ -54,6 +54,87 @@ full=$(printf '%s' "$last_text" | tr '[:upper:]' '[:lower:]' | sed -e '/./,$!d')
 tail_part=$(printf '%s' "$full" | tail -c 900)
 root="$(git rev-parse --show-toplevel 2>/dev/null)"
 
+# ── ENHANCE_MODE gate (auto | ask | off; absent = auto) ──
+# Gates ONLY the prompt-enhancement enforcement (reviewer-card + diagnosis-substance
+# blocks and the enhance telemetry). The over-ask + narrate-and-stop guards below are
+# NOT gated — decide-don't-ask is governance, not the enhancement process. Set by
+# prompt-enhance-reminder.sh on an `enhance auto|ask|off` prompt.
+emode="$(tr -d '[:space:]' < "$root/.claude/.enhance-mode" 2>/dev/null)"
+case "$emode" in auto|ask|off) : ;; *) emode="auto" ;; esac
+
+# ── Full-process enforcement: the independent-reviewer grade card (PRE-exemption) ──
+# The prompt-auto-enhance pipeline MUST render the FULL process on EVERY substantive turn; its
+# definitive tell is the INDEPENDENT REVIEWER's per-dimension card. This guard blocks when a
+# substantive turn (>=300 chars) is NOT a verifiable trivial declaration and shows NO reviewer
+# card — INDEPENDENT of banner shape, so the strongest omission (disguised/missing banner)
+# cannot escape (gaps G3/G4/G7/G9/G11 from the 2026-06-18 enforcement audit). Runs BEFORE the
+# sync-check exemption. Loop-guard (.reviewcard-count, reset per turn), cap 4.
+# G4: a turn is exempt only if its FIRST line declares "ran as-is" AND the turn is short —
+# a long working turn cannot dodge by mentioning the phrase somewhere in prose.
+trivial=""
+printf '%s' "$full" | head -1 | grep -qE "ran (your )?input as-is|no change — ran|no enhancement" && [ "${#last_text}" -lt 600 ] && trivial="1"
+# G11: detect the full process by the reviewer-card token SET (not one literal), so a
+# legitimately-worded card is not false-blocked.
+card=""
+printf '%s' "$full" | grep -qE "reviewer-after|reviewer col|blind re-?grade|independent[ -]reviewer" && card="1"
+# G7: block on substantive + not-trivial + NO card, regardless of banner shape.
+if [ "$emode" = "auto" ] && [ "${#last_text}" -ge 300 ] && [ -z "$trivial" ] && [ -z "$card" ]; then
+  rc="$root/.claude/.reviewcard-count"
+  rn=$(cat "$rc" 2>/dev/null || echo 0); case "$rn" in ''|*[!0-9]*) rn=0 ;; esac
+  printf '%s\treviewer-card-miss — autocontinue #%s\n' "$(jq -rn 'now|todate' 2>/dev/null || echo now)" "$((rn+1))" >> "$root/.claude/.overask-violations.log" 2>/dev/null
+  if [ "$rn" -lt 4 ]; then
+    printf '%s' "$((rn+1))" > "$rc" 2>/dev/null
+    jq -nc --arg r "STOP BLOCKED (enhance: full process not rendered). This substantive turn did NOT render the full prompt-auto-enhance process — the tell is the missing independent-reviewer 'Reviewer-after' per-dimension card column (skill STEP 3.6/4). Render the FULL process now, UP FRONT: *Enhanced banner + pipeline transcript + before→after grade card WITH the Reviewer-after column (Before · Self-after · Reviewer-after · Weight) + Original→Final prompt + Role line. If the user's prompt was genuinely trivial/continuation, make the FIRST line '*Enhanced: no change — ran your input as-is*' instead." '{decision:"block", reason:$r}'
+    exit 0
+  else
+    # G9: cap exhausted — the turn escaped without the card; log a distinct escalation line.
+    printf '%s\tcard-block-EXHAUSTED (cap 4) — full process still unrendered, turn released\n' "$(jq -rn 'now|todate' 2>/dev/null || echo now)" >> "$root/.claude/.overask-violations.log" 2>/dev/null
+  fi
+fi
+
+# ── Substance enforcement: the diagnose→fix linkage, not just the score card (2026-06-19) ──
+# WHY: the card block above enforces the reviewer COLUMN (shape) — but the hook could not see
+# whether the per-step IMPROVEMENT substance was present, so it silently rotted to a scores-only
+# card. The skill (STEP 1 Diagnose / STEP 2 Map Fixes / STEP 4 Changes Applied) mandates a
+# numbered Diagnosis block, a per-dimension Fix column, and a canonical Changes Applied list —
+# "every raised After score MUST be earned by a listed Fix [n]". Enforcing only the reviewer
+# column let the diagnose→fix chain disappear (the exact shape-vs-substance drift
+# output-plausibility-verification.md warns about; user-reported 2026-06-19). This guard fires
+# when an enhancement card IS rendered (card="1") on a substantive, non-trivial turn but shows
+# NONE of the diagnosis/fix substance tokens. Grade-A / zero-fix turns legitimately have no
+# diagnosis, so the token set treats "grade a"/"0 fix" as substance-accounted. Own loop-guard
+# (.diagnosis-count, reset per turn by prompt-enhance-reminder.sh), cap 4.
+substance=""
+printf '%s' "$full" | grep -qE "diagnosis:|changes applied|missing_role|missing_context|missing_output|vague_intent|under_constrained|missing_structure|missing_example|missing_constraint|grade: a|grade a[^a-z]|0 fix|no fix|zero fix" && substance="1"
+if [ "$emode" = "auto" ] && [ "${#last_text}" -ge 300 ] && [ -z "$trivial" ] && [ -n "$card" ] && [ -z "$substance" ]; then
+  dc="$root/.claude/.diagnosis-count"
+  dn=$(cat "$dc" 2>/dev/null || echo 0); case "$dn" in ''|*[!0-9]*) dn=0 ;; esac
+  printf '%s\tdiagnosis-substance-miss — autocontinue #%s\n' "$(jq -rn 'now|todate' 2>/dev/null || echo now)" "$((dn+1))" >> "$root/.claude/.overask-violations.log" 2>/dev/null
+  if [ "$dn" -lt 4 ]; then
+    printf '%s' "$((dn+1))" > "$dc" 2>/dev/null
+    jq -nc --arg r "STOP BLOCKED (enhance: per-step improvements not shown). The grade card rendered scores but NOT the diagnose→fix substance — the tell is a missing STEP 1 'Diagnosis:' block, no 'Fix' column linking each lifted dimension to a numbered fix, and no canonical 'Changes Applied' list (format: [n] CATEGORY (severity) → specific fix, using the failure taxonomy VAGUE_INTENT, MISSING_CONTEXT, UNDER_CONSTRAINED, MISSING_OUTPUT_SPEC, MISSING_ROLE…). Re-render the card WITH a Fix column and add the Diagnosis + Changes Applied blocks so every raised score is earned by a listed fix (skill STEP 1/2/4)." '{decision:"block", reason:$r}'
+    exit 0
+  else
+    # cap exhausted — substance still absent; log a distinct escalation line (mirrors G9).
+    printf '%s\tdiagnosis-block-EXHAUSTED (cap 4) — per-step substance still unrendered, turn released\n' "$(jq -rn 'now|todate' 2>/dev/null || echo now)" >> "$root/.claude/.overask-violations.log" 2>/dev/null
+  fi
+fi
+
+# ── Exemption: *Session-boundary:* — a completed-tested-chunk stop is legitimate. ──
+# Mirrors *Sync-check:* but for the STOP side: when a tested/verified chunk is complete AND
+# committed, AND all remaining work is owner-gated (sign-off/deploy/spend) or explicitly
+# deferred-for-quality (a coherent unit needing fresh, non-saturated context), the model opens a
+# line with `*Session-boundary:*` and stops — that is a LEGITIMATE boundary, not a narrate-and-stop.
+# (Abhay-approved 2026-06-19; proposal in .claude/tasks/lessons.md.) The hook cannot verify the
+# "tested + committed + only-gated-remainder" preconditions deterministically, so unlike sync-check
+# it LOGS every use to the violations log for audit — abuse (using the marker to dodge real
+# reversible work) is therefore visible in telemetry. Runs AFTER the reviewer-card guard, so a
+# session-boundary wrap-up turn STILL renders the full enhance card.
+if printf '%s' "$full" | grep -qE "session-boundary"; then
+  printf '%s\tsession-boundary-stop (exempted, len=%s)\n' "$(jq -rn 'now|todate' 2>/dev/null || echo now)" "${#last_text}" >> "$root/.claude/.overask-violations.log" 2>/dev/null
+  exit 0
+fi
+
 # ── Exemption: a GENUINE blocker / escalation / user-input-needed stop is legitimate. ──
 # Includes the deliberate `*Sync-check:*` INTENT-GRILL marker: when the assistant is
 # genuinely NOT SURE WHAT THE USER IS ASKING (intent ambiguity OR a consequential design fork
@@ -72,14 +153,14 @@ fi
 # "*enhanced" (case-insensitive). Log-only; never blocks, never sets $flag.
 # Limitation (v1, KISS): a short message that nonetheless made tool edits is not
 # caught by the length proxy — revisit with a tool_use scan if the log warrants.
-if [ "${#last_text}" -ge 300 ] && ! printf '%s' "$full" | head -1 | grep -qE '^\*enhanced'; then
+if [ "$emode" = "auto" ] && [ "${#last_text}" -ge 300 ] && ! printf '%s' "$full" | head -1 | grep -qE '^\*enhanced'; then
   printf '%s\tenhance-banner-miss (len=%s)\n' "$(jq -rn 'now|todate' 2>/dev/null || echo now)" "${#last_text}" >> "$root/.claude/.enhance-misses.log" 2>/dev/null
 fi
 # Block-miss: substantive turn that HAS the banner but shows NEITHER the
 # enhanced-prompt block ("final prompt"/"what changed") NOR the trivial "ran as-is"
 # one-liner → the user can't see what was enhanced. Non-blocking telemetry (the
 # behavioral fix is the MANDATORY OUTPUT section in prompt-auto-enhance-rule.md).
-if [ "${#last_text}" -ge 300 ] && printf '%s' "$full" | head -1 | grep -qE '^\*enhanced' && ! printf '%s' "$full" | grep -qE "final prompt|what changed|ran (your )?input as-is|ran as-is|no change — ran|no enhancement"; then
+if [ "$emode" = "auto" ] && [ "${#last_text}" -ge 300 ] && printf '%s' "$full" | head -1 | grep -qE '^\*enhanced' && ! printf '%s' "$full" | grep -qE "final prompt|what changed|ran (your )?input as-is|ran as-is|no change — ran|no enhancement"; then
   printf '%s\tenhance-block-miss (len=%s)\n' "$(jq -rn 'now|todate' 2>/dev/null || echo now)" "${#last_text}" >> "$root/.claude/.enhance-misses.log" 2>/dev/null
 fi
 # Role-miss (R1 persona): a final-prompt block whose text lacks "act as" — the R1 role
@@ -87,7 +168,7 @@ fi
 # Selection Guide: mandatory when the Role dimension scores < 7, at EVERY grade incl. A).
 # Limitation (v1, telemetry-only): role-sufficient prompts (Role >= 7) legitimately lack
 # it, so this LOGS, never blocks — escalate to a block only if the log shows it stays frequent.
-if [ "${#last_text}" -ge 300 ] && printf '%s' "$full" | grep -qE "final (strengthened )?prompt" && ! printf '%s' "$full" | grep -qE "act as"; then
+if [ "$emode" = "auto" ] && [ "${#last_text}" -ge 300 ] && printf '%s' "$full" | grep -qE "final (strengthened )?prompt" && ! printf '%s' "$full" | grep -qE "act as"; then
   printf '%s\trole-miss (len=%s)\n' "$(jq -rn 'now|todate' 2>/dev/null || echo now)" "${#last_text}" >> "$root/.claude/.enhance-misses.log" 2>/dev/null
 fi
 

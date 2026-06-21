@@ -315,6 +315,6 @@ Full conventions (variable patterns, error handling, import ordering): [CODE_STA
 
 ## Claude Code Configuration
 
-The `.claude/` directory contains 118 skills, 61 agents, and 32 rules for Claude Code.
+The `.claude/` directory contains 125 skills, 68 agents, and 54 rules for Claude Code.
 
 <!-- hub:best-practices:end -->

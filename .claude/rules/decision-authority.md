@@ -87,6 +87,37 @@ work, the following are all stop-violations equivalent to over-asking:
   reversible/internal, execute it in the SAME turn and chain through the whole
   queue until only a genuine blocker remains.
 
+## Harness enforcement (prose → deterministic deny rules)
+
+This escalation list is **advisory prose** — and prose loses to time pressure. Two
+**harness** layers make the highest-risk slice deterministic, so a forgotten rule is
+*blocked*, not just discouraged:
+
+1. **Native Auto mode** hard-denies the worst irreversible class outright — pushing to
+   main, production deploys, installing persistence (SSH keys / cronjobs), disabling
+   logging, and editing the agent's own permission config — and escalates to the human
+   after 3 consecutive / 20 total denials ([auto-mode](https://www.anthropic.com/engineering/claude-code-auto-mode),
+   [permission-modes](https://code.claude.com/docs/en/permission-modes)).
+   **Policy — ratified 2026-06-20 (S7):** **AUTONOMOUS / HEADLESS runs** (`/goal`, `/loop`,
+   routines, headless `claude -p`) adopt Auto mode as their **default permission mode** —
+   launch them with `--permission-mode auto` (or the equivalent env), so the deny-class is
+   deterministic exactly when no human is watching. **INTERACTIVE sessions are unchanged**
+   (the human is the seatbelt). Deliberately do NOT set `defaultMode: "auto"` in
+   `~/.claude/settings.json` — that is the only place it takes effect, but it is machine-wide
+   and would wrongly cover interactive sessions too; scope Auto mode at the autonomous-run
+   launch instead. Authoring guidance lives in `/goal-creator` STEP 5.
+2. **`permissions.deny` rules** in `settings.json` (apply in EVERY mode) encode the
+   git-gate-bypass class `git-collaboration.md` forbids — `git push --force` / `-f`,
+   `git push --no-verify`, `git commit --no-verify` / `-n`. A denied call is blocked and
+   surfaced in `/permissions` for explicit manual retry.
+
+Deny rules are deliberately scoped to unambiguous, always-wrong invocations (no
+`reset --hard` / `rm -rf` — too false-positive-prone; no deploy/DNS matchers — too
+project-specific, and Auto mode already covers prod deploy). They are **prefix matchers**,
+so they are defense-in-depth, not airtight — a reordered form (a flag after the refspec)
+can still slip them; native Auto mode + judgment remain the primary guarantee. The prose
+list above stays the SSOT for *judgment*; the harness is the deterministic backstop.
+
 ## CRITICAL RULES
 
 - MUST default to deciding on reversible/internal/best-practice-clear work;

@@ -71,3 +71,8 @@ apps/mobile/analyze_output*.txt
 
 # Misc
 *.log
+
+# Ephemeral Claude Code workflow runtime artifacts (claude-best-practices hub)
+.workflows/
+test-results/
+test-evidence/
