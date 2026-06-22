@@ -4,7 +4,7 @@
 
 **Project:** CricScores - Cricket scoring mobile app (CricHeroes competitor)
 **Status:** Phase 7 (Polish & Testing) IN PROGRESS — Full T20 E2E passing (scorer + viewer dual-emulator, 254 deliveries, 0 mismatches). ~2050 Flutter tests, ~420 server tests.
-**Working Directory:** `D:\Abhay\VibeCoding\cric\`
+**Working Directory:** `C:\Abhay\Businesses\cric\`
 
 ## Tech Stack
 
@@ -15,6 +15,32 @@ See [CLAUDE.md](../CLAUDE.md#tech-stack) for tech stack.
 See [PROJECT_MANAGEMENT.md](process/PROJECT_MANAGEMENT.md) for the full documentation map with all planning and process docs.
 
 ## What to Do Next
+
+### Session 2026-06-22: New-PC Environment Setup (dev-machine bootstrap)
+
+> NOTE: this section was lost once as uncommitted working-tree text during an auto-git/merge
+> churn and restored from the SessionStart hook's persisted output, then updated with the
+> resolutions below. It is now committed so it cannot be lost again.
+
+**Context:** Fresh Windows 11 laptop; repo + global files relocated `D:\Abhay\VibeCoding\` -> `C:\Abhay\Businesses\` (cric now at `C:\Abhay\Businesses\cric`). Path refs migrated across `~/.claude/CLAUDE.md`, `GLOBAL.md`, `GLOBAL.env`, and this file.
+
+**Toolchain installed + verified:**
+- Bun 1.3.14, JDK 17 (MS OpenJDK), Flutter 3.44.2 / Dart 3.12.2 (clone at `C:\src\flutter`), Android Studio.
+- Env persisted (User scope): JAVA_HOME, ANDROID_HOME / ANDROID_SDK_ROOT (`%LOCALAPPDATA%\Android\Sdk`), PATH += flutter\bin, .bun\bin, platform-tools, emulator, cmdline-tools.
+- Server: `bun install` OK (207 pkgs); `bun run typecheck` PASSED.
+- Mobile: `flutter pub get` OK; `build_runner` codegen run.
+- Android SDK: platforms 34/35/36 + build-tools 34/35/36 + emulator + android-34 x86_64 image installed, licenses accepted. AVD `cric_api34` created + BOOTED (emulator-5554, Android 14/API 34, WHPX-accelerated). `flutter doctor` Android toolchain = green.
+- Git identity set globally: `Abhay Kumar <abhayinfosys@gmail.com>`. GitHub CLI `gh` 2.95.0 installed (NOT yet authed — the repo-scoped git token lacks `read:org`; not required since auto-pr uses the REST API). `gh auth login` is interactive if the `gh` CLI itself is ever needed.
+
+**RESOLVED this session (2026-06-22):**
+- **SSH to VPS working** — key restored at `~/.ssh/ipodhan_vps` (ACL-locked); `ssh Administrator@103.118.16.189` OK (Windows Server 2022; remote shell = PowerShell, chain remote cmds with `;` not `&&`).
+- **DB tunnel** — `cricapp_dev` confirmed on VPS PostgreSQL 16 (56 tables). `cricapp_user` password (lost with old laptop) rotated via `ALTER USER` (superuser); new value lives ONLY in `apps/server/.env` (gitignored). Start tunnel: `ssh -i ~/.ssh/ipodhan_vps -N -L 5433:127.0.0.1:5432 Administrator@103.118.16.189`. `apps/server/.env` created from `.env.example`; `DATABASE_URL` -> `localhost:5433/cricapp_dev` via the tunnel. Verified end-to-end (local Bun `postgres` driver connected, 56 tables).
+- **Firebase service-account** — fetched the real `firebase-service-account.json` (project `cricapp-7403d`, the dev project) from the VPS prod deploy (`C:\Apps\cricscores\current\apps\server\`) into `apps/server/` (gitignored). **Server now BOOTS** — `bun run start` listens on `:3000` and serves HTTP. Server boot needs ONLY this file; the two `google-services.json` are mobile-app build inputs.
+- **Claude hooks** — restored 2 missing referenced hook scripts (`ba-usecase-discovery-reminder.sh`, `verifier-edge-guard.sh`); landed on `main` via PR #105.
+
+**Pending (blockers remaining):**
+1. Mobile app build still needs Firebase `google-services.json` ×2: `apps/mobile/android/app/src/dev/google-services.json` (project `cricapp-7403d`) and `.../prod/google-services.json` (`in.cricscores.app`). Download from the Firebase console per flavor. (Server boot is NOT blocked by these.)
+2. Prod E2E target `cricscores.in` is DOWN (Cloudflare NS misdelegation per GLOBAL.md Section 2) -> dev-mode testing only until fixed.
 
 ### Session 2026-03-05: E2E Multi-Device Test Fixes
 
