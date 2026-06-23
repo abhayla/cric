@@ -56,7 +56,7 @@ Every new file **must** be placed according to the placement rules in [.claude/r
 | [CONTINUE_PROMPT.md](docs/CONTINUE_PROMPT.md) | Session handoff — start here each session |
 | [PLAYBOOK.md](docs/process/PLAYBOOK.md) | Step-by-step implementation workflow |
 | [SCORING_RULES.md](docs/planning/SCORING_RULES.md) | Cricket domain rules, delivery pipeline, match state machine |
-| [DATABASE.md](docs/planning/DATABASE.md) | PostgreSQL schema (26 tables), enums, relationships |
+| [DATABASE.md](docs/planning/DATABASE.md) | PostgreSQL schema (27 tables), enums, relationships |
 | [API.md](docs/planning/API.md) | REST endpoint specs, request/response shapes |
 | [SYNC_ARCHITECTURE.md](docs/planning/SYNC_ARCHITECTURE.md) | Dual-path broadcast, gap detection, offline sync queue |
 | [CRICHEROES_REFERENCE.md](docs/planning/CRICHEROES_REFERENCE.md) | Competitive analysis for CricHeroes comparison |
@@ -83,7 +83,7 @@ cd apps/server && bun install              # Install dependencies
 cd apps/server && bun run dev              # Start server (watch mode)
 cd apps/server && bun run start            # Start server (production)
 cd apps/server && bun run src/index.ts     # Start server (direct)
-cd apps/server && bun run test             # Run all tests (uses --max-concurrency=1 + ENABLE_TEST_AUTH=true)
+cd apps/server && bun run test             # Run all tests (uses --max-concurrency=1 + ENABLE_TEST_AUTH=true + --timeout=60000)
 cd apps/server && bun test src/path/to.test.ts                 # Run single test file
 cd apps/server && bun run typecheck        # TypeScript type check (alias for bunx tsc --noEmit)
 cd apps/server && bun run db:generate      # Generate migrations
